@@ -6,7 +6,9 @@
 // the four JavaScript fixes in plain Node, extracting the shipped functions
 // (and, for bug 1, the shipped scan block) verbatim from parts/ - a regression
 // to the pre-fix form fails here before any browser run. Bug 5 (the tier
-// selector) is proven by scripts/select-tier-fixtures/run-fixtures.py.
+// selector) was proven by scripts/select-tier-fixtures/run-fixtures.py
+// until the selector itself was retired with the tiers (testing-efficiency
+// rollout, 2026-11-23) - the fix's subject no longer exists to regress.
 import { readFileSync } from 'node:fs';
 const app3 = readFileSync(new URL('../../parts/app3.js', import.meta.url), 'utf8');
 const packs = readFileSync(new URL('../../parts/create-packs.js', import.meta.url), 'utf8');

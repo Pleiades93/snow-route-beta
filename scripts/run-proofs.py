@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Manifest-driven proof runner (protocol fix round, 2026-11-17).
+"""Proof runner (protocol fix round, 2026-11-17; generated roster,
+testing-efficiency rollout, 2026-11-23).
 
-Replaces the hand-kept per-proof steps in checks.yml: the gate runs
-every proof listed under "run" in tests/proof/manifest.json, so
-registering a proof is adding ONE manifest line, never editing the
-workflow (which is what used to force every round to Tier C).
-scripts/check-proof-coverage.py proves the manifest accounts for
-every file in tests/proof/.
+Replaces the hand-kept per-proof steps in checks.yml. The gate runs
+every proof file on disk in tests/proof/ EXCEPT the ones
+tests/proof/manifest.json lists under "retired" (each with its
+reason) - the run list is derived from the glob, so registering a
+proof is dropping in the file and retiring one is a single manifest
+entry; there is no hand-kept run list left to drift.
+scripts/check-proof-coverage.py guards the retired list.
 
 Each proof runs as `node tests/proof/<file>` from the repo root -
 the same invocation the old named steps used. A proof fails the run
@@ -25,9 +27,10 @@ ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).reso
 TIMEOUT_S = int(os.environ.get("PROOF_TIMEOUT_S", "180"))
 
 manifest = json.loads((ROOT / "tests" / "proof" / "manifest.json").read_text(encoding="utf-8"))
-names = list(manifest.get("run", []))
+retired = {e["file"] for e in manifest.get("retired", []) if isinstance(e, dict) and "file" in e}
+names = sorted(p.name for p in (ROOT / "tests" / "proof").glob("*.mjs") if p.name not in retired)
 if not names:
-    print("FAIL: the proof manifest's run list is empty")
+    print("FAIL: no proofs to run (the tests/proof glob is empty or everything is retired)")
     sys.exit(1)
 
 failures = []

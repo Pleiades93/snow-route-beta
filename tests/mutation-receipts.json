@@ -102,19 +102,6 @@
    "issued": "2026-11-21 correct-phase3b codex-fix"
   },
   {
-   "id": "select-tier-receipts-ride-along",
-   "check": "scripts/select-tier-fixtures/run-fixtures.py",
-   "kind": "mutation",
-   "files": {
-    "scripts/select-tier-fixtures/run-fixtures.py": "a03f4500e8d9ac85179ecd5274a9905beeef8c7d0b170e98da272c2068094d63",
-    "scripts/select-tier.py": "b7c9db80ca3d7ad78fbd8c3def32f16eefe9d88630b437a7e5244454d3297492"
-   },
-   "mutation": "Scratch copy with the receipts exclusion removed from scripts/select-tier.py (tests/mutation-receipts.json classifies again - the pre-fix behaviour Codex P2 on PR #155 caught: the file hits the tier-C paths and escalates every change that carries a receipt).",
-   "red": "Select-tier fixtures 21 pass / 4 FAIL - exactly the four new ride-along cases: receipts file alone, proof + receipt, family + receipt, and engine + drive + receipt all select Tier C (full battery) instead of A / A / B / B",
-   "green": "Clean tree: select-tier fixtures 25 pass / 0 fail; the same four cases select A / A / B / B with the receipts file named in the reason as riding along",
-   "issued": "2026-11-21 correct-phase3b codex-fix"
-  },
-  {
    "id": "gate-fixtures-census-gate-neuter",
    "check": "scripts/gate-fixtures/run-fixtures.py",
    "kind": "mutation",
@@ -140,19 +127,6 @@
    "mutation": "scripts/check-census.py derive_rows() neutered in a scratch copy of the tree to return no rows (the census derives nothing, so every issued census certifies empty)",
    "red": "gate fixtures 48 pass, 2 FAIL - the two cases whose refusal depends on re-derivation seeing the rows: the hand-typed census omitting a derived door row pushes, and the census leaving a derived row unmarked pushes (with no derived rows the fixture cannot even pose an unmarked one)",
    "green": "gate fixtures 50 pass, 0 fail on the unmutated tree",
-   "issued": "2026-11-21 correct-phase3c"
-  },
-  {
-   "id": "select-tier-census-ride-along",
-   "check": "scripts/select-tier-fixtures/run-fixtures.py",
-   "kind": "mutation",
-   "files": {
-    "scripts/select-tier-fixtures/run-fixtures.py": "56ff3aca062d0b7cc5d06fbddb25f8887d692eeb8179f957a1f3e8afa5d04958",
-    "scripts/select-tier.py": "c1a7c50bbd1aa7babf5d830fcd9853eb9c7f723c9f7053b021c1fee53120a9a7"
-   },
-   "mutation": "scripts/select-tier.py CENSUS_FILE pointed at a nonexistent path in a scratch copy of the tree (the sibling census stops riding along as bookkeeping)",
-   "red": "select-tier fixtures 25 pass, 4 FAIL - all four census cases escalate to Tier C on 'deep path touched: tests/sibling-census.json': the census alone, a proof change plus census, a family change plus census, and an engine-plus-drive change plus census",
-   "green": "select-tier fixtures 29 pass, 0 fail on the unmutated tree",
    "issued": "2026-11-21 correct-phase3c"
   },
   {
@@ -394,19 +368,6 @@
    "mutation": "scripts/check-census.py removed from JUDGE_PATHS in a scratch copy of scripts/check-receipts.py (the census judge escapes rule 6's trigger set) - re-observation after round (d) changed check-receipts.py (check-mirrors.py joined JUDGE_PATHS).",
    "red": "check-receipts.py gate --changed scripts/check-census.py exits 0 in the scratch tree - a changed census judge needs no mutation receipt at all.",
    "green": "With the shipped JUDGE_PATHS the receipts gate covers scripts/check-census.py only through current receipts (this one and the two gate-fixtures census receipts); check-receipts.py verify lists them CURRENT on the round (d) tree.",
-   "issued": "correct-phase3d-reissue"
-  },
-  {
-   "id": "select-tier-receipts-ride-along-r2",
-   "check": "scripts/select-tier-fixtures/run-fixtures.py",
-   "kind": "mutation",
-   "files": {
-    "scripts/select-tier-fixtures/run-fixtures.py": "56ff3aca062d0b7cc5d06fbddb25f8887d692eeb8179f957a1f3e8afa5d04958",
-    "scripts/select-tier.py": "c1a7c50bbd1aa7babf5d830fcd9853eb9c7f723c9f7053b021c1fee53120a9a7"
-   },
-   "mutation": "Scratch copy with the receipts ride-along removed from scripts/select-tier.py (the receipts set forced empty, so tests/mutation-receipts.json classifies again and hits the tier-C deep paths - the pre-fix behaviour Codex P2 on PR #155 caught). Re-observation in round (d): the r1 receipt had gone stale when round (c) changed select-tier.py and was never re-issued.",
-   "red": "Select-tier fixtures 25 pass, 4 FAIL - exactly the four ride-along cases (receipts file alone, proof + receipt, family + receipt, engine + drive + receipt) all select Tier C instead of A / A / B / B.",
-   "green": "Clean tree: select-tier fixtures 29 pass, 0 fail; the same four cases select A / A / B / B with the receipts file named in the reason as riding along.",
    "issued": "correct-phase3d-reissue"
   },
   {
@@ -7784,6 +7745,241 @@
    "red": "proof-1266 check 9 FAILS standalone with the wrong bullet in place (the other six fails are its standing retired pins, present with either bullet)",
    "green": "proof-1266 check 9 passes with the shipped 1.281 bullet in place (6 passed, 6 failed standalone - its standing retirement state, identical on the pristine tree)",
    "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "testing-rollout-shard-coverage-runtime",
+   "check": "scripts/check-shard-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-shard-coverage.py": "c36ed8dd0476ebe5d4f5e3b0b6d1ea7e4cdfebbb70ef1e3de41bfc63c5b11f6e",
+    "tests/browser/run.mjs": "477833866cd70fb371b4f8b806b45572859ebdfada4c4baea3d9fd34bef05674",
+    "scripts/gen-shards.py": "33cd32260744b4c4516ae8428c440b8af35aa9506cbada62e396ddac8d55307e",
+    "scripts/shard-durations.json": "91ae87e704385874a6f11965b8a98326f3ab8f3c5da715df604711ac0d3df6d3"
+   },
+   "mutation": "shard-durations.json key set broken two ways: (A) drive222's entry deleted, (B) a bogus drive999 entry added",
+   "red": "Mutation A: guard FAIL 'shard-durations.json does not name exactly the roster (missing: [drive222])' exit 1. Mutation B: FAIL '(extra: [drive999])' exit 1.",
+   "green": "Restored durations: 'shard coverage: PASS (100 drives across 8 shards, disjoint and complete; durations name exactly the roster; runner agrees shard for shard)'",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-sw-fake-timers",
+   "check": "tests/sw.test.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/sw.test.mjs": "ad6b91ad7e9dbbde27315bf3692bdf700ba72e0e9830b75a0ba35f7b0b0d3f73",
+    "src/sw.js": "36c006985a2ce6aaa12878a2449a4abe780666ba4a30e8da4784bb84b726e226"
+   },
+   "mutation": "src/sw.js: the uncached-navigation stall race bound cut 5000 -> 500, so a slow-but-working first launch is abandoned before its 4.2s answer lands",
+   "red": "Suite exit 1 with exactly: FAIL '1.221 uncached slow navigation awaits the network answer' (the fake clock makes the abandonment land inside the case's advance window)",
+   "green": "Restored sw.js: suite exit 0, 45/45 PASS in 0.59s real time (was ~35s of real sleeps)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-run-proofs",
+   "check": "scripts/run-proofs.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/run-proofs.py": "66688a0f1f0b7675530cf9a20d24b86b303266426c86df178ae845542cbb734d",
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "Testing-efficiency rollout commit 6 (generated lists + tier removal): run-proofs.py derives the run roster from the tests/proof glob minus the manifest retired list; the gate-fixtures prove a retired proof does not run, a nonzero proof fails the run and a timed-out proof fails the run",
+   "red": "Pre-change verdicts observed in this session (fixture failures on the old contract; mirrors judges-family FAIL during the transition)",
+   "green": "Gate fixtures 66/66 PASS, mirrors PASS, proof coverage PASS (83 gate-run from the glob), run-proofs 83/83",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-proof-coverage",
+   "check": "scripts/check-proof-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-proof-coverage.py": "b8735ea442205c4442013931f006d96bed9f53ada0710e62507c789837dc4edc",
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "Testing-efficiency rollout commit 6 (generated lists + tier removal): check-proof-coverage.py guards the derived-roster contract; the gate-fixtures prove a leftover run list fails, a duplicated retirement fails, a reasonless retirement fails and a retirement naming a missing file fails",
+   "red": "Pre-change verdicts observed in this session (fixture failures on the old contract; mirrors judges-family FAIL during the transition)",
+   "green": "Gate fixtures 66/66 PASS, mirrors PASS, proof coverage PASS (83 gate-run from the glob), run-proofs 83/83",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-receipts-judges",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "22cdc181d74a6323146afce7f18bc88250a05f7b5947a35f0dec5858d7423c2c",
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "Testing-efficiency rollout commit 6 (generated lists + tier removal): check-receipts.py JUDGE_PATHS and CHECK_PATTERNS no longer name the tier machinery deleted by this rollout (select-tier.py, check-tier-map.py, select-tier-fixtures); the mirrors judges family flagged the still-present check-tier-map.py as unlisted (observed FAIL) until its deletion restored agreement (PASS)",
+   "red": "Pre-change verdicts observed in this session (fixture failures on the old contract; mirrors judges-family FAIL during the transition)",
+   "green": "Gate fixtures 66/66 PASS, mirrors PASS, proof coverage PASS (83 gate-run from the glob), run-proofs 83/83",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-shard-coverage-glob",
+   "check": "scripts/check-shard-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-shard-coverage.py": "e5ecfc2f020e593a3cbfe0b00e6d698cb4677dd7979e45f73ae6646e0295f067",
+    "scripts/shard-durations.json": "91ae87e704385874a6f11965b8a98326f3ab8f3c5da715df604711ac0d3df6d3",
+    "tests/browser/run.mjs": "e6ca9b1d347c052ad9441895140a43c18fa2026b27d3f874c9f060c993544989"
+   },
+   "mutation": "check-shard-coverage.py takes the roster from the drive-file glob (the hand-kept run.mjs ALL it used to parse is deleted); the runner-agreement check now carries the glob-vs-glob proof",
+   "red": "drive222.mjs moved out of the tree: guard FAIL 'shard-durations.json does not name exactly the roster (extra: drive222)', exit 1",
+   "green": "Restored: PASS (100 drives across 8 shards, disjoint and complete; runner agrees shard for shard); the before/after drive sets diffed IDENTICAL (100 names)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-gate-fixtures-tiers",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9d04506f06c8351cf73446f9ecd36965e3945a59e6e3989ac8feb9ef0a66c871"
+   },
+   "mutation": "gate-fixtures: the tier-map section is deleted with its guard; the proof-coverage and run-proofs sections assert the derived-roster contract (leftover run list fails, duplicated/reasonless/ghost retirement fails, retired proof does not run); the mirrors fixture tree writes drive files instead of an ALL list",
+   "red": "First run on the new contract: 65 pass, 1 fail (mirrors consistent-tree case, still built on the deleted ALL list) - the fixture was the stale side",
+   "green": "Fixture tree fixed to write drive files: gate fixtures 66 pass, 0 fail",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-mirrors-doc",
+   "check": "scripts/check-mirrors.py",
+   "kind": "historical",
+   "files": {
+    "scripts/check-mirrors.py": "76d7447d5d56cbfabb036aef1987c69781e04031c54fdbca6ede8b9afb4e75e5"
+   },
+   "mutation": "Docstring only: the C4 roster instance's home is now described as the retired tier-map guard, its completeness claim living on in check-shard-coverage.py. No logic changed.",
+   "red": "n/a (comment-only change; the guard's verdicts are fixture-proven unchanged)",
+   "green": "Mirrors PASS on the rollout tree; gate fixtures 66/66 including every mirrors family case",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-pr23-comment",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "fe480a68c081d4ed59876182921626675c316858f38c82e9a69ec9d3acfb5607"
+   },
+   "mutation": "Comment only: the header's bug-5 line now records that the tier selector it pointed at was retired with the tiers (2026-11-23). No assertion or extraction changed.",
+   "red": "n/a (comment-only; the suite's discriminating cases are untouched)",
+   "green": "selftest-pr23-fixes runs green on the rollout tree (all bug 1-4 cases pass)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-bullet-roll",
+   "check": "tests/browser/selftest-whatsnew.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-whatsnew.mjs": "0346019fae314a5eb53c2806d335b1604175ce017d6a604728cc27f8de1d469a",
+    "tests/proof/proof-1223.mjs": "9cc030ff53bba29eb09b16c9e9785d6aadc0e1d58423a5a7f975772a2ef75f9d",
+    "tests/proof/proof-1224.mjs": "e9101a3ee5352bf2c5a2ffdbdd0b0cf5766be7ab8f8f3c12d2a60977ead9a275",
+    "tests/proof/proof-1241.mjs": "d9a420e0eb88e76f4c3eb70bba2304920856a02230ea352f28eb5506a80f7e7c",
+    "tests/proof/proof-1242.mjs": "e839e6683dbcb27045664665228f223a180210766db100b3d80ad8e156ce1a60",
+    "tests/proof/proof-1243.mjs": "e9acad378d41d4d1022b9bc826396dbea459834150876ba0a75739306c523cd0",
+    "tests/proof/proof-1244.mjs": "46f57ee914a63040d0ab606a8941183ce2c783f0e32ec7ae75aecc818d9b6c74",
+    "tests/proof/proof-1245.mjs": "e6507b8a5c858696f51f733a30efa81aa3a449eaa223d85d32bfeea9e7417c65",
+    "tests/proof/proof-1246.mjs": "deee07a5019aeeba25b46d895d96f090bb15a245de56e1cfd3e611fb382f1bbc",
+    "tests/proof/proof-1247.mjs": "6be03dbba3e87fa51dab3a3d0d106e5a9f9d4a015f9a675b8cc7927e7d7ae779",
+    "tests/proof/proof-1248.mjs": "a8db45c8617106be1281f94999d78afc303631ab2ed579c2860b41f9f6c14b81",
+    "tests/proof/proof-1249.mjs": "75c922a169f59e24c35c8eeb2e780579dd6a05ab26c666e733afa0c5dbe5af01",
+    "tests/proof/proof-1252.mjs": "bf2586a9aac3f13c2ea4fa767613d863fd8fdeed9b3a08c257709b8585ce4096",
+    "tests/proof/proof-1253.mjs": "93c9fbcf1277b7d4cae2d3789ad048d50bfc3013131422838981523a7bbc309f",
+    "tests/proof/proof-1254.mjs": "aef4dcbf45eede2d976e2699373c4e0519670b203d4c80c4b9cb5e80d211c21f",
+    "tests/proof/proof-1255.mjs": "07cf00e97027017b77f7e9dae0b90659bc87830005b63effd1781f4c3148bd94",
+    "tests/proof/proof-1256.mjs": "887083b7dedb2024109aa05ad1f4d21680148aaac465d49c22893341054b1206",
+    "tests/proof/proof-1257.mjs": "55d20f59f58b592a566088f6fd36b8c1210007b6231fa87dae4103bdf33bbef6",
+    "tests/proof/proof-1258.mjs": "e949e4818fa424a0128c01ca67cf414850acfbb24570f370a9cd50549ec21df3",
+    "tests/proof/proof-1259.mjs": "56caced99a7b937820b80595510eaef06f78c98d083413310666e59d81e7651c",
+    "tests/proof/proof-1261.mjs": "2279f18766feb7ffa08657501a7ec49c0cd33e65b184067f4459a1cf002a4d86",
+    "tests/proof/proof-1262.mjs": "f148da57274eee5091cd12833111e4d557e14a701018999b15d4436d380dc93b",
+    "tests/proof/proof-1263.mjs": "8bc480b74377f8f376d34c1c0c898bf719addd8e49fdb78654636009a0f420ad",
+    "tests/proof/proof-1264.mjs": "a79206613abef54325bcea24a8ed4bd966f42bfb2242d26b1975224a8451bbd5",
+    "tests/proof/proof-1265.mjs": "cd233c22a23e1579954a55b86024f380dd1e640c0db4c6ac3f3f2d1fe077cb74",
+    "tests/proof/proof-1266.mjs": "c31ba55919c1de2b3c8d851480d0a9f62f4f094f34b6e9682a8987eb981d935c",
+    "tests/proof/proof-1267.mjs": "8c38de8b1e7a59f231790d89401b67275a43a067d78f021dbec70f0b4876168d",
+    "tests/proof/proof-1268.mjs": "2c77bfe1f35518a89d32184f2fa964505700a6401507c3202d437e2ba95801f2",
+    "tests/proof/proof-1269.mjs": "93348a8c8a6da7ed58f064aa8d7fe23eebbe028285781f6210bfe608896c0388",
+    "tests/proof/proof-1270.mjs": "06a420b72c42890e81b52ca55b84c7fc26acfb845dfa51a60e2d4b48ca4a5a78",
+    "tests/proof/proof-1271.mjs": "adfa852c5337a6fd32dfbeeabc437e72df6b5e0235fd0c74390b7db833d856ad"
+   },
+   "mutation": "The What's New bullet rule (every item <=108 chars, no em dash in parts/whatsnew.js) moved from ~30 hand-rolled per-release pins in the proof files to ONE general selftest; an em dash edited into the current bullet (temporary, reverted) is the mutation",
+   "red": "Under the mutation the selftest FAILS both arms (item length 110 over the cap; em dash present), exit 1",
+   "green": "Restored: selftest 3/3 PASS; the full proof suite passes 83/83 with every bullet pin removed (combined checks keep their CHANGELOG-order clauses under trimmed labels)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive216-decision-c",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive216.mjs": "4deb2fbd1fdeaef4f5ea967889a29e0b038722e3a20c61191f2b945e54cdd363"
+   },
+   "mutation": "phaseReport's drop rule: the old any-single-sample rule vs the amended decision C (3+ consecutive misses), run over synthetic sample windows",
+   "red": "Old rule convicts the Bell Harbour shape (1-2 sample misses from the queryRenderedFeatures settle blind spot): dropped=true on windows where the name renders at full ink",
+   "green": "Amended rule: 1-2 consecutive misses NOT dropped; 3+ and 5+ consecutive misses (the 1.261 heal blackout shape) still dropped - 6/6 synthetic cases as specified. Local full-drive runs are title-starved on this rig (known-env entry, pristine-identical); CI is the decider for the full drive",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive204-settle",
+   "check": "tests/browser/drive204.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive204.mjs": "97f8cd9c8393d1e12c0556933767021b97ce2d0487788d9d7024013563b80a8e"
+   },
+   "mutation": "The toast settle wait scoped document-wide (this round's first implementation) instead of to the toast element: a running clean keeps other animations alive indefinitely (the recording pulse)",
+   "red": "clean-day: 'the rise settled before measuring' FAILED (document-wide animations never empty during a clean); idle-day passed",
+   "green": "Toast-scoped settle: drive204 36/36 PASS, twice in a row locally; a never-settling rise now fails its own check instead of being measured anyway (the old poll swallowed its timeout)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive180-notile2",
+   "check": "tests/browser/drive180.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive180.mjs": "d368c25571aebdd58baddb3d6a2eee95505e283123fa21125312ce371b148da3"
+   },
+   "mutation": "NOTILE2 capture simultaneity: the box was read from the trace's last sample and the screenshot taken a CDP round-trip later (the recorded NOTILE2 flake class)",
+   "red": "Historical: NOTILE2's recorded flakes - the 12%/12% sample landing on the wrong pixel while the icon was still moving (flake log)",
+   "green": "New capture (two polls same box + two rAFs + getBoundingClientRect in the same evaluate + re-shoot x3 if moved): drive180 37/37 PASS twice locally; NOTILE2 green in all four runs (the other two failed only the known SEQ1 dark-window env flake)",
+   "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-drive216-judge-fixtures",
+   "check": "tests/browser/selftest-title-drop.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-title-drop.mjs": "e0d2db9f5931b75207ab8546bd1333ad505ccbf90ec677ba93bb57f2c7badad0",
+    "tests/browser/title-drop.mjs": "d3983c16ffb415bea7cd65b3df289eeea9c0be7540d212806b61ef7b82740a73",
+    "tests/browser/drive216.mjs": "c0460427778a099207427fd944b362528fa896f7a3063aec4b978d544c9968cf",
+    ".github/workflows/checks.yml": "c2057ce67b5edb0f83a9f6c70e4a3c2fc679cc075d37b0e36f9a62b06e2d956b"
+   },
+   "mutation": "title-drop.mjs DROP_RUN lowered from 3 to 2, then to 1 (the pre-decision-C any-single-sample rule): the extracted judge convicts the harmless two-miss and one-miss windows drive216 must spare",
+   "red": "DROP_RUN=2: selftest-title-drop exit 1 (two-consecutive-misses and counter-reset fixtures convict + the DROP_RUN pin fails). DROP_RUN=1: exit 1 (every gap fixture convicts). Both observed locally 2026-11-23.",
+   "green": "Clean tree: selftest-title-drop 14/14 fixtures hold, exit 0; wired as a build-and-test step in checks.yml; drive216 imports judgeTitleDrops from title-drop.mjs and grades the fetched sample window with it (Codex P1 on PR #190: the decision-C predicate was embedded in the in-page expression with its six synthetic cases existing only in a receipt's prose - TESTING.md rule 1 requires the extraction + committed fixtures)",
+   "issued": "2026-11-23 testing-rollout codex-fix (PR #190)"
+  },
+  {
+   "id": "testing-rollout-shard-coverage-fixtures",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "dce27f2589b93c6cd2f056a7dcf22d616076e2719cb439b47b646e77ef87b989",
+    "scripts/check-shard-coverage.py": "e5ecfc2f020e593a3cbfe0b00e6d698cb4677dd7979e45f73ae6646e0295f067"
+   },
+   "mutation": "check-shard-coverage.py with its runner-agreement arm neutered (the run.mjs --list comparison disabled): a runner whose runtime partition has drifted from the gen-shards statement is no longer convicted by the guard",
+   "red": "Neutered guard, local 2026-11-23: gate fixtures 71 pass / 1 FAIL - exactly 'shard coverage: a runner partition disagreeing with the statement fails' got exit 0, want 1. Before this commit the rewritten guard's failure paths (missing/extra duration entries, duplicate partition, runner disagreement, bogus smoke name) were proven only by the commit-3 receipt's prose (Codex P1 on PR #190).",
+   "green": "Clean tree: gate fixtures 72 pass / 0 fail, including the six new shard-coverage cases (faithful miniature tree passes; each single-arm break fails); the guard copy restored byte-exact after the observation (sha256 verified); gate-fixtures runs in build-and-test, so the cases run in CI on every PR",
+   "issued": "2026-11-23 testing-rollout codex-fix (PR #190)"
+  },
+  {
+   "id": "testing-rollout-drive204-settle-r2",
+   "check": "tests/browser/drive204.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive204.mjs": "fdc3ab12eeca8ce335a370fa7b8657d8296fe1df5abe77c195812dac783adb85"
+   },
+   "mutation": "The commit-9 settle (the toast element's own animations only) against a scene whose Settings sheet is still travelling: placeToast() raised the pill at fire time against the sheet's mid-entrance geometry, and the standing pill ended 6 px into the sheet button's box - exactly placeToast's gap - while the toast itself had long settled",
+   "red": "PR #190 gate run 2 (run 45231113676, shard 3 job 137891499431, head d2650069): drive204 35/36 FAIL - 'settings-day: zero overlap with any control | OVERLAPS: stBtn 210x6'. Run 1 on the previous head passed drive204 36/36; the failure is the scene, not the toast rise.",
+   "green": "This head: fire() additionally requires the measured scene (the pill's box + every visible control's box, via sceneSnap over measure()'s own selector list) identical across two samples 150 ms apart before measuring, else the settle check fails; syntax + build-pages --check PASS locally (README derivation unchanged, 36 checks); the drive-level green is this PR's next gate run (local Chrome launch is blocked on this rig - WebGL domain policy at harness start, before any test code)",
+   "issued": "2026-11-23 testing-rollout gate-fix (PR #190)"
   }
  ]
 }

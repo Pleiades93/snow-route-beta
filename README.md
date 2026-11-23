@@ -50,7 +50,7 @@ The detailed storage format and restore rules are documented in `docs/STORAGE-SC
 | `scripts/shard-durations.json` | The measured per-drive durations `scripts/gen-shards.py` balances the CI shards by. |
 | `scripts/carto-dark-matter-style.json` | The vendored CARTO dark-matter basemap style (Beta 1.96): `scripts/genstyles.mjs` reads this copy and stamps its sha256 into the generated banner — no live fetch at generation time. |
 | `tests/sw.test.mjs` | Service worker fetch-strategy tests (Node, mocked caches/fetch) — 45 checks. |
-| `tests/browser/` | The deterministic browser drive battery (100 drives, 1621 checks) plus the offline end-to-end suite (46 checks) — see `docs/TESTING.md`. |
+| `tests/browser/` | The deterministic browser drive battery (100 drives, 1622 checks) plus the offline end-to-end suite (46 checks) — see `docs/TESTING.md`. |
 | `DEVELOPMENT_RULES.md` | How changes are built, tested and merged in this repo. |
 | `CHANGELOG.md` | What changed in each Beta version. |
 | `manifest.json` | Home-screen install metadata (name, icons, full-screen launch). |
@@ -83,11 +83,11 @@ inlines the exact bytes of `icon-512.png` there — the shipped page is
 unchanged, the source part is ~281 KB smaller and reviewable.
 
 CI (GitHub Actions) runs the build gate and the service-worker suite on
-every push; the browser battery runs sharded across eight jobs, at the
-tier the change classifies for (`tests/TIER-MAP.md`): the Tier A core set on
-`main` pushes, the touched families' drives (Tier B) or the full battery
-(Tier C) on branches, and the full battery nightly — dispatched by Muse's
-1 AM job, since checks.yml carries no schedule trigger. How changes are
+every push; the browser battery runs sharded across eight jobs: the
+smoke set on `main` pushes, the full battery on pull requests and
+nightly — dispatched by Muse's 1 AM job, since checks.yml carries no
+schedule trigger. (Tier selection was retired by the testing-efficiency
+rollout, 2026-11-23: every PR runs the full battery.) How changes are
 merged is in `DEVELOPMENT_RULES.md`; functional testing is in
 `docs/TESTING.md`; deployment is `docs/DEPLOYMENT.md`; architecture is
 `docs/ARCHITECTURE.md`; the storage layout is `docs/STORAGE-SCHEMA.md`.

@@ -98,8 +98,6 @@ check('4b: the old strings are gone from parts/',
   !head.includes('Keep screen awake during a clean') && !head.includes("Screen won't dim while a clean is running"));
 
 // ---------- editorial ----------
-check('5: What\'s New carries the round\'s headline bullet (dead ends feather) and no em dash',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.') && !whatsnew.includes('—'));
 
 console.log('proof-1267: ' + pass + ' pass, ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

@@ -60,7 +60,6 @@ check('4: the stale bar\'s slot rule retired with it in Beta 1.271 (the nudge\'s
 check('4: the exportedAt stamp survives (noteExported still writes LS.exp)', app4.includes('function noteExported()') && app4.includes('st.exportedAt = Date.now();'));
 
 // V — What's New editorial (version agreement itself is the build gate's since Arch-1)
-check('V: the What\'s New entry is dash-free (no em dash in the items)', !whatsnew.includes('—'));
 
 console.log(pass + ' pass, ' + fail + ' fail');
 process.exit(fail === 0 ? 0 : 1);

@@ -36,12 +36,12 @@ turn every discovered bug into a permanent regression test.
    re-pinned in the same change or adjudicated per-occurrence in the
    sweep's own output.
 8. **Document** — update the docs the change makes stale, in the same change.
-9. **Merge only when safe** — per the tier rules of §3 as restructured
-   2026-11-09 (operative table: `tests/TIER-MAP.md` + `tests/tier-map.json`):
-   Tier A merges with its build checks and the core drive set green; Tier B
-   adds the touched-surface drives; Tier C runs the full battery before
-   merge; the merge gate of §3 (tree identity, `main` smoke + build green,
-   live read-back) applies to branch merges.
+9. **Merge only when safe** — per §3 as restructured by the
+   testing-efficiency rollout (2026-11-23, Andrew's decision — the tiers
+   are retired): every pull request runs the full battery (build checks,
+   all drive shards, offline-e2e) before merge; the merge gate of §3
+   (tree identity, `main` smoke + build green, live read-back) applies
+   to branch merges.
 
 **Source layout (Beta 1.94, audit F-02).** The app is edited in `parts/`
 only. After editing a part, run `python3 scripts/assemble.py`, then
@@ -185,28 +185,24 @@ sharded suite on `main` as the environment-drift audit.
 - **Absent checks — first diagnostic (grafted 2026-11-13 from SAFO's lessons, Andrew approved).** When a pull request shows NO checks at all — absent, not failed — read its mergeable state before suspecting the reviewers, the bridge, or the workflows: a PR that conflicts with `main` has no merge commit for GitHub to run checks against, so no run ever starts, and closing and reopening it does not help. Resolve the conflict (or rebase onto current `main`) and the checks appear. Status and audit reports name a CONFLICTING or BEHIND pull request as such, never as a gate failure.
 
 - **Shipping standard (set 2026-11-05, Andrew — supersedes the 2026-10-30
-  tiers below wherever they conflict; its tier mechanics were themselves
-  superseded by the 2026-11-09 test-suite restructure — the operative table
-  is `tests/TIER-MAP.md` + `tests/tier-map.json`).** Three tiers:
-  - *Visual tier* — small visual changes (CSS, images, icons, moving a menu
-    or button, adding a button, small menu changes): under the 2026-11-09
-    restructure this is Tier A — branch + the build check (`assemble.py` +
-    `build-pages.py --check`) and the core drive set green, then merge; a
-    hash-verified push (remote blobs compared to local files) and the live
-    read-back close the ship. (The 2026-11-05 form — direct to `main` with
-    no battery — is retired.)
-  - *Feature tier* — new features and deep mechanics (GPS, storage handling,
-    route handling, anything that could really break): branch + build checks
-    + the drives covering the touched surface — enough to show the change
-    does not break the app. The full battery is NOT required before merge.
-  - *Full battery* — the complete suite runs on Tier C branch pushes
-    before merge, and nightly on `main` as the once-a-day net over
-    everything that landed — dispatched by Muse's 1 AM job via
-    `workflow_dispatch` (checks.yml has carried no GitHub schedule trigger
-    since 2026-11-10), with the 4 AM catch-up dispatch and 6 AM summary.
-- **Test tiers (set 2026-10-30, Andrew; the pre-merge full-battery
-  requirement for data-critical changes was retired by the 2026-11-05
-  standard above — the nightly run is now that net).** Iteration and the merge gate are
+  tiers below wherever they conflict; its tier mechanics were superseded
+  by the 2026-11-09 test-suite restructure, and THE TIERS THEMSELVES WERE
+  RETIRED by the testing-efficiency rollout, 2026-11-23, Andrew's
+  decision).** Every pull request now runs the full battery before merge,
+  whatever the change class; a hash-verified push (remote blobs compared
+  to local files) and the live read-back close the ship; the complete
+  suite also runs nightly on `main` as the once-a-day net over everything
+  that landed — dispatched by Muse's 1 AM job via `workflow_dispatch`
+  (checks.yml has carried no GitHub schedule trigger since 2026-11-10),
+  with the 4 AM catch-up dispatch and 6 AM summary. (History: the
+  2026-11-05 standard priced the gate by change class — a visual tier
+  merging on build checks + the core drive set, a feature tier merging
+  on build checks + the touched surface's drives, the full battery only
+  for deep-mechanics changes and the nightly net. That pricing is over.)
+- **Test tiers (set 2026-10-30, Andrew; the tier framing was retired
+  by the testing-efficiency rollout, 2026-11-23 — every pull request now
+  runs the full battery, so the data-critical rule below states the
+  universal rule, and the nightly run remains the drift net).** Iteration and the merge gate are
   priced differently, so tinkering stays fast without weakening the gate:
   - *Tinkering iterations on a branch:* quick checks only — the build check,
     syntax checks, and the drives that cover the surface the change touches.
@@ -247,8 +243,8 @@ sharded suite on `main` as the environment-drift audit.
   merges happen only through the gate:
   - Four required status checks, all on the PR's head commit: `plan`,
     `build-and-test`, `tier drives` (the fixed-name aggregator in
-    checks.yml — it passes only when the tier job for the change's tier or
-    the full shard battery succeeded, and fails closed when neither ran),
+    checks.yml — it passes only when the full shard battery succeeded,
+    and fails closed when it did not run),
     and `codex review gate`.
   - Codex's automatic cloud review is a required verdict, not a courtesy:
     it posts no check of its own, so `.github/workflows/codex-bridge.yml`
@@ -285,6 +281,18 @@ sharded suite on `main` as the environment-drift audit.
     checks expected; with enforce_admins on, protection binds the push
     route too, not just merges). As of 2026-11-12 every change rides this
     gate, Tier-1 small visuals included.
+
+- **Test machinery (Clause 1 of the retired tier map, carried here by
+  the testing-efficiency rollout, 2026-11-23).** **Clause 1 — test changes follow their feature.** The drive files
+  (`tests/browser/drive*.mjs`) are how a feature's checks ship; they are
+  not deep mechanics, and a change to drive files is judged as part of
+  its feature's change. What IS the test *machinery* — the thing that
+  decides and runs the verdicts, changed only with verdict fixtures and
+  mutation receipts — is `tests/browser/harness*.mjs`, the runners
+  (`tests/**/run*.mjs`, `scripts/run-proofs.py`), the gate scripts
+  (`scripts/check-*.py`, `scripts/push.py`, `scripts/gen-shards.py`) and
+  the checks workflow. Everything else under `tests/` (fixtures,
+  selftests, the service-worker test) is test content, not machinery.
 
 ## 4. Data protection and backward compatibility
 

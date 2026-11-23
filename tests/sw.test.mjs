@@ -33,6 +33,43 @@ const cacheFirst = globalThis.cacheFirst;
 const staleWhileRevalidate = globalThis.staleWhileRevalidate;
 const mapFetch = globalThis.mapFetch;
 
+// Fake clock (testing-efficiency rollout, 2026-11-23): this suite used to
+// burn ~34 s of real time per run waiting out the worker's real bounds
+// (the 2 s navigation shortcut, the 5 s/8 s stall races, slow-network
+// fetches landing at 4.2 s). The worker's bounds are plain setTimeout
+// races, so the suite now runs on a virtual clock: setTimeout /
+// clearTimeout / Date.now are faked, and each timed case starts its
+// promise, advances virtual time past the relevant bound, and awaits.
+// EVERY assertion is unchanged - the time-based ones (bounded <20 s,
+// served FAST <4 s) now read the virtual serve instant, which is the
+// quantity they always meant. Cases with no timers complete on
+// microtasks alone, exactly as before.
+let vNow = 0;
+let timerSeq = 0;
+const timers = new Map();
+globalThis.setTimeout = (fn, ms = 0, ...args) => { const id = ++timerSeq; timers.set(id, { at: vNow + Math.max(0, Number(ms) || 0), fn, args }); return id; };
+globalThis.clearTimeout = id => { timers.delete(id); };
+Date.now = () => vNow;
+const flushMicro = () => new Promise(r => setImmediate(r));
+async function advance(ms) {
+  const until = vNow + ms;
+  for (;;) {
+    // Flush FIRST each round: an async function registers its timers only
+    // after its first await yields, so scanning before flushing would see
+    // an empty queue and strand the promise (the suite's first fake-clock
+    // run hung exactly here).
+    await flushMicro();
+    let next = null;
+    for (const [id, t] of timers) if (t.at <= until && (!next || t.at < next.t.at || (t.at === next.t.at && id < next.id))) next = { id, t };
+    if (!next) break;
+    timers.delete(next.id);
+    vNow = Math.max(vNow, next.t.at);
+    next.t.fn(...next.t.args);
+  }
+  vNow = until;
+  await flushMicro();
+}
+
 const req = new Request('https://example.test/app/');
 const cachedResp = new Response('CACHED-SHELL', { status: 200 });
 const results = [];
@@ -92,7 +129,7 @@ putThrows = false;
 // must be awaited and used, not abandoned for an error/cache miss.
 store.clear();
 fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('SLOW-OK', { status: 200 }); };
-r = await netFirst(req, 'c');
+const p8 = netFirst(req, 'c'); await advance(5000); r = await p8;
 check('SEC-7 slow network response is awaited and returned', (await r.text()) === 'SLOW-OK');
 check('SEC-7 slow response gets cached', store.has(req.url));
 
@@ -123,10 +160,13 @@ store.clear(); store.set(req.url, cachedResp.clone());
 fetchImpl = () => new Promise(() => {});   // never settles
 const navReq = { url: req.url, mode: 'navigate' };
 const t0 = Date.now();
-r = await netFirst(navReq, 'c');
+let servedAt = null;
+const p11 = netFirst(navReq, 'c').then(v => { servedAt = Date.now() - t0; return v; });
+await advance(3000);
+r = await p11;
 check('B03 stalled navigation falls back to cache', (await r.text()) === 'CACHED-SHELL');
-check('B03 fallback is bounded (<20s)', Date.now() - t0 < 20000);
-check('1.221 stalled navigation serves the cache FAST (<4s, was ~8.5s)', Date.now() - t0 < 4000);
+check('B03 fallback is bounded (<20s)', servedAt < 20000);
+check('1.221 stalled navigation serves the cache FAST (<4s, was ~8.5s)', servedAt < 4000);
 
 // 11b. Beta 1.221 (webperf piece 6): a stalled navigation with a cached shell
 // serves the shell at the 2 s mark, and the SAME fetch, still running in the
@@ -136,9 +176,12 @@ store.clear(); store.set(req.url, cachedResp.clone());
 fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('FRESH-SHELL', { status: 200 }); };
 const navReq2 = { url: req.url, mode: 'navigate' };
 const t1 = Date.now();
-r = await netFirst(navReq2, 'c');
-check('1.221 slow navigation serves the cached shell at once', (await r.text()) === 'CACHED-SHELL' && Date.now() - t1 < 4000);
-await new Promise(res => setTimeout(res, 3000));   // let the background fetch land (4.2s mark + the put)
+let servedAt1 = null;
+const p11b = netFirst(navReq2, 'c').then(v => { servedAt1 = Date.now() - t1; return v; });
+await advance(2500);
+r = await p11b;
+check('1.221 slow navigation serves the cached shell at once', (await r.text()) === 'CACHED-SHELL' && servedAt1 < 4000);
+await advance(3000);   // let the background fetch land (4.2s mark + the put)
 check('1.221 background refresh updates the cached shell', (await store.get(req.url).text()) === 'FRESH-SHELL');
 
 // 11c. Beta 1.221: a slow navigation with NOTHING cached still awaits the real
@@ -146,7 +189,7 @@ check('1.221 background refresh updates the cached shell', (await store.get(req.
 // to serve early).
 store.clear();
 fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('FIRST-SHELL', { status: 200 }); };
-r = await netFirst(navReq2, 'c');
+const p11c = netFirst(navReq2, 'c'); await advance(5000); r = await p11c;
 check('1.221 uncached slow navigation awaits the network answer', (await r.text()) === 'FIRST-SHELL');
 
 // 11d. Beta 1.221 gate fix (Codex P2, PR #98): the Update reload navigation
@@ -156,7 +199,7 @@ check('1.221 uncached slow navigation awaits the network answer', (await r.text(
 store.clear(); store.set(req.url, cachedResp.clone());
 fetchImpl = async () => { await new Promise(res => setTimeout(res, 3000)); return new Response('NEW-SHELL', { status: 200 }); };
 const updReq = { url: req.url + '?updnav=1&v=1', mode: 'navigate' };
-r = await updNav(updReq, 'c');
+const p11d = updNav(updReq, 'c'); await advance(3500); r = await p11d;
 check('1.221 updnav slow network serves the NEW shell, not the cached one', (await r.text()) === 'NEW-SHELL');
 check('1.221 updnav stores the new shell under the canonical scope key', (await store.get(req.url).text()) === 'NEW-SHELL');
 check('1.221 updnav stores the new shell under the index.html key', (await store.get(req.url + 'index.html').text()) === 'NEW-SHELL');
@@ -167,9 +210,9 @@ check('1.221 updnav stores the new shell under the index.html key', (await store
 store.clear(); store.set(req.url, cachedResp.clone());
 fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('FRESH-SHELL', { status: 200 }); };
 const navReqQ = { url: req.url + '?from=shortcut', mode: 'navigate' };
-r = await netFirst(navReqQ, 'c');
+const p11e = netFirst(navReqQ, 'c'); await advance(2500); r = await p11e;
 check('1.221 query navigation serves the cached shell at once', (await r.text()) === 'CACHED-SHELL');
-await new Promise(res => setTimeout(res, 3000));
+await advance(3000);
 check('1.221 query navigation background refresh updates the canonical shell', (await store.get(req.url).text()) === 'FRESH-SHELL');
 
 // 12. Beta 1.48 (audit B07): SWR answers from cache at once AND binds the
@@ -199,12 +242,13 @@ const tileCacheMock = {
 };
 // 10. F09 (Beta 1.64): a map JSON request whose network NEVER settles must
 // still reach its cached fallback - the wait is bounded (3.5 s race + 8 s);
-// it used to hang forever despite a cached copy. (This case takes ~11.5 s
-// by design - it waits out the real bound. It sits before the seed section
+// it used to hang forever despite a cached copy. (This case waits out the
+// full ~11.5 s bound - on the suite's virtual clock, so it costs no real
+// time. It sits before the seed section
 // below replaces the caches mock.)
 store.clear(); store.set(styleReq.url, cachedResp.clone());
 fetchImpl = () => new Promise(() => {});
-r = await netFirst(styleReq, 'c');
+const pF09 = netFirst(styleReq, 'c'); await advance(12000); r = await pF09;
 check('F09 stalled style request falls back to cache', (await r.text()) === 'CACHED-SHELL');
 
 globalThis.caches = { async open() { return tileCacheMock; } };

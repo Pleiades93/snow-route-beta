@@ -8907,6 +8907,12 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 section1-release"
+  },
+  {
+   "id": "testing-rollout-2026-11-23",
+   "kind": "machinery-exempt",
+   "reason": "Testing-efficiency rollout: CI/test machinery only (checks.yml, scripts/, tests/) - no parts/ surface is touched by any commit in this round; the app stays byte-identical to Beta 1.281.",
+   "issued": "2026-11-23, testing-rollout round, before its first push"
   }
  ]
 }

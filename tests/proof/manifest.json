@@ -1,114 +1,29 @@
 {
- "about": "Proof manifest (protocol fix round, 2026-11-17). The gate runs every proof under \"run\" in build-and-test at every tier via scripts/run-proofs.py - registering a proof is adding its name here, never editing checks.yml. A proof whose subject has left the app moves to \"retired\" with the reason recorded; scripts/check-proof-coverage.py fails the build if any file in tests/proof/ is in neither list, if a listed name does not exist, or if a retired entry carries no reason. Proof files never classify a round's tier (scripts/select-tier.py treats tests/proof/** as ride-along, like drive files).",
- "run": [
-  "proof-1223.mjs",
-  "proof-1224.mjs",
-  "proof-1225.mjs",
-  "proof-1226.mjs",
-  "proof-1227.mjs",
-  "proof-1228.mjs",
-  "proof-1229.mjs",
-  "proof-1230.mjs",
-  "proof-1231.mjs",
-  "proof-1232.mjs",
-  "proof-1233.mjs",
-  "proof-1234.mjs",
-  "proof-1235.mjs",
-  "proof-1236.mjs",
-  "proof-1237.mjs",
-  "proof-1238.mjs",
-  "proof-1241.mjs",
-  "proof-1242.mjs",
-  "proof-1243.mjs",
-  "proof-1244.mjs",
-  "proof-1245.mjs",
-  "proof-1246.mjs",
-  "proof-1247.mjs",
-  "proof-1249.mjs",
-  "proof-1250.mjs",
-  "proof-1251.mjs",
-  "proof-1252.mjs",
-  "proof-1253.mjs",
-  "proof-1254.mjs",
-  "proof-1255.mjs",
-  "proof-1256.mjs",
-  "proof-1257.mjs",
-  "proof-1259.mjs",
-  "proof-1260.mjs",
-  "proof-1262.mjs",
-  "proof-1263.mjs",
-  "proof-1264.mjs",
-  "proof-1265.mjs",
-  "proof-1267.mjs",
-  "proof-1268.mjs",
-  "proof-1269.mjs",
-  "proof-1270.mjs",
-  "proof-clearall-sibling-maps.mjs",
-  "proof-create-class-pills.mjs",
-  "proof-create-glow-casing-fix.mjs",
-  "proof-create-zoom-tapaway.mjs",
-  "proof-fixlog-runv-guard-b02.mjs",
-  "proof-green-half-road.mjs",
-  "proof-icon-glyph-1221.mjs",
-  "proof-icon-swap-1213.mjs",
-  "proof-leftside-removal-b05.mjs",
-  "proof-load-sanitizer-a01a02.mjs",
-  "proof-mergestrands-score.mjs",
-  "proof-mut-idb-open.mjs",
-  "proof-mut-load-gate.mjs",
-  "proof-mut-map-ready.mjs",
-  "proof-mut-nameit.mjs",
-  "proof-mut-refrun.mjs",
-  "proof-osmnames-clearall-twin.mjs",
-  "proof-pack-cache-c01.mjs",
-  "proof-pack-cache-c02.mjs",
-  "proof-rerun-d04-streetparts-covstamp.mjs",
-  "proof-rerun-denylist-a05.mjs",
-  "proof-rerun-denylist-b02.mjs",
-  "proof-selcard-note-move.mjs",
-  "proof-selcard-width-262.mjs",
-  "proof-shader-glow-round.mjs",
-  "proof-soft-1222.mjs",
-  "proof-street-end-width-fix.mjs",
-  "proof-sweep-20261112-114949-b-07.mjs",
-  "proof-sweep-20261112-114949-b-08.mjs",
-  "proof-sweep-20261115-071313-c-06.mjs",
-  "proof-sweep-20261115-071313-d-01.mjs",
-  "proof-sweep-20261115-171048-b-05.mjs",
-  "proof-sweep-20261115-171048-e-01.mjs",
-  "proof-trim-glow-path-pills.mjs",
-  "proof-wording-finished-cleans.mjs",
-  "proof-1271.mjs",
-  "proof-1272.mjs",
-  "proof-prep-begin-owner.mjs",
-  "proof-cov-owner.mjs",
-  "proof-response-consumption.mjs",
-  "proof-city-search-owner.mjs"
- ],
- "retired": [
-  {
-   "file": "proof-rerun-css-batch.mjs",
-   "reason": "Needs playwright-core + a Chromium through maintainer-VM-only paths (its header: PLAYWRIGHT_CORE / CHROME_BIN env; it resolves the shots directory's node_modules on the maintainer VM), so it cannot run in CI's build-and-test - proven on PR #107, where it failed with 'playwright-core not resolvable' while the other 37 proofs passed. It passes locally (46/46 checks, 2026-11-17) and stays runnable there on demand; the CSS surfaces it measured are covered in CI by the drive battery. Retired from the gate manifest by the protocol fix round, 2026-11-17."
-  },
-  {
-   "file": "proof-sweep-20261115-071313-d-03.mjs",
-   "reason": "Beta 1.243: its subject - importDraft, the photo door's draft-import half - is removed from the app with the Upload photo door, so the D-03 defect class it pinned dies with the feature. The file stays on disk as the record, like proof-rerun-css-batch."
-  },
-  {
-   "file": "proof-1248.mjs",
-   "reason": "Its subject no longer exists: Beta 1.258 (Andrew's decision, 2026-11-20) retired the app's own street titles (streetnamespt1-4 over labelpts) and the 1.248 re-placement helper this proof pinned, and made the basemap's own road labels the street-name system. The retirement's pins live in proof-1258; drive130 grades the rendered rule. Kept on disk as the 1.248 round's record; do not re-add to run."
-  },
-  {
-   "file": "proof-1258.mjs",
-   "reason": "Beta 1.261 (labelmix-1261): its subject - the 1.258 retirement of the app title system - is reversed by Andrew's decision of 2026-11-20 (the label mix: the titles are restored below zoom 15, capped there, with the basemap full names at 15 and up). Its pins assert the titles' absence and the lane-era basemap shape, so they invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.258 round, like proof-1248 before it; the mix's shape is pinned by proof-1261 and graded in the rendered page by drive214's M sections."
-  },
-  {
-   "file": "proof-1261.mjs",
-   "reason": "Beta 1.263 (labelrevert-1263): its subject - the 1.261 label mix (titles capped at 15, the '-pre15' band split, the standing heal) - is reversed by Andrew's decision of 2026-11-21 (\"We should revert the naming system to before all this\"), after the heal's per-settle teardown measured as the street-name flicker (33 of 33 titles dropped at every settle). Its seam, band and heal pins invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.261 round, like proof-1258 before it; the reverted shape is pinned by proof-1263 and graded in the rendered page by drive214's reworked M sections and drive216."
-  },
-  {
-   "file": "proof-1266.mjs",
-   "reason": "Beta 1.270 (SYNC round): its subject - the 1.266 unified load-in (every name held for the whole window, the one re-place inside the hold, the joint reveal with its two backstops) - is retired by Andrew's synchronised-streaming decision of 2026-11-21, taken on his lived verdict on 1.266 (a nameless wait, then a pop). Its pins assert the hold cycle's presence, so they invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.266 round, like proof-1261 before it; the streaming shape is pinned by proof-1270 and graded in the rendered page by drive219's rewritten lane."
-  }
- ]
+  "about": "Every proof file on disk runs in the gate (scripts/run-proofs.py derives the run list from the tests/proof/ glob) unless it is listed under \"retired\" with a reason - testing-efficiency rollout, 2026-11-23. The hand-kept \"run\" list this manifest used to carry is deleted: registering a proof is dropping in the file, and retiring one is one entry here with its reason. check-proof-coverage.py guards the retired list.",
+  "retired": [
+    {
+      "file": "proof-rerun-css-batch.mjs",
+      "reason": "Needs playwright-core + a Chromium through maintainer-VM-only paths (its header: PLAYWRIGHT_CORE / CHROME_BIN env; it resolves the shots directory's node_modules on the maintainer VM), so it cannot run in CI's build-and-test - proven on PR #107, where it failed with 'playwright-core not resolvable' while the other 37 proofs passed. It passes locally (46/46 checks, 2026-11-17) and stays runnable there on demand; the CSS surfaces it measured are covered in CI by the drive battery. Retired from the gate manifest by the protocol fix round, 2026-11-17."
+    },
+    {
+      "file": "proof-sweep-20261115-071313-d-03.mjs",
+      "reason": "Beta 1.243: its subject - importDraft, the photo door's draft-import half - is removed from the app with the Upload photo door, so the D-03 defect class it pinned dies with the feature. The file stays on disk as the record, like proof-rerun-css-batch."
+    },
+    {
+      "file": "proof-1248.mjs",
+      "reason": "Its subject no longer exists: Beta 1.258 (Andrew's decision, 2026-11-20) retired the app's own street titles (streetnamespt1-4 over labelpts) and the 1.248 re-placement helper this proof pinned, and made the basemap's own road labels the street-name system. The retirement's pins live in proof-1258; drive130 grades the rendered rule. Kept on disk as the 1.248 round's record; do not re-add to run."
+    },
+    {
+      "file": "proof-1258.mjs",
+      "reason": "Beta 1.261 (labelmix-1261): its subject - the 1.258 retirement of the app title system - is reversed by Andrew's decision of 2026-11-20 (the label mix: the titles are restored below zoom 15, capped there, with the basemap full names at 15 and up). Its pins assert the titles' absence and the lane-era basemap shape, so they invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.258 round, like proof-1248 before it; the mix's shape is pinned by proof-1261 and graded in the rendered page by drive214's M sections."
+    },
+    {
+      "file": "proof-1261.mjs",
+      "reason": "Beta 1.263 (labelrevert-1263): its subject - the 1.261 label mix (titles capped at 15, the '-pre15' band split, the standing heal) - is reversed by Andrew's decision of 2026-11-21 (\"We should revert the naming system to before all this\"), after the heal's per-settle teardown measured as the street-name flicker (33 of 33 titles dropped at every settle). Its seam, band and heal pins invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.261 round, like proof-1258 before it; the reverted shape is pinned by proof-1263 and graded in the rendered page by drive214's reworked M sections and drive216."
+    },
+    {
+      "file": "proof-1266.mjs",
+      "reason": "Beta 1.270 (SYNC round): its subject - the 1.266 unified load-in (every name held for the whole window, the one re-place inside the hold, the joint reveal with its two backstops) - is retired by Andrew's synchronised-streaming decision of 2026-11-21, taken on his lived verdict on 1.266 (a nameless wait, then a pop). Its pins assert the hold cycle's presence, so they invert by the decision itself, not by a defect. The file stays on disk as the record of the 1.266 round, like proof-1261 before it; the streaming shape is pinned by proof-1270 and graded in the rendered page by drive219's rewritten lane."
+    }
+  ]
 }

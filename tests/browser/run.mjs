@@ -32,8 +32,59 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 // 167 (->147), 179 (->178), 119 (->e2e-offline E24). Duplicate checks cut
 // only where a line-level proof showed an equal-or-stronger assertion in
 // the host; see the restructure record for the per-merge proofs.
-const ALL = ['drive83', 'drive86', 'drive88', 'drive89', 'drive114', 'drive115', 'drive116', 'drive117', 'drive118', 'drive120', 'drive121', 'drive123', 'drive124', 'drive125', 'drive126', 'drive127', 'drive128', 'drive129', 'drive130', 'drive131', 'drive132', 'drive133', 'drive135', 'drive136', 'drive140', 'drive141', 'drive142', 'drive143', 'drive145', 'drive146', 'drive147', 'drive148', 'drive149', 'drive150', 'drive151', 'drive152', 'drive153', 'drive154', 'drive155', 'drive156', 'drive159', 'drive160', 'drive161', 'drive162', 'drive163', 'drive164', 'drive165', 'drive166', 'drive168', 'drive169', 'drive170', 'drive171', 'drive172', 'drive173', 'drive174', 'drive175', 'drive176', 'drive177', 'drive178', 'drive180', 'drive181', 'drive182', 'drive183', 'drive184', 'drive185', 'drive186', 'drive187', 'drive188', 'drive189', 'drive190', 'drive191', 'drive192', 'drive193', 'drive194', 'drive195', 'drive196', 'drive197', 'drive198', 'drive199', 'drive200', 'drive203', 'drive204', 'drive205', 'drive206', 'drive207', 'drive208', 'drive209', 'drive210', 'drive211', 'drive212', 'drive213', 'drive214', 'drive215', 'drive216', 'drive217', 'drive218', 'drive219', 'drive220', 'drive221', 'drive222'];
-const names = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
+// Testing-efficiency rollout (2026-11-23): the roster is GENERATED from
+// the disk - every drive*.mjs file in this directory is in the battery,
+// so adding a drive is dropping in the file, never editing a list here
+// (the hand-kept ALL list this replaces drifted exactly the way the
+// generated shard lists did). check-shard-coverage.py proves this glob,
+// scripts/shard-durations.json and the partition all name the same set.
+const ALL = fs.readdirSync(HERE)
+  .filter(f => /^drive\d+\.mjs$/.test(f))
+  .map(f => f.slice(0, -4))
+  .sort((a, b) => Number(a.slice(5)) - Number(b.slice(5)));
+
+// Runtime shard balancing (testing-efficiency rollout, 2026-11-23): the
+// eight CI shards used to be hand-pasted drive lists in checks.yml,
+// generated offline by scripts/gen-shards.py - a mirror that could drift
+// from the durations it was balanced on. The runner now computes its own
+// share at runtime from scripts/shard-durations.json, using the SAME
+// deterministic partition rule gen-shards.py states (longest-processing-
+// time: drives sorted by duration descending, ties by name, each assigned
+// to the currently lightest shard, ties to the lowest shard number; a
+// drive with no measured duration gets the median of the measured set;
+// names ascending inside a shard). scripts/check-shard-coverage.py
+// proves this partition and the Python statement agree shard for shard,
+// and that the durations file names exactly the roster.
+//   node tests/browser/run.mjs --shard 3          run shard 3's drives
+//   node tests/browser/run.mjs --shard 3 --list   print them, run nothing
+const SHARD_COUNT = 8;
+function shardPartition() {
+  const dur = JSON.parse(fs.readFileSync(path.join(HERE, '..', '..', 'scripts', 'shard-durations.json'), 'utf8')).seconds;
+  const known = ALL.filter(n => n in dur).map(n => dur[n]).sort((a, b) => a - b);
+  const mid = known.length / 2;
+  const fallback = known.length === 0 ? 10 : (Number.isInteger(mid) ? (known[mid - 1] + known[mid]) / 2 : known[Math.floor(mid)]);
+  const weight = n => (n in dur ? dur[n] : fallback);
+  const order = [...ALL].sort((a, b) => (weight(b) - weight(a)) || (a < b ? -1 : a > b ? 1 : 0));
+  const shards = Array.from({ length: SHARD_COUNT }, () => []);
+  const totals = new Array(SHARD_COUNT).fill(0);
+  for (const n of order) {
+    let best = 0;
+    for (let k = 1; k < SHARD_COUNT; k++) if (totals[k] < totals[best]) best = k;
+    shards[best].push(n); totals[best] += weight(n);
+  }
+  return shards.map(s => s.sort());
+}
+const argv = process.argv.slice(2);
+let names;
+if (argv.includes('--shard')) {
+  const n = Number(argv[argv.indexOf('--shard') + 1]);
+  const shards = shardPartition();
+  if (!(Number.isInteger(n) && n >= 1 && n <= SHARD_COUNT)) { console.error(`run.mjs: --shard needs an integer 1..${SHARD_COUNT}, got ${argv[argv.indexOf('--shard') + 1]}`); process.exit(2); }
+  if (argv.includes('--list')) { console.log(shards[n - 1].join(' ')); process.exit(0); }
+  names = shards[n - 1];
+} else {
+  names = argv.length ? argv : ALL;
+}
 const TIMEOUT_MS = Number(process.env.RUNNER_TIMEOUT_MS) || 300000;
 
 // Tranche 1 (2026-11-07) cleanup ownership: each drive spawns DETACHED,
@@ -98,6 +149,10 @@ function parseResults(out) {
 let allPass = true;
 for (const name of names) {
   const r = await runOne(name);
+  // Testing-efficiency rollout (2026-11-23): surface the harness's fetch
+  // failures in the run log even when the drive itself passes - before this
+  // they died in the child's stderr, which is only printed on failure paths.
+  for (const line of String(r.err || '').split('\n')) if (line.startsWith('[harness fetch-fail]')) console.log(`${name}: ${line}`);
   if (r.timedOut) {
     console.log(`${name}: FAIL - timed out after ${TIMEOUT_MS}ms and was killed`);
     allPass = false;
@@ -105,7 +160,7 @@ for (const name of names) {
   }
   const R = parseResults(r.out);
   if (!R || !Array.isArray(R.checks)) {
-    console.log(`${name}: FAIL - no result block (exit ${r.code})` + (r.err ? `\n  stderr: ${r.err.slice(0, 300)}` : ''));
+    console.log(`${name}: FAIL - no result block (exit ${r.code})` + (r.err ? `\n  stderr: ${r.err}` : '')); // full stderr (testing-efficiency rollout, 2026-11-23): the 300-char cut hid the actual error on exactly the failures that needed diagnosing
     allPass = false;
     continue;
   }
@@ -114,7 +169,7 @@ for (const name of names) {
   const empty = R.checks.length === 0; // Beta 1.94 (deep audit SR-193-06): an empty checks array used to PASS - a drive that ran nothing proved nothing, and a harness break that swallowed a drive's checks would have shipped as green. Zero checks is a failure, named as such.
   const pass = r.code === 0 && !empty && failed.length === 0 && exc === 0 && !R.fatal;
   if (!pass) allPass = false;
-  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : '') + (empty ? ' (no checks ran)' : '') + (R.fatal ? ` FATAL: ${String(R.fatal).slice(0, 300)}` : ''));
+  console.log(`${name}: ${R.checks.length - failed.length}/${R.checks.length} checks, ${exc} exceptions - ${pass ? 'PASS' : 'FAIL'}` + (r.code !== 0 ? ` (child exit ${r.code})` : '') + (empty ? ' (no checks ran)' : '') + (R.fatal ? ` FATAL: ${String(R.fatal)}` : ''));
   for (const [n] of failed) console.log(`  FAILED: ${n}`);
   if (Array.isArray(R.exceptions)) for (const x of R.exceptions) console.log(`  EXC: ${x}`);
 }

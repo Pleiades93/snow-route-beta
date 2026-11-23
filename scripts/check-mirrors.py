@@ -3,8 +3,10 @@
 class C4 generalized: a hand-maintained mirror of state the change
 just moved, updated late or never, caught at the gate).
 
-Phase 2 closed C4's roster instance (scripts/check-tier-map.py
-section 4, disk completeness) and the shape kept firing on every
+Phase 2 closed C4's roster instance (the tier-map guard's
+section 4, disk completeness - that guard was retired with the tiers
+by the testing-efficiency rollout, 2026-11-23; its completeness claim
+lives on in scripts/check-shard-coverage.py) and the shape kept firing on every
 surface that guard does not cover: round112's extraction-selftest
 sandbox state (Beta 1.254), scripts/app1-types.d.ts (Beta 1.258 AND
 1.259 round 6), the packfields selftest's expectations (1.259

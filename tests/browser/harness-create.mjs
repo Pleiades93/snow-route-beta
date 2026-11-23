@@ -74,7 +74,7 @@ async function passthroughFulfil(sessionId, p, H) {
     const r = await fetch(p.request.url, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' } });
     const buf = Buffer.from(await r.arrayBuffer());
     await H.send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: r.status, responseHeaders: [{ name: 'Content-Type', value: r.headers.get('content-type') || 'application/octet-stream' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: buf.toString('base64') }, sessionId);
-  } catch (e) { try { await H.send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); } catch (e2) {} }
+  } catch (e) { console.error('[harness fetch-fail] ' + p.request.url + ' :: ' + ((e && e.message) || e)); try { await H.send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); } catch (e2) {} } // testing-efficiency rollout (2026-11-23): log the failed fulfil like harness.mjs - it was swallowed silently
 }
 
 export async function startCreateRig({ profile, fulfil = null, jsonMode = 'coded', autoAttach = true, evaluateMode = 'throw', disableFeatures = 'LocalNetworkAccessChecks', extraFlags = [], devtoolsErrorWithBuf = false, onPaused = null } = {}) {

@@ -10,10 +10,12 @@ itself, and scripts/build-pages.py asserts this derivation on every
 build, so a stale count fails the build instead of shipping quietly.
 
 What the derived numbers mean — the counting rule (the ONLY definition):
-  * drives      = the number of names in the ALL list of
-                  tests/browser/run.mjs (the suite's own roster).
+  * drives      = the number of drive files in tests/browser/
+                  (the drive*.mjs glob - the suite's own roster since
+                  the testing-efficiency rollout, 2026-11-23; run.mjs
+                  rosters itself from the same glob).
   * drive checks = the assertion call sites of the suite: for every
-                  drive file in ALL, the lines' calls to ok( or okS(,
+                  drive file in the roster, the lines' calls to ok( or okS(,
                   excluding the lines that DEFINE those helpers
                   (`const ok = ...` / `const okS = ...`). Two drives
                   (117, 119) wrap ok in a strict okS; the wrapper's own
@@ -65,11 +67,9 @@ def _count_sites(path: Path, helpers: tuple) -> int:
 def suite_counts(root: Path = ROOT) -> dict:
     """Derive the battery counts from the suite (see module docstring)."""
     browser = root / "tests" / "browser"
-    run_mjs = (browser / "run.mjs").read_text(encoding="utf-8")
-    m = re.search(r"const ALL = \[([^\]]*)\]", run_mjs)
-    assert m, "release: run.mjs carries no ALL list"
-    names = re.findall(r"'([^']+)'", m.group(1))
-    assert names, "release: run.mjs ALL list is empty"
+    names = sorted(p.stem for p in browser.glob("drive*.mjs")
+                   if re.fullmatch(r"drive\d+", p.stem))
+    assert names, "release: no drive files in tests/browser/"
     drives = len(names)
     drive_checks = sum(
         _count_sites(browser / (n + ".mjs"), ("ok", "okS")) for n in names

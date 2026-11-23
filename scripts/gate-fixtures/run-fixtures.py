@@ -3,7 +3,7 @@
 (2026-11-17; added on the PR #107 Codex P1 - judging logic ships
 with fixtures, docs/TESTING.md rule 1).
 
-scripts/check-tier-map.py, scripts/check-proof-coverage.py,
+scripts/check-proof-coverage.py,
 scripts/run-proofs.py, scripts/push.py (plan mode),
 scripts/sweep-check.py, scripts/check-receipts.py (the mutation-
 receipt gate, /correct Phase 3 round (b)),
@@ -13,9 +13,9 @@ decide pass/fail for the gate. Running them
 against the real repository proves only their happy path; these
 fixtures run each script against synthetic trees in a temp directory
 and assert BOTH verdicts: the valid tree passes, and every documented
-failure class (dangling roster entry, JSON/MD roster drift, a roster
-drive outside the runner's ALL list, an unlisted or duplicated proof,
-a retirement without a reason, a manifest naming a missing file, a
+failure class (a leftover hand-kept proof run list, a duplicated
+retirement, a retirement without a reason, a retirement naming a
+missing file, a
 proof exiting nonzero, a proof timing out, a basename-only push
 entry, a parts push missing its derived artifacts, stale derived
 artifacts, an omitted assembly input, an input-only push, a
@@ -28,7 +28,10 @@ declaration typedef drifted from its source list, a cross-part
 global whose home part no longer declares it, an assembled part
 outside the foreign-write census and its named exclusions, a
 selftest on disk wired nowhere in CI, shard lists hand-edited away
-from the generated partition, a judging script missing from the
+from the generated partition, a shard durations file missing a drive
+or naming a non-drive, a shard partition covering a drive twice, a
+runner partition disagreeing with the partition statement, a smoke
+list naming a non-roster drive, a judging script missing from the
 receipts gate's judge list, a push carrying a drifted mirror) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
@@ -68,65 +71,6 @@ def w(path, text):
     path.write_text(text, encoding="utf-8")
 
 
-# ---------------------------------------------------------------- tier-map
-def tm_tree(base, *, json_family=("drive7",), md_family="7", md_core=None,
-            all_drives=("drive1", "drive2", "drive3", "drive4", "drive5",
-                        "drive6", "drive7", "drive8"),
-            files=("drive1", "drive2", "drive3", "drive4", "drive5",
-                   "drive6", "drive7", "drive8")):
-    core = ["drive1", "drive2", "drive3", "drive4", "drive5", "drive6"]
-    tmap = {"tier_a_core": core,
-            "families": {"map": {"drives": list(json_family),
-                                 "paths": ["parts/engine.js"]}}}
-    w(base / "tests/tier-map.json", json.dumps(tmap))
-    w(base / "tests/quarantine.json", json.dumps({"quarantined": []}))
-    core_md = md_core if md_core is not None else " ".join(core)
-    w(base / "tests/TIER-MAP.md",
-      "# Tier map (fixture)\n\n"
-      f"Gate: build-and-test + the core set: `{core_md}`.\n\n"
-      "| Family | Paths | Drives |\n| --- | --- | --- |\n"
-      f"| map | `parts/engine.js` | {md_family} |\n")
-    all_src = "const ALL = [" + ",".join(f"'{d}'" for d in all_drives) + "]\n"
-    w(base / "tests/browser/run.mjs", all_src)
-    for d in files:
-        w(base / f"tests/browser/{d}.mjs", "// fixture drive\n")
-    return base
-
-
-with tempfile.TemporaryDirectory() as td:
-    t = Path(td)
-    check("tier-map: a consistent tree passes",
-          run("check-tier-map.py", tm_tree(t / "ok")), 0)
-    check("tier-map: a roster entry with no drive file fails",
-          run("check-tier-map.py", tm_tree(
-              t / "dangling", json_family=("drive7", "drive99"),
-              md_family="7 99")), 1)
-    check("tier-map: JSON/MD family drift fails",
-          run("check-tier-map.py", tm_tree(
-              t / "famdrift", json_family=("drive7", "drive8"),
-              md_family="7")), 1)
-    check("tier-map: JSON/MD core drift fails",
-          run("check-tier-map.py", tm_tree(
-              t / "coredrift",
-              md_core="drive1 drive2 drive3 drive4 drive5")), 1)
-    check("tier-map: a roster drive outside run.mjs ALL fails",
-          run("check-tier-map.py", tm_tree(
-              t / "notinall", json_family=("drive7", "drive8"),
-              md_family="7 8",
-              all_drives=("drive1", "drive2", "drive3", "drive4",
-                          "drive5", "drive6", "drive7"))), 1)
-    check("tier-map: a drive file in no roster fails (completeness)",
-          run("check-tier-map.py", tm_tree(
-              t / "unregistered",
-              files=("drive1", "drive2", "drive3", "drive4", "drive5",
-                     "drive6", "drive7", "drive8", "drive9"))), 1)
-    check("tier-map: an ALL entry with no drive file fails (completeness)",
-          run("check-tier-map.py", tm_tree(
-              t / "phantom",
-              all_drives=("drive1", "drive2", "drive3", "drive4",
-                          "drive5", "drive6", "drive7", "drive8",
-                          "drive9"))), 1)
-
 # ----------------------------------------------------------- proof coverage
 def pc_tree(base, *, manifest, files):
     for f in files:
@@ -137,30 +81,29 @@ def pc_tree(base, *, manifest, files):
 
 with tempfile.TemporaryDirectory() as td:
     t = Path(td)
-    good = {"run": ["a.mjs"],
-            "retired": [{"file": "b.mjs", "reason": "subject left the app"}]}
-    check("proof-coverage: a complete manifest passes",
+    good = {"retired": [{"file": "b.mjs", "reason": "subject left the app"}]}
+    check("proof-coverage: an honest retired list passes",
           run("check-proof-coverage.py",
               pc_tree(t / "ok", manifest=good, files=("a.mjs", "b.mjs"))), 0)
-    check("proof-coverage: an unlisted proof file fails",
+    check("proof-coverage: a leftover run list fails",
           run("check-proof-coverage.py",
-              pc_tree(t / "unlisted", manifest=good,
-                      files=("a.mjs", "b.mjs", "c.mjs"))), 1)
-    check("proof-coverage: a duplicated listing fails",
+              pc_tree(t / "runlist", manifest={"run": ["a.mjs"], "retired": []},
+                      files=("a.mjs",))), 1)
+    check("proof-coverage: a duplicated retirement fails",
           run("check-proof-coverage.py",
               pc_tree(t / "dup",
-                      manifest={"run": ["a.mjs", "a.mjs"], "retired": []},
-                      files=("a.mjs",))), 1)
+                      manifest={"retired": [{"file": "b.mjs", "reason": "x"},
+                                            {"file": "b.mjs", "reason": "y"}]},
+                      files=("a.mjs", "b.mjs"))), 1)
     check("proof-coverage: a retirement without a reason fails",
           run("check-proof-coverage.py",
               pc_tree(t / "noreason",
-                      manifest={"run": ["a.mjs"],
-                                "retired": [{"file": "b.mjs", "reason": " "}]},
+                      manifest={"retired": [{"file": "b.mjs", "reason": " "}]},
                       files=("a.mjs", "b.mjs"))), 1)
-    check("proof-coverage: a manifest naming a missing file fails",
+    check("proof-coverage: a retirement naming a missing file fails",
           run("check-proof-coverage.py",
               pc_tree(t / "ghost",
-                      manifest={"run": ["ghost.mjs"], "retired": []},
+                      manifest={"retired": [{"file": "ghost.mjs", "reason": "gone"}]},
                       files=("a.mjs",))), 1)
 
 # --------------------------------------------------------------- run-proofs
@@ -176,21 +119,21 @@ FAIL_PROOF = "console.error('boom'); process.exit(3)\n"
 SLOW_PROOF = "setTimeout(() => {}, 5000)\n"
 with tempfile.TemporaryDirectory() as td:
     t = Path(td)
-    check("run-proofs: an all-pass manifest passes",
+    check("run-proofs: an all-pass tree passes",
           run("run-proofs.py", rp_tree(
-              t / "ok", manifest={"run": ["p.mjs"], "retired": []},
+              t / "ok", manifest={"retired": []},
               proofs={"p.mjs": PASS_PROOF})), 0)
     check("run-proofs: a proof exiting nonzero fails the run",
           run("run-proofs.py", rp_tree(
-              t / "badexit", manifest={"run": ["p.mjs"], "retired": []},
+              t / "badexit", manifest={"retired": []},
               proofs={"p.mjs": FAIL_PROOF})), 1)
-    check("run-proofs: a manifest naming a missing proof fails the run",
+    check("run-proofs: a retired proof does not run",
           run("run-proofs.py", rp_tree(
-              t / "ghost", manifest={"run": ["ghost.mjs"], "retired": []},
-              proofs={})), 1)
+              t / "retired", manifest={"retired": [{"file": "p.mjs", "reason": "subject left the app"}]},
+              proofs={"p.mjs": FAIL_PROOF, "q.mjs": PASS_PROOF})), 0)
     check("run-proofs: a proof past its timeout fails the run",
           run("run-proofs.py", rp_tree(
-              t / "slow", manifest={"run": ["p.mjs"], "retired": []},
+              t / "slow", manifest={"retired": []},
               proofs={"p.mjs": SLOW_PROOF}),
               env_extra={"PROOF_TIMEOUT_S": "1"}), 1)
 
@@ -822,8 +765,13 @@ def mirrors_tree(base, *, pack_typedef="name: string, ends: {}",
     w(base / "tests" / "browser" / "selftest-fixture.mjs", "// fixture selftest\n")
     if unwired:
         w(base / "tests" / "browser" / "selftest-unwired.mjs", "// never wired\n")
+    # The roster is the disk glob since the 2026-11-23 rollout: the
+    # fixture writes the drive files themselves, and run.mjs carries
+    # no list for the generator to read.
+    for d in drives:
+        w(base / "tests" / "browser" / f"{d}.mjs", "// fixture drive\n")
     w(base / "tests" / "browser" / "run.mjs",
-      "const ALL = [" + ",".join(f"'{d}'" for d in drives) + "]\n")
+      "// fixture runner: the roster is the drive*.mjs glob\n")
     w(base / "scripts" / "shard-durations.json", json.dumps({"seconds": {}}))
     # The shards family loads the generator from the tree under
     # check (PR #157 Codex P2), so the synthetic tree carries the
@@ -912,6 +860,70 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a tree whose mirrors agree pushes (mirrors gate)",
           run_push(t / "mpok", ["index.html"], mode="push", env_extra=mp_ok), 0)
 
-total = 66
+# ------------------------------------------------------- shard coverage
+def run_shard_coverage(root):
+    proc = subprocess.run([PY, str(root / "scripts" / "check-shard-coverage.py")],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+def shard_tree(base, *, drop_duration=None, extra_duration=None,
+               duplicate_in_partition=False, runner_shifts=False,
+               bogus_smoke=False):
+    """A miniature tree the REAL shard-coverage guard passes: eight
+    fixture drives, a durations file naming exactly them, and verbatim
+    copies of the guard, the partition statement (gen-shards.py) and
+    the runner (run.mjs, Node built-ins only, so its --list mode runs
+    in the bare tree). Each keyword breaks exactly one of the guard's
+    arms. Added on the PR #190 Codex P1 (testing-efficiency rollout):
+    the rewritten guard's failure paths were proven only by mutation
+    receipts; docs/TESTING.md rule 1 wants them as committed fixtures."""
+    drives = [f"drive{i}" for i in range(101, 109)]
+    for d in drives:
+        w(base / f"tests/browser/{d}.mjs", "// fixture drive\n")
+    seconds = {d: 10 + (i % 3) * 5 for i, d in enumerate(drives)}
+    if drop_duration:
+        seconds.pop(drop_duration)
+    if extra_duration:
+        seconds[extra_duration] = 5
+    w(base / "scripts/shard-durations.json", json.dumps({"seconds": seconds}))
+    gen = (ROOT / "scripts" / "gen-shards.py").read_text()
+    if duplicate_in_partition:
+        old = "return [sorted(s) for s in shards], totals, weight"
+        assert gen.count(old) == 1
+        gen = gen.replace(old, "shards[0] = shards[0] + shards[1][:1]\n    " + old)
+    w(base / "scripts" / "gen-shards.py", gen)
+    w(base / "scripts" / "check-shard-coverage.py",
+      (ROOT / "scripts" / "check-shard-coverage.py").read_text())
+    runner = (ROOT / "tests" / "browser" / "run.mjs").read_text()
+    if runner_shifts:
+        old = "shards[best].push(n); totals[best] += weight(n);"
+        assert runner.count(old) == 1
+        runner = runner.replace(
+            old, "shards[(best + 1) % SHARD_COUNT].push(n); totals[best] += weight(n);")
+    w(base / "tests" / "browser" / "run.mjs", runner)
+    smoke = "drive101 drive102" if not bogus_smoke else "drive101 drive999"
+    w(base / ".github" / "workflows" / "checks.yml",
+      "jobs:\n  smoke:\n    steps:\n"
+      f"      - run: node tests/browser/run.mjs {smoke}\n")
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("shard coverage: a faithful miniature tree passes",
+          run_shard_coverage(shard_tree(t / "sc-ok")), 0)
+    check("shard coverage: a drive with no duration entry fails",
+          run_shard_coverage(shard_tree(t / "sc-missing", drop_duration="drive108")), 1)
+    check("shard coverage: a duration entry naming no drive fails",
+          run_shard_coverage(shard_tree(t / "sc-extra", extra_duration="drive999")), 1)
+    check("shard coverage: a partition covering a drive twice fails",
+          run_shard_coverage(shard_tree(t / "sc-dupe", duplicate_in_partition=True)), 1)
+    check("shard coverage: a runner partition disagreeing with the statement fails",
+          run_shard_coverage(shard_tree(t / "sc-runner", runner_shifts=True)), 1)
+    check("shard coverage: a smoke list naming a non-roster drive fails",
+          run_shard_coverage(shard_tree(t / "sc-smoke", bogus_smoke=True)), 1)
+
+total = 72
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

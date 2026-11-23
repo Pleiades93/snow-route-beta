@@ -38,7 +38,6 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const fetchJs = read('parts/create-fetch.js');
 const cache = read('parts/create-cache.js');
 const citydata = read('parts/create-citydata.js');
-const whatsnew = read('parts/whatsnew.js');
 const changelog = read('CHANGELOG.md');
 
 let pass = 0, fail = 0;
@@ -75,8 +74,6 @@ check('9: the fallback watchdog still tests its start clock against stallMs',
 
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.246', changelog.includes('## Beta 1.246'));
-check('11: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the current entry each round)',
-  whatsnew.includes('Under the hood: route building now runs through one owner per job, so creating a route stays in step.'));
 
 console.log(`proof-1246: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

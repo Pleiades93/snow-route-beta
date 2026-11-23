@@ -544,12 +544,27 @@ await ev(`(() => {
 // fully in, and the title's centre steady across two polls.
 let lastCy = null, steady = 0;
 let notileBox = null; // the artwork-only proof (NOTILE below): the rendered box at the first fully-in hold poll
+let prevIconBox = null; // NOTILE2 hardening (testing-efficiency rollout, 2026-11-23): the box and the screenshot must be simultaneous - the old code took the box from the trace's last sample and shot a CDP round-trip later, so a still-moving icon put the 12%/12% sample on the wrong pixel. The capture now runs only after two consecutive polls report the SAME box, waits two animation frames, reads the box from getBoundingClientRect in the same evaluate, and re-shoots (up to 3 attempts) if the box moved across the shot.
+const readIconBox = async () => await ev(`(async () => { await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); const ic = document.getElementById('splashIcon'); if (!ic) return ''; const r = ic.getBoundingClientRect(); return JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null).catch(() => null);
+const captureNotile = async () => {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const boxNow = await readIconBox();
+    if (!boxNow || !(boxNow.w > 0)) return null;
+    try { await shot('drive180-notile.png'); } catch (e) { return null; }
+    const after = await readIconBox();
+    if (after && Math.abs(after.x - boxNow.x) <= 0.5 && Math.abs(after.y - boxNow.y) <= 0.5 && Math.abs(after.w - boxNow.w) <= 0.5 && Math.abs(after.h - boxNow.h) <= 0.5) return boxNow;
+  }
+  return null;
+};
 const waitT0 = Date.now();
 while (Date.now() - waitT0 < 30000) {
   const s = await ev(`(() => { const tr = window.__splashTrace; if (!tr || !tr.length) return ''; const last = tr[tr.length - 1]; const pane = document.getElementById('rmMain'); return JSON.stringify({ n: tr.length, shown: last.shown, cy: last.cy, t: last.t, iop: last.iop, ix: last.ix, iy: last.iy, iw: last.iw, ih: last.ih, paneOp: pane ? getComputedStyle(pane).opacity : '' }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null).catch(() => null);
   if (!notileBox && s && !s.shown && s.iop >= 0.99 && s.t >= 1600 && s.iw > 0) {
-    notileBox = { x: s.ix, y: s.iy, w: s.iw, h: s.ih };
-    try { await shot('drive180-notile.png'); } catch (e) { notileBox = null; }
+    const iconNow = { x: s.ix, y: s.iy, w: s.iw, h: s.ih };
+    if (prevIconBox && Math.abs(iconNow.x - prevIconBox.x) <= 0.5 && Math.abs(iconNow.y - prevIconBox.y) <= 0.5 && Math.abs(iconNow.w - prevIconBox.w) <= 0.5 && Math.abs(iconNow.h - prevIconBox.h) <= 0.5) {
+      notileBox = await captureNotile();
+    }
+    prevIconBox = iconNow;
   }
   if (s && s.shown && s.paneOp === '1') {
     if (lastCy !== null && Math.abs(s.cy - lastCy) <= 1) { steady++; if (steady >= 2) break; }

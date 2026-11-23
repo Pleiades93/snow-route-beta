@@ -23,10 +23,12 @@ const LONG = 'Start cancelled - erased here, but the trail cleanup could not be 
 const STORAGE = 'Restore failed while writing the route - and your previous data could NOT be fully put back - restore from a known-good backup';
 const SHORT = 'GPS signal weak - still trying';
 
+const SELS = ['#dock button', '#tabBar button', '#setMenu button', '#setMenu input', '#setMenu .swRow', '.sheet button', '#sheet .srow', '#mapNote', '#mapNote button', '#mapNote textarea', '#finModal .card', '#finModal button', '#createSheet button', '#createBar input', '#createBar button', '#selPop', '#selPop button', '#spdPill', '#nightBtn', '#centreBtn'];
+
 const measure = () => J(`(() => {
   const t = document.getElementById('toast'); const tr = t.getBoundingClientRect();
   const vis = e => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0'; };
-  const sels = ['#dock button', '#tabBar button', '#setMenu button', '#setMenu input', '#setMenu .swRow', '.sheet button', '#sheet .srow', '#mapNote', '#mapNote button', '#mapNote textarea', '#finModal .card', '#finModal button', '#createSheet button', '#createBar input', '#createBar button', '#selPop', '#selPop button', '#spdPill', '#nightBtn', '#centreBtn'];
+  const sels = ${JSON.stringify(SELS)};
   const seen = new Set(); const hits = []; let belowGap = null, belowEl = null;
   for (const s of sels) document.querySelectorAll(s).forEach(e => {
     if (e === t || seen.has(e)) return; seen.add(e); if (!vis(e)) return;
@@ -39,15 +41,69 @@ const measure = () => J(`(() => {
   return { toastTop: Math.round(tr.top), toastBottom: Math.round(tr.bottom), toastH: Math.round(tr.height), hits, belowGap, belowEl };
 })()`);
 
+// The measured scene as one comparable string: the pill's box plus every
+// visible control's vertical box, in measure()'s selector order. Two
+// samples with the same string are the same standing scene.
+const sceneSnap = () => J(`(() => {
+  const t = document.getElementById('toast'); if (!t) return '';
+  const vis = e => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0'; };
+  const tr = t.getBoundingClientRect();
+  const out = ['toast', Math.round(tr.top), Math.round(tr.bottom)];
+  const seen = new Set();
+  for (const s of ${JSON.stringify(SELS)}) document.querySelectorAll(s).forEach(e => {
+    if (e === t || seen.has(e)) return; seen.add(e); if (!vis(e)) return;
+    const r = e.getBoundingClientRect();
+    out.push(e.id || e.className || e.tagName, Math.round(r.top), Math.round(r.bottom));
+  });
+  return out.join('|');
+})()`);
+
 const fire = async (state, text) => {
   await ev(`(() => { toast(${JSON.stringify(text)}, 60000); return true; })()`);
-  // Wait for the rise to actually SETTLE (the pill's live transform offset back to 0)
-  // before measuring: the standing band is the property under test, and a fixed sleep
-  // races the transition on a loaded rig - a mid-rise pill sweeps the space below its
-  // band and reads as an overlap that is not its standing position (idle-day flaked
-  // 104x10 against startBtn exactly this way, Beta 1.221 gate round).
-  await poll(`(() => { try { return Math.abs(new DOMMatrixReadOnly(getComputedStyle($('toast')).transform).m42 || 0) < 0.5; } catch (e) { return false; } })()`, 5000).catch(() => false);
-  await sleep(60);
+  // Wait for the rise to actually SETTLE before measuring: the standing band is
+  // the property under test, and a fixed sleep races the transition on a loaded
+  // rig - a mid-rise pill sweeps the space below its band and reads as an overlap
+  // that is not its standing position (idle-day flaked 104x10 against startBtn
+  // exactly this way, Beta 1.221 gate round). Testing-efficiency rollout
+  // (2026-11-23): the settle is now the animation system's own state - the
+  // TOAST's own animations finished, confirmed across two animation frames -
+  // and a rise that never settles FAILS the check below, where the old poll
+  // swallowed its timeout and measured anyway. The wait is scoped to the
+  // toast element, not the document: a running clean keeps other animations
+  // alive indefinitely (the recording pulse), so a document-wide wait never
+  // empties in the clean states - observed on this round's first run, when
+  // clean-day failed the settle while idle-day passed.
+  // The toast's own settle is NOT the whole scene, though: placeToast()
+  // raises the pill at fire time against the controls' positions at that
+  // moment, and a sheet opened just before the fire can still be travelling
+  // (its entrance overruns the drive's 500 ms wait on a loaded runner) -
+  // PR #190 gate run 2 measured settings-day with the sheet's button 6 px
+  // into the pill's band, exactly placeToast's gap, while the toast itself
+  // had long settled. So after the toast settle, the MEASURED SCENE must
+  // also hold still: the pill's box and every visible control's box
+  // identical across two samples 150 ms apart, or this state is not
+  // measured standing and the settle check fails.
+  const settled = await ev(`(async () => {
+    const el = $('toast');
+    if (!el) return false;
+    const t0 = performance.now();
+    for (;;) {
+      const running = el.getAnimations().filter(a => a.playState === 'running').length;
+      if (running === 0) {
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return el.getAnimations().filter(a => a.playState === 'running').length === 0;
+      }
+      if (performance.now() - t0 > 5000) return false;
+      await new Promise(r => requestAnimationFrame(r));
+    }
+  })()`).catch(() => false);
+  let stable = false;
+  for (let i = 0; i < 8 && !stable; i++) {
+    const a = await sceneSnap();
+    await sleep(150);
+    stable = a !== '' && a === await sceneSnap();
+  }
+  ok(state + ': the rise settled before measuring (the toast\'s own animations finished, confirmed across two frames, and the measured scene - pill and controls - identical across two samples)', settled === true && stable);
   const m = await measure();
   ok(state + ': zero overlap with any control', m.hits && m.hits.length === 0);
   if (m.hits && m.hits.length) R.checks[R.checks.length - 1][0] += ' | OVERLAPS: ' + m.hits.join('; ');
