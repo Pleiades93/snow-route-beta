@@ -82,7 +82,7 @@ check('18: the seats keep their own extras (exitCreate still clears the field - 
 
 // ---------- the frame ----------
 check('19: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.251: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.') && !whatsnew.includes('—'));
+  whatsnew.includes('Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.') && !whatsnew.includes('—'));
 check('20: the CHANGELOG order stands (1.243 above 1.242; the 1.244 entry rides above both - proof-1244 pins the top)',
   changelog.indexOf('## Beta 1.243') > -1 && changelog.indexOf('## Beta 1.243') < changelog.indexOf('## Beta 1.242'));
 

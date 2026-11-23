@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.')
-  && 'Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.'.length <= 108
+  whatsnew.includes('Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.')
+  && 'Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

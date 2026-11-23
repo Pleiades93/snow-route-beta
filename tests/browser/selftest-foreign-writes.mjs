@@ -1033,10 +1033,13 @@ for (const [f, fn, nm] of MUST) check(`census contains adjudicated site ${f} ${f
 // restoreBackup's two restoring writes and restoreFenceDown's one (the P1 fence,
 // Beta 1.186) go through PERSIST.fenceUp/fenceDown, and clearTrailAll's lastTrailSave
 // stamp through PERSIST.noteWrite. Their absence is pinned here so the doorway
-// cannot quietly revert to a foreign write.
+// cannot quietly revert to a foreign write. Beta 1.280 (architecture #8): the
+// restore's write stage is RESTORE.execute now - the first pin follows it to its
+// new seat, claim unchanged; restoreFenceDown keeps its binding name inside the
+// coordinator, so its pin stands as written.
 const MUST_NOT = [
   ['app4.js', 'clearTrailAll', 'lastTrailSave'],
-  ['app4.js', 'restoreBackup', 'restoring'],
+  ['app4.js', 'execute', 'restoring'],
   ['app4.js', 'restoreFenceDown', 'restoring'],
 ];
 for (const [f, fn, nm] of MUST_NOT) check(`census retired site stays retired ${f} ${fn} ${nm} (architecture #3)`, !tree.sites.some(s => s.file === f && s.fn === fn && s.name === nm));

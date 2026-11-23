@@ -156,7 +156,7 @@ check('12: a street named like an inherited object key (constructor) with no SPO
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------
-const BULLET = "Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.";
+const BULLET = "Under the hood: backup and restore now each run through one owner, so exports and restores stay in step.";
 check("13: What's New carries the 1.266 bullet (rolled by the unified-load-in round), em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

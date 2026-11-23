@@ -7923,6 +7923,152 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23"
+  },
+  {
+   "id": "arch8-1280",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "restoreBackup",
+     "doRestore",
+     "backupObj",
+     "recoveryObj",
+     "buildBackup",
+     "buildRecovery",
+     "shareBackup",
+     "shareRecovery",
+     "downloadBackup",
+     "snapForExport",
+     "countUnknownNames"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app4.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:backupObj:parts/app4.js:buildBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - backupObj() is called from buildBackup in parts/app4.js",
+     "status": "covered",
+     "note": "The strict doorway inside the backup builder: backupObj now returns ENVELOPE.strict(), the same body verbatim at its owner's seat. Covered by the backup drives (83, 118, 121, 150, 169, 194) and proof-1250's extraction of the owner."
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:downloadBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from downloadBackup in parts/app4.js",
+     "status": "covered",
+     "note": "The download door of the Backup press: buildBackup is untouched; its envelope now comes through the strict policy. Covered by drives 83 and 194 (the backup file family)."
+    },
+    {
+     "id": "caller:buildBackup:parts/app4.js:shareBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildBackup() is called from shareBackup in parts/app4.js",
+     "status": "covered",
+     "note": "The share door of the Backup press, including the fall-through to the recovery share when the strict build refuses (drive136 F12). Covered by drives 83, 136 and 194."
+    },
+    {
+     "id": "caller:buildRecovery:parts/app4.js:shareRecovery",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildRecovery() is called from shareRecovery in parts/app4.js",
+     "status": "covered",
+     "note": "The recovery share: buildRecovery is untouched; its envelope now comes through the recovery policy. Covered by drive136 (F11/F12) and drive150."
+    },
+    {
+     "id": "caller:countUnknownNames:parts/app4.js:finishPlan",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - countUnknownNames() is called from finishPlan in parts/app4.js",
+     "status": "covered",
+     "note": "The planner's tail counts unknown names with the backup's own definitions overlaid, exactly where the one-flow restore counted them; the call site names finishPlan because the tail is the planner's inner closure now. Covered by proof-1272's controls (unknown-name count pinned) and drive145's N13 family."
+    },
+    {
+     "id": "caller:doRestore:parts/app4.js:xFile:change",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - doRestore() is called from xFile:change in parts/app4.js",
+     "status": "covered",
+     "note": "Import JSON: the picked file feeds the same doRestore; the handler is untouched. Covered by the restore drives that drive the import door (118, 121, 150)."
+    },
+    {
+     "id": "caller:doRestore:parts/app4.js:xImp:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - doRestore() is called from xImp:click in parts/app4.js",
+     "status": "covered",
+     "note": "Import Text: the paste door into the same doRestore; the handler and the single-flight flag are untouched. Covered by drives 118, 121, 136, 145, 150, 171 and 194."
+    },
+    {
+     "id": "caller:recoveryObj:parts/app4.js:buildRecovery",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - recoveryObj() is called from buildRecovery in parts/app4.js",
+     "status": "covered",
+     "note": "The recovery doorway inside the recovery builder: recoveryObj now returns ENVELOPE.recovery(), the same body verbatim at its owner's seat. Covered by proof-1250 (which drives ENVELOPE.recovery directly) and drive136's F11/F12."
+    },
+    {
+     "id": "caller:restoreBackup:parts/app4.js:doRestore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - restoreBackup() is called from doRestore in parts/app4.js",
+     "status": "covered",
+     "note": "The restore doorway: doRestore calls restoreBackup, which dispatches RESTORE.plan then RESTORE.execute with no suspension of its own (the suspension contract: a no-created-routes backup completes synchronously, as the one-flow restore did). Covered by the whole restore drive set (118, 121, 125, 136, 145, 146, 149, 150, 154, 163, 169, 171, 176, 177, 183, 184, 186, 187, 188, 190, 194, 195, 209, 221) and proof-1272 at the planning boundary."
+    },
+    {
+     "id": "caller:shareBackup:parts/app4.js:xBak:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - shareBackup() is called from xBak:click in parts/app4.js",
+     "status": "covered",
+     "note": "The Backup button itself; the handler is untouched. Covered by drives 83, 136 (F12) and 194."
+    },
+    {
+     "id": "caller:shareRecovery:parts/app4.js:downloadBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - shareRecovery() is called from downloadBackup in parts/app4.js",
+     "status": "covered",
+     "note": "The recovery fallback inside the download door when the strict backup cannot be built; untouched logic over the recovery policy. Covered by drive136 F12a/F12b."
+    },
+    {
+     "id": "caller:shareRecovery:parts/app4.js:shareBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - shareRecovery() is called from shareBackup in parts/app4.js",
+     "status": "covered",
+     "note": "The recovery fallback inside the share door (saving broken -> a recovery file is shared and the toast says so); untouched logic over the recovery policy. Covered by drive136 F12a."
+    },
+    {
+     "id": "caller:snapForExport:parts/app4.js:key",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - snapForExport() is called from key in parts/app4.js",
+     "status": "covered",
+     "note": "The shared carried-snapshot helper, called from the envelope policies' per-route assembly (the scan keys this call context 'key'). It stays shared and unmoved - the one piece the two policies already had in common. Covered by proof-1250 and drive145 (carried snapshot in strict backups)."
+    },
+    {
+     "id": "caller:snapForExport:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - snapForExport() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "The same helper's second call context in the envelope assembly. Covered by drive136 F11 (a recovery file carries the active run's snapshot, validated on restore) and proof-1250."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "25749571be73fc2480b23f22a49def500814105e19abe08919e9bec766cc9144",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "075517797dadbffbebf5d59682dae3a8771b1b5fa3b999c5de4206257160249f",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e24a0d6b2bbc4cf4e7b1207504ed11efbfcaad4805f3c6d597cff316057314fe",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 arch8-restore-1280"
   }
  ]
 }
