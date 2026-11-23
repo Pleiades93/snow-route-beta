@@ -91,7 +91,7 @@ try {
 
   // ---- D: A-01 note flush surfaces ----
   await ev(`if (!document.getElementById('sheet').classList.contains('open')) document.getElementById('streetsBtn').click(); true`); await sleep(300); // the sheet must be OPEN (the button TOGGLES - section A may have left it open) - a hidden textarea cannot take focus, and blur is the event under test
-  const d0 = await J(`(() => { closeClean(); listFilter = 'primaries'; noteOpenFor = 'Velmar'; renderStreets(); const ta = document.querySelector('.noteEd textarea'); return { hasTa: !!ta }; })()`); // closeClean: returns the Pace sheet to its main view after section A's openClean (Beta 1.184 topology: the detail lives in the Pace sheet now)
+  const d0 = await J(`(() => { closeClean(); listFilter = 'primaries'; NOTEEDIT.openFor = 'Velmar'; renderStreets(); const ta = document.querySelector('.noteEd textarea'); return { hasTa: !!ta }; })()`); // closeClean: returns the Pace sheet to its main view after section A's openClean (Beta 1.184 topology: the detail lives in the Pace sheet now)
   ok('D0 the note editor opens on Velmar | ' + JSON.stringify(d0), d0.hasTa === true);
   const d1 = await J(`(() => {
     const orig = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); };
@@ -105,9 +105,9 @@ try {
   const d2 = await J(`(() => {
     saveWarned = true; // the episode warning already fired earlier in this session - saveAllWarned will NOT toast again
     const orig = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); };
-    noteOpenFor = 'Velmar'; renderStreets();
+    NOTEEDIT.openFor = 'Velmar'; renderStreets();
     const ta = document.querySelector('.noteEd textarea'); if (ta) ta.value = 'drive188 switch note';
-    noteOpenFor = 'Mellings'; renderStreets(); // switching streets finalizes Velmar's editor through the :408 flush
+    NOTEEDIT.openFor = 'Mellings'; renderStreets(); // switching streets finalizes Velmar's editor through the :408 flush
     Storage.prototype.setItem = orig; saveWarned = false;
     const t = document.getElementById('toast');
     return { toast: t.textContent, shown: t.classList.contains('show') };

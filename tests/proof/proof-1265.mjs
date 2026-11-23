@@ -65,7 +65,7 @@ check('5: enterCreate sets `creating` BEFORE crSetBackdrop(true) and exitCreate 
   exBody.indexOf('creating = false;') > -1 && exBody.indexOf('creating = false;') < exBody.indexOf('crSetBackdrop(false)'));
 
 // ---------- (6) the release editorial ----------
-const BULLET = 'Under the hood: one model now measures every saved clean, so its count, time and pace always agree.';
+const BULLET = 'Under the hood: note editing now runs through one session owner, so drafts and autosaves stay in step.';
 check("6: What's New carries the 1.265 bullet (plain words: names fade in together on load, instead of blinking), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));

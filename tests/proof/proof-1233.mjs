@@ -90,7 +90,7 @@ check('A1f: tier 2 - the family is exact names plus directional kin, exact first
 check('A1g: tier 2 - the crossing scan retries widened only when the exact pair finds no crossing', pick.includes('let best = scan(As, Bs);') && pick.includes('if (fA.length > As.length || fB.length > Bs.length) best = scan(fA, fB);'));
 
 // ---------- A2: the note line ----------
-check('A2a: the note editor line is the ruled form at all four hint sites', (app2.match(/'Not saved - Storage problem'/g) || []).length === 4);
+check('A2a: the note editor line is the ruled form at all four hint sites (architecture #7: the session owner holds the save acts - scheduleSave for the debounce, saveNow for blur and the Save button, the rebuilt-editor hint in renderStreets - and all four wirings land on them)', (app2.match(/'Not saved - Storage problem'/g) || []).length === 3 && app2.includes('NOTEEDIT.scheduleSave(n, ta, hint, paintNt)') && (app2.match(/NOTEEDIT\.saveNow\(n, ta, hint, paintNt\)/g) || []).length === 2);
 check('A2b: the period form is gone from app2', !app2.includes("'Not saved. Storage problem'"));
 check('A2c: the lowercase toast form elsewhere stands untouched', read('parts/app1.js').includes("'Not saved - storage problem'"));
 
