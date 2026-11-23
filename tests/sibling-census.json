@@ -9744,6 +9744,40 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23"
+  },
+  {
+   "id": "arch11-release-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "3201e66c80d0ab9f5769bb696ec5701175490d67647fda32f9de132b258b682a",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
   }
  ]
 }
