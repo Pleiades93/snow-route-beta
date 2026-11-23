@@ -5864,6 +5864,19 @@
    "red": "BROWSER TESTS FAIL on the 1.275 tree: the drive cannot complete (timed out at the runner's 300 s cap and was killed - its counter reads throw on the undefined owner and its waits never satisfy)",
    "green": "29/29 checks, 0 exceptions on the 1.276 tree (direct run, 356 s, 2026-11-23; the local runner's 300 s cap sits under this drive's local runtime on this machine, the cloud gate is its deciding run)",
    "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "drive142-rundist-teardown-1276",
+   "check": "tests/browser/drive142.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive142.mjs": "4101509c08bf29de7fd4b52b6f48587f777283dffe25be2d511c4cc01d26c075",
+    "parts/app3.js": "e83888e7064c2101004e95fac8a0843f88573d89bf1b8566620a78477c76a051"
+   },
+   "mutation": "RUNDIST.end's mirror delete dropped on the final 1.276 tree (its teardown line reduced to reset + lsDel(LS.rundist) only); T1b was re-derived this round to pin the owner's teardown line after the first 1.276 cloud gate caught the old literal (the deletes left the finishRun/cancelStart bodies for the owner)",
+   "red": "drive142: 5/6 checks - T1b FAIL (owner deletes both x0) under the mutation; on the unmutated first-push tree the OLD T1b failed the same way in shard 8 of gate run 45134306555 (finish mirror false, cancel mirror false)",
+   "green": "drive142: 6/6 checks, 0 exceptions on the reverted final tree (local runs through the runner, 2026-11-23)",
+   "issued": "2026-11-23 arch4-1276"
   }
  ]
 }
