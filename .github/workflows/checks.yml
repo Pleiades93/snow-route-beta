@@ -224,21 +224,21 @@ jobs:
       matrix:
         include:
           - shard: 1
-            drives: "drive116 drive149 drive151 drive161 drive166 drive176 drive187 drive195 drive205 drive213 drive221"
+            drives: "drive141 drive161 drive166 drive170 drive173 drive176 drive187 drive195 drive205 drive213 drive221"
           - shard: 2
-            drives: "drive114 drive127 drive145 drive164 drive165 drive177 drive190 drive198 drive208 drive216 drive89"
+            drives: "drive114 drive127 drive145 drive147 drive160 drive165 drive175 drive190 drive198 drive208 drive216 drive89"
           - shard: 3
-            drives: "drive131 drive133 drive141 drive143 drive148 drive162 drive170 drive186 drive194 drive204 drive212 drive220 drive86"
+            drives: "drive116 drive133 drive143 drive148 drive155 drive162 drive180 drive186 drive194 drive204 drive212 drive220 drive86"
           - shard: 4
-            drives: "drive118 drive121 drive132 drive153 drive154 drive171 drive174 drive175 drive184 drive192 drive200 drive210 drive218"
+            drives: "drive117 drive118 drive124 drive149 drive153 drive154 drive171 drive172 drive184 drive192 drive200 drive210 drive218"
           - shard: 5
-            drives: "drive123 drive130 drive136 drive152 drive160 drive163 drive173 drive182 drive188 drive196 drive206 drive214 drive88"
+            drives: "drive123 drive130 drive132 drive136 drive140 drive163 drive188 drive196 drive206 drive214 drive222 drive88"
           - shard: 6
-            drives: "drive117 drive125 drive129 drive135 drive150 drive155 drive180 drive185 drive193 drive203 drive211 drive219 drive83"
+            drives: "drive121 drive125 drive135 drive150 drive164 drive174 drive182 drive185 drive193 drive203 drive211 drive219 drive83"
           - shard: 7
-            drives: "drive124 drive126 drive140 drive147 drive156 drive159 drive169 drive178 drive189 drive197 drive207 drive215"
+            drives: "drive120 drive126 drive129 drive152 drive156 drive159 drive168 drive169 drive178 drive189 drive197 drive207 drive215"
           - shard: 8
-            drives: "drive115 drive120 drive128 drive142 drive146 drive168 drive172 drive181 drive183 drive191 drive199 drive209 drive217"
+            drives: "drive115 drive128 drive131 drive142 drive146 drive151 drive177 drive181 drive183 drive191 drive199 drive209 drive217"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Node

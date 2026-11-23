@@ -77,8 +77,8 @@ check('12: symbol-spacing 500 is set in the normalization path on the road-label
 check('13: the CHANGELOG top entry is Beta 1.259',
   changelog.indexOf('## Beta 1.259') > -1 && changelog.indexOf('## Beta 1.259') < changelog.indexOf('## Beta 1.258'));
 check('14: What\'s New carries the CURRENT entry\'s bullet (rolled to 1.261: this check tracks the current entry each round, like the other release-editorial checks; the bullets it shipped with live in the CHANGELOG), within the 108-char cap, em-dash free',
-  whatsnew.includes("Under the hood: clean history loads, saves and restores from one place, the same way everywhere.") &&
-  "Under the hood: clean history loads, saves and restores from one place, the same way everywhere.".length <= 108 &&
+  whatsnew.includes("The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.") &&
+  "The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.".length <= 108 &&
   !whatsnew.includes('—'));
 
 console.log(`proof-1259: ${pass} passed, ${fail} failed`);

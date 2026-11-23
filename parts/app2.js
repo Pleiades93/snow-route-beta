@@ -1029,7 +1029,7 @@ function routeDropEl(p) { // Beta 1.271 (Andrew, Option D): a route's dropdown c
   const top = document.createElement('button'); top.type = 'button';
   if (tab && activeRoute && activeRoute.id === p.id) { top.className = 'dropLoaded'; top.textContent = 'Loaded'; } else { top.className = 'dropLoad'; top.textContent = 'Load'; }
   const del = document.createElement('button'); del.type = 'button'; del.className = 'dropDel'; del.textContent = 'Delete';
-  card.appendChild(top); card.appendChild(del);
+  const inn = document.createElement('div'); inn.className = 'routeDropIn'; inn.appendChild(top); inn.appendChild(del); card.appendChild(inn); // Beta 1.273: the pills ride an inner slider - the card itself is the growing clip (head.html), the inner travels translateY(-100%) to 0 inside it
   return card;
 }
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); } // Beta 1.271: each row renders with its dropdown card as its sibling
@@ -1042,10 +1042,26 @@ function wireRouteRows(container, choose) { container.addEventListener('click', 
   const row = e.target.closest('.routeRow'); if (!row) return;
   const drop = row.nextElementSibling; if (!drop || !drop.classList.contains('routeDrop')) return;
   const wasOpen = drop.classList.contains('open');
-  container.querySelectorAll('.routeDrop.open').forEach(d => d.classList.remove('open'));
-  if (!wasOpen) drop.classList.add('open');
+  container.querySelectorAll('.routeDrop.open').forEach(d => { if (d !== drop) ddClose(d); }); // Beta 1.273: one open at a time, and the others now CLOSE (335ms) rather than vanish
+  if (wasOpen) ddClose(drop); else ddOpen(drop);
 }); }
-function showRmPane(id) { ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
+function ddOpen(drop) { // Beta 1.273 (Andrew, the grown dropdown): show the card, reflow so its growth transition starts from height 0, then wear .open - the card grows on the house 420ms --ease-open while its inner slides down and the row above morphs its bottom corners square (the .ddOpen class, head.html). A pending close timer from a mid-close reopen is cancelled first, so the card can never be hidden out from under its own open state
+  const row = drop.previousElementSibling;
+  clearTimeout(drop._ddT);
+  const pane = drop.closest('.rmPane'); // Beta 1.273, the layout law's other half: the panes centre through auto margins, so a growing list would re-centre the pane and drag the title up by half the growth. The first open of a pane visit pins the pane's top margin at its current seat - the growth then runs purely downward (nothing above the opening route moves, only what is below rides down), and showRmPane clears the pin on the next pane switch, so no resting seat ever changes
+  if (pane && !pane._ddPin) { pane._ddPin = true; let mt = parseFloat(getComputedStyle(pane).marginTop); if (!isFinite(mt)) mt = pane.getBoundingClientRect().top - pane.parentElement.getBoundingClientRect().top - 24; pane.style.marginTop = mt + 'px'; }
+  drop.style.display = 'block';
+  void drop.offsetHeight;
+  drop.classList.add('open'); if (row && row.classList.contains('routeRow')) row.classList.add('ddOpen');
+  const l = drop.closest('.routeList'); if (l) setTimeout(() => menuListFade(l), 430);
+}
+function ddClose(drop) { // Beta 1.273: the close runs 335ms on --ease-close (Andrew's pick, Liu's exits-shorter rule) - the classes come off together (card shrinks, inner slides up, the row's corners round back), and only when the close has landed does the card leave the layout (display none, its 1.271 rest state), guarded by the timer ddOpen cancels
+  const row = drop.previousElementSibling;
+  drop.classList.remove('open'); if (row && row.classList.contains('routeRow')) row.classList.remove('ddOpen');
+  clearTimeout(drop._ddT);
+  drop._ddT = setTimeout(() => { if (!drop.classList.contains('open')) { drop.style.display = 'none'; const l = drop.closest('.routeList'); if (l) menuListFade(l); } }, 345);
+}
+function showRmPane(id) { document.querySelectorAll('.rmPane').forEach(p => { if (p._ddPin) { p._ddPin = false; p.style.marginTop = ''; } }); ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });

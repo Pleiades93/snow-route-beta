@@ -5289,6 +5289,268 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-22"
+  },
+  {
+   "id": "dropdown-1273",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "routeDropEl",
+     "wireRouteRows",
+     "renderRouteLists",
+     "ddOpen",
+     "ddClose",
+     "showRmPane",
+     "menuListFade"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:ddClose:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ddClose() is called from container:click in parts/app2.js",
+     "status": "covered",
+     "note": "drive222 (the 335ms close, fluid corners back, landed rest state) + drive154"
+    },
+    {
+     "id": "caller:ddOpen:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ddOpen() is called from container:click in parts/app2.js",
+     "status": "covered",
+     "note": "drive222 (the grown open: geometry, fluid pair, 420ms) + drive154 toggle phases"
+    },
+    {
+     "id": "caller:menuListFade:parts/app2.js:ddClose",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - menuListFade() is called from ddClose in parts/app2.js",
+     "status": "covered",
+     "note": "unchanged function; its new call seats ride ddOpen/ddClose (drive222) and showRmPane (every menu drive); the fade itself is graded by drive180/154"
+    },
+    {
+     "id": "caller:menuListFade:parts/app2.js:ddOpen",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - menuListFade() is called from ddOpen in parts/app2.js",
+     "status": "covered",
+     "note": "unchanged function; its new call seats ride ddOpen/ddClose (drive222) and showRmPane (every menu drive); the fade itself is graded by drive180/154"
+    },
+    {
+     "id": "caller:menuListFade:parts/app2.js:renderRouteLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - menuListFade() is called from renderRouteLists in parts/app2.js",
+     "status": "covered",
+     "note": "unchanged function; its new call seats ride ddOpen/ddClose (drive222) and showRmPane (every menu drive); the fade itself is graded by drive180/154"
+    },
+    {
+     "id": "caller:menuListFade:parts/app2.js:showRmPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - menuListFade() is called from showRmPane in parts/app2.js",
+     "status": "covered",
+     "note": "unchanged function; its new call seats ride ddOpen/ddClose (drive222) and showRmPane (every menu drive); the fade itself is graded by drive180/154"
+    },
+    {
+     "id": "caller:menuListFade:parts/app2.js:streetList:scroll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - menuListFade() is called from streetList:scroll in parts/app2.js",
+     "status": "covered",
+     "note": "unchanged function; its new call seats ride ddOpen/ddClose (drive222) and showRmPane (every menu drive); the fade itself is graded by drive180/154"
+    },
+    {
+     "id": "caller:menuListFade:parts/app2.js:window:resize",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - menuListFade() is called from window:resize in parts/app2.js",
+     "status": "covered",
+     "note": "unchanged function; its new call seats ride ddOpen/ddClose (drive222) and showRmPane (every menu drive); the fade itself is graded by drive180/154"
+    },
+    {
+     "id": "caller:menuListFade:parts/create-pick.js:crRenderCityChoices",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - menuListFade() is called from crRenderCityChoices in parts/create-pick.js",
+     "status": "covered",
+     "note": "unchanged function; its new call seats ride ddOpen/ddClose (drive222) and showRmPane (every menu drive); the fade itself is graded by drive180/154"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "every chooser drive renders the lists (drive154/155/219/222); delete/load/unload re-renders graded by drive154 H-phases and drive219 picks"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app2.js:rmChoose:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from rmChoose:click in parts/app2.js",
+     "status": "covered",
+     "note": "every chooser drive renders the lists (drive154/155/219/222); delete/load/unload re-renders graded by drive154 H-phases and drive219 picks"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "every chooser drive renders the lists (drive154/155/219/222); delete/load/unload re-renders graded by drive154 H-phases and drive219 picks"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "every chooser drive renders the lists (drive154/155/219/222); delete/load/unload re-renders graded by drive154 H-phases and drive219 picks"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "every chooser drive renders the lists (drive154/155/219/222); delete/load/unload re-renders graded by drive154 H-phases and drive219 picks"
+    },
+    {
+     "id": "caller:renderRouteLists:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderRouteLists() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "every chooser drive renders the lists (drive154/155/219/222); delete/load/unload re-renders graded by drive154 H-phases and drive219 picks"
+    },
+    {
+     "id": "caller:routeDropEl:parts/app2.js:renderRouteLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeDropEl() is called from renderRouteLists in parts/app2.js",
+     "status": "covered",
+     "note": "proof-1271 2b (builder stands) + drive222 (the built card measured: width, tint, radii, inner slide)"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmBack2:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmBack2:click in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmBack:click in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmChoose:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmChoose:click in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmCreate:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmCreate:click in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crDoorList:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crDoorList:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crOpenCityPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crOpenCityPane in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:openDoors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from openDoors in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:rmCityListBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmCityListBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-save.js:pvSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from pvSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "pane navigation exercised by drive154/219/222 and the create drives (132/154); the pin clear is inert for panes that never pinned"
+    },
+    {
+     "id": "caller:wireRouteRows:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - wireRouteRows() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the delegation is the surface drive154/155/219/222 all drive their taps through"
+    },
+    {
+     "id": "gesture:parts/app2.js:window:resize",
+     "kind": "gesture",
+     "source": "derived: handler scan - the window resize handler in parts/app2.js touches menuListFade without dismissing it",
+     "status": "na",
+     "note": "the window resize handler only refreshes the lists' fade edges; this round adds no resize behaviour (the dropdown pin clears in showRmPane, not here)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "26f3e20ac82b4c5a85a25adaa3c4a0e6758aa252c370c72b1db2bf46f8b9e860",
+    "parts/app2.js": "b03950e982276bfeb3695276f1e431061c4e165acd4c4a35cb6e0655c667a6df",
+    "parts/app3.js": "47976e3fbb89e68f6dd5bd645eff508fa271a98e25afcc9625983106b004f14b",
+    "parts/app4.js": "4a8274bade07dca06247c271fb00110bdb8c3e9d672d35d01150fc2a8f80c0a8",
+    "parts/app5.js": "2e15bb69e07d3ded76305285beecb56c8381ef4fd122a0f77d3ad486248957ba",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "2a7e983aa50862cb074a16abf9266a41a1a175c69faa5215b1d3d289aa2b5327",
+    "parts/create-citydata.js": "393d90f275d971b5e52352deebaece381279acd0e86495ffa2da35701de9148e",
+    "parts/create-fetch.js": "e7a65bd88dc338213946c4537dc5d397f79396ec416b6f4ebf4be831927aeb66",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "7188458b087496ad52ff5d159ae23668b543d0100a3d58c3b251d33374258dd6",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "d6d1f676ac8bc2a302cfbaf56de1e10cb361fd8b746d94d6380a5e4ebaf76173",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "25974f14c7fe5a83af06edb8c2fa2491bfeca862b0b421991a09f7dcf142885c",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-22 beta-1273-dropdown-round"
   }
  ]
 }

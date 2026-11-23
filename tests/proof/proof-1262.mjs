@@ -85,8 +85,8 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
 
 // ---------- the release editorial ----------
 check('13: What\'s New carries the 1.266 bullet (rolled by the unified-load-in round), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265',
-  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.') &&
-  'Under the hood: clean history loads, saves and restores from one place, the same way everywhere.'.length <= 108 &&
+  whatsnew.includes('The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.') &&
+  'The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.'.length <= 108 &&
   !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
 

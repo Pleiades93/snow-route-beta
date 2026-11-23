@@ -64,8 +64,8 @@ check('6: the scrim-free design claims are superseded and removed (the pill comm
 // ---------- the release editorial ----------
 check('7: the CHANGELOG top entry is Beta 1.257', changelog.includes('## Beta 1.257'));
 check('8: What\'s New carries the 1.257 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.')
-  && 'Under the hood: clean history loads, saves and restores from one place, the same way everywhere.'.length <= 108
+  whatsnew.includes('The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.')
+  && 'The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1257: ${pass} passed, ${fail} failed`);

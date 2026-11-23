@@ -96,7 +96,7 @@ check('8: every instant-fit path in introToRoute notes the no-flight settle - no
   count(app5, 'noteNameLoadInNoFlight();') === 4); // the empty-pack return + the three fit0 fallbacks
 
 // ---------- (9) the release editorial ----------
-const BULLET = 'Under the hood: clean history loads, saves and restores from one place, the same way everywhere.';
+const BULLET = 'The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.';
 check("9: What's New carries the 1.266 bullet (plain words: names fade in together on load), within the 108-char cap, em-dash free, and the CHANGELOG top entry is Beta 1.266 above 1.265",
   whatsnew.includes(BULLET) && BULLET.length <= 108 && !whatsnew.includes('—') &&
   changelog.indexOf('## Beta 1.266') > -1 && changelog.indexOf('## Beta 1.266') < changelog.indexOf('## Beta 1.265'));
