@@ -87,7 +87,7 @@ check('5a the selection-open drop is retired: no body.selOpen #centreBtn rule, n
 
 // ---- the What's New line ----------------------------------------------------
 check('6a the round\'s What\'s New bullet stands first (rolled forward at Beta 1.272: the current entry stands first in its place)',
-  whatsnew.includes('items: ["Under the hood: clean history loads, saves and restores from one place, the same way everywhere."]'));
+  whatsnew.includes('items: ["The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker."]'));
 
 console.log(`proof-1271: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);

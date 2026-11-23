@@ -88,7 +88,7 @@ check('16: the hint styling is the original .crPSub (13px, the dim ink token) - 
 
 // ---------- the frame ----------
 check('17: What\'s New carries the current entry\'s bullet (rolled to 1.251: this check tracks the CURRENT entry each round; and stays em-dash free)',
-  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.') && !whatsnew.includes('—'));
+  whatsnew.includes('The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.') && !whatsnew.includes('—'));
 check('18: the CHANGELOG order stands (1.242 above 1.241; the 1.244 entry rides above both - proof-1244 pins the top)', changelog.indexOf('## Beta 1.242') > -1 && changelog.indexOf('## Beta 1.242') < changelog.indexOf('## Beta 1.241'));
 
 console.log(`proof-1242: ${pass} pass, ${fail} fail`);

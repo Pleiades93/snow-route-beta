@@ -78,8 +78,8 @@ check('9: no second stale literal in app3',
 // ---------- the release editorial ----------
 check('10: the CHANGELOG top entry is Beta 1.252', changelog.includes('## Beta 1.252'));
 check('11: What\'s New carries the 1.252 bullet, short and dash-free',
-  whatsnew.includes('Under the hood: clean history loads, saves and restores from one place, the same way everywhere.')
-  && 'Under the hood: clean history loads, saves and restores from one place, the same way everywhere.'.length <= 108
+  whatsnew.includes('The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.')
+  && 'The route dropdown now grows out of its pill, same width and colour, and tucks away a little quicker.'.length <= 108
   && !whatsnew.includes('—'));
 
 console.log(`proof-1252: ${pass} passed, ${fail} failed`);
