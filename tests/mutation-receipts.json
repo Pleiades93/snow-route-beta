@@ -8480,6 +8480,19 @@
    "red": "CI gate attempt 1 on PR #196 head 6abd08a2 (run 45289771170, offline-e2e job 138095820763): FAIL E18 - trim observed at -1, pack intact 897 of 897",
    "green": "the corrected check (realistic CARTO .mvt flood; the reading counts tile keys) passes in the PR #196 gate re-run on the head carrying this receipt; the run id is recorded in the round RECORD.md",
    "issued": "2026-11-23 offline-cluster"
+  },
+  {
+   "id": "offline-e18-tile-flood-2",
+   "check": "tests/browser/e2e-offline.mjs",
+   "kind": "historical",
+   "files": {
+    "src/sw.js": "18c5864567555a5eee6d6250c91d569e2b5409d11b27d3dae192b19d7e698f1a",
+    "tests/browser/e2e-offline.mjs": "97a345658f2a27b13fecb953eb7256403e478ac6009f4f89a471b2910ca37783"
+   },
+   "mutation": "premise correction, no code mutation: E18's flood shape and observation predate the tile-only cap (issue #175); the flood must be .mvt-shaped AND disjoint from the trigger template's row, or every trigger fetch is a cache hit and no trim can fire",
+   "red": "gate attempt 1 (head 6abd08a2, run 45289771170): FAIL E18 trim observed at -1 with the extensionless flood; gate attempt 2 (head 8f10ca98, run 45291978253): FAIL E18 at -1 again - the .mvt flood covered the trigger template's own row (y=1490, x 1140-1439 inside the flooded 0-3099), so all 300 trigger fetches were cache hits; Codex P1 on that head confirmed by exercising the shipped worker (3100 tiles intact, zero fetches/writes/deletes)",
+   "green": "the corrected check (flood at y=2000, disjoint from the trigger row; tile-key reading) passes in the PR #196 gate re-run on the head carrying this receipt; the run id is recorded in the round RECORD.md",
+   "issued": "2026-11-23 offline-cluster"
   }
  ]
 }

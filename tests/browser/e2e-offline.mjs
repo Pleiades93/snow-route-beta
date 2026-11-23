@@ -259,8 +259,13 @@ ok('E16 process killed mid-download: relaunch on the same profile and the resume
 // are exempt from the trim and no longer pollute the observation. With
 // the old extensionless flood this check failed on the 1.285 worker
 // (trim observed at -1: exempt entries are never counted or cut, so the
-// total count never fell to the threshold).
-await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); const res = new Response('x'); for (let i = 0; i < 3100; i++) await tc.put('https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/' + i + '/1490.mvt', res.clone()); return true; })()`);
+// total count never fell to the threshold). The flood's y (2000) is
+// DISJOINT from the trigger loop's template (y=1490): a first attempt
+// flooded the template's own row, so every trigger fetch was a cache
+// hit - cacheFirst returns hits before bumpTileCount, no trim could
+// ever fire, and the check failed at -1 again (gate attempt 2; Codex
+// flagged the same collision as a P1 on that head).
+await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); const res = new Response('x'); for (let i = 0; i < 3100; i++) await tc.put('https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/' + i + '/2000.mvt', res.clone()); return true; })()`);
 let trimSeen = -1;
 for (let batch = 0; batch < 60 && trimSeen < 0; batch++) {
   await ev2(`(async () => { const tpl = 'https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/{x}/1490.mvt'; for (let i = 0; i < 5; i++) { try { await fetch(tpl.replace('{x}', ${1140 + batch * 5} + i)); } catch (e) {} } return true; })()`);
