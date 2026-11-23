@@ -5877,6 +5877,344 @@
    "red": "drive142: 5/6 checks - T1b FAIL (owner deletes both x0) under the mutation; on the unmutated first-push tree the OLD T1b failed the same way in shard 8 of gate run 45134306555 (finish mirror false, cancel mirror false)",
    "green": "drive142: 6/6 checks, 0 exceptions on the reverted final tree (local runs through the runner, 2026-11-23)",
    "issued": "2026-11-23 arch4-1276"
+  },
+  {
+   "id": "proof-1242-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "969dd15bdcaccec48f3c270745bec83f3845ffceb9a6d6dd43bf0d4dfabd901e",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1242 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1243-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1243.mjs": "958b1cc81518f5d8c77858cec8db468b7ac43f5210f3a294b7c534ef105320ff",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1243 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1245-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "88b7eeba40cc980f4c7a84f344d112b21dc2c6885012ca0120ebf5050ab2e609",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1245 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1246-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1246.mjs": "8403fac170010293eb7a4eb58126b2b87199b34641578847350e3fe928832a51",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1246 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1247-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1247.mjs": "76bf956e4ec4ced2e70f3c6bd4b35a6a74e23d65c984b6943dd31a50e8269fcc",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1247 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1249-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1249.mjs": "310c0cfb335cd15d7ec1eec2247e813bff359a9248cb3e23ebb6e76bfd335a1c",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1249 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1252-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1252.mjs": "cbc498c21fd95b6e507aab587122e80cac78ad536273d5beb886ad3ebb1bef78",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1252 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1253-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "a7046d1910b14eed053ea559388b85ddf8bb03f546ddf36d9739594a6d472538",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1253 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1254-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1254.mjs": "347ab56265579017a593b0653b00948d9efe85781f83a8cf828100225d252998",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1254 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1255-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1255.mjs": "545cb8e82ba786a86919c695aca434e27f5d60dcee3eba49fcab7ec1ab0554b8",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1255 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1256-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1256.mjs": "f5808dbe202d4d60962061b50aa83badcc2d4557c373f2129aecb5f9af0fb994",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1256 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1257-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1257.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1257.mjs": "1eb263adb4e26cfd76c5d71f5f7a3595021c455c1d32a31783e7be61fe31a763",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1257 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1259-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1259.mjs": "22a94c004645e6d3c3035219daf0d20cccf63753d541c0dccb69fec41ad33171",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1259 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1262-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1262.mjs": "0c385fc2e6756bd6d3e54d6523ad3add52cc0fbdc287e7fb0edd0bacf6c0c31b",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1262 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1263-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "edb8e6bad63fa1796c0c8143c7c3d3b6406fcf23149534f1b6b26331ca5e1f15",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1263 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1264-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1264.mjs": "5bd6ee67b660689f9708e093e56ff600878bd433ff4117fbcb4309cb58e949a7",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1264 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1265-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1265.mjs": "8e8601ce402b81394e0a49a74fe8fc8f6f06f57b99b004426597f602eae69616",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1265 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1267-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1267.mjs": "d6788722240e33eeaf6bfadeb8c4681b06122b1b1b9c6eabd2df46d45e97a174",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1267 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1268-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1268.mjs": "8dea9af1943e4ae8c674334041369b2900cb52cd09eab8171b2ff027e828c9fa",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1268 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1269-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1269.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1269.mjs": "c69951fd4e1b33c610c880fac75f3e552739345e67da73423158456d15c41519",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1269 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1270-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1270.mjs": "341f4bc7d736b2c0c2888e6db6e1b19bc0ab4e6a0a80c9d1acd255313b8d2e0b",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1270 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1271-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1271.mjs": "3980725c33421cfc732716bbb82aba52a0a9bf597800218aa9326b6e78732387",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js (the standing version-roll red: the proof's bullet pin names the 1.277 bullet)",
+   "red": "proofs 56/78 with the 1.276 bullet restored; proof-1271 in the failing set (its pinned bullet is the 1.277 transitions line)",
+   "green": "proofs 78/78 on the shipped Beta 1.277 tree",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "proof-1266-whatsnew-roll-1277",
+   "check": "tests/proof/proof-1266.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1266.mjs": "76e0344682ce13aa66914159ab1c0cfbbac26f18af97fcbc9afc55e54b2fe358",
+    "parts/whatsnew.js": "1045bc0af28104cb032b921b6b9339bff90944caf4b4bdce0428a2078613b9c9"
+   },
+   "mutation": "the Beta 1.276 What's New bullet restored into parts/whatsnew.js; proof-1266 is retired from the running manifest (its 1.266-era app pins are historical), so its bullet pin (check 9) was observed directly",
+   "red": "proof-1266 check 9 fails with the 1.276 bullet restored (5 passed, 7 failed run directly - the other six fails are its standing retired pins, present with either bullet)",
+   "green": "proof-1266 check 9 passes with the shipped 1.277 bullet (6 passed, 6 failed run directly; the proof is not in the manifest run list)",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "drive142-run-teardown-1277",
+   "check": "tests/browser/drive142.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive142.mjs": "7a194efa0db3e2d7c46920fc06f06115310e27e361321b59da4c53a19b970286",
+    "parts/app3.js": "d49e7517aed05d1ea6b599a0eecff9adb4f1f988e40dbe2854a309bee8cf2f95"
+   },
+   "mutation": "RUN.end's snapshot delete dropped on the final 1.277 tree (its teardown line reduced to markClean('snap'); RUNDIST.end(); runSnap = null; runStart = 0;)",
+   "red": "drive142 T1b false on the mutated tree (owner teardown x0 in its own diagnostic), observed twice; every other check green, including T4 (Cancel honesty through the owner)",
+   "green": "drive142 6/6 on the reverted final tree (parts/app3.js sha256 d49e7517aed05d1ea6b599a0eecff9adb4f1f988e40dbe2854a309bee8cf2f95, byte-identical to the pre-mutation file)",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "drive142-run-teardown-1277b",
+   "check": "tests/browser/drive142.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive142.mjs": "7a194efa0db3e2d7c46920fc06f06115310e27e361321b59da4c53a19b970286",
+    "parts/app3.js": "e7913d133b17b29e6a92abc3148e969d713624362fb9972b6ae3071c48e6fdfa"
+   },
+   "mutation": "RUN.end's snapshot delete dropped on the final 1.277 tree (its teardown line reduced to markClean('snap'); RUNDIST.end(); runSnap = null; runStart = 0;) - re-observation of drive142-run-teardown-1277 after a comment-only correction to app3.js (the resetSwitchSession part name, app4 to app5) changed the file hash",
+   "red": "drive142 T1b false on the mutated final tree (owner teardown x0), observed twice across the two mutation cycles; every other check green, including T4 (Cancel honesty through the owner)",
+   "green": "drive142 6/6 on the reverted final tree (parts/app3.js sha256 e7913d133b17b29e6a92abc3148e969d713624362fb9972b6ae3071c48e6fdfa, byte-identical to the pre-mutation file)",
+   "issued": "2026-11-23 arch5-1277"
+  },
+  {
+   "id": "drive142-run-teardown-1277c",
+   "check": "tests/browser/drive142.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive142.mjs": "7a194efa0db3e2d7c46920fc06f06115310e27e361321b59da4c53a19b970286",
+    "parts/app3.js": "be088ce8e870c8120224973cfa6f628c6d517c836cbe7260b924826d56854d33"
+   },
+   "mutation": "RUN.end's snapshot delete dropped on the final 1.277 tree (its teardown line reduced to markClean('snap'); RUNDIST.end(); runSnap = null; runStart = 0;) - third observation cycle, on the shipped file (two comment-only corrections after cycle 1: the resetSwitchSession part name, and the F3 line restored verbatim inside RUN.switchReset for its standing registry probe)",
+   "red": "drive142 T1b false on the mutated final tree (owner teardown x0), observed in all three cycles; every other check green each time, including T4 (Cancel honesty through the owner)",
+   "green": "drive142 6/6 on the reverted final tree (parts/app3.js sha256 be088ce8e870c8120224973cfa6f628c6d517c836cbe7260b924826d56854d33, byte-identical to the pre-mutation file)",
+   "issued": "2026-11-23 arch5-1277"
   }
  ]
 }
