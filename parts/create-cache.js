@@ -192,7 +192,7 @@ function crCityPrepare() { // a city is picked: load its whole extract - from th
   crPackCtx = null; crPackNote = ''; // Beta 1.123: a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null }; // Beta 1.229: lastProgressAt - the progress watchdog's clock (crGridWatchdog below): preparation starting is the first progress mark; the saved-grid read landing, the pack resolve landing, every landed cell and every resume restart it. Beta 1.251 (R-02): ds - the grid's dataset identity (crDatasetId), set when the pack resolve lands below, before any restore or write is judged
-  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same
+  crPrepBegin(); // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too - through 1.153 it survived a city change (the 2026-11-09 lifecycle trace's cross-session latch finding); S1/S8 always cleared it at entry, S6 now does the same. Architecture #16: the entry bundle itself lives on crPrepBegin (create-fetch.js)
   crRenderHint();
   crGridArmTicker(g); // Beta 1.229: the heartbeat runs from preparation ENTRY - the saved-grid read and the pack resolve below are inside the watchdog's reach from here on, not just the pump
   // Beta 1.251 (R-02): the pack resolve lands BEFORE the saved-grid read, because the restore's fit test (crCacheRecFits) is judged against the preparation's dataset identity and the identity is the resolve's answer. Through 1.250 the read came first and the resolve only fed the pump. The catalogue is warmed at boot, so the resolve is normally already in hand; its race cap sits far inside the progress watchdog's bound, and the resolve landing restarts that clock below. A fully saved city still restores with ZERO downloads - it just learns its source first. The resolve also still precedes the pump, so the source decision remains the grid's from its first cell (Beta 1.123) and the hint can name it; a pack city skips the minutes warning - its first load is one static download, seconds not minutes.
@@ -235,7 +235,7 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
   g.gen = ++crCovGen; // Cancel bumped the coverage generation to orphan late answers (CG-PF-05); resuming ADOPTS the grid into the live generation, or the pump would refuse it as obsolete and fetch nothing
   g.stopped = null; g.startedAt = Date.now(); g.lastProgressAt = Date.now(); // Beta 1.229: the resume restarts the watchdog's clock - the idle time before it is not a stall
   for (const c of g.cells) if (c.state === 'failed') { c.state = 'pending'; c.tries = 0; }
-  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null;
+  crPrepBegin(); // Architecture #16: the entry bundle lives on crPrepBegin (create-fetch.js)
   crGridArmTicker(g);
   crRenderHint();
   crGridPump(g);

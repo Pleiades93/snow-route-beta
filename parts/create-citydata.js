@@ -267,7 +267,7 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
   if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
   const session = crSession, gen = ++crCovGen;
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
-  crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = anchor; crWanted = null; // starting a preparation IS the answer to any outstanding offer
+  crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to any outstanding offer (the offer itself clears inside crPrepBegin, Architecture #16; the anchor stays this site's own - it is the fallback's Retry target)
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
   prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // Beta 1.229: every tick runs the progress watchdog before it renders

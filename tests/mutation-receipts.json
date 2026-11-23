@@ -7387,6 +7387,21 @@
    "red": "proof-rerun-d04-streetparts-covstamp fails S4 (trimmed street keeps its record) under the mutation - observed twice (mutation-battery-15.py hastrim-pin)",
    "green": "proof-rerun-d04-streetparts-covstamp passes on the reverted tree (revert byte-exact, sha256-verified); full proof suite 79/79",
    "issued": "2026-11-23 section1-arch15"
+  },
+  {
+   "id": "section1-proof-prep-begin-owner",
+   "check": "tests/proof/proof-prep-begin-owner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-prep-begin-owner.mjs": "b56a10f118f5081c32ff91d490b3d5f3ac77671b26f1b3e7f0d29241e6cd23fb",
+    "parts/create-fetch.js": "e4d3299947bf6950824bffd58a24b534ed97cf502ba4bb68c7a8b1d8b5058f50",
+    "parts/create-cache.js": "3c40d8c240ebc97b50b2eb2cc21fc06409ac373c3298873d8b6b33e61e81c940",
+    "parts/create-citydata.js": "21d7d195b7771f1ec1305c4a3a915bf5b369b1456889caa7353892d26b5eb971"
+   },
+   "mutation": "three mutations of the arch #16 extraction, each applied to the shipped tree and reverted byte-exact: (1) drop 'crWanted = null;' from crPrepBegin's body in parts/create-fetch.js; (2) drop 'crFailFromGrid = false;' from the same body; (3) un-call the owner at crGridResume in parts/create-cache.js, restoring the spelled-out bundle there",
+   "red": "proof FAILS under each mutation, observed twice per mutation: drop-wanted-clear 9 passed 4 failed (checks 2, 3, 5d, 6a - the bundle text, its single survival, and the wanted-clear effect no drive observes); drop-failfromgrid-clear 10 passed 3 failed; resume-door-uncalled 11 passed 2 failed",
+   "green": "proof-prep-begin-owner: 13 passed, 0 failed on the shipped tree",
+   "issued": "2026-11-23 section1-arch16"
   }
  ]
 }
