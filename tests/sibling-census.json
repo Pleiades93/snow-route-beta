@@ -9812,6 +9812,214 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23"
+  },
+  {
+   "id": "marking-170-tapguard",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "tapGuard"
+    ],
+    "elements": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:tapGuard:parts/app2.js:mapNoteNo:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from mapNoteNo:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:paceBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from paceBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:routesBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from routesBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:selAllBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from selAllBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:selBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from selBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:selClearBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from selClearBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:selNote:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from selNote:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:showChips",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from showChips in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic; the chip is the issue's own surface - the queued-tap discriminator was observed in a real browser both ways (pre-fix the second tap toggled the mark off, post-fix it is swallowed; round RECORD)"
+    },
+    {
+     "id": "caller:tapGuard:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app3.js:cancelStartBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from cancelStartBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic; proof-1255 check 6 pins this listener's event-passing form verbatim (claim unchanged)"
+    },
+    {
+     "id": "caller:tapGuard:parts/app3.js:centreBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from centreBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app3.js:clearBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from clearBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic; proof-1271 check 3a pins this listener's event-passing form verbatim (claim unchanged)"
+    },
+    {
+     "id": "caller:tapGuard:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from gpsBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app3.js:resetBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from resetBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app3.js:startBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from startBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app4.js:exportBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from exportBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app4.js:setBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from setBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app4.js:stDel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from stDel:click in parts/app4.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app4.js:updBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from updBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from xPre:click in parts/app4.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app5.js:homeBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from homeBtn:click in parts/app5.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    },
+    {
+     "id": "caller:tapGuard:parts/app5.js:nightBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - tapGuard() is called from nightBtn:click in parts/app5.js",
+     "status": "covered",
+     "note": "the call site passes its click event to the guard (the #170 form) - proof-tapguard check 2b pins that no single-argument tapGuard call survives in any part, and its check 3 pins the guard's event-time arithmetic"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "08cc8c73d221789bd7944f15193cb1f2ffae627953823104e6a2f368a0590bc3",
+    "parts/app2.js": "89f14cbd1a555ee7fc26a2658fb72a15ffffc571726b818fc29f084a903c4757",
+    "parts/app3.js": "7acac590d79c09982e36b6178edb836751a879eda3d953e9de5135498252e7ef",
+    "parts/app4.js": "e3f5c009919742ac66741aa6a1811917df29460cdbee5cf4eab4c5244773e961",
+    "parts/app5.js": "c76a2e97703abc115e832bd66157ce08b01540533b3e27545f002c29454e150d",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "f6a9d02a935ee4f595f6528f71fe117aa3a42ed77f4ad3b004aab93de261c3c1",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 beta-1284-marking-cluster"
   }
  ]
 }

@@ -409,7 +409,7 @@ function cancelStart() {
   else if (okCancel && snapDamaged) toast('Start cancelled - clean erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the clean)', 4600); // Beta 1.221 gate fix (drive133 S12a, CI): the DAMAGED disclosure was cut with the plain success pill, but it is not a confirmation - it is the ONLY surface that tells him the cancel REBUILT the board approximately because the saved snapshot was corrupt (the Beta 1.95 SR-194-03 design). Andrew's named cut was the PLAIN form, which stays cut, and the ABSENT form stays cut too (drive143 C1/C2 assert a clean cancel with no snapshot fires no pill - through the real Start path an absent snapshot already warned at Start, when saveSnap failed). The damaged form is an adjudicated keep beside the trail-cleanup warning, under his severe + no-other-surface rule
   else if (!okCancel) toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
-$('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
+$('startBtn').addEventListener('click', ev => { if (!tapGuard('startBtn', ev)) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - wipes EVERY mark on the board (all streets,
 // both sides), plus the completion times/vias and the GPS coverage behind them. Beta 1.271 (Andrew):
 // the tap ASKS first, through the shared confirmation (askClearAll) - through 1.270 this was the most
@@ -423,15 +423,15 @@ function clearAllMarks() {
   deselect(); const okClear = finishChange();
   if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
-$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; if (boardHasMarks()) askClearAll(); });
+$('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) return; if (boardHasMarks()) askClearAll(); });
 function askClearAll() { // Beta 1.271 (Andrew): the Clear ask - the shared confirmation, bound to the route it was opened over (askCancelStart's binding discipline); the wipe itself is clearAllMarks, unchanged. An empty board never raises the question (the handler's guard above).
   const forRoute = activeRoute ? activeRoute.id : null;
   showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
 }
-$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
-$('resetBtn').addEventListener('click', () => {
+$('cancelStartBtn').addEventListener('click', ev => { if (!tapGuard('cancelStartBtn', ev)) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
+$('resetBtn').addEventListener('click', ev => {
   // Beta 1.110 (Andrew): the Yes/No pop-up below is the ONLY finish gate - the post-Finish Undo is removed, so this button never means anything but Finish.
-  if (!tapGuard('resetBtn')) return;
+  if (!tapGuard('resetBtn', ev)) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
     ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : ''))
@@ -439,7 +439,7 @@ $('resetBtn').addEventListener('click', () => {
   $('finModal').classList.remove('hidden');
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
-$('finYes').addEventListener('click', () => { if (!tapGuard('finYes')) return; $('finModal').classList.add('hidden'); finishRun(); });
+$('finYes').addEventListener('click', ev => { if (!tapGuard('finYes', ev)) return; $('finModal').classList.add('hidden'); finishRun(); });
 // Beta 1.255 (O-03): THE shared confirmation surface (head.html #confirmPill -
 // the selection pill's faces and box, centred). The app grew three
 // unrelated confirm patterns (the Finish modal, the Settings reset two-step,
@@ -1543,5 +1543,5 @@ function stopGps(silent) {
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); renderIcons(); $('spdPill').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it. Beta 1.203: the speed pill goes with it too - its gate is the watch
 }
-$('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) { if (followPaused) { resumeFollow(); } else stopGps(); } else if (runStart) { startGps(true); } else { startGps(false); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
-$('centreBtn').addEventListener('click', () => { if (!tapGuard('centreBtn')) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)
+$('gpsBtn').addEventListener('click', ev => { if (!tapGuard('gpsBtn', ev)) return; if (watchId != null) { if (followPaused) { resumeFollow(); } else stopGps(); } else if (runStart) { startGps(true); } else { startGps(false); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
+$('centreBtn').addEventListener('click', ev => { if (!tapGuard('centreBtn', ev)) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)

@@ -366,7 +366,7 @@ let settings = loadSettings();
 /** @returns {boolean} */ function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound })); } // only the persistent three - settings.awake is never written (Beta 1.112)
 // Tap guard — 400 ms per control
 const tapLast = {};
-/** @param {string} key @returns {boolean} */ function tapGuard(key) { const now = Date.now(); if (tapLast[key] && now - tapLast[key] < 400) return false; tapLast[key] = now; return true; }
+/** @param {string} key @param {Event} ev @returns {boolean} */ function tapGuard(key, ev) { const timestamp = ev.timeStamp; if (tapLast[key] !== undefined && timestamp - tapLast[key] < 400) return false; tapLast[key] = timestamp; return true; }
 
 // ===== STRETCHES — stitch each street, cut at junctions (checklist SS1) =====
 /** @param {string} name @param {RoadsMap} [roads] @returns {LatLng[][]} */ function stitchRuns(name, roads) { // Beta 1.144 (Package C, DA-02/C1): a street's segments chained into their CONNECTED RUNS - the pre-1.144 stitchLine growth (exact endpoint equality, same scan order, same concat operations) repeated per component, so a street whose segments form several disconnected runs (non-adjacent sector picks at create; genuinely split streets) keeps EVERY run instead of only the one connected to segment 0. Run 1 is byte-identical to the old stitchLine output for any street; a fully connected street has exactly one run and nothing changes anywhere.

@@ -8258,6 +8258,136 @@
    "red": "16 pass, 1 fail (check 1h)",
    "green": "17 pass, 0 fail",
    "issued": "2026-11-23"
+  },
+  {
+   "id": "tapguard-event-time-1284",
+   "check": "tests/proof/proof-tapguard.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-tapguard.mjs": "415fcf75d62f48da9b9aad3a6f2569b95fb8e0963bb700ba350ecf53f2519298",
+    "parts/app1.js": "08cc8c73d221789bd7944f15193cb1f2ffae627953823104e6a2f368a0590bc3"
+   },
+   "mutation": "the Beta 1.283 tree (43d711d2): tapGuard(key) read Date.now() when the handler ran, the stored-check was truthiness, and all 24 call sites passed one argument",
+   "red": "6 of 10 checks fail against the 1.283 parts in a scratch tree (1b/1c/1d the guard shape, 2b the single-argument sites, 3a/3c the event-time sequences judged on wall time)",
+   "green": "proof-tapguard 10/10 on the Beta 1.284 tree",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "proof-1255-tapguard-repin-1284",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "c090e9d2ae235b877da7f45bef2ce2254e48b79d265d0c0db321d38212ce9d62",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "parts/app3.js at its Beta 1.283 form, whose cancelStartBtn listener calls tapGuard with a single argument (the #170 re-pin names the event-passing form)",
+   "red": "check 6 fails (10 passed, 1 failed) in a scratch tree carrying the 1.283 app3",
+   "green": "proof-1255 passes in full on the Beta 1.284 tree",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "proof-1271-tapguard-repin-1284",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "76c62516ceb0a6493970cd1d4779bfcf441d57f98f65db90722368eba663c6df",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "parts/app3.js at its Beta 1.283 form, whose clearBtn listener calls tapGuard with a single argument (the #170 re-pin names the event-passing form)",
+   "red": "check 3a fails (14 pass, 1 fail) in a scratch tree carrying the 1.283 app3",
+   "green": "proof-1271 passes in full on the Beta 1.284 tree",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "drive223-arm-minimum-1284",
+   "check": "tests/browser/drive223.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive223.mjs": "83cad916b5b4c5908c1017e63fba105fe99f291259e9d2108fb7e572ee3e594a",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "the Beta 1.283 tree (43d711d2): the saved-clean delete arms and deletes on the second tap with no minimum delay",
+   "red": "drive223 4/5 on the 1.283 tree: D3 fails - the confirm 120 ms after the arming tap deletes the record (observed locally)",
+   "green": "drive223 5/5 on the Beta 1.284 tree (observed locally)",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "drive88-delete-mutation-1284",
+   "check": "tests/browser/drive88.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive88.mjs": "da9ac265d43960cca591ae15d0d6ce9d39414967a4942a2f9458ceb7a598fe2a",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "scratch tree with HIST.deleteAt neutered (parts/app1.js: the splice removed; the #174 arm minimum untouched) - drive88's only edit this round moved its P4 confirm tap past the 700 ms minimum",
+   "red": "drive88 15/16 in the mutated tree: P4 (second tap deletes the clean and persists) fails",
+   "green": "drive88 16/16 on the Beta 1.284 tree (observed locally)",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "drive89-delete-mutation-1284",
+   "check": "tests/browser/drive89.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive89.mjs": "7ed49b5b9f15eeb821189d1d7aeac15aa3e8577b2f884f71674fa0494df5b6d7",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "scratch tree with HIST.deleteAt neutered (parts/app1.js: the splice removed; the #174 arm minimum untouched) - drive89's only edit this round moved its T5 confirm tap past the 700 ms minimum",
+   "red": "drive89 12/15 in the mutated tree: T5 (clean deleted), T5-after and T6 fail",
+   "green": "drive89 15/15 on the Beta 1.284 tree (observed locally)",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "drive187-delete-mutation-1284",
+   "check": "tests/browser/drive187.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive187.mjs": "d2c753abea5aca69f1975124a548e765b9ba58baf8af7cc2631a229341e72005",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "scratch tree with HIST.deleteAt neutered (parts/app1.js: the splice removed; the #174 arm minimum untouched) - drive187's only edit this round moved its post-arm wait from 200 ms to 850 ms",
+   "red": "drive187 18/19 in the mutated tree: B4c (the two-tap delete removes the legacy clean from memory AND storage) fails",
+   "green": "drive187 19/19 on the Beta 1.284 tree (observed locally)",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "drive192-delete-mutation-1284",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "abb4897622590ca918de65f7f97d94d903da25b81ae3958efd4e77e5249c0187",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d"
+   },
+   "mutation": "scratch tree with HIST.deleteAt neutered (parts/app1.js: the splice removed; the #174 arm minimum untouched) - drive192's only edit this round moved its post-arm wait from 200 ms to 850 ms",
+   "red": "drive192 50/51 in the mutated tree on an isolated run: P11 (the two-tap delete removes the clean and returns to Saved cleans) fails with h:1, rows:1",
+   "green": "drive192 51/51 on the Beta 1.284 tree (observed locally)",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "proof-1255-tapguard-repin-1284-170only",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "c090e9d2ae235b877da7f45bef2ce2254e48b79d265d0c0db321d38212ce9d62",
+    "parts/app3.js": "7acac590d79c09982e36b6178edb836751a879eda3d953e9de5135498252e7ef"
+   },
+   "mutation": "parts/app3.js at its Beta 1.283 form, whose cancelStartBtn listener calls tapGuard with a single argument (the #170 re-pin names the event-passing form); this receipt pins the interim app3 of the #170 commit, before the #174 commit lands on the same file",
+   "red": "check 6 fails (10 passed, 1 failed) in a scratch tree carrying the 1.283 app3",
+   "green": "proof-1255 passes in full on the Beta 1.284 tree",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "proof-1271-tapguard-repin-1284-170only",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "76c62516ceb0a6493970cd1d4779bfcf441d57f98f65db90722368eba663c6df",
+    "parts/app3.js": "7acac590d79c09982e36b6178edb836751a879eda3d953e9de5135498252e7ef"
+   },
+   "mutation": "parts/app3.js at its Beta 1.283 form, whose clearBtn listener calls tapGuard with a single argument (the #170 re-pin names the event-passing form); this receipt pins the interim app3 of the #170 commit, before the #174 commit lands on the same file",
+   "red": "check 3a fails (14 pass, 1 fail) in a scratch tree carrying the 1.283 app3",
+   "green": "proof-1271 passes in full on the Beta 1.284 tree",
+   "issued": "2026-11-23 beta-1284-marking-cluster"
   }
  ]
 }

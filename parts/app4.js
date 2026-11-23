@@ -508,8 +508,8 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
   }
   return [...urls];
 }
-$('xPre').addEventListener('click', async () => {
-  if (!tapGuard('xPre')) return;
+$('xPre').addEventListener('click', async ev => {
+  if (!tapGuard('xPre', ev)) return;
   if (preloadRunning) { return; }
   preloadRunning = true; let releasePack = () => {};
   const st = $('xPreStat'); st.textContent = 'Preparing map list…';
@@ -595,8 +595,8 @@ const list = preloadUrlList();
 let updState = ''; // Beta 1.111: the Status health row's App-version state - '' = not checked yet this session, 'ok' = up to date, 'avail' = a newer version was served. In-memory on purpose: a fresh boot honestly reports "not checked yet" again instead of trusting a stale stamp.
 let storagePersist = null; // Beta 1.183 (storage audit §3 item 2): the platform's answer to the boot persist() request, RECORDED instead of discarded (the boot block below) - true = this origin's data is exempt from automatic eviction, false = the browser refused, null = no answer (the API is absent, or it has not resolved yet). Read by the Status storage row at pane open; never itself persisted - every boot asks again, like updState above
 function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; } // Beta 1.150 (security-audit fix round): the version ordering the update check compares by - two numeric components, nothing else parses
-$('updBtn').addEventListener('click', async () => {
-  if (!tapGuard('updBtn')) return;
+$('updBtn').addEventListener('click', async ev => {
+  if (!tapGuard('updBtn', ev)) return;
   const updDone = () => { showSetPane('setStatusPane'); renderStatus(true); }; // Beta 1.221 gate fix (Codex P2, PR #98): the outcome toasts are cut (Andrew's keep-list), and the result's surviving surface is the System Health version row - so a finished manual check takes him to that row, rendered fresh. Without this the tap appeared to do nothing: updState changed where nobody was looking.
   try {
     if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); }
@@ -742,12 +742,12 @@ $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; 
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
 renderIcons(); // the mint tables ship empty - this puts every host on the Glyph set, in the current theme and Locate state, before anything is tapped or painted
-$('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
+$('setBtn').addEventListener('click', ev => { if (!tapGuard('setBtn', ev)) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
 const SET_PANES = ['setMainPane', 'setStatusPane', 'setJobPane', 'setChimePane', 'setBackupPane', 'setAboutPane'];
 function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); if (id === 'setBackupPane') renderSwitch($('swFixLog'), fixLogIsEnabled()); } // Beta 1.195: landing on the Backup pane re-renders the debug-log switch FROM THE RUNTIME FLAG (fixLogIsEnabled, app3's door) — never from storage, because the flag is never stored // Beta 1.111: the pane set grew from two to six; landing on main refreshes the Backup button's last-backup line from the export stamp
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
 $('setBack').addEventListener('click', () => { const onBackup = $('setBackupPane').classList.contains('on'); if (onBackup && xMode === 'text') showX('restore'); else if (onBackup && xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane. Beta 1.170 (Carbon fix round Phase 2, C-06): the xMode walk belongs to the BACKUP pane alone - through 1.169 it ran wherever Back was pressed, so with xMode left at 'text'/'restore' by an earlier Backup visit, Back on any other Settings pane reset the hidden Backup view instead of returning to the main pane.
-$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
+$('exportBtn').addEventListener('click', ev => { if (!tapGuard('exportBtn', ev)) return; openExport(); });
 function noteExported() { // Beta 1.111: the Settings main pane's "Last backup" line reads this stamp. It rides the EXISTING export record (LS.exp) as one added field, merged in, so no new key exists and no other field of the record is disturbed (Beta 1.224: the backup nudge that once shared this record is removed; the stamp and its merge discipline stay). Stamped only at a successful hand-off (share accepted / download dispatched) - a cancelled share sheet stamps nothing, so the line never claims a backup that never left the phone.
   try { const st = parseJ(lsGet(LS.exp), {}); st.exportedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); } catch (e) { /* the line is a courtesy - a failed stamp never breaks an export */ }
 }
@@ -930,8 +930,8 @@ async function renderStatus(resetStat) {
 }
 $('stBtn').addEventListener('click', () => { showSetPane('setStatusPane'); renderStatus(true); });
 $('statusBack').addEventListener('click', () => showSetPane('setMainPane'));
-$('stDel').addEventListener('click', async () => {
-  if (!tapGuard('stDel')) return;
+$('stDel').addEventListener('click', async ev => {
+  if (!tapGuard('stDel', ev)) return;
   if (preloadRunning) { return; }
   const releaseDel = await takePackWriteTurn(); // Carbon sweep C-02 fix (2026-11-15): the delete takes the pack writers' turn, like every other pack mutation - through this fix it deleted the whole cache guarded only by the per-page preloadRunning flag, so a delete from a second tab (or one landing during this page's boot migration, which holds the turn) deleted the cache under the writer holding it, whose writes then landed in a detached cache its confirmation could still read, letting it certify a pack that no longer existed. The turn is held across the delete AND the metadata clears below and released in the finally - the download's own acquire/release pattern
   try {
