@@ -7799,6 +7799,19 @@
    "red": "Mutation A: guard FAIL 'shard-durations.json does not name exactly the roster (missing: [drive222])' exit 1. Mutation B: FAIL '(extra: [drive999])' exit 1.",
    "green": "Restored durations: 'shard coverage: PASS (100 drives across 8 shards, disjoint and complete; durations name exactly the roster; runner agrees shard for shard)'",
    "issued": "2026-11-23 testing-rollout round, local run"
+  },
+  {
+   "id": "testing-rollout-sw-fake-timers",
+   "check": "tests/sw.test.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/sw.test.mjs": "ad6b91ad7e9dbbde27315bf3692bdf700ba72e0e9830b75a0ba35f7b0b0d3f73",
+    "src/sw.js": "36c006985a2ce6aaa12878a2449a4abe780666ba4a30e8da4784bb84b726e226"
+   },
+   "mutation": "src/sw.js: the uncached-navigation stall race bound cut 5000 -> 500, so a slow-but-working first launch is abandoned before its 4.2s answer lands",
+   "red": "Suite exit 1 with exactly: FAIL '1.221 uncached slow navigation awaits the network answer' (the fake clock makes the abandonment land inside the case's advance window)",
+   "green": "Restored sw.js: suite exit 0, 45/45 PASS in 0.59s real time (was ~35s of real sleeps)",
+   "issued": "2026-11-23 testing-rollout round, local run"
   }
  ]
 }
