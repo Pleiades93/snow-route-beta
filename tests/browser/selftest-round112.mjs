@@ -55,7 +55,7 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
 // The stDel handler body is extracted verbatim from app4.js and run against
 // cache stubs: rejecting / true / false-with-cache-absent / false-but-present.
 {
-  const body = extract(app4, "$('stDel').addEventListener('click', async () => {", '// ---- About ----', 'stDel handler');
+  const body = extract(app4, "$('stDel').addEventListener('click', async ev => {", '// ---- About ----', 'stDel handler');
   const runStDel = async (del, has) => {
     const toasts = [], dels = [];
     let handler = null;

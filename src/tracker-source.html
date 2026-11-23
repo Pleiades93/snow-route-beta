@@ -678,7 +678,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.283</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.284</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -1195,7 +1195,7 @@ let settings = loadSettings();
 /** @returns {boolean} */ function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound })); } // only the persistent three - settings.awake is never written (Beta 1.112)
 // Tap guard — 400 ms per control
 const tapLast = {};
-/** @param {string} key @returns {boolean} */ function tapGuard(key) { const now = Date.now(); if (tapLast[key] && now - tapLast[key] < 400) return false; tapLast[key] = now; return true; }
+/** @param {string} key @param {{ timeStamp: number }} ev @returns {boolean} */ function tapGuard(key, ev) { const timestamp = ev.timeStamp; if (tapLast[key] !== undefined && timestamp - tapLast[key] < 400) return false; tapLast[key] = timestamp; return true; }
 
 // ===== STRETCHES — stitch each street, cut at junctions (checklist SS1) =====
 /** @param {string} name @param {RoadsMap} [roads] @returns {LatLng[][]} */ function stitchRuns(name, roads) { // Beta 1.144 (Package C, DA-02/C1): a street's segments chained into their CONNECTED RUNS - the pre-1.144 stitchLine growth (exact endpoint equality, same scan order, same concat operations) repeated per component, so a street whose segments form several disconnected runs (non-adjacent sector picks at create; genuinely split streets) keeps EVERY run instead of only the one connected to segment 0. Run 1 is byte-identical to the old stitchLine output for any street; a fully connected street has exactly one run and nothing changes anywhere.
@@ -1899,6 +1899,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
   labelFeatures.length = 0; labelPointFeatures.length = 0;
   TOPO.reset(); // Beta 1.283 (#11): the run-structure table and the shared-vertex index are derivatives of the geometry - they die here and are re-seated street by street below, so they can never name a previous route's streets (the lesson the retired sharedVertexMap learned by hand in 1.117: its memo had to be nulled here or the strand builders read the previous route's vertices)
+
   H.names.forEach(n => {
   // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
   // within a run, sectors are exact slices of it (sector k+1 starts at the
@@ -2523,12 +2524,47 @@ function mergeStrands(slices, pairs) {
     return out;
   };
   const arr = slices.slice();
+  // Beta 1.284 (#169): the winner scan no longer prices every ordered
+  // pair. joinInfo(a, b) can only produce a candidate when an end of b
+  // touches an end of a (an exact join is coordKey equality of one end
+  // pair, in either orientation) or when one of b's end metas pairs
+  // with one of a's at a junction (a bridge) - so each pass enumerates
+  // a's candidate partners from end indexes and runs joinInfo only for
+  // them, in the original scan order. The winner rule is untouched
+  // (highest score; ties keep the first candidate in scan order), and
+  // a pass is decided the moment a score-2 candidate stands, since no
+  // later candidate can displace it. The pairs the indexes skip are
+  // exactly the pairs joinInfo would have answered with no candidate,
+  // so the fixpoint - and every merged strand - is the same.
+  const metaKey = m => m.n + '|' + m.vi + '|' + m.side;
   for (;;) {
+    const byStart = new Map(), byEnd = new Map(), byMeta = new Map();
+    const index = (map, k, v) => { const l = map.get(k); if (l) l.push(v); else map.set(k, [v]); };
+    arr.forEach((sl, ix) => {
+      index(byStart, coordKey(sl.pts[0]), ix);
+      index(byEnd, coordKey(sl.pts[sl.pts.length - 1]), ix);
+      if (sl.e0) index(byMeta, metaKey(sl.e0), ix);
+      if (sl.e1) index(byMeta, metaKey(sl.e1), ix);
+    });
     /** @type {{ i: number, j: number, score: number, merged: any } | null} */
     let best = null;
-    for (let i = 0; i < arr.length; i++) for (let j = 0; j < arr.length; j++) {
-      if (i === j || arr[i].key !== arr[j].key) continue;
-      joinInfo(arr[i], arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, score: c.score, merged: c.merged }; });
+    for (let i = 0; i < arr.length && !(best && best.score === 2); i++) {
+      const a = arr[i];
+      const cand = new Set();
+      const aS = coordKey(a.pts[0]), aE = coordKey(a.pts[a.pts.length - 1]);
+      for (const ix of byStart.get(aE) || []) cand.add(ix);
+      for (const ix of byStart.get(aS) || []) cand.add(ix);
+      for (const ix of byEnd.get(aE) || []) cand.add(ix);
+      for (const ix of byEnd.get(aS) || []) cand.add(ix);
+      if (pairs) for (const meta of [a.e1, a.e0]) {
+        if (!meta) continue;
+        for (const pr of pairs[metaKey(meta)] || []) for (const ix of byMeta.get(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || []) cand.add(ix);
+      }
+      const js = [...cand].filter(j => j !== i && arr[j].key === a.key).sort((x, y) => x - y);
+      for (const j of js) {
+        joinInfo(a, arr[j]).forEach(c => { if (!best || c.score > best.score) best = { i, j, score: c.score, merged: c.merged }; });
+        if (best && best.score === 2) break;
+      }
     }
     if (!best) break;
     arr[best.i] = best.merged;
@@ -3488,29 +3524,60 @@ const PAINT = {
     return !!((b & (1 << side)) || b === 3);
   }
 };
+// Beta 1.284 (#169): one street's centre/band/fill/fade slices are a
+// pure function of the street's geometry and its OWN pieces vector -
+// PAINT.classify / clipEnds / fillCont read only H.pieces[n] (the
+// piece, its same-street neighbours), and the clip/split helpers read
+// geometry alone - so buildFamilies caches them per street, keyed on
+// the pieces vector, and a mark on one street rebuilds only that
+// street's slices. The cache holds PRISTINE records and hands out
+// fresh slice objects (fresh pts and mem arrays) on every rebuild:
+// the merges and clipStrandEnds reassign pts on the slices they are
+// given, so a cached record must never be handed out itself. Edge
+// slices are NOT cached: edgeRunSlices reads junction neighbours'
+// pieces and throughOK's build-order claim state, which is
+// junction-scoped, not street-scoped. The cache dies with the
+// geometry (GLP.rebuildRoute clears it on every route switch).
+const SLICE_CACHE = new Map();
+function buildStreetSlices(n) {
+  const g = GEO[n];
+  const centres = [], bands = [], fills = [], fades = [];
+  g.cuts.forEach((ab, idx) => {
+    const c = PAINT.classify(n, idx);   // Beta 1.282 (#12): the classification is the PAINT model's, computed once per piece
+    const bits = c.bits, isBand = c.isBand, key = c.key;
+    let cPts = g.stitched.slice(ab[0], ab[1] + 1);
+    const ownHalf = SURF_HALF;   // Beta 1.208: bands draw at the surface's width, so a band end trims against the same half-width as a surface end
+    cPts = PAINT.clipEnds(n, idx, cPts, ownHalf, false);   // Beta 1.282 (#12): the centre-family clip decision is the model's - clip an end only where the paint actually ends there (a different family/colour next door, a run gap, or the street's end; Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family)
+    if (isBand) {   // Beta 1.208 (Codex P2, gate round 3): the band's own clip rule is per-side-paint, not per-family - a band end clips only where the GREEN fully ends (the neighbouring piece carries no marked side at all). Beside a one-side piece the band keeps its shared vertex, meeting the fill that starts there; clipping on both sides of that boundary left the junction square's half unpainted (a 9.9 m break in the completed side, LongAve [1,3,3] in the proof network). Recomputed from the stitched slice so the centre family's rule above is untouched.
+      let bPts = g.stitched.slice(ab[0], ab[1] + 1);
+      bPts = PAINT.clipEnds(n, idx, bPts, ownHalf, true);   // Beta 1.282 (#12): the band clip decision is the model's band rule
+      const bSp = boundarySplit(n, ab, bPts, 'b', MUGREEN, true); // Beta 1.259: a band at a boundary end feathers like every other family
+      for (const f of bSp.fades) fades.push(f);
+      if (bSp.solid) bands.push({ pts: bSp.solid, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
+    }
+    else { const cSp = boundarySplit(n, ab, cPts, 'c', key, true); for (const f of cSp.fades) fades.push(f); if (cSp.solid) centres.push({ pts: cSp.solid, key, mem: [{ n, idx }], e0: null, e1: null }); }
+    if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(n, ab, fillSlicePts(n, idx, side), 'f', MUGREEN, false); for (const f of fSp.fades) fades.push(f); if (fSp.solid) fills.push({ pts: fSp.solid, key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); } });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline). Beta 1.259: the fill feathers at a boundary end too, split on its own half-offset line at the point nearest the join
+  });
+  return { centres, bands, fills, fades };
+}
+function streetSlices(n) {
+  const sig = H.pieces[n].join(',');
+  let rec = SLICE_CACHE.get(n);
+  if (!rec || rec.sig !== sig) { rec = { sig, out: buildStreetSlices(n) }; SLICE_CACHE.set(n, rec); }
+  const fresh = list => list.map(sl => ({ pts: sl.pts.slice(), key: sl.key, mem: sl.mem.map(m => ({ ...m })), e0: null, e1: null }));
+  return { centres: fresh(rec.out.centres), bands: fresh(rec.out.bands), fills: fresh(rec.out.fills), fades: rec.out.fades.map(f => ({ pts: f.pts.slice(), k: f.k, col: f.col })) };
+}
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
   PAIRS_CUR = pairs;
   const centreSlices = [], bandSlices = [], edgeSlices = [], fillSlices = [], fadeSlices = [];
   H.names.forEach(n => {
-    const g = GEO[n];
-    g.cuts.forEach((ab, idx) => {
-      const c = PAINT.classify(n, idx);   // Beta 1.282 (#12): the classification is the PAINT model's, computed once per piece
-      const bits = c.bits, isBand = c.isBand, key = c.key;
-      let cPts = g.stitched.slice(ab[0], ab[1] + 1);
-      const ownHalf = SURF_HALF;   // Beta 1.208: bands draw at the surface's width, so a band end trims against the same half-width as a surface end
-      cPts = PAINT.clipEnds(n, idx, cPts, ownHalf, false);   // Beta 1.282 (#12): the centre-family clip decision is the model's - clip an end only where the paint actually ends there (a different family/colour next door, a run gap, or the street's end; Beta 1.144: a run-start piece's leading end is a street end for its run - it earns the junction clip even when the previous piece (another run's end) wears the same family)
-      if (isBand) {   // Beta 1.208 (Codex P2, gate round 3): the band's own clip rule is per-side-paint, not per-family - a band end clips only where the GREEN fully ends (the neighbouring piece carries no marked side at all). Beside a one-side piece the band keeps its shared vertex, meeting the fill that starts there; clipping on both sides of that boundary left the junction square's half unpainted (a 9.9 m break in the completed side, LongAve [1,3,3] in the proof network). Recomputed from the stitched slice so the centre family's rule above is untouched.
-        let bPts = g.stitched.slice(ab[0], ab[1] + 1);
-        bPts = PAINT.clipEnds(n, idx, bPts, ownHalf, true);   // Beta 1.282 (#12): the band clip decision is the model's band rule
-        const bSp = boundarySplit(n, ab, bPts, 'b', MUGREEN, true); // Beta 1.259: a band at a boundary end feathers like every other family
-        for (const f of bSp.fades) fadeSlices.push(f);
-        if (bSp.solid) bandSlices.push({ pts: bSp.solid, key: 'band', mem: [{ n, idx }], e0: null, e1: null });
-      }
-      else { const cSp = boundarySplit(n, ab, cPts, 'c', key, true); for (const f of cSp.fades) fadeSlices.push(f); if (cSp.solid) centreSlices.push({ pts: cSp.solid, key, mem: [{ n, idx }], e0: null, e1: null }); }
-      if (!isBand && bits !== 0) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(n, ab, fillSlicePts(n, idx, side), 'f', MUGREEN, false); for (const f of fSp.fades) fadeSlices.push(f); if (fSp.solid) fillSlices.push({ pts: fSp.solid, key: 'fill', mem: [{ n, idx, side }], e0: null, e1: null }); } });   // Beta 1.208: a one-side-done piece also emits its side's FILL (the half-road green Andrew ordered in place of the kerb outline). Beta 1.259: the fill feathers at a boundary end too, split on its own half-offset line at the point nearest the join
-    });
+    const own = streetSlices(n);
+    for (const sl of own.centres) centreSlices.push(sl);
+    for (const sl of own.bands) bandSlices.push(sl);
+    for (const sl of own.fills) fillSlices.push(sl);
+    for (const f of own.fades) fadeSlices.push(f);
     [0, 1].forEach(side => {
       edgeRunSlices(n, side, idx => H.pieces[n][idx] !== 3 && (H.pieces[n][idx] & (1 << side))).forEach(sl => edgeSlices.push(sl));
     });
@@ -3949,6 +4016,7 @@ function managePulse() {
   }
   function rebuildRoute() { // Beta 1.117: the app switched routes and rebuilt its own geometry (buildGeometry, app1) - rebuild the engine's from the host's current data and re-point every route-shaped source at it. The basemap and layers are untouched; only data moves.
     buildEngineGeometry();
+    SLICE_CACHE.clear(); // Beta 1.284 (#169): the per-street slice cache is a derivative of the geometry - it dies on every route switch (here, not in buildEngineGeometry: that function is extracted standalone by the topo proofs and must not reach for state outside its own prelude)
     sel = null;
     CUR = null; rebuildData(); lastSig = stateSig();
     if (!GLM) return;
@@ -4028,7 +4096,7 @@ function bootMap() {
 } // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 let routeBox = null; // Beta 1.117: the ACTIVE pack's bounding box - set by buildGeometry (app1) on every load via computeRouteBox; null before any route is chosen and for an empty pack. (Pre-1.117 this was an eval-time IIFE over the baked-in 5W ROADS.)
 function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); if (dead) { const t = $('toast'); if (t && t.classList.contains('show')) placeToast(t); } } // Beta 1.221: this banner can appear WHILE a pill is up (it arms on a timer / a late map error) - a pill placed before it arrived would be covered by it, so a shown pill re-places itself the moment the banner lands (Andrew's placement bar: zero overlap, measured by drive204)
-$('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
+$('mapNoteNo').addEventListener('click', ev => { if (!tapGuard('mapNoteNo', ev)) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
@@ -4548,7 +4616,7 @@ function showChips() {
     d.className = 'sideChip' + (groupSideDone(side) ? ' done' : '');
     d.dataset.side = side;
     d.innerHTML = '<button class="chipBtn" aria-label="mark side"></button>';
-    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side)) return; togglePieceGroup(side); });
+    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side, ev)) return; togglePieceGroup(side); });
     wrap.appendChild(d);
   });
   positionChips();
@@ -4627,8 +4695,8 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
   selSet.forEach((en, k) => { applyPiece(en.name, en.idx, map[k], on); });
   showChips(); finishChangeMarked();
 }
-$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
-$('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
+$('selAllBtn').addEventListener('click', ev => { if (!tapGuard('selAll', ev)) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
+$('selClearBtn').addEventListener('click', ev => { if (!tapGuard('selClear', ev)) return; deselect(); });
 function markDone(name, via, at) { // Beta 1.274 (programme #1): the mutation is BOARD.completeStreet (production contract unchanged: whole street done; sides already marked keep their real times, the rest inherit the completion moment); the feedback and the finish stay here, in the old order
   const t = BOARD.completeStreet(name, via, at);
   if (t.flipped) onStreetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too
@@ -4666,8 +4734,8 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
     else { b.textContent = 'Complete entire road'; b.className = ''; b.disabled = false; } // Beta 1.209 (Andrew): the button completes the WHOLE road (markStreet), so it says so - the old label read as if it finished only the lit stretch
   }
 }
-$('selBtn').addEventListener('click', () => { if (!sel || !tapGuard('selBtn')) return; markStreet(sel.name, !streetComplete(sel.name)); });
-$('selNote').addEventListener('click', () => { if (!sel || !tapGuard('selNote')) return; openNote(sel.name); });
+$('selBtn').addEventListener('click', ev => { if (!sel || !tapGuard('selBtn', ev)) return; markStreet(sel.name, !streetComplete(sel.name)); });
+$('selNote').addEventListener('click', ev => { if (!sel || !tapGuard('selNote', ev)) return; openNote(sel.name); });
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
   const tw = totalWorkM(); // Beta 1.170 (Carbon fix round Phase 2, A-05): the share's denominator, read once and GUARDED - a route with no work in it (an empty pack, or geometry whose totals are all zero) divided by zero through 1.169 and the counter read 'NaN%' with a 'NaN%' meter width; it now reads 0%
@@ -4772,7 +4840,7 @@ function renderStreets() { // production row design: tap a street's name area to
     paintNt();
     d.querySelector('.sloc').addEventListener('click', e => {
       e.stopPropagation();
-      if (!tapGuard('li' + n)) return;
+      if (!tapGuard('li' + n, e)) return;
       closeSheets();
       const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)];
       map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) });
@@ -5063,7 +5131,7 @@ function ddClose(drop) { // Beta 1.273: the close runs 335ms on --ease-close (An
 function showRmPane(id) { document.querySelectorAll('.rmPane').forEach(p => { if (p._ddPin) { p._ddPin = false; p.style.marginTop = ''; } }); ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
-$('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
+$('routesBtn').addEventListener('click', ev => { if (!tapGuard('routesBtn', ev)) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
 ['crCityList', 'rmRoutes'].forEach(id => { const el = $(id); if (el) el.addEventListener('scroll', () => menuListFade(el), { passive: true }); }); // Beta 1.233: the feather follows the scroll
 window.addEventListener('resize', () => { menuListFade($('crCityList')); menuListFade($('rmRoutes')); }); // Beta 1.233: a taller or shorter window changes what the list edges cover
@@ -5075,10 +5143,10 @@ wireRouteRows($('rmRoutes'), id => {
   if ($('routeMenu').classList.contains('tab')) { closeRouteMenu(); if (!activeRoute || id !== activeRoute.id) loadRoute(id); }
   else if (window.__bootPickRoute) window.__bootPickRoute(id);
 });
-$('streetsBtn').addEventListener('click', () => { if (!tapGuard('streetsBtn')) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); } });
+$('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev)) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
-$('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
+$('paceBtn').addEventListener('click', ev => { if (!tapGuard('paceBtn', ev)) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
 function refreshAll() { updateCount(); renderPanel(); renderStreets(); }
 
 // ===== PACE (one source) =====
@@ -5275,6 +5343,7 @@ function showPaceMain() { // Beta 1.184: the Pace sheet main view - header + pac
   const ph = $('paceHead'); if (ph) ph.style.display = '';
   const pp = $('pacePad'); if (pp) pp.style.display = '';
   cleanIdx = null;
+  cleanDelArmedAt = NaN;
 }
 function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; showPaceMain(); renderPace(); $('pacePanel').classList.add('open'); } // Beta 1.184: showPaceMain first - an open left on the clean detail returns to the Pace main view
 function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet (Beta 1.30)
@@ -5282,12 +5351,13 @@ function closePace() { closeSheetEl($('pacePanel')); } // same animated close as
 // ===== CLEAN DETAIL (production v5.53 model): one archived clean inside the list sheet - totals, its streets
 // in mark order with per-street times, its notes, noted-but-not-cleaned group, two-tap delete. Back and Delete
 // both land on Previous cleans (expanded), never on the Streets list. =====
-let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0;
+const CLEAN_DEL_MIN_ARM_MS = 700;
+let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0, cleanDelArmedAt = NaN;
 function cleanNoteLines(entries) { return CLEAN.noteLines(entries); }
 function openClean(i) {
   const h = history[i];
   if (!h) return;
-  cleanIdx = i; cleanDelArmed = false;
+  cleanIdx = i; cleanDelArmed = false; cleanDelArmedAt = NaN;
   deselect();
   const pd = CLEAN.detail(h);
   const d = pd.dur;
@@ -5359,13 +5429,16 @@ function openClean(i) {
     });
   }
   const del = document.createElement('button'); del.className = 'cvDel'; del.textContent = 'Delete this clean';
-  del.onclick = () => {
+  del.onclick = ev => {
+    const timestamp = ev?.timeStamp;
     if (!cleanDelArmed) {
       cleanDelArmed = true; del.classList.add('armed'); del.textContent = 'Tap again to confirm delete';
+      cleanDelArmedAt = timestamp >= 0 && Number.isFinite(timestamp) ? timestamp : NaN;
       clearTimeout(cleanDelTimer);
-      cleanDelTimer = setTimeout(() => { cleanDelArmed = false; del.classList.remove('armed'); del.textContent = 'Delete this clean'; }, 5000);
+      cleanDelTimer = setTimeout(() => { cleanDelArmed = false; cleanDelArmedAt = NaN; del.classList.remove('armed'); del.textContent = 'Delete this clean'; }, 5000);
       return;
     }
+    if (!Number.isFinite(timestamp) || !(timestamp - cleanDelArmedAt >= CLEAN_DEL_MIN_ARM_MS)) return;
     clearTimeout(cleanDelTimer);
     HIST.deleteAt(cleanIdx);
     const okDel = HIST.save();
@@ -5446,7 +5519,7 @@ const RUN = {
   /** @returns {void} */ switchReset() { // the route switch's reset of this session (resetNotesHistorySession below is its doorway - app5's resetSwitchSession resolves that name): the distance counter's state zeroes, but its persisted record STAYS in the outgoing slot and is re-adopted lazily if he switches back mid-run (Beta 1.167, B5); the in-memory cancel snapshot drops - the PERSISTED copy in the outgoing slot is deliberately untouched, so after switching back Cancel validates it exactly as it does after a reload; the history panel and its delete-arming close; and the modal note editor closes with its target dropped. Beta 1.271: the suggestion set and the two banners this reset used to clear are gone - checkStale re-judges the stale question for the incoming route through the confirmation pill.
     RUNDIST.reset();
     runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run. The PERSISTED copy (LS.snap, in the outgoing slot) is deliberately untouched - after switching back, Cancel validates it exactly as it does after a reload
-    histOpen = false; cleanIdx = null; cleanDelArmed = false; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; }
+    histOpen = false; cleanIdx = null; cleanDelArmed = false; cleanDelArmedAt = NaN; if (cleanDelTimer) { clearTimeout(cleanDelTimer); cleanDelTimer = 0; }
     noteFor = null; $('noteModal').classList.add('hidden');
   },
 };
@@ -5491,7 +5564,7 @@ function cancelStart() {
   else if (okCancel && snapDamaged) toast('Start cancelled - clean erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the clean)', 4600); // Beta 1.221 gate fix (drive133 S12a, CI): the DAMAGED disclosure was cut with the plain success pill, but it is not a confirmation - it is the ONLY surface that tells him the cancel REBUILT the board approximately because the saved snapshot was corrupt (the Beta 1.95 SR-194-03 design). Andrew's named cut was the PLAIN form, which stays cut, and the ABSENT form stays cut too (drive143 C1/C2 assert a clean cancel with no snapshot fires no pill - through the real Start path an absent snapshot already warned at Start, when saveSnap failed). The damaged form is an adjudicated keep beside the trail-cleanup warning, under his severe + no-other-surface rule
   else if (!okCancel) toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200);
 } // Beta 1.69 (audits N03 + trail): cancelStart ignored saveAll's result and claimed success unconditionally; it also never refreshed the trail, so a cancelled run's line lingered
-$('startBtn').addEventListener('click', () => { if (!tapGuard('startBtn')) return; startClean(); });
+$('startBtn').addEventListener('click', ev => { if (!tapGuard('startBtn', ev)) return; startClean(); });
 // CLEAR (Andrew, Beta 1.7): header button beside Pace - wipes EVERY mark on the board (all streets,
 // both sides), plus the completion times/vias and the GPS coverage behind them. Beta 1.271 (Andrew):
 // the tap ASKS first, through the shared confirmation (askClearAll) - through 1.270 this was the most
@@ -5505,15 +5578,15 @@ function clearAllMarks() {
   deselect(); const okClear = finishChange();
   if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200); // Beta 1.63 (audit F04)
 }
-$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; if (boardHasMarks()) askClearAll(); });
+$('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) return; if (boardHasMarks()) askClearAll(); });
 function askClearAll() { // Beta 1.271 (Andrew): the Clear ask - the shared confirmation, bound to the route it was opened over (askCancelStart's binding discipline); the wipe itself is clearAllMarks, unchanged. An empty board never raises the question (the handler's guard above).
   const forRoute = activeRoute ? activeRoute.id : null;
   showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
 }
-$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
-$('resetBtn').addEventListener('click', () => {
+$('cancelStartBtn').addEventListener('click', ev => { if (!tapGuard('cancelStartBtn', ev)) return; askCancelStart(); }); // Beta 1.255 (gate round 3, Codex P2): the dock's Cancel start asks through the same bound confirmation - through head 2 it still discarded in one tap, bypassing the Pace sheet's new question entirely
+$('resetBtn').addEventListener('click', ev => {
   // Beta 1.110 (Andrew): the Yes/No pop-up below is the ONLY finish gate - the post-Finish Undo is removed, so this button never means anything but Finish.
-  if (!tapGuard('resetBtn')) return;
+  if (!tapGuard('resetBtn', ev)) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
     ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : ''))
@@ -5521,7 +5594,7 @@ $('resetBtn').addEventListener('click', () => {
   $('finModal').classList.remove('hidden');
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
-$('finYes').addEventListener('click', () => { if (!tapGuard('finYes')) return; $('finModal').classList.add('hidden'); finishRun(); });
+$('finYes').addEventListener('click', ev => { if (!tapGuard('finYes', ev)) return; $('finModal').classList.add('hidden'); finishRun(); });
 // Beta 1.255 (O-03): THE shared confirmation surface (head.html #confirmPill -
 // the selection pill's faces and box, centred). The app grew three
 // unrelated confirm patterns (the Finish modal, the Settings reset two-step,
@@ -6625,8 +6698,8 @@ function stopGps(silent) {
   if (map) pushGps(); // Beta 1.48 (audit B05): the facing beam is only built while watchId lives - without a fresh push the last beam stayed drawn after stop
   $('gpsBtn').classList.remove('on'); $('gpsBtn').classList.remove('rec'); renderIcons(); $('spdPill').classList.add('hidden'); syncCentreBtn(); // Beta 1.115: location off - the re-centre button goes with it. Beta 1.203: the speed pill goes with it too - its gate is the watch
 }
-$('gpsBtn').addEventListener('click', () => { if (!tapGuard('gpsBtn')) return; if (watchId != null) { if (followPaused) { resumeFollow(); } else stopGps(); } else if (runStart) { startGps(true); } else { startGps(false); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
-$('centreBtn').addEventListener('click', () => { if (!tapGuard('centreBtn')) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)
+$('gpsBtn').addEventListener('click', ev => { if (!tapGuard('gpsBtn', ev)) return; if (watchId != null) { if (followPaused) { resumeFollow(); } else stopGps(); } else if (runStart) { startGps(true); } else { startGps(false); } }); // Beta 1.49 (Andrew's rule): the Locate tab alone never records - with no clean open it is view-only; pressed during an open clean it resumes that clean's recording and says so. Beta 1.115 (Andrew): with the follow suspended, Locate means "take me back to my dot" and resumes it - off is the tap while following.
+$('centreBtn').addEventListener('click', ev => { if (!tapGuard('centreBtn', ev)) return; resumeFollow(); }); // Beta 1.115: the top-right re-centre button (below day/night) - visible only while suspended (syncCentreBtn)
 
 // ===== EXPORT / BACKUP / RESTORE (production showX model: one panel, four modes) =====
 function fmtStamp(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + fmtClock(d); }
@@ -7137,8 +7210,8 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
   }
   return [...urls];
 }
-$('xPre').addEventListener('click', async () => {
-  if (!tapGuard('xPre')) return;
+$('xPre').addEventListener('click', async ev => {
+  if (!tapGuard('xPre', ev)) return;
   if (preloadRunning) { return; }
   preloadRunning = true; let releasePack = () => {};
   const st = $('xPreStat'); st.textContent = 'Preparing map list…';
@@ -7224,8 +7297,8 @@ const list = preloadUrlList();
 let updState = ''; // Beta 1.111: the Status health row's App-version state - '' = not checked yet this session, 'ok' = up to date, 'avail' = a newer version was served. In-memory on purpose: a fresh boot honestly reports "not checked yet" again instead of trusting a stale stamp.
 let storagePersist = null; // Beta 1.183 (storage audit §3 item 2): the platform's answer to the boot persist() request, RECORDED instead of discarded (the boot block below) - true = this origin's data is exempt from automatic eviction, false = the browser refused, null = no answer (the API is absent, or it has not resolved yet). Read by the Status storage row at pane open; never itself persisted - every boot asks again, like updState above
 function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; } // Beta 1.150 (security-audit fix round): the version ordering the update check compares by - two numeric components, nothing else parses
-$('updBtn').addEventListener('click', async () => {
-  if (!tapGuard('updBtn')) return;
+$('updBtn').addEventListener('click', async ev => {
+  if (!tapGuard('updBtn', ev)) return;
   const updDone = () => { showSetPane('setStatusPane'); renderStatus(true); }; // Beta 1.221 gate fix (Codex P2, PR #98): the outcome toasts are cut (Andrew's keep-list), and the result's surviving surface is the System Health version row - so a finished manual check takes him to that row, rendered fresh. Without this the tap appeared to do nothing: updState changed where nobody was looking.
   try {
     if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); }
@@ -7371,12 +7444,12 @@ $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; 
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
 renderIcons(); // the mint tables ship empty - this puts every host on the Glyph set, in the current theme and Locate state, before anything is tapped or painted
-$('setBtn').addEventListener('click', () => { if (!tapGuard('setBtn')) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
+$('setBtn').addEventListener('click', ev => { if (!tapGuard('setBtn', ev)) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); }); // the Settings menu (Beta 1.88, Andrew): a blue full-screen takeover like Routes - it always lands on the main pane, and the version re-syncs from the title's on every open
 const SET_PANES = ['setMainPane', 'setStatusPane', 'setJobPane', 'setChimePane', 'setBackupPane', 'setAboutPane'];
 function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); if (id === 'setBackupPane') renderSwitch($('swFixLog'), fixLogIsEnabled()); } // Beta 1.195: landing on the Backup pane re-renders the debug-log switch FROM THE RUNTIME FLAG (fixLogIsEnabled, app3's door) — never from storage, because the flag is never stored // Beta 1.111: the pane set grew from two to six; landing on main refreshes the Backup button's last-backup line from the export stamp
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
 $('setBack').addEventListener('click', () => { const onBackup = $('setBackupPane').classList.contains('on'); if (onBackup && xMode === 'text') showX('restore'); else if (onBackup && xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane. Beta 1.170 (Carbon fix round Phase 2, C-06): the xMode walk belongs to the BACKUP pane alone - through 1.169 it ran wherever Back was pressed, so with xMode left at 'text'/'restore' by an earlier Backup visit, Back on any other Settings pane reset the hidden Backup view instead of returning to the main pane.
-$('exportBtn').addEventListener('click', () => { if (!tapGuard('exportBtn')) return; openExport(); });
+$('exportBtn').addEventListener('click', ev => { if (!tapGuard('exportBtn', ev)) return; openExport(); });
 function noteExported() { // Beta 1.111: the Settings main pane's "Last backup" line reads this stamp. It rides the EXISTING export record (LS.exp) as one added field, merged in, so no new key exists and no other field of the record is disturbed (Beta 1.224: the backup nudge that once shared this record is removed; the stamp and its merge discipline stay). Stamped only at a successful hand-off (share accepted / download dispatched) - a cancelled share sheet stamps nothing, so the line never claims a backup that never left the phone.
   try { const st = parseJ(lsGet(LS.exp), {}); st.exportedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); } catch (e) { /* the line is a courtesy - a failed stamp never breaks an export */ }
 }
@@ -7559,8 +7632,8 @@ async function renderStatus(resetStat) {
 }
 $('stBtn').addEventListener('click', () => { showSetPane('setStatusPane'); renderStatus(true); });
 $('statusBack').addEventListener('click', () => showSetPane('setMainPane'));
-$('stDel').addEventListener('click', async () => {
-  if (!tapGuard('stDel')) return;
+$('stDel').addEventListener('click', async ev => {
+  if (!tapGuard('stDel', ev)) return;
   if (preloadRunning) { return; }
   const releaseDel = await takePackWriteTurn(); // Carbon sweep C-02 fix (2026-11-15): the delete takes the pack writers' turn, like every other pack mutation - through this fix it deleted the whole cache guarded only by the per-page preloadRunning flag, so a delete from a second tab (or one landing during this page's boot migration, which holds the turn) deleted the cache under the writer holding it, whose writes then landed in a detached cache its confirmation could still read, letting it certify a pack that no longer existed. The turn is held across the delete AND the metadata clears below and released in the finally - the download's own acquire/release pattern
   try {
@@ -7577,7 +7650,7 @@ $('stDel').addEventListener('click', async () => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.283', items: ["Under the hood: the route's structure - how streets join, where they end - runs through one owner now."] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.284', items: ["Marking is fast now: taps land instantly, and a double-tap can't undo a mark or delete a saved clean"] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
@@ -7679,7 +7752,7 @@ function applyNight() { // Beta 1.231 (Andrew): the swap is INSTANT - the theme-
   const lift = () => de.classList.remove('theme-swap');
   requestAnimationFrame(lift); setTimeout(lift, 150);
 } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
-$('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
+$('nightBtn').addEventListener('click', ev => { if (!tapGuard('nightBtn', ev)) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
 function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route framed exactly as the flat fit frames it, tilted to 45 degrees, north up. The fit is computed FLAT (cameraForBounds with no pitch or bearing options is the flat fit: its centre and zoom are the fitBounds centre and zoom this replaces, bit for bit), and the tilt is applied AT that centre/zoom by the ease - never folded into the fit, because a pitch-aware fit recomputes a different zoom and Andrew's call was "keep the zoom level the same, just tilt it". Home and a route switch land here; the load-in flight (introToRoute) lands on the same view.
   if (!routeBox) return;
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
@@ -7687,7 +7760,7 @@ function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route fra
   if (fit && fit.center && typeof fit.zoom === 'number') { try { map.easeTo({ center: fit.center, zoom: fit.zoom, pitch: 45, bearing: 0 }); return; } catch (e) {} }
   try { map.fitBounds(b, { padding: 28 }); map.jumpTo({ pitch: 45, bearing: 0 }); } catch (e) {}
 }
-$('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; if (!routeBox) return; goHomeView(); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
+$('homeBtn').addEventListener('click', ev => { if (!tapGuard('homeBtn', ev)) return; if (!routeBox) return; goHomeView(); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // Beta 1.53: a refused registration (e.g. policy-blocked) used to vanish into this catch - record WHY; online use is unaffected either way, but the offline preload below refuses to run without the worker and can now say why

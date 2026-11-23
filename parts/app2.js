@@ -23,7 +23,7 @@ function bootMap() {
 } // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
 let routeBox = null; // Beta 1.117: the ACTIVE pack's bounding box - set by buildGeometry (app1) on every load via computeRouteBox; null before any route is chosen and for an empty pack. (Pre-1.117 this was an eval-time IIFE over the baked-in 5W ROADS.)
 function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); if (dead) { const t = $('toast'); if (t && t.classList.contains('show')) placeToast(t); } } // Beta 1.221: this banner can appear WHILE a pill is up (it arms on a timer / a late map error) - a pill placed before it arrived would be covered by it, so a shown pill re-places itself the moment the banner lands (Andrew's placement bar: zero overlap, measured by drive204)
-$('mapNoteNo').addEventListener('click', () => { if (!tapGuard('mapNoteNo')) return; mapNoteOff = true; noteMapState(); });
+$('mapNoteNo').addEventListener('click', ev => { if (!tapGuard('mapNoteNo', ev)) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
@@ -543,7 +543,7 @@ function showChips() {
     d.className = 'sideChip' + (groupSideDone(side) ? ' done' : '');
     d.dataset.side = side;
     d.innerHTML = '<button class="chipBtn" aria-label="mark side"></button>';
-    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side)) return; togglePieceGroup(side); });
+    d.querySelector('.chipBtn').addEventListener('click', ev => { ev.stopPropagation(); if (!tapGuard('chip' + side, ev)) return; togglePieceGroup(side); });
     wrap.appendChild(d);
   });
   positionChips();
@@ -622,8 +622,8 @@ function togglePieceGroup(side) { // one chip, whole selection: a side not done 
   selSet.forEach((en, k) => { applyPiece(en.name, en.idx, map[k], on); });
   showChips(); finishChangeMarked();
 }
-$('selAllBtn').addEventListener('click', () => { if (!tapGuard('selAll')) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
-$('selClearBtn').addEventListener('click', () => { if (!tapGuard('selClear')) return; deselect(); });
+$('selAllBtn').addEventListener('click', ev => { if (!tapGuard('selAll', ev)) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
+$('selClearBtn').addEventListener('click', ev => { if (!tapGuard('selClear', ev)) return; deselect(); });
 function markDone(name, via, at) { // Beta 1.274 (programme #1): the mutation is BOARD.completeStreet (production contract unchanged: whole street done; sides already marked keep their real times, the rest inherit the completion moment); the feedback and the finish stay here, in the old order
   const t = BOARD.completeStreet(name, via, at);
   if (t.flipped) onStreetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too
@@ -661,8 +661,8 @@ function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header
     else { b.textContent = 'Complete entire road'; b.className = ''; b.disabled = false; } // Beta 1.209 (Andrew): the button completes the WHOLE road (markStreet), so it says so - the old label read as if it finished only the lit stretch
   }
 }
-$('selBtn').addEventListener('click', () => { if (!sel || !tapGuard('selBtn')) return; markStreet(sel.name, !streetComplete(sel.name)); });
-$('selNote').addEventListener('click', () => { if (!sel || !tapGuard('selNote')) return; openNote(sel.name); });
+$('selBtn').addEventListener('click', ev => { if (!sel || !tapGuard('selBtn', ev)) return; markStreet(sel.name, !streetComplete(sel.name)); });
+$('selNote').addEventListener('click', ev => { if (!sel || !tapGuard('selNote', ev)) return; openNote(sel.name); });
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
   const tw = totalWorkM(); // Beta 1.170 (Carbon fix round Phase 2, A-05): the share's denominator, read once and GUARDED - a route with no work in it (an empty pack, or geometry whose totals are all zero) divided by zero through 1.169 and the counter read 'NaN%' with a 'NaN%' meter width; it now reads 0%
@@ -767,7 +767,7 @@ function renderStreets() { // production row design: tap a street's name area to
     paintNt();
     d.querySelector('.sloc').addEventListener('click', e => {
       e.stopPropagation();
-      if (!tapGuard('li' + n)) return;
+      if (!tapGuard('li' + n, e)) return;
       closeSheets();
       const c = STRETCH[n].line[Math.floor(STRETCH[n].line.length / 2)];
       map.flyTo({ center: [c[1], c[0]], zoom: Math.max(map.getZoom(), 15.5) });
@@ -1058,7 +1058,7 @@ function ddClose(drop) { // Beta 1.273: the close runs 335ms on --ease-close (An
 function showRmPane(id) { document.querySelectorAll('.rmPane').forEach(p => { if (p._ddPin) { p._ddPin = false; p.style.marginTop = ''; } }); ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
-$('routesBtn').addEventListener('click', () => { if (!tapGuard('routesBtn')) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
+$('routesBtn').addEventListener('click', ev => { if (!tapGuard('routesBtn', ev)) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
 ['crCityList', 'rmRoutes'].forEach(id => { const el = $(id); if (el) el.addEventListener('scroll', () => menuListFade(el), { passive: true }); }); // Beta 1.233: the feather follows the scroll
 window.addEventListener('resize', () => { menuListFade($('crCityList')); menuListFade($('rmRoutes')); }); // Beta 1.233: a taller or shorter window changes what the list edges cover
@@ -1070,8 +1070,8 @@ wireRouteRows($('rmRoutes'), id => {
   if ($('routeMenu').classList.contains('tab')) { closeRouteMenu(); if (!activeRoute || id !== activeRoute.id) loadRoute(id); }
   else if (window.__bootPickRoute) window.__bootPickRoute(id);
 });
-$('streetsBtn').addEventListener('click', () => { if (!tapGuard('streetsBtn')) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); } });
+$('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev)) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
-$('paceBtn').addEventListener('click', () => { if (!tapGuard('paceBtn')) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
+$('paceBtn').addEventListener('click', ev => { if (!tapGuard('paceBtn', ev)) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
 function refreshAll() { updateCount(); renderPanel(); renderStreets(); }

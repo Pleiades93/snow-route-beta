@@ -98,7 +98,7 @@ function applyNight() { // Beta 1.231 (Andrew): the swap is INSTANT - the theme-
   const lift = () => de.classList.remove('theme-swap');
   requestAnimationFrame(lift); setTimeout(lift, 150);
 } // the button shows where it TAKES you (Beta 1.28, Andrew): in day it offers Night (moon), in night it offers Day (sun). Beta 1.88: the button is the round chip at top-right - the icon alone flips, there is no label
-$('nightBtn').addEventListener('click', () => { if (!tapGuard('nightBtn')) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
+$('nightBtn').addEventListener('click', ev => { if (!tapGuard('nightBtn', ev)) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // Beta 1.77: the button sets a session override - the sun takes over again at the next sunrise/sunset or the next full app open (theme block, app1)
 function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route framed exactly as the flat fit frames it, tilted to 45 degrees, north up. The fit is computed FLAT (cameraForBounds with no pitch or bearing options is the flat fit: its centre and zoom are the fitBounds centre and zoom this replaces, bit for bit), and the tilt is applied AT that centre/zoom by the ease - never folded into the fit, because a pitch-aware fit recomputes a different zoom and Andrew's call was "keep the zoom level the same, just tilt it". Home and a route switch land here; the load-in flight (introToRoute) lands on the same view.
   if (!routeBox) return;
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
@@ -106,7 +106,7 @@ function goHomeView() { // Beta 1.203 (Andrew): the DEFAULT view - the route fra
   if (fit && fit.center && typeof fit.zoom === 'number') { try { map.easeTo({ center: fit.center, zoom: fit.zoom, pitch: 45, bearing: 0 }); return; } catch (e) {} }
   try { map.fitBounds(b, { padding: 28 }); map.jumpTo({ pitch: 45, bearing: 0 }); } catch (e) {}
 }
-$('homeBtn').addEventListener('click', () => { if (!tapGuard('homeBtn')) return; if (!routeBox) return; goHomeView(); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
+$('homeBtn').addEventListener('click', ev => { if (!tapGuard('homeBtn', ev)) return; if (!routeBox) return; goHomeView(); }); // Beta 1.117: no route loaded (or an empty pack) - no box to frame
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // Beta 1.53: a refused registration (e.g. policy-blocked) used to vanish into this catch - record WHY; online use is unaffected either way, but the offline preload below refuses to run without the worker and can now say why

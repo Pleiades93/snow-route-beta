@@ -45,7 +45,7 @@ const paceLine = slice(app3, "const c = $('paceCancel');", '\n');
 const askBody = slice(app3, 'function askCancelStart()', '\n');
 check('6: both Cancel start entry points route through the one ask, which carries Andrew\'s copy and the unchanged discard path',
   paceLine.includes('askCancelStart()')
-  && app3.includes("$('cancelStartBtn').addEventListener('click', () => { if (!tapGuard('cancelStartBtn')) return; askCancelStart(); });")
+  && app3.includes("$('cancelStartBtn').addEventListener('click', ev => { if (!tapGuard('cancelStartBtn', ev)) return; askCancelStart(); });")
   && askBody.includes("title: 'Cancel this run?'") && askBody.includes("sub: 'All progress will be lost.'")
   && askBody.includes("keep: 'Keep going'") && askBody.includes("danger: 'Yes, cancel'")
   && askBody.includes('cancelStart(); closeSheets();'));

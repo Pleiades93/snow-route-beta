@@ -64,7 +64,7 @@ check('2d the shipped-route Delete is WIRED, not just drawn (Codex P2, PR #167):
 check('3a the Clear ask stands, bound to its route, running clearAllMarks on the danger seat',
   app3.includes('function askClearAll()') &&
   app3.includes("showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } })") &&
-  app3.includes("$('clearBtn').addEventListener('click', () => { if (!tapGuard('clearBtn')) return; if (boardHasMarks()) askClearAll(); });"));
+  app3.includes("$('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) return; if (boardHasMarks()) askClearAll(); });"));
 check('3b the board predicate is shared: the handler asks only over a marked board, clearAllMarks keeps the same first check',
   app3.includes('function boardHasMarks() { return doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0; }') &&
   app3.includes('const any = boardHasMarks();'));
