@@ -82,7 +82,8 @@
   "proof-1272.mjs",
   "proof-prep-begin-owner.mjs",
   "proof-cov-owner.mjs",
-  "proof-response-consumption.mjs"
+  "proof-response-consumption.mjs",
+  "proof-city-search-owner.mjs"
  ],
  "retired": [
   {

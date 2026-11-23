@@ -503,13 +503,17 @@ function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the sa
   crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } }); });
 }
 function crOpenCityPane(ret) {
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from
+  crResetCitySearch(); // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from. Architecture #19: the close runs through crResetCitySearch, the one owner
   crCityReturn = ret;
   $('crCityInput').value = ''; const rb = $('crCityResults'); rb.innerHTML = ''; rb.style.height = ''; crCityBoxTok++; // Beta 1.229: the pane reopens empty at natural height, and any swap release still pending from the last visit is invalidated with it
   if (creating) { if (!routeLoaded) restoreBootChrome(); else openRouteMenu(); }
   showRmPane('rmCityPane');
 }
 let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
+function crResetCitySearch() { // Architecture #19: THE city-search close owner - the mirror of crResetSearch (the street search's owner, Beta 1.243). Ending a held city search was spelled out at four seats (the pane open in crOpenCityPane, the input event, the city pane's Back, and the short-query return inside crRunCitySearch): the same moves - bump the sequence (the family's invalidation: crCitySearchCurrent and crCitySearchSeqCurrent answer to it), abort the in-flight request and drop its handle, clear the pending debounce. The ritual lives here now; the seats keep only their own extras (the input event re-arms its debounce after the close, the short-query return clears the results box, the pane open resets the pane itself). The short-query seat never held a timer to clear - its only caller is the debounce, which spends the timer before running the search - so the owner's timer clear is a no-op at that seat, exactly as the seat's omission was. What the owner deliberately does NOT do: bump the sequence at exitCreate - the catch's seq-only asymmetry (crCitySearchSeqCurrent) is documented there and is not this ritual's to change.
+  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
+  if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
+}
 // Beta 1.229: the last-city lookup's generation + abort handle (crCityLookupSeq / crCityLastCtl, CG-PF-11) retire WITH the shortcut they served - see the removal note at the handler's old seat below.
 function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // Beta 1.154 (B3 build, G3 option (i)): the city-search LANDING's current-check - sequence AND session (the convention is stated at crSearchCurrent above)
 function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // Beta 1.154: the city-search CATCH's current-check - sequence ONLY, deliberately weaker than the landing's: exitCreate does not bump crCitySeq (lifecycle trace T7: +0 across four exits), so a late failure from a closed session whose sequence still matches stays silent here exactly as it did inline through 1.153; the name carries the asymmetry so it is never "fixed" by accident
@@ -967,7 +971,7 @@ function crCityLocalMatches(q) {
 }
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
-  if (q.length < 3) { crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change
+  if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change. Architecture #19: the invalidation runs through crResetCitySearch, the one owner
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
@@ -1480,14 +1484,13 @@ $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); 
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
 $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147 (hypothesis H2 hardening): the same local askDiscard wrap as crPackPickCity - no-op on an empty draft, so first entry is unchanged
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
-  if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
+  crResetCitySearch(); // Architecture #19: the invalidation runs through crResetCitySearch, the one owner - the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
   crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500);
 });
 // Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches go through the Ontario-scoped crRunCitySearch, list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
 $('crCityBack').addEventListener('click', () => {
-  crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; } if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; } // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does
+  crResetCitySearch(); // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does. Architecture #19: the close runs through crResetCitySearch, the one owner
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
   else { showRmPane('rmCreatePane'); }
 });

@@ -7472,6 +7472,19 @@
    "red": "proof-sweep-20261115-071313-d-01 FAILS (the valid-city load check: crPackLoad rejects through the broken consumption), observed twice - proving the harness roll still grades the real download end to end, assertions unchanged",
    "green": "proof-sweep-20261115-071313-d-01 passes in full on the shipped tree",
    "issued": "2026-11-23 section1-arch18"
+  },
+  {
+   "id": "section1-proof-city-search-owner",
+   "check": "tests/proof/proof-city-search-owner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-city-search-owner.mjs": "3b708b4366525d914e62908b382733a9dc50e23809d5bd4e739a4db8eaffb811",
+    "parts/create-pick.js": "d88cf1d778f213b2524d54bf23768b0bc3089e22ecd5b31f0a62915d4624ed32"
+   },
+   "mutation": "three mutations of the arch #19 extraction in parts/create-pick.js, each applied to the shipped tree and reverted byte-exact: (1) crResetCitySearch drops its abort move; (2) crResetCitySearch drops its sequence bump; (3) crOpenCityPane un-calls the owner and re-spells the ritual inline",
+   "red": "proof-city-search-owner FAILS under each mutation, observed twice per mutation: drops-abort fails 1b/4c (the held request is never aborted); drops-bump fails 1b/2/4b/5 (the sequence never moves, the held search stays current); paneopen-uncalled fails 2/3 (a second spelled-out bump exists, the seat no longer calls the owner)",
+   "green": "proof-city-search-owner: 10 passed, 0 failed on the shipped tree",
+   "issued": "2026-11-23 section1-arch19"
   }
  ]
 }
