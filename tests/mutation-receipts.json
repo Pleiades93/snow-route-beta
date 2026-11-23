@@ -8206,6 +8206,45 @@
    "red": "proof-topo-ranges: 12 passed, 2 failed (check 4 predicate agreement, check 5a), observed 2026-11-23 on the arch11 stage-2 tree",
    "green": "proof-topo-ranges: 14 passed, 0 failed on the restored tree",
    "issued": "2026-11-23 arch11-stage2-refresh"
+  },
+  {
+   "id": "topo-ends-classify-1283",
+   "check": "tests/proof/proof-topo-ends.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ends.mjs": "fd56dbea7006466d15b50adda22e0a0dbdefb7f2137c12c702a0f0bd2da79dc2",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410"
+   },
+   "mutation": "classifyEnds' junction test removed (ends classify by record alone)",
+   "red": "10 passed, 1 failed (check 3b: the 53/15/0 census)",
+   "green": "11 passed, 0 failed",
+   "issued": "2026-11-23"
+  },
+  {
+   "id": "topo-ranges-segreal-1283-r3",
+   "check": "tests/proof/proof-topo-ranges.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ranges.mjs": "cc4ee6102ae10275c2397d1f91b2a15259c89f00d595a1c21c01bace124092e9",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410"
+   },
+   "mutation": "TOPO.segReal's negation dropped (it returns runStart directly)",
+   "red": "12 passed, 2 failed (checks 4, 5a)",
+   "green": "14 passed, 0 failed",
+   "issued": "2026-11-23"
+  },
+  {
+   "id": "topo-vertices-index-order-1283-r2",
+   "check": "tests/proof/proof-topo-vertices.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-vertices.mjs": "a1ac40add9c64705520baefc70dcf7dfcafe004e57ee23fd07b39896f10363f3",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410"
+   },
+   "mutation": "TOPO.index unshifts each entry instead of pushing (entry order reversed)",
+   "red": "9 passed, 2 failed (checks 3b, 4)",
+   "green": "11 passed, 0 failed",
+   "issued": "2026-11-23"
   }
  ]
 }

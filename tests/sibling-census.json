@@ -9612,6 +9612,79 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 arch11-stage2"
+  },
+  {
+   "id": "arch11-stage3-1283",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "buildEngineGeometry",
+     "boundarySplit"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "Stage 3 (arch #11): boundarySplit no longer matches end records per slice end - it reads TOPO.endAt, the run-end classification computed once at the geometry build (junction when another street shares the end vertex, feather carrying the matched record, else end). The split decision per cut end is graded exactly by proof-topo-ends check 5 (every cut of every street, join and fade compared), the classification census by its checks 3b-3d (68 ends = 53 junction + 15 feather + 0 plain), and the feather geometry by proof-1259 and the feather drives."
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:buildSelFill",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from buildSelFill in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11) changed only where the callee's split decision comes from: TOPO's once-per-build run-end classification instead of a per-slice record scan plus shared-vertex defence. The four-case truth table (record x shared) is identical under both rules, junction winning - recorded in the round's RECORD.md and graded by proof-topo-ends."
+    },
+    {
+     "id": "caller:boundarySplit:parts/engine.js:selectedGeom",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - boundarySplit() is called from selectedGeom in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11) changed only where the callee's split decision comes from: TOPO's once-per-build run-end classification instead of a per-slice record scan plus shared-vertex defence. The four-case truth table (record x shared) is identical under both rules, junction winning - recorded in the round's RECORD.md and graded by proof-topo-ends."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:rebuildRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from rebuildRoute in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11): the geometry build now ends with TOPO.classifyEnds(), classifying every run end once from the finished vertex index and the streets' end records. Graded by proof-topo-ends (census 53/15/0 over the shipped pack, every record claimed exactly once)."
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "Engine-internal call site, unchanged itself. Stage 3 (arch #11): the geometry build now ends with TOPO.classifyEnds(), classifying every run end once from the finished vertex index and the streets' end records. Graded by proof-topo-ends (census 53/15/0 over the shipped pack, every record claimed exactly once)."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "cf555a9736c6f9961e906e0fd9c00a531c9ddb88ca3c5ff5765fa33ba62953df",
+    "parts/app2.js": "03df6c6e76bcc5b5db6f0d8d0666652a17dd06164987d2cb5e490773b3386021",
+    "parts/app3.js": "25b9d5bf8c5bb8e2bb433ad563c110744b65f5bf69932dc428d1d240505a3d39",
+    "parts/app4.js": "adeb3e82d3e73e4ce8a385ea14725f82573f823e49cdec2772aefaa94cbdd28b",
+    "parts/app5.js": "f7ee95b5c68ddf4878e224dc83917964a85d5bba742d9df9bf9a37959b6348eb",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "a8b60fb7d601c1e83f555eb703b625a571ec878937ac36fcaddd05aecf635975",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8be0d22d46ea2c5c25ef07dd7bf0374e0437a545b54e71d0d41292045ee18410",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "fbca99c4ca3650d4d4ef268e914bfc6b28dc01b74507706f8fdda9f8b533aa25",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23"
   }
  ]
 }

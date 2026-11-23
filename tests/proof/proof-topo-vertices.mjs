@@ -103,6 +103,7 @@ const prelude = [
   extractFn(engine, 'function buildEngineGeometry()'),
   extractFn(engine, 'function nudgeFifth()'),
   extractFn(engine, 'function assignTiers()'),
+  extractFn(engine, 'function boundaryRecAt('),   // Beta 1.283 (#11 stage 3): the build ends by classifying run ends, and the classification's record matcher comes with it
   extractFn(engine, 'function buildJunctions()'),
 ].join('\n');
 check('3a: the prelude carries the real build, the real owner and the real buildJunctions',

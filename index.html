@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-ILT6hUidAea6qhf/XhRaun7NhlHj+SuKLcd3h6TWKaK3IFZb9B6xZisChocwLJ2f' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-OqZ87x2yjL4YzDd9TmVSSWiE2/vxvFL8uMf1X93sBcaRko8xjDJSe+t8qbLb+6f6' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-l+Ing91zw7+8pk8Zac2Wr0FKBEz+pk8bYSPB00KMpT5TsGP86OppPfSOgVChr4uv' https://cdn.jsdelivr.net; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1855,11 +1855,34 @@ const TOPO = {
   _ranges: {},   // name -> [{start, end}] — each run's vertex-index range in GEO[n].stitched, in run order
   _starts: {},   // name -> Set of the vertex indices that open a later run (the range starts after the first)
   _verts: {},   // coordKey -> [{n, vi}] — every street/vertex at that point, in build order
-  reset() { this._ranges = {}; this._starts = {}; this._verts = {}; },
+  _ends: {},   // 'name|vi' -> { kind, rec } — the classification of the run end at that vertex (stage 3)
+  reset() { this._ranges = {}; this._starts = {}; this._verts = {}; this._ends = {}; },
   seat(n, ranges) { this._ranges[n] = ranges; this._starts[n] = new Set(ranges.slice(1).map(r => r.start)); },
   index(n, stitched) { stitched.forEach((pt, vi) => { const k = coordKey(pt); (this._verts[k] = this._verts[k] || []).push({ n, vi }); }); },
   verts() { return this._verts; },   // the whole shared-vertex index
   at(key) { return this._verts[key] || []; },   // the streets/vertices at one point
+  // Stage 3: every run end classified ONCE, here, from the finished
+  // index and the street's end records: 'junction' when another street
+  // shares the end vertex (the classification boundarySplit's defence
+  // used to re-derive per slice end), else 'feather' carrying the
+  // matched record (boundaryRecAt's rule, applied once per run end
+  // instead of per slice end), else 'end' — a plain end of the route.
+  // Junction wins over feather, as the defence always ruled. On the
+  // shipped 5W the census is exact: 68 run ends = 53 junction + 15
+  // feather + 0 end (proof-topo-ends).
+  classifyEnds() {
+    this._ends = {};
+    for (const n of Object.keys(this._ranges)) {
+      const stitched = GEO[n].stitched;
+      for (const r of this._ranges[n]) for (const vi of [r.start, r.end]) {
+        const v = stitched[vi];
+        if (this.at(coordKey(v)).some(e => e.n !== n)) { this._ends[n + '|' + vi] = { kind: 'junction', rec: null }; continue; }
+        const rec = boundaryRecAt(n, v);
+        this._ends[n + '|' + vi] = rec ? { kind: 'feather', rec } : { kind: 'end', rec: null };
+      }
+    }
+  },
+  endAt(n, vi) { return this._ends[n + '|' + vi] || null; },   // the classification of the run end at vertex vi — null when vi is not a run end
   ranges(n) { return this._ranges[n] || []; },
   runStart(n, k) { const s = this._starts[n]; return !!s && s.has(k); },   // vertex k opens a later run of n (the pre-#11 gap-set test)
   segReal(n, si) { return !this.runStart(n, si + 1); },   // the segment si -> si+1 lies inside one run; the pair across a run boundary is not street
@@ -1933,6 +1956,7 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
   labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(stitchedLen) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } }); // Beta 1.144: the length is the per-run sum (stitchedLen) - segLenM over the concatenated array would add the jumps between a disconnected street's runs
 });
+  TOPO.classifyEnds(); // Beta 1.283 (#11, stage 3): with every street seated and indexed, classify every run end once - the feather consumers read the classification, never a per-slice re-derivation
   JUNC = null; // Beta 1.144 (found by drive165, proven on the pristine 1.143 tree): the junction table derives from GEO + the current name set but was built once and never invalidated - after a route switch it still named the PREVIOUS route's streets, and the first marked run's paint on the new route threw 'JUNC[n] is not iterable'. The geometry rebuild is the invalidation point: the table rebuilds lazily from the new geometry on next use.
   nudgeFifth();
   assignTiers();
@@ -3381,7 +3405,7 @@ function fillCornerLinks(fills) {
 // and the rest stays an ordinary solid slice. Junction ends are defended
 // twice: a record is only ever written for a non-junction end, and a slice
 // end whose vertex another route street shares is never split here
-// (sharedVertexMap), so the junction machinery's run-through is untouched
+// (TOPO's run-end classification), so the junction machinery's run-through is untouched
 // by construction. Beta 1.267: dead ends carry records too (computeDeadEnds,
 // create-packs.js) - their join is the end itself, so the same split fades
 // the last 10 m into the terminus; pick ends still carry no record and keep
@@ -3420,16 +3444,13 @@ function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cu
   const fadePts = sub(dJ, Math.min(total, dJ + fm));
   return { solid: sub(Math.min(total, dJ + fm), total), fade: fadePts ? fadePts.reverse() : null }; // a run-start fade is ordered seam -> join like every other: the slice's own order runs join-first there, so it reverses
 }
-function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades }: apply the boundary-end split at both of a slice's ends (a one-piece run can carry two). ab indexes GEO[n].stitched - the record match is judged on the STITCHED vertex, so a fill slice on its offset line splits by the same record, at the point nearest the join on its own line.
+function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades }: apply the boundary-end split at both of a slice's ends (a one-piece run can carry two). ab indexes GEO[n].stitched - the split is judged on the cut's end vertices through TOPO's run-end classification, so a fill slice on its offset line splits by the same record, at the point nearest the join on its own line.
   let solid = pts; const fades = [];
-  const g = GEO[n];
   for (const atStart of [true, false]) {
     if (!solid || solid.length < 2) break;
-    const vtx = atStart ? g.stitched[ab[0]] : g.stitched[ab[1]];
-    const rec = boundaryRecAt(n, vtx);
-    if (!rec) continue;
-    const svm = TOPO.verts();
-    if ((svm[coordKey(vtx)] || []).some(e => e.n !== n)) continue; // a vertex another route street shares is a junction, whatever the pack says
+    const cls = TOPO.endAt(n, atStart ? ab[0] : ab[1]);   // Beta 1.283 (#11, stage 3): the end's classification is TOPO's, computed once at the geometry build - only a feather end splits, carrying its record; a junction end (a vertex another route street shares) is never split here, whatever the pack says, and a cut end that is not a run end carries no classification and never splits
+    if (!cls || cls.kind !== 'feather') continue;
+    const rec = cls.rec;
     const sp = splitBoundaryEnd(solid, [rec[2], rec[3]], atStart, fadeMOf(rec)); // Beta 1.267: the record's own fade length (a dead end's join is its end point, so its split lands exactly at the terminus)
     if (sp.fade) { fades.push({ pts: sp.fade, k: kind, col }); if (withCasing) fades.push({ pts: sp.fade, k: 'x', col }); }
     solid = sp.solid;
