@@ -1,29 +1,39 @@
 #!/usr/bin/env python3
-"""Shard list generator (Beta 1.136, maintainability programme E).
+"""Shard partition - the Python statement of the rule (Beta 1.136;
+runtime form since the testing-efficiency rollout, 2026-11-23).
 
-The eight browser-test shard lists in .github/workflows/checks.yml are
-GENERATED from the suite's single source - the ALL list in
-tests/browser/run.mjs - partitioned by measured duration
-(scripts/shard-durations.json, whose header records how and when the
-numbers were measured). Hand-keeping the lists let them drift twice:
-once a drive could fall out of every shard (the coverage guard in
-scripts/check-shard-coverage.py exists because of that) and by 1.136
-the duration balance had drifted to 359/133/289/245 s.
+Through Beta 1.281 this script GENERATED the eight shard lists pasted
+into .github/workflows/checks.yml from the ALL list in
+tests/browser/run.mjs + the measured durations in
+scripts/shard-durations.json. Hand-keeping those lists let them drift
+twice: once a drive could fall out of every shard (the coverage guard
+exists because of that) and by 1.136 the balance had drifted to
+359/133/289/245 s.
 
-Partition rule (deterministic): longest-processing-time - drives sorted
-by duration descending (ties by name), each assigned to the currently
-lightest shard (ties to the lowest shard number); names are written
-ascending inside each shard so the generated file diffs stably. A drive
-with no measured duration gets the median of the measured set.
+Since the rollout the lists are gone from checks.yml: each shard job
+runs `node tests/browser/run.mjs --shard N`, and the runner computes
+its share at runtime from shard-durations.json using the partition
+rule stated here. This module remains the rule's reference statement -
+scripts/check-shard-coverage.py imports all_drives()/partition() and
+proves the runner's runtime partition agrees with them shard for
+shard, that the partition covers the roster exactly once, and that
+the durations file names exactly the roster.
+
+Partition rule (deterministic): longest-processing-time - drives
+sorted by duration descending (ties by name), each assigned to the
+currently lightest shard (ties to the lowest shard number); names are
+written ascending inside each shard. A drive with no measured duration
+gets the median of the measured set.
 
 Usage:
-    python3 scripts/gen-shards.py           rewrite checks.yml's lists
-    python3 scripts/gen-shards.py --check   exit 1 if the lists differ
-                                            from the generated partition
-
-The coverage guard (scripts/check-shard-coverage.py, run in CI) stays
-the tripwire: it proves whatever lists are in checks.yml partition ALL
-exactly once, generated or not.
+    python3 scripts/gen-shards.py           print the partition + totals
+    python3 scripts/gen-shards.py --check   exit 1 if the durations file
+                                            does not name exactly the
+                                            roster, or the partition
+                                            does not cover it exactly
+                                            once (the full agreement
+                                            proof against the runner is
+                                            check-shard-coverage.py)
 """
 import json
 import re
@@ -32,7 +42,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-WF = ROOT / ".github" / "workflows" / "checks.yml"
 SHARDS = 8  # test-suite restructure (2026-11-09): eight shards
 
 
@@ -58,6 +67,9 @@ def partition(names: list, durations: dict) -> list:
 
 
 def current_lists(wf_text: str) -> list:
+    # Kept for scripts/check-mirrors.py, whose shards family reads any
+    # shard lists a tree still carries (a tree with none is skipped
+    # there). Since the rollout, checks.yml carries none.
     return [s.split() for s in re.findall(r'drives:\s*"([^"]+)"', wf_text)]
 
 
@@ -66,28 +78,29 @@ def main() -> int:
     durations = data["seconds"]
     names = all_drives()
     shards, totals, weight = partition(names, durations)
-    wf_text = WF.read_text(encoding="utf-8")
-    cur = current_lists(wf_text)
-    if len(cur) != SHARDS:
-        print(f"gen-shards: FAIL - expected {SHARDS} shard lists in checks.yml, found {len(cur)}")
-        return 1
     if "--check" in sys.argv:
-        if cur == shards:
-            print("gen-shards --check: PASS (checks.yml == the generated partition)")
-            return 0
-        print("gen-shards --check: FAIL - checks.yml's shard lists differ from the generated partition")
-        print("Run: python3 scripts/gen-shards.py")
-        return 1
-    it = iter(" ".join(s) for s in shards)
-    new_text = re.sub(r'drives:\s*"[^"]+"', lambda m: 'drives: "' + next(it) + '"', wf_text)
-    assert current_lists(new_text) == shards
-    if new_text != wf_text:
-        WF.write_text(new_text, encoding="utf-8")
-    unmeasured = [n for n in names if n not in durations]
-    print("gen-shards: shard lists " + ("rewritten" if new_text != wf_text else "already current")
-          + f" - {len(names)} drives, totals " + "/".join(f"{t:.0f}s" for t in totals))
+        problems = []
+        extra = sorted(set(durations) - set(names))
+        missing = sorted(set(names) - set(durations))
+        if extra:
+            problems.append(f"durations name drives not in the roster: {extra}")
+        if missing:
+            problems.append(f"roster drives with no durations entry: {missing}")
+        flat = [n for s in shards for n in s]
+        if sorted(flat) != sorted(names) or len(flat) != len(set(flat)):
+            problems.append("the partition does not cover the roster exactly once")
+        if problems:
+            for p in problems:
+                print("gen-shards --check: FAIL -", p)
+            return 1
+        print(f"gen-shards --check: PASS ({len(names)} drives, durations name exactly the roster, "
+              f"partition covers it exactly once; totals " + "/".join(f"{t:.0f}s" for t in totals) + ")")
+        return 0
+    for i, s in enumerate(shards, 1):
+        print(f"shard {i} ({totals[i-1]:.0f}s): " + " ".join(s))
+    unmeasured = data.get("unmeasured", [])
     if unmeasured:
-        print(f"gen-shards: unmeasured drives at the median weight: {unmeasured}")
+        print(f"gen-shards: {len(unmeasured)} drives carry placeholder (median) weights, not measurements: {unmeasured}")
     return 0
 
 

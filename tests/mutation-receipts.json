@@ -7784,6 +7784,21 @@
    "red": "proof-1266 check 9 FAILS standalone with the wrong bullet in place (the other six fails are its standing retired pins, present with either bullet)",
    "green": "proof-1266 check 9 passes with the shipped 1.281 bullet in place (6 passed, 6 failed standalone - its standing retirement state, identical on the pristine tree)",
    "issued": "2026-11-23 section1-1281"
+  },
+  {
+   "id": "testing-rollout-shard-coverage-runtime",
+   "check": "scripts/check-shard-coverage.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-shard-coverage.py": "c36ed8dd0476ebe5d4f5e3b0b6d1ea7e4cdfebbb70ef1e3de41bfc63c5b11f6e",
+    "tests/browser/run.mjs": "477833866cd70fb371b4f8b806b45572859ebdfada4c4baea3d9fd34bef05674",
+    "scripts/gen-shards.py": "33cd32260744b4c4516ae8428c440b8af35aa9506cbada62e396ddac8d55307e",
+    "scripts/shard-durations.json": "91ae87e704385874a6f11965b8a98326f3ab8f3c5da715df604711ac0d3df6d3"
+   },
+   "mutation": "shard-durations.json key set broken two ways: (A) drive222's entry deleted, (B) a bogus drive999 entry added",
+   "red": "Mutation A: guard FAIL 'shard-durations.json does not name exactly the roster (missing: [drive222])' exit 1. Mutation B: FAIL '(extra: [drive999])' exit 1.",
+   "green": "Restored durations: 'shard coverage: PASS (100 drives across 8 shards, disjoint and complete; durations name exactly the roster; runner agrees shard for shard)'",
+   "issued": "2026-11-23 testing-rollout round, local run"
   }
  ]
 }
