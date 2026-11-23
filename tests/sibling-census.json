@@ -9165,6 +9165,12 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 section2-release"
+  },
+  {
+   "id": "machinery-tidy-2026-11-23",
+   "kind": "machinery-exempt",
+   "reason": "Machinery-only tidy round: no parts/ surface changed - the app is byte-identical to Beta 1.282 (index.html sha256 12c5833d...). Changes are tests/browser/run.mjs (DRIVE_TIME print) + its runner selftest, scripts/shard-durations.json (measured refresh), tests/mutation-receipts.json and this ledger. No sibling app paths exist to enumerate.",
+   "issued": "2026-11-23 machinery-tidy"
   }
  ]
 }
