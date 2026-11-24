@@ -123,10 +123,7 @@ const seen8c = await ev(`(window.__preSeen || []).length`);
 await ev(`(() => { window.fetch = window.__realFetch; return true; })()`);
 ok('A8c one stalled file is aborted (~30 s) and the download still completes | ' + stat8c + ' | seen ' + seen8c + ' | elapsed ' + Math.round(el8c / 1000) + 's', /Offline maps: saved/.test(stat8c) && seen8c === OFFLINE.count && el8c >= 20000 && el8c < 90000);
 
-// A8d (issue #176): a retry on a partial pack fetches ONLY the census-missing
-// entries. A8c left a complete pack; delete four known entries from the pack
-// cache (the first, two middle and the last manifest URLs), re-press Download
-// under a counting stub, and the fetched set must equal the deleted set.
+// A8d (#176): a retry on a partial pack fetches only the census-missing entries.
 const delSet = JSON.parse(await ev(`(async () => { const list = preloadUrlList(); const picks = [list[0], list[100], list[500], list[list.length - 1]]; const c = await caches.open('snowroute-offline-v1'); for (const u of picks) await c.delete(u); return JSON.stringify(picks); })()`));
 await ev(`(() => { window.__preSeen = []; window.fetch = (u) => { window.__preSeen.push(String(u)); return Promise.resolve(new Response('{}', { status: 200 })); }; $('xPre').click(); return true; })()`);
 let stat8d = '';
@@ -136,9 +133,7 @@ const wantD = [...new Set(delSet)].sort(), gotD = [...A8d.seen].sort();
 ok('A8d retry on a partial pack fetches exactly the census-missing set - the 4 deleted entries, nothing already held | fetched ' + gotD.length + ' | ' + A8d.stat,
   JSON.stringify(gotD) === JSON.stringify(wantD) && A8d.stat.includes('saved ' + OFFLINE.count + ' of ' + OFFLINE.count));
 
-// A8e (issue #176): the download holds a screen wake lock of its own while it
-// runs and releases it when it ends. The pack cache is deleted whole first, so
-// this press is also the full download again: every manifest URL is fetched.
+// A8e (#176): the download holds its own wake lock while it runs, released at the end.
 await ev(`(async () => { await caches.delete('snowroute-offline-v1'); return true; })()`);
 await ev(`(() => { window.__wake = { reqs: 0, rels: 0, held: false }; Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request: async () => { window.__wake.reqs++; window.__wake.held = true; const lk = { released: false, __fn: null, addEventListener: (t, fn) => { lk.__fn = fn; }, release: () => { if (lk.released) return; lk.released = true; window.__wake.rels++; window.__wake.held = false; if (lk.__fn) lk.__fn(); } }; return lk; } } }); return true; })()`);
 const wakeIdle = JSON.parse(await ev(`(() => JSON.stringify(window.__wake))()`));

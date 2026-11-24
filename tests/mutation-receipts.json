@@ -10171,6 +10171,45 @@
    "red": "selftest-round112 run in a scratch full copy with the mutation: FAIL on all three CG-112-04 checks (toggle OFF during pending request; finish during pending request; the still-wanted control), 14 passed 3 failed, exit 1 - observed twice identically",
    "green": "the same selftest on the shipped tree (sandbox now declaring preloadRunning idle, as syncWake reads it for the #176 download want): 17 passed, 0 failed, exit 0 - and 17/17 again in the scratch copy with the mutation reverted",
    "issued": "Beta 1.292 issue #176 round, gate attempt 1 fix: CI's Round-112 honesty step failed all three 04 checks on head c8e1545e because the verbatim-extraction sandbox did not declare preloadRunning, which syncWake legitimately reads since this round; the sandbox now declares it idle (these scenarios judge the run want) and this receipt proves the fixture still observes its recompute claim"
+  },
+  {
+   "id": "issue-176-drive123-fillmissing-r2",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "3803fc504fab4a5adc440735d9950f93c612690b1ea49578726e071033a199b9",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44"
+   },
+   "mutation": "in parts/app4.js, the census-driven target set replaced with the full list: 'const targets = missing.length ? missing : list;' becomes 'const targets = list;'",
+   "red": "drive123 in a scratch full copy (re-assembled after the mutation): A8d FAILS - a partial-pack retry fetched 897 entries instead of the 4 deleted ones, 16/17 - observed twice identically",
+   "green": "drive123 on the shipped tree with the comment-condensed A8d header: 17/17 checks, 0 exceptions; and 17/17 again in the scratch copy with the mutation reverted (parts byte-identical)",
+   "issued": "Re-issue of issue-176-drive123-fillmissing after Codex's gate-1 finding condensed the A8d/A8e header comments to the 20-word rule; a comment-only edit stales the whole-file pin, so the mutation was re-observed against the edited check file"
+  },
+  {
+   "id": "issue-176-drive123-wakelock-r2",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "3803fc504fab4a5adc440735d9950f93c612690b1ea49578726e071033a199b9",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda"
+   },
+   "mutation": "in parts/app3.js syncWake, the want reduced to the pre-#176 run-only form: '((!!runStart && settings.awake) || preloadRunning)' becomes '(!!runStart && settings.awake)'",
+   "red": "drive123 in a scratch full copy (re-assembled after the mutation): both A8e wake checks FAIL - no wake lock requested during the download (reqs 0, held never observed), 15/17 - observed twice identically",
+   "green": "drive123 on the shipped tree with the comment-condensed A8e header: 17/17 checks, 0 exceptions; and 17/17 again in the scratch copy with the mutation reverted (parts byte-identical)",
+   "issued": "Re-issue of issue-176-drive123-wakelock after Codex's gate-1 finding condensed the A8d/A8e header comments to the 20-word rule; the mutation was re-observed against the edited check file"
+  },
+  {
+   "id": "issue-176-selftest-round112-wakerecompute-r2",
+   "check": "tests/browser/selftest-round112.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-round112.mjs": "a8623777cd5647e1d2d8417cf32ddb159404d131980466dc538e35786f0d0566",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda"
+   },
+   "mutation": "in parts/app3.js syncWake, the post-await still-wanted test bypassed: 'if (wantNow()) wakeLock = lock;' replaced with 'wakeLock = lock; if (false) wakeLock = lock;' so the arriving lock is held and its no-longer-wanted release branch fires without ever consulting wantNow",
+   "red": "selftest-round112 in a scratch full copy with the mutation: FAIL on all three CG-112-04 checks, 14 passed 3 failed, exit 1 - observed twice identically",
+   "green": "the same selftest on the shipped tree (sandbox declaring preloadRunning idle, comment clause shortened per Codex's gate-1 finding): 17 passed, 0 failed; and 17/17 again in the scratch copy with the mutation reverted",
+   "issued": "Re-issue of issue-176-selftest-round112-wakerecompute after the sandbox comment clause was shortened; the mutation was re-observed against the edited check file"
   }
  ]
 }
