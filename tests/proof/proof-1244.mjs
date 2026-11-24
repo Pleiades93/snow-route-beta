@@ -22,7 +22,7 @@ const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const head = read('parts/head.html');
 const app4 = read('parts/app4.js');
-const changelog = read('CHANGELOG.md');
+const changelog = read('docs/archive/CHANGELOG-beta-history.md');
 const partsDir = new URL('parts/', root);
 const allParts = readdirSync(partsDir).filter(f => f.endsWith('.js') || f.endsWith('.html')).map(f => read('parts/' + f)).join('\n');
 const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i)); };

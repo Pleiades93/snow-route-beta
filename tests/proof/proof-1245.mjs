@@ -33,7 +33,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const citydata = read('parts/create-citydata.js');
 const pick = read('parts/create-pick.js');
 const whatsnew = read('parts/whatsnew.js');
-const changelog = read('CHANGELOG.md');
+const changelog = read('docs/archive/CHANGELOG-beta-history.md');
 const partsDir = new URL('parts/', root);
 const allParts = readdirSync(partsDir).filter(f => f.endsWith('.js') || f.endsWith('.html')).map(f => read('parts/' + f)).join('\n');
 
