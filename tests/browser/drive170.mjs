@@ -2,19 +2,20 @@ import { launchDrive, finish, bootThrough } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 
-// drive170: Beta 1.147 (hypothesis round H2 hardening) - the discard guard
-// made LOCAL. The hypothesis round CLEARED H2 on reachability (the doors
-// pane cannot be reached while a draft lives; every visible destroying path
-// already asks), but its forced pokes proved the protection was structural,
-// not local: crPackPickCity and the crDoorManual handler reset the draft
-// with no askDiscard, so any future pane-graph change making the doors
-// reachable mid-creation would silently destroy a live draft. The fix wraps
-// both resets in the existing askDiscard (which no-ops on an empty draft).
-// This drive proves: (a) the forced-poke paths now raise the discard confirm
-// and the draft survives dismissal, while confirming still completes the
-// pick; (b) first entry with an empty draft is prompt-free and unchanged on
-// both doors. The pokes are labelled non-UI (they invoke handlers no visible
-// control can reach mid-creation) - they test the guard, not reachability.
+// drive170: the city doors' discard discipline. Beta 1.147 (hypothesis
+// round H2 hardening) wrapped BOTH doors' draft resets in askDiscard.
+// Beta 1.288 (D-01) removes the catalogue door's own wrap: crPackPickCity
+// now calls crPickCity directly, and the discard guard lives in crPickCity
+// itself (the D-08 branch, Beta 1.169) - the one landing every door
+// shares. This drive proves the list door's three cases through real row
+// clicks: (a) a FIRST pick with streets picked keeps the draft, its
+// selections and its pending rows, with no prompt; (b) a REPLACEMENT with
+// streets picked raises exactly one prompt, nothing resets while it
+// stands, and confirming replaces; (c) a replacement with nothing picked
+// lands at once, no prompt. The manual door keeps its own 1.147 wrap
+// (opening the city pane starts fresh) - B2/A3 still prove it. The pokes
+// are labelled non-UI (they invoke handlers no visible control can reach
+// mid-creation) - they test the guard, not reachability.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
@@ -26,11 +27,11 @@ const installStub = async () => {
   await ev(`window.__d170cities = ${JSON.stringify(CITY)}; true`);
   await ev(`(() => { const orig = window.fetch.bind(window); window.fetch = (u, o) => { const s = String(u);
     if (s.includes('nominatim.openstreetmap.org')) return Promise.resolve(new Response(JSON.stringify(window.__d170cities || []), { status: 200, headers: { 'Content-Type': 'application/json' } }));
-    if (s.endsWith('packs/index.json')) return Promise.resolve(new Response(JSON.stringify({ v: 1, cities: [{ slug: 'vaughan', name: 'Vaughan', province: 'Ontario', bbox: [43.7498436, -79.7106948, 43.9243511, -79.4200471], streets: 4477 }] }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    if (s.endsWith('packs/index.json')) return Promise.resolve(new Response(JSON.stringify({ v: 1, cities: [{ slug: 'vaughan', name: 'Vaughan', province: 'Ontario', bbox: [43.7498436, -79.7106948, 43.9243511, -79.4200471], streets: 4477 }, { slug: 'barrie', name: 'Barrie', province: 'Ontario', bbox: [44.3400, -79.7800, 44.4500, -79.6200], streets: 2100 }] }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
     return orig(u, o); }; return true; })()`);
   await ev(`crPackIndexP = null; true`); // the boot warm cached a pre-stub catalogue promise (driveH2's rig lesson)
 };
-const snap = async () => JSON.parse(await ev(`JSON.stringify({ creating, stage: crStage, pane: (['rmMain','rmListPane','rmCreatePane','rmCityListPane','rmNamePane','rmCityPane'].find(p => $(p).classList.contains('on')) || null), menuOpen: $('routeMenu').classList.contains('open'), menuShow: $('routeMenu').classList.contains('show'), modal: !$('crModal').classList.contains('hidden'), modalTitle: $('crModalTitle').textContent, tag: !!(typeof draft !== 'undefined' && draft && draft.__d170tag), streets: (typeof draft !== 'undefined' && draft) ? draftStreets().slice().sort() : null, city: crCity ? crCity.name : null })`));
+const snap = async () => JSON.parse(await ev(`JSON.stringify({ creating, stage: crStage, pane: (['rmMain','rmListPane','rmCreatePane','rmCityListPane','rmNamePane','rmCityPane'].find(p => $(p).classList.contains('on')) || null), menuOpen: $('routeMenu').classList.contains('open'), menuShow: $('routeMenu').classList.contains('show'), modal: !$('crModal').classList.contains('hidden'), modalTitle: $('crModalTitle').textContent, tag: !!(typeof draft !== 'undefined' && draft && draft.__d170tag), streets: (typeof draft !== 'undefined' && draft) ? draftStreets().slice().sort() : null, primaries: (typeof draft !== 'undefined' && draft) ? [...draft.primaries].sort() : null, pending: Object.keys(crPending || {}).sort(), city: crCity ? crCity.name : null })`));
 const tagDraft = async () => { await ev(`if (draft) draft.__d170tag = 'TAG'; true`); };
 const clickId = async (id) => ev(`(() => { const el = document.getElementById(${JSON.stringify(id)}); if (!el) return 'missing'; el.click(); return 'clicked'; })()`);
 const openDoorsViaUI = async () => {
@@ -57,12 +58,12 @@ const dismissModal = async () => { // the one-button discard ask dismisses via i
   await ev(`(() => { const no = $('crModalNo'); if (no && no.style.display !== 'none') { no.click(); return 'no'; } $('crModalX').click(); return 'x'; })()`);
   await sleep(300);
 };
-const pokeListPick = async () => {
+const pokeListPick = async (name) => {
   await ev(`openDoors(); true`); await sleep(300); // forced: no visible control calls this mid-creation
   await clickId('crDoorList');
-  await poll(`document.querySelectorAll('#crCityList button').length >= 1`, 12000);
-  await ev(`document.querySelector('#crCityList button').click(); true`);
-  return await poll(`!$('crModal').classList.contains('hidden')`, 8000);
+  await poll(`document.querySelectorAll('#crCityList button').length >= 2`, 12000);
+  await ev(`(() => { const b = [...document.querySelectorAll('#crCityList button')].find(x => x.textContent.includes(${JSON.stringify(name)})); if (b) b.click(); return !!b; })()`);
+  await sleep(500); // a prompt, when one is owed, rises synchronously out of the click
 };
 
 try {
@@ -89,28 +90,42 @@ try {
   await clickId('crCityBack'); await sleep(300);
   await ev(`closeRouteMenu(); true`); await sleep(300);
 
-  // ---------- (a1) FORCED POKE, list door: the confirm now rises; dismissal keeps the draft ----------
+  // ---------- (a1) FORCED POKE, list door, FIRST pick with streets picked: no prompt, the draft survives whole (D-01) ----------
   ok('A1 setup: live tagged draft (2 streets), seeded as the retired import door landed it (Beta 1.243)', await doImport());
-  const modalUp = await pokeListPick();
+  await ev(`crPending['H2 Pending Street'] = { osmName: 'H2 Pending Street', lngLat: null, openEnd: null }; true`); // a pending row rides the draft into the pick
+  await pokeListPick('Vaughan');
+  const a1Landed = await poll(`crCity && crCity.name === 'Vaughan' && crStage === 'pick'`, 12000);
   s = await snap();
-  ok('A1 POKE: a list pick over a live draft now raises the discard confirm ("' + s.modalTitle + '") instead of silently replacing the draft',
-    modalUp === true && s.modal && /Throw away/.test(s.modalTitle));
-  ok('A1 while the confirm is up, the tagged draft is untouched (tag=' + s.tag + ', streets=' + JSON.stringify(s.streets) + ')',
-    s.tag && s.streets !== null && s.streets.length === 2);
-  await dismissModal();
-  s = await snap();
-  ok('A1 DISMISSAL: the draft survives intact and creation continues (creating=' + s.creating + ', streets=' + JSON.stringify(s.streets) + ')',
-    !s.modal && s.creating && s.tag && s.streets !== null && s.streets.length === 2);
+  ok('A1 FIRST PICK: NO discard prompt at any point (modal=' + s.modal + ') and the pick lands (city=' + s.city + ', stage=' + s.stage + ')',
+    a1Landed === true && !s.modal);
+  ok('A1 the draft survives whole: same object (tag=' + s.tag + '), streets=' + JSON.stringify(s.streets) + ', primaries=' + JSON.stringify(s.primaries) + ', pending=' + JSON.stringify(s.pending),
+    s.tag && s.streets !== null && s.streets.length === 2 && JSON.stringify(s.primaries) === JSON.stringify(['H2 Alpha Street']) && s.pending.includes('H2 Pending Street'));
   await ev(`exitCreate(); true`); await sleep(300);
 
-  // ---------- (a2) FORCED POKE, list door: confirming the discard still completes the pick ----------
+  // ---------- (a2) FORCED POKE, list door, REPLACEMENT with streets picked: exactly one prompt, deferred reset, confirm replaces (D-01) ----------
   ok('A2 setup: live tagged draft again', await doImport());
-  const modalUp2 = await pokeListPick();
-  await clickId('crModalYes'); await sleep(400);
-  const picked = await poll(`crCity && crCity.name === 'Vaughan' && draft && !draft.__d170tag && draftStreets().length === 0`, 12000);
+  await pokeListPick('Vaughan'); // the first pick: lands prompt-free, the draft survives, a city is now in force
+  const a2Setup = await poll(`crCity && crCity.name === 'Vaughan' && draft && draft.__d170tag && draftStreets().length === 2`, 12000);
+  ok('A2 setup: first pick landed with the draft intact, city in force (setup=' + a2Setup + ')', a2Setup === true);
+  await pokeListPick('Barrie');
   s = await snap();
-  ok('A2 CONFIRM: on the explicit Discard the pick proceeds exactly as before (fresh draft, city=' + s.city + ', modal shown first: ' + modalUp2 + ')',
-    modalUp2 === true && picked === true && s.creating);
+  ok('A2 REPLACEMENT: exactly one discard prompt rises ("' + s.modalTitle + '")',
+    s.modal && /Throw away/.test(s.modalTitle));
+  ok('A2 while the prompt stands, nothing has reset: city=' + s.city + ', tag=' + s.tag + ', streets=' + JSON.stringify(s.streets),
+    s.city === 'Vaughan' && s.tag && s.streets !== null && s.streets.length === 2);
+  await clickId('crModalYes'); await sleep(400);
+  const a2Picked = await poll(`crCity && crCity.name === 'Barrie' && draft && !draft.__d170tag && draftStreets().length === 0`, 12000);
+  await sleep(600);
+  s = await snap();
+  ok('A2 CONFIRM: the replacement lands on a fresh draft (city=' + s.city + ') and NO second prompt follows (modal=' + s.modal + ')',
+    a2Picked === true && !s.modal && s.creating);
+
+  // ---------- (a2c) REPLACEMENT with nothing picked: no prompt, the pick lands at once (D-01) ----------
+  await pokeListPick('Vaughan'); // crCity is Barrie, the draft is empty: askDiscard no-ops inside crPickCity
+  const a2cLanded = await poll(`crCity && crCity.name === 'Vaughan'`, 12000);
+  s = await snap();
+  ok('A2c EMPTY REPLACEMENT: NO discard prompt (modal=' + s.modal + ') and the new city lands at once (city=' + s.city + ')',
+    a2cLanded === true && !s.modal);
   await ev(`exitCreate(); true`); await sleep(300);
 
   // ---------- (a3) FORCED POKE, manual door: the confirm now rises there too ----------

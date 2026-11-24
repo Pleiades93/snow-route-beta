@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "0078ef8304b2032c1145139eb9b6d5c90caed4a0527908087b6f2524576ea050",
+  "canonical_registry_sha256": "421a4b822c92e57a053d0baf9b0012bf9a06384591e968024fdbe8e1866f0903",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -3659,16 +3659,16 @@
   {
    "added": "2026-11-08",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.147 (hypothesis H2 hardening): crPackPickCity's draft reset + pick run through askDiscard, so the discard guard is local to the handler and not just a property of the pane graph (the doors are unreachable mid-creation, but a future pane-graph change must not silently re-open total draft loss). askDiscard no-ops on an empty draft, so first entry is unchanged. Proven by drive170's forced pokes.",
-   "fix_id": "hyp-draft-askdiscard",
+   "fix": "D-01 (2026-11-24): the discard guard on a city replacement lives in crPickCity's D-08 branch - the one landing every door shares. Beta 1.147's local askDiscard wrap on crPackPickCity is REMOVED by D-01: it reset the draft even on a first pick and double-reset on a replacement. The catalogue door now calls crPickCity directly, so a first pick keeps its draft and a replacement asks exactly once, here. Proven by drive170's three catalogue cases.",
+   "fix_id": "d01-catalogue-guard-home",
    "id": "hypothesis-h2-askdiscard-wrap",
-   "pattern": "askDiscard(() => { draft = newDraft();",
+   "pattern": "if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; }",
    "type": "grep_present"
   },
   {
    "added": "2026-11-08",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.147 (hypothesis H2 hardening): the crDoorManual handler's inline draft reset runs through askDiscard - the same local guard as crPackPickCity; no-op on an empty draft. Proven by drive170's forced pokes.",
+   "fix": "Beta 1.147 (hypothesis H2 hardening): the crDoorManual handler's inline draft reset runs through askDiscard - its own local guard (the catalogue door carries none since D-01 - its picks land in crPickCity's D-08 guard); no-op on an empty draft. Proven by drive170's forced pokes.",
    "fix_id": "hyp-draft-askdiscard",
    "id": "hypothesis-h2-doormanual-askdiscard",
    "pattern": "$('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); });",

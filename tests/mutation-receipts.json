@@ -9769,6 +9769,19 @@
    "red": "drive163 11/15, observed twice identical: C1, C2, C3 and E3 fail - the replace restore lets the incoming definition and its foreign-geometry snapshot displace the resident ones",
    "green": "drive163 15/15 checks, 0 exceptions - PASS on the final Beta 1.287 tree (gate-fix-2 re-issue)",
    "issued": "2026-11-24 restore-172 gate-fix-2"
+  },
+  {
+   "id": "d01-drive170",
+   "check": "tests/browser/drive170.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive170.mjs": "86d1b94e6a2a8865f92ea10edfb31f4343b1204b29e820031e12fc1e3d41465c",
+    "parts/create-pick.js": "f0773bec4ea471147179e7625e461c71413a90c3bdf5ea4bc637bf1340ac73b9"
+   },
+   "mutation": "parts/create-pick.js: crPackPickCity's pre-D-01 Beta 1.147 askDiscard wrapper restored (the catalogue door resets the draft behind its own guard instead of calling crPickCity directly)",
+   "red": "drive170 fails exactly its 3 D-01 checks (12/15): A1 FIRST PICK (a prompt rises and the pick never lands), A2 setup, A2 while-the-prompt-stands - observed twice, identical set",
+   "green": "drive170 passes in full (15/15) with the direct crPickCity call shipped",
+   "issued": "2026-11-24 d01"
   }
  ]
 }
