@@ -112,7 +112,7 @@ async function bumpTileCount(c) { // Beta 1.57 (second audit, item 2): the 1.50 
     for (let i = 0; i < tiles.length - MAX_TILES; i++) await c.delete(tiles[i]);
   }
 }
-async function cacheFirst(r, cacheName) {
+async function cacheFirst(r, cacheName, e) {
   const c = await caches.open(cacheName);
   const hit = await c.match(r.url || r);
   if (hit) return hit;
@@ -123,10 +123,13 @@ async function cacheFirst(r, cacheName) {
     try {
       const res = await fetch(new Request(r.url, { mode: 'cors' }));
       if (res && res.ok) {
-        try {
-          await c.put(r.url, res.clone());
-          await bumpTileCount(c); // Beta 1.50/1.57: batched eviction check (see bumpTileCount)
-        } catch (e) {}
+        const write = (async () => { // the cache copy lands in the background: the tile serves now, the write and the eviction check finish under the fetch event's waitUntil (an eventless caller still awaits them)
+          try {
+            await c.put(r.url, res.clone());
+            await bumpTileCount(c); // Beta 1.50/1.57: batched eviction check (see bumpTileCount)
+          } catch (err) {}
+        })();
+        if (e) { try { e.waitUntil(write); } catch (err) {} } else await write;
       }
       return res;
     } catch (e) {
@@ -162,7 +165,7 @@ async function mapFetch(r, e) { // Beta 1.94 (audit F-03): map data is served fr
   const u = new URL(r.url);
   if (u.pathname.includes('/sprites/') && u.pathname.endsWith('.json')) return staleWhileRevalidate(r, TILES, e);
   if (u.pathname.endsWith('.json') || u.pathname.includes('/styles/')) return netFirst(r, TILES);
-  return cacheFirst(r, TILES);
+  return cacheFirst(r, TILES, e);
 }
 self.addEventListener('fetch', e => {
   const r = e.request;

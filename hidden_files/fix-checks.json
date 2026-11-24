@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3067f7879d227e6cb4142f423e8bc0514cca246ecd6850c6dfd41ae502a90dbc",
+  "canonical_registry_sha256": "7e6dc98e90088ad8dc3c7502b23e1ad70b96b46d90994a42d8a3d09d1353c2d5",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1504,
-   "included": 1474,
+   "canonical": 1507,
+   "included": 1477,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -8403,10 +8403,10 @@
   {
    "added": "2026-11-17",
    "file": "parts/engine.js",
-   "fix": "Beta 1.221 GATE FIX (Codex P1, PR #98): create-pick's draft renderer called the engine's mute() bare, but the helper is private to the GLP IIFE - draft-layer init threw (swallowed by its catch) and only crDraftCase ever rendered; the dim/chosen/hit draft layers were missing in the create flow. mute is now exported on GLP's returned object and create-pick calls GLP.mute. Regression: drive151 N5b asserts all four draft layers stand; proof-create-zoom-tapaway pins the GLP.mute literal. Verified in the rendered page (1 layer before, 4 after). (Pattern rolled 2026-11-19 by labelbug-1248: the GLP export list grew by rePlaceTitles in Beta 1.248; mute's export - the claim this probe guards - is unchanged.) (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the GLP export list carries rePlaceTitles again after mute; mute's export - the claim this probe guards - is unchanged) (Rolled 2026-11-23 by layers-catalogue-1282, Beta 1.282: the GLP export list grew by layers: LAYERS before mute; mute's export - the claim this probe guards - is unchanged.)",
+   "fix": "Beta 1.221 GATE FIX (Codex P1, PR #98): create-pick's draft renderer called the engine's mute() bare, but the helper is private to the GLP IIFE - draft-layer init threw (swallowed by its catch) and only crDraftCase ever rendered; the dim/chosen/hit draft layers were missing in the create flow. mute is now exported on GLP's returned object and create-pick calls GLP.mute. Regression: drive151 N5b asserts all four draft layers stand; proof-create-zoom-tapaway pins the GLP.mute literal. Verified in the rendered page (1 layer before, 4 after). (Pattern rolled 2026-11-19 by labelbug-1248: the GLP export list grew by rePlaceTitles in Beta 1.248; mute's export - the claim this probe guards - is unchanged.) (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the GLP export list carries rePlaceTitles again after mute; mute's export - the claim this probe guards - is unchanged) (Rolled 2026-11-23 by layers-catalogue-1282, Beta 1.282: the GLP export list grew by layers: LAYERS before mute; mute's export - the claim this probe guards - is unchanged.) RE-PINNED 2026-11-24 by the label round (Beta 1.290): rePlaceTitles was deleted from the GLP export whole; the pattern now pins the export tail as it stands.",
    "fix_id": "glp-mute-export",
    "id": "gts-glp-mute-export",
-   "pattern": "rebuildRoute, tapTolPx, layers: LAYERS, mute, rePlaceTitles }",
+   "pattern": "rebuildRoute, tapTolPx, layers: LAYERS, mute }",
    "type": "grep_present"
   },
   {
@@ -10811,47 +10811,47 @@
   {
    "added": "2026-11-19",
    "file": "parts/engine.js",
-   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: rePlaceTitles is restored - and now owned by the engine's standing heal (armTitleHeal), not the retired one-flight hook; this probe pins the helper's presence)",
+   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: rePlaceTitles is restored - and now owned by the engine's standing heal (armTitleHeal), not the retired one-flight hook; this probe pins the helper's presence) RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "labelbug-1248",
    "id": "labelbug1248-replace-helper",
    "pattern": "function rePlaceTitles()",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-19",
    "file": "parts/engine.js",
-   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the labelpts rebuild is back as the heal's mechanism; this probe pins the removeSource rebuild line)",
+   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the labelpts rebuild is back as the heal's mechanism; this probe pins the removeSource rebuild line) RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "labelbug-1248",
    "id": "labelbug1248-source-readd",
    "pattern": "removeSource('labelpts')",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-19",
    "file": "parts/engine.js",
-   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: rePlaceTitles is exported on GLP again; the pattern tightens to the export list itself)",
+   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: rePlaceTitles is exported on GLP again; the pattern tightens to the export list itself) RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "labelbug-1248",
    "id": "labelbug1248-export",
-   "pattern": "mute, rePlaceTitles }",
-   "type": "grep_present"
+   "pattern": "rePlaceTitles",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-19",
    "file": "parts/app5.js",
-   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the titles return but the one-flight hook does NOT - the engine's standing heal owns re-placement now; the absence this probe pins is deliberate again) [Re-pinned 2026-11-21 by labelrevert-1263 (Beta 1.263, Andrew's naming-revert decision): the naming system is restored to its Beta 1.257 state; this probe now pins the restored form.]",
+   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the titles return but the one-flight hook does NOT - the engine's standing heal owns re-placement now; the absence this probe pins is deliberate again) [Re-pinned 2026-11-21 by labelrevert-1263 (Beta 1.263, Andrew's naming-revert decision): the naming system is restored to its Beta 1.257 state; this probe now pins the restored form.] RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "labelbug-1248",
    "id": "labelbug1248-arm-on-flight",
-   "pattern": "armTitleRePlace()",
-   "type": "grep_present"
+   "pattern": "armTitleRePlace",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-19",
    "file": "parts/app5.js",
-   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the hook's armed-flag machinery stays retired with it; the engine heal re-arms on idle by its own rule) [Re-pinned 2026-11-21 by labelrevert-1263 (Beta 1.263, Andrew's naming-revert decision): the naming system is restored to its Beta 1.257 state; this probe now pins the restored form.] [Re-pinned 2026-11-22 by sync-1270 (Beta 1.270): the hook's armed flag is renamed titleGuardArmed - the hook is now the conditional title guard; the claim this probe guards (the one-flight hook's armed machinery stands in app5) is unchanged.]",
+   "fix": "Beta 1.248 (PR #131, merge 12c8c974; rollback: a revert PR restoring the Beta 1.247 behaviour under Beta 1.249). The street-name label fix (Andrew's report 2026-11-18): MapLibre's variable-anchor placement prefers the anchor the previous placement pass chose and keeps it while it still places, so an anchor first chosen mid-flight (intermediate zooms, tiles still arriving) stuck for the session with the name beside its street - zooming no cure, a theme swap (a fresh style) the only cure. engine.js GLP.rePlaceTitles() rebuilds the labelpts source in place (the same LABELPTS data; streetnamespt1-4 re-added with their live specs at their stack seats), giving the titles a fresh cross-tile index; app5.js armTitleRePlace() arms it on the pick flight only (flyTo -> moveend -> idle, 2.5 s run-once backstop). Proof: tests/proof/proof-1248.mjs (14 checks); the round's rendered measurement suite showed zero off-street names across 6 cold-night + 1 warm + 1 cold-day boots on the fixed build (the re-place fired once per pick, 6.6-10.7 ms, after the flight and idle) and flagged pristine 1.247 boots with the stage-1 signature (Boddy 19.9 px off its street). If a probe here fails, the round has regressed - restore the shipped form. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the hook's armed-flag machinery stays retired with it; the engine heal re-arms on idle by its own rule) [Re-pinned 2026-11-21 by labelrevert-1263 (Beta 1.263, Andrew's naming-revert decision): the naming system is restored to its Beta 1.257 state; this probe now pins the restored form.] [Re-pinned 2026-11-22 by sync-1270 (Beta 1.270): the hook's armed flag is renamed titleGuardArmed - the hook is now the conditional title guard; the claim this probe guards (the one-flight hook's armed machinery stands in app5) is unchanged.] RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "labelbug-1248",
    "id": "labelbug1248-idle-chain",
    "pattern": "titleGuardArmed",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-19",
@@ -11926,20 +11926,20 @@
   {
    "added": "2026-11-21",
    "file": "parts/app2.js",
-   "fix": "Beta 1.266 (unifiedloadin-1266; PR #162, merge 698dd0cd88a55accd3bbeef993e9086e9b720eb9; live sha256 6eec7990414f1a8c72a77cf0bcad12565c5106c5db77c976f30e6609358b971f, reads Beta 1.266). Andrew's approved design of 2026-11-21 for the cold-start name blink (diagnosis cold-start-flicker-2026-11-21: the one-flight hook's re-place tears labelpts down at the flight's idle and all 33 titles vanish for the re-parse exactly as the basemap names finish fading in): on a route pick, every name is held out for the whole load-in window, the re-place runs inside the hold, and at the settled idle all names fade in together over one 350 ms ramp, with backstop reveals (6 s post-re-place; an absolute 15 s). The hold is two kinds: title layers by a multiplier that TRANSFORMS their text-opacity (scaleNameStops rebuilds a zoom interpolate/step with scaled outputs - the paint validator silently refuses any value embedding the layer's own expression, measured), basemap name layers by VISIBILITY ONLY (nameHoldHideOnly - a single text-opacity write on a basemap symbol layer resets its tiles' placement state and blanks a marginal title at the next zoom boundary, measured: Bell Harbour, drive216 P3). Every held layer leaves placement (visibility 'none') while the window stands; natural paint and visibility are captured on first touch and restored verbatim at the ramp's end. app5 owns the cycle (beginNameLoadIn and family, generation-counted per pick; the hook gains a 6.5 s arm-time backstop). The create backdrop coordinates through nameHoldNaturalVis/nameBackdropHolds and a record top-up (PR #162 Codex). drive219 grades the rendered behaviour (15/15; fails 9-10 of 14 on the 1.265 tree, its lane convicting the blink by name in the denser runs); proof-1266 pins the shape statically (12/12, mutations observed for the wrap, the backstop, the paint ban and the backdrop consult). If a probe here fails, the round has regressed - restore the shipped form.",
+   "fix": "Beta 1.266 (unifiedloadin-1266; PR #162, merge 698dd0cd88a55accd3bbeef993e9086e9b720eb9; live sha256 6eec7990414f1a8c72a77cf0bcad12565c5106c5db77c976f30e6609358b971f, reads Beta 1.266). Andrew's approved design of 2026-11-21 for the cold-start name blink (diagnosis cold-start-flicker-2026-11-21: the one-flight hook's re-place tears labelpts down at the flight's idle and all 33 titles vanish for the re-parse exactly as the basemap names finish fading in): on a route pick, every name is held out for the whole load-in window, the re-place runs inside the hold, and at the settled idle all names fade in together over one 350 ms ramp, with backstop reveals (6 s post-re-place; an absolute 15 s). The hold is two kinds: title layers by a multiplier that TRANSFORMS their text-opacity (scaleNameStops rebuilds a zoom interpolate/step with scaled outputs - the paint validator silently refuses any value embedding the layer's own expression, measured), basemap name layers by VISIBILITY ONLY (nameHoldHideOnly - a single text-opacity write on a basemap symbol layer resets its tiles' placement state and blanks a marginal title at the next zoom boundary, measured: Bell Harbour, drive216 P3). Every held layer leaves placement (visibility 'none') while the window stands; natural paint and visibility are captured on first touch and restored verbatim at the ramp's end. app5 owns the cycle (beginNameLoadIn and family, generation-counted per pick; the hook gains a 6.5 s arm-time backstop). The create backdrop coordinates through nameHoldNaturalVis/nameBackdropHolds and a record top-up (PR #162 Codex). drive219 grades the rendered behaviour (15/15; fails 9-10 of 14 on the 1.265 tree, its lane convicting the blink by name in the denser runs); proof-1266 pins the shape statically (12/12, mutations observed for the wrap, the backstop, the paint ban and the backdrop consult). If a probe here fails, the round has regressed - restore the shipped form. RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "unifiedloadin-1266",
    "id": "loadin1266-transform",
-   "pattern": "function scaleNameStops(expr, mult)",
-   "type": "grep_present"
+   "pattern": "scaleNameStops",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-21",
    "file": "parts/app5.js",
-   "fix": "Beta 1.266 (unifiedloadin-1266; PR #162, merge 698dd0cd88a55accd3bbeef993e9086e9b720eb9; live sha256 6eec7990414f1a8c72a77cf0bcad12565c5106c5db77c976f30e6609358b971f, reads Beta 1.266). Andrew's approved design of 2026-11-21 for the cold-start name blink (diagnosis cold-start-flicker-2026-11-21: the one-flight hook's re-place tears labelpts down at the flight's idle and all 33 titles vanish for the re-parse exactly as the basemap names finish fading in): on a route pick, every name is held out for the whole load-in window, the re-place runs inside the hold, and at the settled idle all names fade in together over one 350 ms ramp, with backstop reveals (6 s post-re-place; an absolute 15 s). The hold is two kinds: title layers by a multiplier that TRANSFORMS their text-opacity (scaleNameStops rebuilds a zoom interpolate/step with scaled outputs - the paint validator silently refuses any value embedding the layer's own expression, measured), basemap name layers by VISIBILITY ONLY (nameHoldHideOnly - a single text-opacity write on a basemap symbol layer resets its tiles' placement state and blanks a marginal title at the next zoom boundary, measured: Bell Harbour, drive216 P3). Every held layer leaves placement (visibility 'none') while the window stands; natural paint and visibility are captured on first touch and restored verbatim at the ramp's end. app5 owns the cycle (beginNameLoadIn and family, generation-counted per pick; the hook gains a 6.5 s arm-time backstop). The create backdrop coordinates through nameHoldNaturalVis/nameBackdropHolds and a record top-up (PR #162 Codex). drive219 grades the rendered behaviour (15/15; fails 9-10 of 14 on the 1.265 tree, its lane convicting the blink by name in the denser runs); proof-1266 pins the shape statically (12/12, mutations observed for the wrap, the backstop, the paint ban and the backdrop consult). If a probe here fails, the round has regressed - restore the shipped form. [SUPERSEDED 2026-11-22 by sync-1270 (Beta 1.270, Andrew's synchronised-streaming decision of 2026-11-21): the 1.266 cycle this probe pinned (beginNameLoadIn and family) is retired whole; the probe now pins the shipped form that replaced it - the conditional title guard in app5. The blink the 1.266 fix killed stays killed by the streaming design plus the guard's cure (drive219's rewritten lane grades it).]",
+   "fix": "Beta 1.266 (unifiedloadin-1266; PR #162, merge 698dd0cd88a55accd3bbeef993e9086e9b720eb9; live sha256 6eec7990414f1a8c72a77cf0bcad12565c5106c5db77c976f30e6609358b971f, reads Beta 1.266). Andrew's approved design of 2026-11-21 for the cold-start name blink (diagnosis cold-start-flicker-2026-11-21: the one-flight hook's re-place tears labelpts down at the flight's idle and all 33 titles vanish for the re-parse exactly as the basemap names finish fading in): on a route pick, every name is held out for the whole load-in window, the re-place runs inside the hold, and at the settled idle all names fade in together over one 350 ms ramp, with backstop reveals (6 s post-re-place; an absolute 15 s). The hold is two kinds: title layers by a multiplier that TRANSFORMS their text-opacity (scaleNameStops rebuilds a zoom interpolate/step with scaled outputs - the paint validator silently refuses any value embedding the layer's own expression, measured), basemap name layers by VISIBILITY ONLY (nameHoldHideOnly - a single text-opacity write on a basemap symbol layer resets its tiles' placement state and blanks a marginal title at the next zoom boundary, measured: Bell Harbour, drive216 P3). Every held layer leaves placement (visibility 'none') while the window stands; natural paint and visibility are captured on first touch and restored verbatim at the ramp's end. app5 owns the cycle (beginNameLoadIn and family, generation-counted per pick; the hook gains a 6.5 s arm-time backstop). The create backdrop coordinates through nameHoldNaturalVis/nameBackdropHolds and a record top-up (PR #162 Codex). drive219 grades the rendered behaviour (15/15; fails 9-10 of 14 on the 1.265 tree, its lane convicting the blink by name in the denser runs); proof-1266 pins the shape statically (12/12, mutations observed for the wrap, the backstop, the paint ban and the backdrop consult). If a probe here fails, the round has regressed - restore the shipped form. [SUPERSEDED 2026-11-22 by sync-1270 (Beta 1.270, Andrew's synchronised-streaming decision of 2026-11-21): the 1.266 cycle this probe pinned (beginNameLoadIn and family) is retired whole; the probe now pins the shipped form that replaced it - the conditional title guard in app5. The blink the 1.266 fix killed stays killed by the streaming design plus the guard's cure (drive219's rewritten lane grades it).] RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "unifiedloadin-1266",
    "id": "loadin1266-cycle",
-   "pattern": "function armTitleRePlace()",
-   "type": "grep_present"
+   "pattern": "armTitleRePlace",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-21",
@@ -12179,11 +12179,11 @@
   {
    "added": "2026-11-22",
    "file": "parts/app5.js",
-   "fix": "Beta 1.270 (sync-1270; Andrew's synchronised-streaming design, 2026-11-21): the 1.266 hold cycle is retired; titles stream with the map and the 1.248 re-place survives only as the conditional cure inside app5's title guard - at moveend the guard counts placed titles and skips the teardown when the count is zero. drive219 grades the behaviour (16/16 on the fixed tree; red on 1.269); proof-1270 pins the shape (12/12). If a probe here fails, the round has regressed - restore the shipped form.",
+   "fix": "Beta 1.270 (sync-1270; Andrew's synchronised-streaming design, 2026-11-21): the 1.266 hold cycle is retired; titles stream with the map and the 1.248 re-place survives only as the conditional cure inside app5's title guard - at moveend the guard counts placed titles and skips the teardown when the count is zero. drive219 grades the behaviour (16/16 on the fixed tree; red on 1.269); proof-1270 pins the shape (12/12). If a probe here fails, the round has regressed - restore the shipped form. RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "sync-1270",
    "id": "sync1270-guard-count",
    "pattern": "map.queryRenderedFeatures({ layers: ids })",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-22",
@@ -12197,11 +12197,11 @@
   {
    "added": "2026-11-22",
    "file": "parts/app5.js",
-   "fix": "Beta 1.270 (sync-1270; Andrew's synchronised-streaming design, 2026-11-21): the 1.266 hold cycle is retired; titles stream with the map and the 1.248 re-place survives only as the conditional cure inside app5's title guard - at moveend the guard counts placed titles and skips the teardown when the count is zero. drive219 grades the behaviour (16/16 on the fixed tree; red on 1.269); proof-1270 pins the shape (12/12). If a probe here fails, the round has regressed - restore the shipped form.",
+   "fix": "Beta 1.270 (sync-1270; Andrew's synchronised-streaming design, 2026-11-21): the 1.266 hold cycle is retired; titles stream with the map and the 1.248 re-place survives only as the conditional cure inside app5's title guard - at moveend the guard counts placed titles and skips the teardown when the count is zero. drive219 grades the behaviour (16/16 on the fixed tree; red on 1.269); proof-1270 pins the shape (12/12). If a probe here fails, the round has regressed - restore the shipped form. RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "sync-1270",
    "id": "sync1270-cure-hold",
-   "pattern": "nameHoldSet(true, true)",
-   "type": "grep_present"
+   "pattern": "nameHoldSet",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-22",
@@ -12217,11 +12217,11 @@
   {
    "added": "2026-11-22",
    "file": "tests/browser/drive219.mjs",
-   "fix": "drive219 stages the guard's count at zero at its own query seam (skip stub) in the streaming phases - unstaged, the count is environment-dependent and the fast CI runners convicted the app for a legitimate cure (PR #166 gate).",
+   "fix": "drive219 stages the guard's count at zero at its own query seam (skip stub) in the streaming phases - unstaged, the count is environment-dependent and the fast CI runners convicted the app for a legitimate cure (PR #166 gate). RE-PINNED 2026-11-24 by the label round (Beta 1.290): the machinery this probe pinned was deleted whole by approved design (geometry-anchored titles); the probe now asserts the deletion holds.",
    "fix_id": "drive219-determinism-1270",
    "id": "sync1270-drive-skip-stub",
-   "pattern": "window.__liForceSkip",
-   "type": "grep_present"
+   "pattern": "__liForceSkip",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-22",
@@ -12821,8 +12821,8 @@
    "file": "parts/engine.js",
    "fix_id": "layers-catalogue-1282",
    "id": "layers-catalogue-1282-export",
-   "fix": "Beta 1.282 (architecture #13): the engine exports its LAYERS catalogue on GLP (layers: LAYERS, seated before mute so the historical export tail survives) - app2, app5 and create-pick read the catalogue through it. This probe pins the export seat.",
-   "pattern": "layers: LAYERS, mute, rePlaceTitles }",
+   "fix": "Beta 1.282 (architecture #13): the engine exports its LAYERS catalogue on GLP (layers: LAYERS, seated before mute so the historical export tail survives) - app2, app5 and create-pick read the catalogue through it. This probe pins the export seat. RE-PINNED 2026-11-24 by the label round (Beta 1.290): rePlaceTitles was deleted from the GLP export whole; the pattern now pins the export tail as it stands.",
+   "pattern": "layers: LAYERS, mute }",
    "type": "grep_present"
   },
   {
@@ -13111,6 +13111,33 @@
    "pattern": "",
    "type": "command_exit0",
    "command": "cd . && node tests/proof/proof-icon-swap-1213.mjs"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.290 (the label round): route title layers read their side from feature data - the title spec's text-anchor is the data-driven ['get', 'anchor'] form and text-variable-anchor is gone from the engine, so a title's side is decided once by geometry (assignAnchors) and never re-decided by the renderer. proof-anchors section 5 pins the shape; drive219 grades it live.",
+   "fix_id": "label-round-1290",
+   "id": "label290-anchor-spec",
+   "pattern": "'text-anchor': ['get', 'anchor']",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.290 (the label round): the geometry build assigns every title's anchor in one pass - assignAnchors(titleDirections) is called inside buildEngineGeometry right after assignTiers. proof-anchors checks 1a/1b pin the call and its order.",
+   "fix_id": "label-round-1290",
+   "id": "label290-assignanchors-call",
+   "pattern": "assignAnchors(titleDirections);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.290 (the label round): text-variable-anchor must never return to the engine's title spec - variable placement is what let a mid-flight anchor stick wrongly and forced the deleted flight-end cure. The basemap's own styles in parts/pmstyles.js keep theirs legitimately; this probe is engine-scoped.",
+   "fix_id": "label-round-1290",
+   "id": "label290-no-variable-anchor",
+   "pattern": "text-variable-anchor",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-24",

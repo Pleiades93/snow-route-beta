@@ -161,6 +161,31 @@ fetchImpl = async () => new Response('TILE-OK', { status: 200 });
 r = await cacheFirst(tileReq2, 'snowroute-tiles-v1');
 check('SEC-6d tile 200 returned and cached', (await r.text()) === 'TILE-OK' && store.has(tileReq2.url));
 
+// 9b. Beta 1.290 (label round, surroundings): with a fetch event, cacheFirst
+// serves the tile WITHOUT waiting for its cache write - the write and the
+// eviction check ride the event's waitUntil promise; an eventless caller
+// still awaits them (the path every other case in this suite exercises).
+store.clear();
+let releasePut; const putGate = new Promise(res => { releasePut = res; });
+const prevPut = cacheMock.put;
+cacheMock.put = async (r2, res) => { await putGate; return prevPut(r2, res); };
+const tileReq3 = new Request('https://server.arcgisonline.com/tile/15/5/6');
+fetchImpl = async () => new Response('TILE-BG', { status: 200 });
+let waited = null;
+const evMock = { waitUntil(p) { waited = p; } };
+r = await cacheFirst(tileReq3, 'snowroute-tiles-v1', evMock);
+check('1.290 event path: tile served before its cache write lands', (await r.text()) === 'TILE-BG' && !store.has(tileReq3.url) && !!waited);
+releasePut(); await waited;
+check('1.290 event path: the waitUntil write lands the tile in cache', store.has(tileReq3.url));
+cacheMock.put = prevPut;
+// and mapFetch threads its event through to cacheFirst:
+store.clear();
+let waited2 = null;
+const evMock2 = { waitUntil(p) { waited2 = p; } };
+r = await mapFetch(new Request('https://server.arcgisonline.com/tile/15/7/8'), evMock2);
+check('1.290 mapFetch threads the event: waitUntil receives the cache write', !!waited2);
+await waited2;
+
 // 10. NEW-02 (v5.51): a failing cache write on the netFirst path must not sink
 // a good network response (and with the write awaited + caught, no unhandled
 // rejection can escape).

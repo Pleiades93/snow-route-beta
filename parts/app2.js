@@ -15,12 +15,13 @@ function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
 function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
-  map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: dpPixelRatio(), maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // Beta 1.230: the canvas ratio comes from the device profile (app1) - on Android the applied tier's ratio (the boot starts from the stored hint, the boot grade lands it at the first idle), everywhere else dpPixelRatio() answers the literal 2 this constructor carried through 1.229, so an iPhone's map is built exactly as before (drive131's W1 reads the live value)
+  map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: dpPixelRatio(), maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, cancelPendingTileRequestsWhileZooming: false, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // Beta 1.230: the canvas ratio comes from the device profile (app1) - on Android the applied tier's ratio (the boot starts from the stored hint, the boot grade lands it at the first idle), everywhere else dpPixelRatio() answers the literal 2 this constructor carried through 1.229, so an iPhone's map is built exactly as before (drive131's W1 reads the live value)
   map.setCenter(routeBox ? [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2] : [-79.57, 43.82]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds). Beta 1.117: no route is baked in, so before any pick there is no routeBox - the map opens on the plain fallback view (themePos's constants) behind the picker
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
   for (const fn of __onMap) fn();
   __onMap.length = 0;
 } // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
+// Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
 let routeBox = null; // Beta 1.117: the ACTIVE pack's bounding box - set by buildGeometry (app1) on every load via computeRouteBox; null before any route is chosen and for an empty pack. (Pre-1.117 this was an eval-time IIFE over the baked-in 5W ROADS.)
 function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); if (dead) { const t = $('toast'); if (t && t.classList.contains('show')) placeToast(t); } } // Beta 1.221: this banner can appear WHILE a pill is up (it arms on a timer / a late map error) - a pill placed before it arrived would be covered by it, so a shown pill re-places itself the moment the banner lands (Andrew's placement bar: zero overlap, measured by drive204)
 $('mapNoteNo').addEventListener('click', ev => { if (!tapGuard('mapNoteNo', ev)) return; mapNoteOff = true; noteMapState(); });
@@ -28,160 +29,6 @@ setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000)
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
 const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label exclusion in glUnifyLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
-// ===== NAME HOLD (Beta 1.266, scoped by Beta 1.270 to the title guard's cure) =====
-// Beta 1.266 held EVERY name on the map - the basemap's text layers and the
-// route's own street titles - invisible for the whole load-in window, ran
-// the one anchor re-place inside the hold where its teardown could not be
-// seen, and faded all names in together over one 350 ms ramp at the settled
-// idle. Beta 1.270 (Andrew's synchronised-streaming design, 2026-11-21)
-// retires that cycle: the names stream in with the map, nothing is held on
-// a normal pick, and this machinery survives in ONE scope - the title
-// guard's cure (app5's armTitleRePlace), which engages it TITLES-ONLY on
-// the rare pick where a title demonstrably placed mid-flight, so the cure's
-// teardown cannot be seen either. The basemap half of the hold is retired
-// with the cycle: no path engages it now, and nameHoldHideOnly stands only
-// as the record of why a basemap paint/visibility write is banned. The
-// diagnosis (cold-start-flicker-2026-11-21) proved the blink the original
-// hold killed: the titles placed during the pick flight, the hook's
-// rebuild then tore the labelpts source down at the idle, and all 33 titles
-// vanished for the worker's re-parse (~1-2 s; ~4.9 s under 6x CPU throttle)
-// in the same moment the surrounding basemap names finished fading in.
-// The hold comes in two kinds, because the two name families answer to
-// different placement machinery. The route's TITLE layers (a GeoJSON
-// source) are held by a multiplier over their own text-opacity - the
-// paint transformed to the multiplier's value while the window stands,
-// ramped back to natural over the one fade at the reveal - and, like
-// every held layer, by visibility 'none' while the window stands. The
-// BASEMAP's name layers are held by VISIBILITY ALONE: their paint is
-// never written, not once, because a single text-opacity write on a
-// basemap symbol layer resets its tiles' placement state, and a
-// marginal title that competes in those tiles blanks for one placement
-// pass at the next zoom boundary (measured three ways in the round's
-// harness: a two-write manual hold on the pre-1.266 tree reproduces
-// it, Bell Harbour in drive216's P3; an untouched tree is clean; heavy
-// paint churn on a title layer alone does not reproduce it). A hidden
-// basemap layer leaves placement for the window and, when its
-// visibility returns at the reveal, re-places at the settled view and
-// fades in by the engine's own symbol fade, together with the titles'
-// ramp. The visibility half is not decoration either: name layers that
-// spend the window at opacity 0 (visible to the placement engine,
-// painting nothing) leave a placement-history residue of the same
-// family, so every held layer leaves placement entirely, and its
-// anchors are first decided at the settled view when the fade begins -
-// which is also the re-place's own purpose. A layer's natural paint (the titles' zoom ramp included) and
-// its natural visibility are captured verbatim on first touch and
-// restored verbatim when the ramp completes, so outside a load-in the
-// style is byte-for-byte the pre-1.266 one. The multiplier is applied
-// by TRANSFORMING the paint, never by wrapping it: this MapLibre's
-// paint validator silently refuses any value that embeds the layer's
-// own expression as a sub-expression (a ['*', natural, mult] wrap reads
-// back unchanged - measured in the round's harness, drive219's first
-// runs), while a zoom interpolate rebuilt with its stop outputs scaled
-// is accepted. A layer whose set does not take is recorded in
-// nameFade.unheld and falls back to the flat multiplier, so a refusal
-// can never again pass as a held layer. The state machine that engages
-// and releases the hold lives in app5 (the title guard's cure path);
-// this block owns only the paint and the visibility. Beta 1.270: the
-// engage carries a scope - 'titles' (the cure: the four title tiers only,
-// the basemap untouched) or 'all' (the retired 1.266 scope, kept so the
-// apply/restore paths stay symmetric with the naturals they captured).
-const NAME_FADE_MS = 350; // the fade-in's length (Andrew's ~300-400 ms)
-let nameFade = { held: false, mult: 1, scope: 'all', orig: {}, trans: {}, vis: {}, raf: 0, t0: 0, unheld: {} };
-function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop outputs are plain numbers, rebuilt with every output scaled by mult - the same expression shape, so the validator takes it and the layer's own zoom behaviour is preserved proportionally. Any other shape returns null (the caller falls back).
-  if (!Array.isArray(expr)) return null;
-  if (expr[0] === 'interpolate') { // ['interpolate', interpolation, input, stopIn, stopOut, ...]
-    const out = expr.slice();
-    for (let i = 4; i < out.length; i += 2) { if (typeof out[i] !== 'number') return null; out[i] = out[i] * mult; }
-    return out;
-  }
-  if (expr[0] === 'step') { // ['step', input, out0, stopIn, out1, ...]
-    const out = expr.slice();
-    if (typeof out[2] !== 'number') return null;
-    out[2] = out[2] * mult;
-    for (let i = 4; i < out.length; i += 2) { if (typeof out[i] !== 'number') return null; out[i] = out[i] * mult; }
-    return out;
-  }
-  return null;
-}
-function nameLayerIds(m) { // every layer that prints a NAME, in two kinds: the basemap's text layers (glUnifyLabels' own discriminator - a symbol layer carrying a text-field over a tile source-layer) and the route's four title tiers. The route POI text is NOT a street name and the intro choreography sits the POI on screen during the dwell (Beta 1.203), so it is never held.
-  const base = [], titles = [];
-  try { for (const L of m.getStyle().layers) { if (L.type === 'symbol' && L.layout && L.layout['text-field'] && L['source-layer']) base.push(L.id); } } catch (e) {}
-  for (const id of window.GLP.layers.titles) { try { if (m.getLayer(id)) titles.push(id); } catch (e) {} } // Beta 1.282 (#13): the title group is the engine catalogue's (GLP.layers), not a hand-kept copy
-  return { base, titles };
-}
-function nameHoldHideOnly(m, id) { // a BASEMAP name layer's hold: VISIBILITY ONLY - its paint is never written, not once. A single text-opacity write on a basemap symbol layer resets its tiles' placement state, and a marginal title that competes in those tiles blanks for one placement pass at the next zoom boundary (measured on the pre-1.266 tree with a two-write manual hold: Bell Harbour, drive216's P3; an untouched tree is clean). Hidden, the layer leaves placement for the window; when its visibility returns at the reveal it re-places at the settled view and fades in by the engine's own symbol fade - no paint write is needed, or forgiven.
-  try {
-    if (!(id in nameFade.vis)) nameFade.vis[id] = m.getLayoutProperty(id, 'visibility');
-    if (nameFade.held && m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none');
-  } catch (e) {}
-}
-function nameHoldApply(m) { // (re)apply the current multiplier to every name layer in the hold's scope. glUnifyLabels calls this at the end of its pass, so a restack during a standing cure (a theme swap, a stack rebuild) lands in the held state; the engine's stack build calls that pass after the title layers are added, and the re-place re-adds the titles from their live specs (which carry the held paint), so no engine code needs to know the hold exists. The release ramp calls it per frame.
-  if (!m || (!nameFade.held && nameFade.mult === 1)) return;
-  const kinds = nameLayerIds(m);
-  if (nameFade.scope !== 'titles') for (const id of kinds.base) nameHoldHideOnly(m, id); // Beta 1.270: a titles-scoped hold never touches a basemap layer - not its paint, not its visibility
-  for (const id of kinds.titles) {
-    try {
-      if (!(id in nameFade.orig)) { nameFade.orig[id] = m.getPaintProperty(id, 'text-opacity'); nameFade.trans[id] = m.getPaintProperty(id, 'text-opacity-transition'); nameFade.vis[id] = m.getLayoutProperty(id, 'visibility'); }
-      if (nameFade.held && m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none'); // while the window stands the layer leaves placement entirely (the block comment above: an opacity-only hold leaves a placement-history residue)
-      const o = nameFade.orig[id];
-      let v;
-      if (nameFade.mult === 1) v = o;
-      else if (o === undefined) v = nameFade.mult;
-      else if (typeof o === 'number') v = o * nameFade.mult;
-      else { const s = scaleNameStops(o, nameFade.mult); v = s === null ? nameFade.mult : s; } // an expression shape the scaler does not know degrades to the flat multiplier - held flat beats not held at all
-      if (JSON.stringify(m.getPaintProperty(id, 'text-opacity')) !== JSON.stringify(v)) {
-        m.setPaintProperty(id, 'text-opacity', v);
-        if (JSON.stringify(m.getPaintProperty(id, 'text-opacity')) !== JSON.stringify(v)) { // the set did not take (a validator refusal is silent in this MapLibre): fall back to the flat multiplier and leave the layer named in unheld, where the load-in's evidence can see it
-          nameFade.unheld[id] = true;
-          m.setPaintProperty(id, 'text-opacity', nameFade.mult);
-        }
-      }
-      const t = m.getPaintProperty(id, 'text-opacity-transition');
-      if (!t || t.duration !== 0) m.setPaintProperty(id, 'text-opacity-transition', { duration: 0, delay: 0 }); // the ramp drives the fade itself; a style transition would double-animate every step
-    } catch (e) {}
-  }
-}
-function nameHoldNaturalVis(id) { // the UNDERLYING visibility of a held layer - its captured natural, never the hold's transient 'none'. The create backdrop (create-pick's crSetBackdrop) snapshots layer visibility when it hides the route stack; entered during a load-in it would otherwise record the transient 'none' as the state to restore, and the titles would stand hidden after creation exits (Codex review, PR #162). The backdrop consults this so its snapshot names the underlying state. A captured ABSENCE is itself the natural (the layer carries no visibility key), and reads 'visible' here; only a never-captured layer returns undefined, and the backdrop falls back to the live value for those.
-  if (!(id in nameFade.vis)) return undefined;
-  return nameFade.vis[id] === undefined ? 'visible' : nameFade.vis[id];
-}
-function nameBackdropHolds(id) { // whether the create backdrop currently has this layer hidden: while it does, the load-in's own visibility restore defers - the backdrop's exit restores the underlying natural (the snapshot above), and resurrecting the layer mid-creation would break the backdrop's hide
-  try { return typeof crHiddenLayers !== 'undefined' && !!crHiddenLayers && crHiddenLayers.some((pr) => pr[0] === id); } catch (e) { return false; }
-}
-function nameHoldSet(on, titlesOnly) { // engage (instant - the cure's hold must be shut before the re-place's teardown can paint) or release (the 350 ms ramp back to natural). Beta 1.270: the only engage left is the guard cure's, and it is titles-only; the second argument names that scope at the call site.
-  if (on) {
-    if (nameFade.raf) { cancelAnimationFrame(nameFade.raf); nameFade.raf = 0; }
-    nameFade.held = true; nameFade.mult = 0; nameFade.scope = titlesOnly ? 'titles' : 'all'; nameFade.unheld = {};
-    if (typeof map !== 'undefined' && map) nameHoldApply(map);
-    return;
-  }
-  if (!nameFade.held && nameFade.mult === 1) return;
-  nameFade.held = false;
-  // the layers come back into placement BEFORE the ramp's first frame, with their paint still at the ramp's zero - they place for the first time at the settled view and fade in there
-  if (typeof map !== 'undefined' && map) {
-    for (const id of Object.keys(nameFade.vis)) {
-      try { if (map.getLayer(id) && !nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } catch (e) {}
-    }
-  }
-  nameFade.t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-  const step = () => {
-    nameFade.raf = 0;
-    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-    const k = Math.min(1, (now - nameFade.t0) / NAME_FADE_MS);
-    nameFade.mult = k;
-    if (typeof map !== 'undefined' && map) nameHoldApply(map);
-    if (k < 1) { nameFade.raf = requestAnimationFrame(step); return; }
-    // the ramp is done: restore every touched layer's natural paint and visibility verbatim and forget them - from here the style is the pre-1.266 one again
-    if (typeof map !== 'undefined' && map) {
-      for (const id of Object.keys(nameFade.orig)) {
-        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); if (!nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
-      }
-    }
-    nameFade.orig = {}; nameFade.trans = {}; nameFade.vis = {}; nameFade.mult = 1; nameFade.scope = 'all';
-  };
-  nameFade.raf = requestAnimationFrame(step);
-  setTimeout(() => { if (!nameFade.held && nameFade.mult < 1 && !nameFade.raf) step(); }, NAME_FADE_MS + 150); // a starved rAF (a hidden tab) must not strand the fade mid-ramp
-}
 function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
@@ -290,7 +137,6 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
       }
     }
   } catch (e) { /* a style without label layers has nothing to normalize */ }
-  nameHoldApply(m); // Beta 1.266: this pass runs at the end of every stack build, so it is the one seat that re-lands the name load-in hold on every layer a restack just (re)built - the basemap's text layers above and the route titles the engine added before calling this pass
 }
 function addReferenceLayers() {
   const feats = [];

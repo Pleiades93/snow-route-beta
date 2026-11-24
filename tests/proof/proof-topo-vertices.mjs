@@ -103,6 +103,7 @@ const prelude = [
   extractFn(engine, 'function buildEngineGeometry()'),
   extractFn(engine, 'function nudgeFifth()'),
   extractFn(engine, 'function assignTiers()'),
+  extractFn(engine, 'function assignAnchors('),   // label round: the geometry build ends with the anchor pass; the prelude carries it like its siblings
   extractFn(engine, 'function boundaryRecAt('),   // Beta 1.283 (#11 stage 3): the build ends by classifying run ends, and the classification's record matcher comes with it
   extractFn(engine, 'function buildJunctions()'),
 ].join('\n');

@@ -107,6 +107,7 @@ const prelude = [
   extractFn(engine, 'function buildEngineGeometry()'),
   extractFn(engine, 'function nudgeFifth()'),
   extractFn(engine, 'function assignTiers()'),
+  extractFn(engine, 'function assignAnchors('),   // label round: the geometry build ends with the anchor pass; the prelude carries it like its siblings
   extractFn(engine, 'function fadeMOf('),
   extractFn(engine, 'function boundaryRecAt('),
   'const splitCalls = [];',

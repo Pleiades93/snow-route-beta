@@ -9823,6 +9823,275 @@
    "red": "drive222 fails exactly the new 'B close hold' check: 14 samples inside the 170ms hold window, max radius 6.79px, 6.80px and (with the final drive file, after the Codex-tightened round-over witness) 6.77px - observed three times",
    "green": "drive222 passes in full (17/17) on the fixed tree, including the released Beta 1.289 tree and the final drive file with the card-standing round-over witness",
    "issued": "2026-11-24 corner-fix-1289-r2"
+  },
+  {
+   "id": "anchors-factor2-1290",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "c9d7adf2de28a28dc33cbe219a678e29f597e325c38c3b2a1240e29201040026",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88",
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b"
+   },
+   "mutation": "assignAnchors displacement factor raised 2 -> 3 in parts/engine.js (along-axis wins only over three times the alongside clearance)",
+   "red": "proof-anchors: 15 passed, 2 failed (checks 2a/2b shipped-vs-rule equality; Mellings and Bayside flip), observed twice 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-anchors: 17 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
+  },
+  {
+   "id": "topo-ends-classify-1290",
+   "check": "tests/proof/proof-topo-ends.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ends.mjs": "c5898d923a9196f351f9de9b749a4bbfda9566ecaca595de1960b15572bad49e",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88"
+   },
+   "mutation": "classifyEnds' junction test removed in parts/engine.js (ends classify by record alone) - the 1283 receipt's mutation re-run because the label round added the assignAnchors extraction line to this proof's prelude",
+   "red": "proof-topo-ends: 10 passed, 1 failed (check 3b: the 53/15/0 census), observed 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-topo-ends: 11 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
+  },
+  {
+   "id": "topo-ranges-segreal-1290",
+   "check": "tests/proof/proof-topo-ranges.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ranges.mjs": "e1d988e8c1e6490609052a3e6960bcafe94730011780b0f288a7c5bba1c48279",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88"
+   },
+   "mutation": "TOPO.segReal's negation dropped in parts/engine.js (it returns runStart directly) - the 1283 receipt's mutation re-run because the label round added the assignAnchors extraction line to this proof's prelude",
+   "red": "proof-topo-ranges: 12 passed, 2 failed (check 4 predicate agreement at 2205 readings, check 5a unseated-street contract), observed 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-topo-ranges: 14 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
+  },
+  {
+   "id": "topo-vertices-index-order-1290",
+   "check": "tests/proof/proof-topo-vertices.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-vertices.mjs": "ac112c7fd79c18c4ac6567d5943bb00b733156ee1e312f5d582a35af2665b8d8",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88"
+   },
+   "mutation": "TOPO.index unshifts each entry instead of pushing in parts/engine.js (entry order reversed) - the 1283 receipt's mutation re-run because the label round added the assignAnchors extraction line to this proof's prelude",
+   "red": "proof-topo-vertices: 9 passed, 2 failed (check 3b index equality in build order, check 4 JUNC contents and per-street order over 114 entries), observed 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-topo-vertices: 11 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
+  },
+  {
+   "id": "anchors-factor2-1290-r2",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "1dabd835833bf6303ea183c5f1cb17bd507146984dcceead1ff31b5a78228661",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d",
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b"
+   },
+   "mutation": "assignAnchors displacement factor raised 2 -> 3 in parts/engine.js (along-axis wins only over three times the alongside clearance)",
+   "red": "proof-anchors: 19 passed, 2 failed (checks 2a/2b shipped-vs-rule equality; Mellings and Bayside flip), observed twice 2026-11-24 on the label-round commit-2 tree in the scratch copy",
+   "green": "proof-anchors: 21 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "topo-ends-classify-1290-r2",
+   "check": "tests/proof/proof-topo-ends.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ends.mjs": "c5898d923a9196f351f9de9b749a4bbfda9566ecaca595de1960b15572bad49e",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d"
+   },
+   "mutation": "classifyEnds' junction test removed in parts/engine.js (ends classify by record alone) - the 1283 receipt's mutation re-run on the commit-2 tree (engine changed again: title spec + rePlaceTitles deletion)",
+   "red": "proof-topo-ends: 10 passed, 1 failed (check 3b: the 53/15/0 census), observed twice 2026-11-24 in the scratch copy",
+   "green": "proof-topo-ends: 11 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "topo-ranges-segreal-1290-r2",
+   "check": "tests/proof/proof-topo-ranges.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ranges.mjs": "e1d988e8c1e6490609052a3e6960bcafe94730011780b0f288a7c5bba1c48279",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d"
+   },
+   "mutation": "TOPO.segReal's negation dropped in parts/engine.js (it returns runStart directly) - the 1283 receipt's mutation re-run on the commit-2 tree",
+   "red": "proof-topo-ranges: 12 passed, 2 failed (check 4 predicate agreement at 2205 readings, check 5a unseated-street contract), observed twice 2026-11-24 in the scratch copy",
+   "green": "proof-topo-ranges: 14 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "topo-vertices-index-order-1290-r2",
+   "check": "tests/proof/proof-topo-vertices.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-vertices.mjs": "ac112c7fd79c18c4ac6567d5943bb00b733156ee1e312f5d582a35af2665b8d8",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d"
+   },
+   "mutation": "TOPO.index unshifts each entry instead of pushing in parts/engine.js (entry order reversed) - the 1283 receipt's mutation re-run on the commit-2 tree",
+   "red": "proof-topo-vertices: 9 passed, 2 failed (check 3b index equality in build order, check 4 JUNC contents and per-street order over 114 entries), observed twice 2026-11-24 in the scratch copy",
+   "green": "proof-topo-vertices: 11 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "proof-1263-labelpts-once-1290",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "590d087f4c346529041a14df9bd207c1a1712c2f47e36c7c21cf0b0d80a7cab6",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d"
+   },
+   "mutation": "the labelpts addSource call in addStack duplicated in parts/engine.js (the source created twice in one stack build)",
+   "red": "proof-1263: 12 passed, 1 failed (check 1: labelpts created once in addStack, setData alone in rebuildRoute), observed twice 2026-11-24 in the scratch copy",
+   "green": "proof-1263: 13 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "green-half-road-labelpts-once-1290",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "bada6a74e0d44151d755f91b030a34ccda6b1cdaf822dc500bb95b5cdeff3b12",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d"
+   },
+   "mutation": "the labelpts addSource call in addStack duplicated in parts/engine.js (the source created twice in one stack build)",
+   "red": "proof-green-half-road: 1 CHECK(S) FAILED (R4: exactly one labelpts creation in the engine), observed twice 2026-11-24 in the scratch copy",
+   "green": "proof-green-half-road: ALL CHECKS PASS on the restored tree",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "proof-1270-hold-deleted-1290",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "40460902506c6511659be104cef2a6d90a6a76d441c9dcbf65bbf947c89a7ffc",
+    "parts/app5.js": "fefdf26933d96d409f3a57180da8e43cda33568036d84f1ecef632a3d97ac03c"
+   },
+   "mutation": "a third loadInGen++ bump added to loadRoute in parts/app5.js (the retired-generation count the proof pins at exactly two: loadRoute and unloadRouteToBoot)",
+   "red": "proof-1270: 12 pass, 1 fail (check 5: load/unload retire only the generation, count == 2), observed twice 2026-11-24 in the scratch copy",
+   "green": "proof-1270: 13 pass, 0 fail on the restored tree",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "drive219-label-contract-1290",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "fa2bf60d774cba52600b9c7da9068ad53ccfba25c379b883c7243830f968a33f",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d"
+   },
+   "mutation": "rebuildRoute in parts/engine.js appends GLM.removeSource('labelpts') after its setData (a teardown call on the title source at every route rebuild; the removal itself no-ops against the in-use source, the call is what the contract bans)",
+   "red": "drive219: 19/23 checks, failures A3/B1/C1 all on the teardown count (teardowns: 1 in the load-in, swap and second-pick windows), observed twice 2026-11-24 in the scratch copy (assemble-verified byte-identical to the standing tree); a first mutation shape (removeSource + addSource) crashed rebuildRoute outright with Source already exists, also a drive failure",
+   "green": "drive219: 23/23 checks, 0 exceptions on the restored tree, observed twice 2026-11-24 (170 s and 181 s, standard 300 s cap)",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "drive219-label-contract-1290-r2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "ffa5f31e9df99fd4b00a9d843642899204436841cf2852840c1b13b1d6ea599d",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d"
+   },
+   "mutation": "rebuildRoute in parts/engine.js appends GLM.removeSource('labelpts') after its setData (a teardown call on the title source at every route rebuild; the removal itself no-ops against the in-use source, the call is what the contract bans)",
+   "red": "drive219: 20/23 checks on the final drive bytes, failures exactly A3/B1/C1, all on the teardown count (teardowns: 1 in the load-in, swap and second-pick windows), observed 2026-11-24 in the scratch copy (assemble-verified byte-identical); the same mutation observed twice more on the pre-regrade drive bytes at 19/23",
+   "green": "drive219: 23/23 checks, 0 exceptions on the restored tree (156 s, standard 300 s cap), 2026-11-24",
+   "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "proof-1270-hold-deleted-1290-r2",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "bbebeb20ab0ca5eeb7496371b9a88347d7f7d578b065be11e15e2e066f89840b",
+    "parts/app5.js": "99c6114ae682585c58d0700bb7f17f0107084848c9f72bddfe75622039e068a0"
+   },
+   "mutation": "a fetch('packs/warm.json') call planted inside loadRoute in parts/app5.js (route warming on the load path - the exact shape check 8 bans)",
+   "red": "proof-1270: 12 pass, 1 fail (check 8: no route preloading; loadRoute contains no fetch, the ruled tile prefetch is the only exception), observed twice 2026-11-24 in the scratch copy on the surroundings tree",
+   "green": "proof-1270: 13 pass, 0 fail on the restored tree",
+   "issued": "2026-11-24 label-round commit-3"
+  },
+  {
+   "id": "sw-waituntil-threading-1290",
+   "check": "tests/sw.test.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/sw.test.mjs": "5d1722ee6f8da3088dbf69abb5dc2e7d118ee897137ac9a5d65664d147778408",
+    "src/sw.js": "054aa842ec0d2050dc36432f5a8d297f3975785d98e110c56be23d305803068d"
+   },
+   "mutation": "mapFetch in src/sw.js drops the fetch event when calling cacheFirst (cacheFirst(r, TILES) instead of cacheFirst(r, TILES, e)) - the background cache write loses its waitUntil binding",
+   "red": "sw suite: the 1.290 mapFetch threading check fails (waitUntil receives nothing), the other 58 pass, observed twice 2026-11-24 in the scratch copy",
+   "green": "sw suite: 59 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round commit-3"
+  },
+  {
+   "id": "drive219-label-contract-1290-r3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "f29ee8f620354a58f61eed1c66935af967833e3665971c236a384d63b98eac2c"
+   },
+   "mutation": "parts/engine.js rebuildRoute: append GLM.removeSource('labelpts') after the labelpts setData",
+   "red": "drive219 19/23 then 20/23: A3 and C1 fail in both runs (B1 and U3 also fail in run 1) - the teardown is caught on the gate-fix bytes",
+   "green": "drive219 23/23 on the unmutated gate-fix tree (207.6s local run)",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "drive219-anchor-stability-1290",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "f29ee8f620354a58f61eed1c66935af967833e3665971c236a384d63b98eac2c"
+   },
+   "mutation": "parts/app5.js loadRoute: one-shot rewrite flipping every labelpts anchor to the opposite side the moment titles first render",
+   "red": "drive219 20/23 then 19/23: D2 fails in both runs (B2 and U3 also fail in both; I1 in run 2) - the per-tick anchor sampler sees the rewrite the settled-only read could not",
+   "green": "drive219 23/23 on the unmutated gate-fix tree (207.6s local run)",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "anchors-factor2-1290-r3",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "44d7e1cc8fbbcaaf716f18b450ae98e710ece14e395b4724698b074e4d640cc7"
+   },
+   "mutation": "parts/engine.js assignAnchors: clearance factor 2 changed to 3",
+   "red": "proof-anchors 19 passed 2 failed, observed twice (Mellings and Bayside flip)",
+   "green": "proof-anchors 21 passed 0 failed on the gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "proof-1270-hold-deleted-1290-r3",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "c8174c4b150975549579ebd814dc0d32818ae190554d08fbd2dbe240916e205d"
+   },
+   "mutation": "parts/app5.js loadRoute: plant a fetch('packs/warm.json') call",
+   "red": "proof-1270 12 pass 1 fail, observed twice (check 8: loadRoute carries a fetch)",
+   "green": "proof-1270 13 pass 0 fail on the gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "drive219-label-contract-1290-r4",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "94089cacb1b155de417e5b6562c5c13d46c89b625db3dea9e3060f250eb9812c"
+   },
+   "mutation": "parts/engine.js rebuildRoute: append GLM.removeSource('labelpts') after the labelpts setData",
+   "red": "drive219 20/23 in both runs on the final gate-fix bytes: A3, B1 and C1 fail - the teardown is caught in the load-in, the swap window and the second pick",
+   "green": "drive219 23/23 on the unmutated final gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "drive219-anchor-stability-1290-r2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "94089cacb1b155de417e5b6562c5c13d46c89b625db3dea9e3060f250eb9812c"
+   },
+   "mutation": "parts/app5.js loadRoute: one-shot rewrite flipping every labelpts anchor to the opposite side the moment titles first render",
+   "red": "drive219 18/23 then 19/23 on the final gate-fix bytes: D2 fails in both runs (B2, U3 and I1 also fail in both; B1 in run 1) - the per-tick anchor sampler sees the mid-window rewrite",
+   "green": "drive219 23/23 on the unmutated final gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
   }
  ]
 }
