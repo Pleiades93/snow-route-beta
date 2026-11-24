@@ -1630,7 +1630,7 @@ let themeOverride = null, themeOverrideUntil = 0; // null = automatic
   // night), < -1 it never sets (polar day). Unreachable inside the app's
   // Ontario bounds (the sun always rises and sets there); the function is
   // general, so its answer is correct for every position it can be given.
-  let polar = null;
+  let /** @type {'day' | 'night' | null} */ polar = null;
   if (rise == null && set == null) {
     const t = N + (12 - lngHour) / 24, M = 0.9856 * t - 3.289;
     let L = M + 1.916 * Math.sin(M * rad) + 0.020 * Math.sin(2 * M * rad) + 282.634; L = ((L % 360) + 360) % 360;
