@@ -1,8 +1,7 @@
 # AGENTS.md
 
 Pointers for external agent sessions (Claude, Codex) working in this
-repo. This file carries no rules of its own — follow the documents it
-points at.
+repo, plus the review guidelines Codex cloud review reads, at the end.
 
 - **Source-editing rules** — `DEVELOPMENT_RULES.md` (how parts are
   edited, the merge gate, the shipping pipeline).
@@ -11,3 +10,44 @@ points at.
 - **Testing** — `docs/TESTING.md` (the battery: every pull request runs
   the full drive set; there is no tier selection since the
   testing-efficiency rollout, 2026-11-23).
+
+## Review guidelines
+
+Vendored from the canonical text in the workspace AGENTS.md section
+"Coding discipline — commit-level rules" (set 2026-11-23, Andrew). The
+workspace text is canonical; this copy is vendored from it. If the
+wording changes, it changes there first and re-vendors here.
+
+### Coding rules (short form)
+
+1. One concern per commit, and per PR unless the issues truly share a
+   file. A checklist issue is a queue: one item at a time.
+2. Build only what was asked: no code for unreachable cases, no
+   unrequested features. Speculative ideas go in a sample, never on
+   main.
+3. Compose, don't clone: grouped selectors, one shared helper, or a
+   parameter. A change that adds lines without changing behaviour is
+   not a refactor.
+4. Comments are one short why (20 words at most). History goes in a
+   short CHANGELOG bullet, never in code comments.
+5. Right on the first push: run the drives that touch the changed UI
+   before pushing; fixtures must be able to actually trigger the code
+   under test (real input shape, key space disjoint from the trigger);
+   type, JSDoc and test-marker updates belong in the first commit.
+6. Plan before building: for anything bigger than a bug fix, post a
+   short plan and get the scope approved before writing code.
+
+### What Codex treats as blocking in review
+
+In addition to bugs, Codex treats these as BLOCKING findings in PR
+review. For each one, show the simpler version and estimate the lines
+saved:
+
+- The PR bundles more than one concern.
+- It contains code for unreachable cases, or features that weren't
+  requested.
+- It copies CSS or code where grouping selectors or a shared helper
+  would work.
+- It adds comments longer than ~20 words, or history in code comments.
+- A refactor adds lines without changing behaviour.
+- A test can't actually observe what it claims to test.
