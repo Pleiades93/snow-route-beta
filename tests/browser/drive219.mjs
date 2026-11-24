@@ -1,22 +1,21 @@
-import { launchDrive, finish, pinDayTheme } from './harness.mjs';
+import { launchDrive, finish, pinDayTheme, forceRouteTitlesOn } from './harness.mjs';
 import { laneViolations } from './lane-judge.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 1, mobile: true }, S); // this lane grades presence and paint, not pixels: at the harness's retina factor the software-rendered headless map eats the main thread and the 50 ms sampler starves to a few ticks a second (measured), which would stretch the very timings under grade. At factor 1 the sampler holds its 50 ms median (measured).
 
-// drive219: the no-flash lane for Beta 1.290's geometry-anchored titles.
-// A title's side is data: assigned once by assignAnchors, stored on the
-// feature, read by the layers. Nothing writes a title layer's visibility
-// or opacity after the layers are added, and labelpts is never torn down.
+// drive219: the title lane. Phase 0 grades the shipped OFF state (no
+// title layers; the basemap names route streets); later phases force
+// the switch on and grade centred, spec-fixed titles.
 // Settled-frame rule: names are judged only over samples at or after the
 // flight's moveend (mid-flight, the wide view legitimately loses names).
 // Basemap names are the renderer's own collision placement: the lane
 // grades only that the app never dims or hides a basemap layer (A5, B1).
 // Theme-swap limit (flagged, not fixed): setStyle recreates labelpts, so
-// source identity breaks at a swap; the anchors survive as feature data
-// and phase B grades exactly that boundary.
-// Phases: A load-in stream, F pan, B theme swap, C second pick,
-// D mid-flight anchors, U 6x-throttle tour + cull count, G instant fit,
-// H unload mid-dwell, I create mode, J unload mid-flight.
+// source identity breaks at a swap; the centre spec survives as layer
+// spec and phase B grades exactly that boundary.
+// Phases: 0 off state, A load-in stream, F pan, B theme swap, C second
+// pick, D mid-flight centre spec, U 6x-throttle tour + cull count,
+// G instant fit, H unload mid-dwell, I create mode, J unload mid-flight.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -98,12 +97,12 @@ const INSTRUMENT = `(() => {
       }
       let visNoneT = 0;
       for (const id of L.titles) { try { if (map.getLayoutProperty(id, 'visibility') === 'none') visNoneT++; } catch (e) {} }
-      let anchorSig = '';
-      try { const s = map.getSource('labelpts'); const d = s && s.serialize ? s.serialize().data : null; if (d && d.features && d.features.length) anchorSig = d.features.map((f) => (f.properties && f.properties.name) + '=' + (f.properties && f.properties.anchor)).sort().join('|'); } catch (e) {} // the anchor map as this tick sees it - D2 grades that it never changes inside a window
+      let specSig = '';
+      try { const s = map.getSource('labelpts'); const d = s && s.serialize ? s.serialize().data : null; if (d && d.features && d.features.length) specSig = TITLE_IDS.filter((id) => map.getLayer(id)).map((id) => map.getLayoutProperty(id, 'text-anchor') + ':' + map.getLayoutProperty(id, 'text-radial-offset')).join('|') + '#' + d.features.length; } catch (e) {} // the centre spec as this tick sees it - D2 grades that it never changes inside a window
       window.__li.samples.push({ t: performance.now(),
         groups,
         titles: Object.keys(groups.titles.names), road: Object.keys(groups.road.names), place: Object.keys(groups.place.names), nRoad,
-        src: srcToken(), visNoneT, anchorSig });
+        src: srcToken(), visNoneT, specSig });
     } catch (e) {}
   }, 50);
   return true;
@@ -118,11 +117,33 @@ const completeAt = (samples, group) => { // the first sample where the group's p
 };
 const waitSettled = async (ms) => poll(`(() => { try { const last = window.__li.samples[window.__li.samples.length - 1]; return !!last && last.titles.length >= 30; } catch (e) { return false; } })()`, ms);
 const srcTokens = (samples) => [...new Set(samples.map((s) => s.src).filter((t) => t > 0))]; // the distinct live labelpts source objects a window saw (0 = not yet created)
-const readAnchors = async () => J(`(() => { const s = map.getSource('labelpts'); const d = s && s.serialize ? s.serialize().data : null; const o = {}; for (const f of (d && d.features) || []) o[f.properties.name] = f.properties.anchor; return o; })()`);
+const readSpec = async () => J(`(() => { const layers = {}; for (const id of ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4']) layers[id] = map.getLayer(id) ? { a: map.getLayoutProperty(id, 'text-anchor'), r: map.getLayoutProperty(id, 'text-radial-offset') } : null; const s = map.getSource('labelpts'); const d = s && s.serialize ? s.serialize().data : null; return { layers, features: d && d.features ? d.features.length : 0 }; })()`);
+const specIsCentre = (spec) => ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].every((id) => spec.layers[id] && spec.layers[id].a === 'center' && spec.layers[id].r === 0);
 const pickRoute = async () => ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 
-// ================= Phase A: the streaming load-in =================
+// ================= Phase 0: the shipped OFF state =================
+// No force: this phase grades the app exactly as it ships.
 await bootToPicker();
+await pickRoute();
+const wRoute = await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'].filter((id) => map.getLayer(id)) })) if (f.properties && f.properties.name) seen.add(f.properties.name); return ROUTE_TILE_NAMES.some((n) => seen.has(n)); } catch (e) { return false; } })()`, 45000);
+await sleep(600);
+const W = await J(`(() => { const filt = {}; for (const id of ['roads_labels_major', 'roads_labels_minor']) { const L = map.getStyle().layers.find((x) => x.id === id); filt[id] = L && L.filter ? JSON.stringify(L.filter) : ''; } return { flag: (typeof ROUTE_TITLES_ON !== 'undefined') ? ROUTE_TITLES_ON : 'undefined', titleLayers: ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)), labelpts: !!map.getSource('labelpts'), filt }; })()`);
+console.log('drive219 0: flag ' + W.flag + ', title layers ' + JSON.stringify(W.titleLayers) + ', labelpts ' + W.labelpts + ', route name rendered ' + wRoute);
+ok('W1 THE SHIPPED SWITCH READS OFF in the running app (ROUTE_TITLES_ON: ' + W.flag + ') - the default state is the plain basemap, app titles absent by design',
+  W.flag === false);
+ok('W2 NO TITLE LAYERS AND NO LABELPTS SOURCE on a settled pick while off (layers: ' + JSON.stringify(W.titleLayers) + ', labelpts source present: ' + W.labelpts + ') - the title build is skipped at its entry point, not built and hidden',
+  W.titleLayers.length === 0 && W.labelpts === false);
+ok('W3 THE BASEMAP NAMES A ROUTE STREET while off: at least one route street\'s tile name renders from the basemap road layers at the settled view (rendered: ' + wRoute + ') - the off state names the route the regular way, like every other street',
+  wRoute === true);
+ok('W4 THE EXCLUSION IS LIFTED while off: neither road-label filter carries a route street name (the exclusion literal inlines them) - major filter names Valeria Boulevard: ' + (W.filt['roads_labels_major'] || '').includes('Valeria Boulevard') + ', minor filter: ' + (W.filt['roads_labels_minor'] || '').includes('Valeria Boulevard') + ' - titles off without the lift would leave the route streets nameless',
+  !(W.filt['roads_labels_major'] || '').includes('Valeria Boulevard') && !(W.filt['roads_labels_minor'] || '').includes('Valeria Boulevard'));
+await ev(`(() => { unloadRouteToBoot(); return true; })()`);
+await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 20000);
+
+// ================= Phase A: the streaming load-in =================
+await send('Page.reload', {}, S);
+await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 // Fixture warm-up (unmeasured, before the instrument installs): one
 // throwaway pick, settled, then unloaded back to the picker. The graded
 // pick below is a normal boot-style pick from the picker state the
@@ -179,18 +200,19 @@ ok('F1 a pan after the load-in settles with NO teardown, the SAME source object,
 
 // ================= Phase B: theme swap mid-flight =================
 // Graded from the post-swap settled frame (the rebuild window is the
-// renderer's); the app must hold zero teardowns and identical anchors.
+// renderer's); the app must hold zero teardowns and an identical spec.
 await send('Page.reload', {}, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await pickRoute();
 await poll(`(() => { try { const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'].filter((id) => map.getLayer(id)); if (!ids.length) return false; const s = new Set(); for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return s.size >= 30; } catch (e) { return false; } })()`, 45000);
 await ev(`(() => { unloadRouteToBoot(); return true; })()`);
 await poll(`!!document.querySelector('#rmRoutes .routeRow')`, 20000);
 await ev(INSTRUMENT);
 await pickRoute();
-const bAnchors0 = await (async () => { // the anchor map as the flight begins - data at stack build, readable inside the dwell
-  for (let i = 0; i < 100; i++) { const a = await readAnchors(); if (Object.keys(a).length >= 34) return a; await sleep(100); }
-  return readAnchors();
+const bSpec0 = await (async () => { // the centre spec as the flight begins - layer spec at stack build, readable inside the dwell
+  for (let i = 0; i < 100; i++) { const a = await readSpec(); if (a.features >= 34) return a; await sleep(100); }
+  return readSpec();
 })();
 const bPreSwap = await J(`window.__li`);
 const bToken0 = srcTokens(bPreSwap.samples)[0] || 0;
@@ -200,7 +222,7 @@ await ev(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return tr
 const bDone = await poll(`(() => { try { const ss = window.__li.samples; for (const s of ss) { if (s.t >= ${bSwapAt} && s.src > 0 && s.src !== ${bToken0} && s.titles.length >= 30) return true; } return false; } catch (e) { return false; } })()`, 40000); // the post-swap settle: a sample on the NEW source object with the titles back at full placement
 await sleep(500);
 const B = await J(`window.__li`);
-const bAnchors1 = await readAnchors();
+const bSpec1 = await readSpec();
 console.log('drive219 B: samples ' + B.samples.length + ', tears ' + B.tears.length + ', tokens ' + JSON.stringify(srcTokens(B.samples)) + ', post-swap settled ' + bDone);
 const bSettledSample = B.samples.find((s) => s.t >= bSwapAt && s.src > 0 && s.src !== bToken0 && s.titles.length >= 30);
 const bSettledAt = bSettledSample ? bSettledSample.t : Infinity;
@@ -210,14 +232,15 @@ const bRoadDim = bAfter.filter((s) => s.groups && s.groups.road && (s.groups.roa
 const bPostSwapTokens = srcTokens(bAfter);
 ok('B1 a theme swap mid-flight resolves by streaming: the load-in completes on the new style, no teardown runs, no appeared title drops a visible name once the rebuilt style\'s frame settles, and no basemap layer is dimmed or hidden across the swap window (post-swap settled: ' + bDone + ', teardowns: ' + B.tears.length + ', title violations after the settle: ' + JSON.stringify(bLaneT.slice(0, 6)) + ', dimmed basemap samples after the settle: ' + bRoadDim.length + ', final titles: ' + (B.samples.length ? B.samples[B.samples.length - 1].titles.length : 0) + ') - basemap label persistence after a rebuild is the renderer\'s collision placement over a re-streaming basemap (A5 states the evidence), not an app promise',
   bDone === true && B.tears.length === 0 && bLaneT.length === 0 && bRoadDim.length === 0 && B.samples[B.samples.length - 1].titles.length >= 30);
-ok('B2 THE ANCHORS SURVIVE THE SWAP AS DATA: the labelpts anchor map after the swap is identical to the one the flight opened with (' + Object.keys(bAnchors0).length + ' streets before, ' + Object.keys(bAnchors1).length + ' after, differing: ' + JSON.stringify(Object.keys(bAnchors1).filter((k) => bAnchors0[k] !== bAnchors1[k])) + ') - setStyle rebuilt the style, but no side was re-decided',
-  Object.keys(bAnchors0).length >= 34 && JSON.stringify(bAnchors0) === JSON.stringify(bAnchors1));
+ok('B2 THE CENTRE SPEC SURVIVES THE SWAP: the title layers after the swap carry the same centre spec and the same feature count as the ones the flight opened with (features before: ' + bSpec0.features + ', after: ' + bSpec1.features + ', spec after: ' + JSON.stringify(bSpec1.layers) + ') - setStyle rebuilt the style, but no placement was re-decided',
+  bSpec0.features >= 34 && JSON.stringify(bSpec0) === JSON.stringify(bSpec1) && specIsCentre(bSpec1));
 ok('B3 SOURCE IDENTITY ACROSS THE SWAP - the flagged limit, graded at its boundary: the token changes at the swap (setStyle recreates the style, labelpts included) and is ONE stable object from the rebuilt style\'s settle on (post-settle tokens: ' + JSON.stringify(bPostSwapTokens) + ', all tokens: ' + JSON.stringify(srcTokens(B.samples)) + ')',
   srcTokens(B.samples).length === 2 && bPostSwapTokens.length === 1 && bPostSwapTokens[0] !== bToken0);
 
 // ================= Phase C: a second pick during the window =================
 await send('Page.reload', {}, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
 await sleep(600); // inside the first pick's dwell - its flight has not even launched
@@ -233,30 +256,31 @@ ok('C2 THE SWITCH REWRITES DATA, NOT THE SOURCE: the labelpts source object is t
   srcTokens(C.samples).length === 1);
 
 // ================= Phase D: the mid-flight placement contract =================
-// Unstaged: titles placing during the flight keep their stored sides,
-// the anchor map never changes, and nothing tears down or hides.
+// Unstaged: titles placing during the flight keep their centre spec,
+// the spec never changes, and nothing tears down or hides.
 await send('Page.reload', {}, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
 const dDone = await waitSettled(40000);
 await sleep(700);
 const D = await J(`window.__li`);
-const dAnchors = await readAnchors();
+const dSpec = await readSpec();
 const dAtMoveEnd = D.samples.find((s) => s.t >= D.moveEndAt);
 const dPlacedMidFlight = dAtMoveEnd ? dAtMoveEnd.titles.length : 0;
 const dLaneT = laneViolations(D.samples.filter((x) => x.t >= D.moveEndAt), 'titles');
 console.log('drive219 D: samples ' + D.samples.length + ', tears ' + D.tears.length + ', tokens ' + JSON.stringify(srcTokens(D.samples)) + ', placed by moveend ' + dPlacedMidFlight + ', settled ' + dDone);
 ok('D1 THE MID-FLIGHT CONTRACT, unstaged: titles placed by the flight\'s moveend: ' + dPlacedMidFlight + ' (the old cure\'s precondition, present or not by environment) - and across the whole window: zero teardowns, one source object, no title layer ever hidden, and no appeared title returns to zero after moveend (teardowns: ' + D.tears.length + ', tokens: ' + JSON.stringify(srcTokens(D.samples)) + ', hidden samples: ' + D.samples.filter((s) => s.visNoneT > 0).length + ', lane violations: ' + JSON.stringify(dLaneT.slice(0, 6)) + ') - there is no cure because there is nothing to cure',
   dDone === true && D.tears.length === 0 && srcTokens(D.samples).length === 1 && D.samples.every((s) => s.visNoneT === 0) && dLaneT.length === 0);
-const dSigs = [...new Set(D.samples.map((s) => s.anchorSig).filter(Boolean))];
-const dSettledSig = Object.entries(dAnchors).map(([k, v]) => k + '=' + v).sort().join('|');
-ok('D2 THE ANCHOR MAP IS NEVER REWRITTEN INSIDE THE WINDOW: every sampler tick that saw the labelpts data saw the same name-to-side map, and that map is the settled one - all 34 anchors, each one of the four stored sides (ticks with data: ' + D.samples.filter((s) => s.anchorSig).length + ', distinct maps seen: ' + dSigs.length + ', streets read: ' + Object.keys(dAnchors).length + ', invalid values: ' + JSON.stringify(Object.entries(dAnchors).filter(([, v]) => !['top', 'bottom', 'left', 'right'].includes(v)).map(([k]) => k)) + ') - the data the geometry build assigned is the data at every tick, not only at the end',
-  dSigs.length === 1 && dSigs[0] === dSettledSig && Object.keys(dAnchors).length >= 34 && Object.values(dAnchors).every((v) => ['top', 'bottom', 'left', 'right'].includes(v)));
+const dSigs = [...new Set(D.samples.map((s) => s.specSig).filter(Boolean))];
+ok('D2 THE CENTRE SPEC IS NEVER REWRITTEN INSIDE THE WINDOW: every sampler tick that saw the labelpts data saw the same centre spec, and the settled read confirms it - all four layers at text-anchor center with radial offset 0, over 34 features (ticks with data: ' + D.samples.filter((s) => s.specSig).length + ', distinct specs seen: ' + dSigs.length + ', settled spec: ' + JSON.stringify(dSpec.layers) + ', features: ' + dSpec.features + ') - the spec the stack built is the spec at every tick, not only at the end (the 1.290 gate lesson: a spec read only after settlement has a blind window)',
+  dSigs.length === 1 && dSigs[0].startsWith('center:0|center:0|center:0|center:0#') && specIsCentre(dSpec) && dSpec.features >= 34);
 
 // ================= Phase U: the unstaged phone condition (6x throttle + tour) =================
 await send('Page.reload', {}, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await send('Emulation.setCPUThrottlingRate', { rate: 6 }, S); // the phone condition the defect lived in: the placement worker crawls, the flight outruns it, titles place whenever they place
 await pickRoute();
@@ -298,6 +322,7 @@ ok('U3 THE TOUR: zoom in, back out to the fit and a pan - across every leg: zero
 await send('Page.reload', {}, S);
 await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
 const gDone = await waitSettled(40000);
@@ -311,6 +336,7 @@ await send('Emulation.setEmulatedMedia', { features: [] }, S);
 // ================= Phase H: deleting the route mid-window =================
 await send('Page.reload', {}, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
 await sleep(900); // inside the dwell - the window is wide open
@@ -327,6 +353,7 @@ ok('H1 unloading the route mid-window (the delete path) and picking again comple
 // ================= Phase I: entering create mode mid-window =================
 await send('Page.reload', {}, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
 await poll(`!!(window.map && map.isMoving())`, 15000); // creation opens MID-FLIGHT, while the stream is genuinely running - the staging this phase's premise names (the old fixed 900 ms sleep lands inside the pick's 1500 ms dwell on a fast machine, before the flight has even launched)
@@ -357,6 +384,7 @@ ok('I1 entering create mode mid-window and leaving: during creation the backdrop
 // row silently no-ops).
 await send('Page.reload', {}, S);
 await bootToPicker();
+await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
 await poll(`!!(window.map && map.isMoving())`, 20000); // the flight is airborne - the unload lands inside it

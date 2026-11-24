@@ -3,9 +3,10 @@
 // to its 1.257 form above (titles at every zoom, originals excluding route
 // names, no clones), which is again the live rule. proof-1263 pins the
 // shape; drive216 grades presence during settles.
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: this drive grades the titles - force the source switch on
 
 
 
@@ -143,6 +144,7 @@ ok('L7 at close zoom the route name prints on the titles exactly once and never 
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.setItem('snowroute.v2.nightExp', '4102444800000'); location.reload(); return true; })()`); // Beta 1.77: a stored override carries its sun-boundary expiry with it
 await sleep(3000);
 await bootThrough(ev, poll, { pinTheme: false }); // Beta 1.76: the reload returns to the route menu - pick 5W so the engine rebuilds the titles under the night style; Beta 1.77: keep the seeded night override (no day pin)
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: the reload reset the flag - force the switch on again for the night sections
 ok('L8 night boot with the map active', await poll120(`typeof glOk !== 'undefined' && glOk === true && document.body.classList.contains('night')`, 30000));
 const S3 = await jread(`(() => JSON.stringify({
   clone: !!map.getLayer('roads_labels_major-route'),

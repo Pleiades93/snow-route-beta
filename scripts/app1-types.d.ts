@@ -160,6 +160,9 @@ declare function glUnifyLabels(m: any): void;
 
 // ---- 3. Browser surface actually used by the checked parts ----
 
+/** Source-only title switch, provided by flags.js before the parts execute. */
+declare var ROUTE_TITLES_ON: boolean;
+
 /** The classList surface app1 uses. */
 interface AppClassList {
   add(...classes: string[]): void;

@@ -83,6 +83,8 @@ ICON = ROOT / "splash-artwork-512.png"
 VERSION_TOKEN = b"@@VERSION@@"
 CHANGELOG = ROOT / "CHANGELOG.md"
 
+FLAGS = ROOT / "flags.js"
+
 
 def release_version() -> bytes:
     """The one home of the version number: the CHANGELOG top entry."""
@@ -130,6 +132,11 @@ def build() -> bytes:
         chunks.append(data)
         if name == "head.html":
             chunks.append(b"<script>\n")
+            # Flags ride FIRST inside the one bundle script (the CSP stamp allows exactly one): the parts read them.
+            if not FLAGS.is_file():
+                raise SystemExit(f"assemble: missing flags file {FLAGS}")
+            chunks.append(FLAGS.read_bytes())
+            chunks.append(b"\n")
     chunks.append(b"</script></body></html>\n")
     return b"".join(chunks)
 
