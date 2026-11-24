@@ -678,7 +678,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.289</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.290</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -7791,7 +7791,7 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.289', items: ["The route dropdown's corners hold square as it closes, then round at the end"] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.290', items: ["Route street names no longer blink on load - each name sits beside its street from the start"] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();
