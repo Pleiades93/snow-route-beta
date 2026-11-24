@@ -1,17 +1,4 @@
-// proof-anchors.mjs - Label round (geometry-anchored route titles).
-// A title's side is DATA, decided once in buildEngineGeometry by
-// assignAnchors - a pure function of the streets. This proof grades the
-// shipped pass three ways: (1) structural - the pass exists, runs last
-// in the geometry build, and stamps every label feature; (2) the real
-// 5W pack - every anchor recomputed by an INDEPENDENT implementation of
-// the rule (per-segment clearance voting; direction from the label
-// line's edge nearest the point; the alongside preference with the
-// along-axis side winning only at strictly over twice the clearance)
-// must equal the shipped data, in whole-street and split-run builds;
-// (3) hand-derived fixtures - the 1.248 streets and Fifth read their
-// clearance side, and synthetic packs pin the tie and factor edges.
-// The mutation receipt for this file lives in tests/mutation-receipts.json.
-// Run from the repo root:  node tests/proof/proof-anchors.mjs
+// Verify geometry-derived anchors against real packs and synthetic edge cases.
 import { readFileSync, readdirSync } from 'node:fs';
 import vm from 'node:vm';
 

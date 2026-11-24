@@ -10,16 +10,8 @@
 // basemap is never touched in any path. These are the static pins; the
 // behaviour is proven by drive219 (the streaming presence lane).
 //
-// Beta 1.290 premise update (the label round): the guard, its cure and
-// the hold are now DELETED whole - a title's side is geometry data
-// (assignAnchors, read through a data-driven text-anchor), decided in
-// the build before any flight, so a mid-flight placement keeps a correct
-// side by construction and nothing remains for a cure to fix. The checks
-// below are re-pointed to the deletion contract: what each check pinned
-// about the guard's behaviour is restated as the absence that makes the
-// behaviour unnecessary, and no claim is dropped silently - each new
-// check names the hazard its predecessor guarded and why it cannot
-// recur. drive219 is re-pointed in the same round.
+// Beta 1.290 premise update: the guard, cure and hold are deleted whole;
+// the checks below pin the deletion contract instead of their behaviour.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -10020,6 +10020,78 @@
    "red": "sw suite: the 1.290 mapFetch threading check fails (waitUntil receives nothing), the other 58 pass, observed twice 2026-11-24 in the scratch copy",
    "green": "sw suite: 59 passed, 0 failed on the restored tree",
    "issued": "2026-11-24 label-round commit-3"
+  },
+  {
+   "id": "drive219-label-contract-1290-r3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "f29ee8f620354a58f61eed1c66935af967833e3665971c236a384d63b98eac2c"
+   },
+   "mutation": "parts/engine.js rebuildRoute: append GLM.removeSource('labelpts') after the labelpts setData",
+   "red": "drive219 19/23 then 20/23: A3 and C1 fail in both runs (B1 and U3 also fail in run 1) - the teardown is caught on the gate-fix bytes",
+   "green": "drive219 23/23 on the unmutated gate-fix tree (207.6s local run)",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "drive219-anchor-stability-1290",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "f29ee8f620354a58f61eed1c66935af967833e3665971c236a384d63b98eac2c"
+   },
+   "mutation": "parts/app5.js loadRoute: one-shot rewrite flipping every labelpts anchor to the opposite side the moment titles first render",
+   "red": "drive219 20/23 then 19/23: D2 fails in both runs (B2 and U3 also fail in both; I1 in run 2) - the per-tick anchor sampler sees the rewrite the settled-only read could not",
+   "green": "drive219 23/23 on the unmutated gate-fix tree (207.6s local run)",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "anchors-factor2-1290-r3",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "44d7e1cc8fbbcaaf716f18b450ae98e710ece14e395b4724698b074e4d640cc7"
+   },
+   "mutation": "parts/engine.js assignAnchors: clearance factor 2 changed to 3",
+   "red": "proof-anchors 19 passed 2 failed, observed twice (Mellings and Bayside flip)",
+   "green": "proof-anchors 21 passed 0 failed on the gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "proof-1270-hold-deleted-1290-r3",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "c8174c4b150975549579ebd814dc0d32818ae190554d08fbd2dbe240916e205d"
+   },
+   "mutation": "parts/app5.js loadRoute: plant a fetch('packs/warm.json') call",
+   "red": "proof-1270 12 pass 1 fail, observed twice (check 8: loadRoute carries a fetch)",
+   "green": "proof-1270 13 pass 0 fail on the gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "drive219-label-contract-1290-r4",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "94089cacb1b155de417e5b6562c5c13d46c89b625db3dea9e3060f250eb9812c"
+   },
+   "mutation": "parts/engine.js rebuildRoute: append GLM.removeSource('labelpts') after the labelpts setData",
+   "red": "drive219 20/23 in both runs on the final gate-fix bytes: A3, B1 and C1 fail - the teardown is caught in the load-in, the swap window and the second pick",
+   "green": "drive219 23/23 on the unmutated final gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "drive219-anchor-stability-1290-r2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "94089cacb1b155de417e5b6562c5c13d46c89b625db3dea9e3060f250eb9812c"
+   },
+   "mutation": "parts/app5.js loadRoute: one-shot rewrite flipping every labelpts anchor to the opposite side the moment titles first render",
+   "red": "drive219 18/23 then 19/23 on the final gate-fix bytes: D2 fails in both runs (B2, U3 and I1 also fail in both; B1 in run 1) - the per-tick anchor sampler sees the mid-window rewrite",
+   "green": "drive219 23/23 on the unmutated final gate-fix tree",
+   "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
   }
  ]
 }
