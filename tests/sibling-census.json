@@ -11902,6 +11902,118 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-24 corner-timing-v2"
+  },
+  {
+   "id": "issue-176-1292",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "syncWake"
+    ],
+    "elements": [
+     "xPre",
+     "xPreStat"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:syncWake:parts/app2.js:finishChange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncWake() is called from finishChange in parts/app2.js",
+     "status": "covered",
+     "note": "run-state save path; the run want is unchanged, and a live download's want now also survives a save-time re-evaluation, which is the #176 intent - the sentinel machinery is shared and judged by drive123 A8e plus the full battery's run drives"
+    },
+    {
+     "id": "caller:syncWake:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncWake() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "cancelling a run drops the run want exactly as before; a download in flight would keep its own want, which is correct - syncWake recomputes the whole want set on every call"
+    },
+    {
+     "id": "caller:syncWake:parts/app3.js:document:visibilitychange",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncWake is registered by reference as the document visibilitychange handler in parts/app3.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the re-evaluation door: hidden releases, visible re-requests for whichever want is live - now including a live download; drive123 A8e judges the idle and held states around the download and the run drives judge the run side"
+    },
+    {
+     "id": "caller:syncWake:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncWake() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "run start requests the run want under the same gate as before (visible + awake toggle); untouched behaviour, covered by the battery's run drives"
+    },
+    {
+     "id": "caller:syncWake:parts/app4.js:swAwake:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncWake() is called from swAwake:click in parts/app4.js",
+     "status": "covered",
+     "note": "the keep-awake toggle's own door; unchanged contract - it still governs only the run want, and drive123 A8e proves a download holds the lock with the toggle OFF"
+    },
+    {
+     "id": "caller:syncWake:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncWake() is called from xPre:click in parts/app4.js",
+     "status": "covered",
+     "note": "THE new caller this round: syncWake fires at the download's start, natural end and error end; drive123 A8e observes the lock requested while the pass runs and released after, with the toggle off"
+    },
+    {
+     "id": "caller:syncWake:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncWake() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route load re-evaluates the want set; run behaviour unchanged, and a route switch mid-download correctly keeps the download's want - covered by the battery"
+    },
+    {
+     "id": "caller:syncWake:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncWake() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "unload re-evaluates the want set like loadRoute; no behaviour change for runs, covered by the battery"
+    },
+    {
+     "id": "theme:xPre",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #xPre has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no day or night rule exists for #xPre (it wears the shared .rmBtn family); this round changes no styling in either theme - the change is the handler's fetch set and the wake want, both theme-independent"
+    },
+    {
+     "id": "theme:xPreStat",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #xPreStat has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "a day rule exists and no night rule; this round changes no styling - the status line's content and the pass behaviour are theme-independent and judged by drive123 in the rig's theme"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "5db9ad1e48acfee27db4a19a57d34048ea930916aa077304d0d498a0327b885b",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44",
+    "parts/app5.js": "99c6114ae682585c58d0700bb7f17f0107084848c9f72bddfe75622039e068a0",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "59a0d853703b11d0e4d3035fad2c07da6b260d1e10d0633417bcd497bf3e555f",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "dc27c0692db2ff21bece52116517ab4460ec954c0ba077fefa34d3cc6c5b2f55",
+    "parts/head.html": "9987db49e2556790a7c38061b7ac5bf1d3759ab6f635804b4ec3d017fb23b0a4",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "Beta 1.292 issue #176 round: syncWake gains the download want (app3) and the xPre handler gains census-driven fill-missing targets plus syncWake at its three preloadRunning flips (app4); one combined census naming all the PR's parts paths per the D-01 lesson"
   }
  ]
 }

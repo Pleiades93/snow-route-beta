@@ -10118,6 +10118,46 @@
    "red": "Mutation 1 (1.289 timing): drive222 fails exactly 2 of 17, twice with the identical set - 'B close hold' (clock window maxRad 11.33; card-standing maxRadUp 13.42) and 'B close round-over'. Mutation 2 (Codex's case: v2 spec with the delay cut to 310ms): the hold fails twice via the card-standing samples alone (maxRadUp 1.3068 while the clock window stays maxRad 0) - the pre-strengthening predicates passed this regression. One M2 run also flaked 'B open pace' on its sampled travel witness (the transition's own duration read 420); unrelated to either mutation.",
    "green": "drive222 17/17 PASS on the final tree with the strengthened checks (hold: 25 clock samples maxRad 0, 29 card-standing samples maxRadUp 0; closed rest rad exactly 14), byte-identical revert verified (parts/head.html sha256 9987db49..., src 3215661e..., index.html c12191ca...). One post-revert run flaked the same 'B open pace' sampled witness and passed 17/17 on the immediate re-run.",
    "issued": "2026-11-24 corner-timing-v2 gate fix"
+  },
+  {
+   "id": "issue-176-drive123-fillmissing",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "bfbb0efd2a39d095051ffa0e3b85d332e37c3c6112e388a5f8e9046f15228c21",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44"
+   },
+   "mutation": "parts/app4.js: const targets forced to the full list (missing census ignored)",
+   "red": "drive123 16/17 twice: A8d FAIL, fetched 897 instead of the 4 census-missing entries",
+   "green": "drive123 17/17 PASS on the restored tree",
+   "issued": "2026-11-24 issue-176"
+  },
+  {
+   "id": "issue-176-drive123-wakelock",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "bfbb0efd2a39d095051ffa0e3b85d332e37c3c6112e388a5f8e9046f15228c21",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44"
+   },
+   "mutation": "parts/app3.js: wantNow without the preloadRunning download want (run-only gate)",
+   "red": "drive123 15/17 twice: both A8e wake checks FAIL, wakeLock reqs 0, held never observed",
+   "green": "drive123 17/17 PASS on the restored tree",
+   "issued": "2026-11-24 issue-176"
+  },
+  {
+   "id": "issue-176-proof-c01-prunegate",
+   "check": "tests/proof/proof-pack-cache-c01.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pack-cache-c01.mjs": "0b6165c9f6bbd9add72e7e61f832eaf50568da6bc30d5618059a909fb4e0ffaf",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44"
+   },
+   "mutation": "parts/app4.js: prune gate removed (if (packCache && pruneProven) -> if (packCache))",
+   "red": "proof-pack-cache-c01 FAIL twice: the 4 prune-gate checks (3 orphan-survival scenarios + unhealed-pack fingerprint)",
+   "green": "proof-pack-cache-c01 11/11 PASS, exit 0",
+   "issued": "2026-11-24 issue-176"
   }
  ]
 }

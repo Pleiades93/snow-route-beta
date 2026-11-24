@@ -314,7 +314,7 @@ function closeClean() {
 // ===== RUN LIFECYCLE =====
 let wakeLock = null, wakePending = null; // Beta 1.254 (O-04): wakePending is the ONE in-flight request, shared by every overlapping caller - through 1.253 two syncWake calls that overlapped inside the request await each minted a lock, and the second assignment orphaned the first, which was then never released
 async function syncWake() {
-  const wantNow = () => !!runStart && document.visibilityState === 'visible' && settings.awake; // Beta 1.111: the wake lock is gated on the On-the-job toggle - the request/release machinery below is unchanged; where the API is absent the request is a silent no-op and nothing here throws. Beta 1.112 (Andrew): settings.awake is session-only state - always OFF at a cold open, never stored. Beta 1.113 (round 112, CG-112-04): eligibility is a FUNCTION, recomputed after the request await - capturing it once let a toggle-off (or a finish) landing mid-request leave the late-arriving lock held with the switch OFF
+  const wantNow = () => document.visibilityState === 'visible' && ((!!runStart && settings.awake) || preloadRunning); // the want: a run with the awake toggle, or a live offline download (#176). Recomputed after the request await (Beta 1.113)
   try {
     if (wantNow() && !wakeLock && navigator.wakeLock) {
       if (!wakePending) {
