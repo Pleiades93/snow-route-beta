@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-zKu9AQwGxyvRX4vhYbrzrBFyt8TqrTEigxB7cHuVL4yzANfiBFjCBBxSbcmcRkXv' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-Mddx1GFm9WblDIaoUwAQ6gVaDSi/GLqBPhs4kqIrC5mgalRTSI2nKwTEQq4Y+Tp4' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-K3LClps0f0zGX6bfTDEsl534lhGD1VkTiOrDs20ybh1lXk7MzlXty60yEN34bMlJ' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-hmBELctyrAgm328Tp28arukBeJ10apiznON7j6aTVCG0CZ6QaX6h97O1nxU+aW7J' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -472,7 +472,7 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* Beta 1.159: whil
 .routeName { font-size: 17px; font-weight: 650; }
 .routeArea { font-size: 13px; opacity: .75; }
 #routeMenu .routeRow, #routeMenu .crOnlineRow { background: rgba(255,255,255,.18); border: none; box-shadow: 0 2px 8px rgba(10,16,60,.25); color: #fff; margin-bottom: 10px; position: relative; justify-content: flex-end; height: 58px; padding: 8px 16px; }
-#routeMenu .rmPane .routeRow, #routeMenu .rmPane .crOnlineRow { transition: transform 150ms ease-out, border-bottom-left-radius 135ms var(--ease-close) 200ms, border-bottom-right-radius 135ms var(--ease-close) 200ms; } /* Beta 1.289: corners hold square 200ms on close, then round over 135ms. .rmPane scope outranks the later press-feedback shorthand */ /* Beta 1.158: the menu's list rows wear the unified pill family's tint + ring tokens (Beta 1.222: the family's soft fill + soft shadow tokens - the ring retired with the rest of the family). Beta 1.159 (Andrew, overruling the 1.158 note that kept the rows left-aligned): the rows are pills in full - see the .routeMeta rule below. The row becomes the positioning frame: the extras (chevron, badge, Delete) stay in flow at the right edge (flex-end), and the row keeps a pill's height even when it carries no extras (the meta no longer sets it) */
+#routeMenu .rmPane .routeRow, #routeMenu .rmPane .crOnlineRow { transition: transform 150ms ease-out, border-bottom-left-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms, border-bottom-right-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms; } /* Corners stay square until the card is gone, then spring round. .rmPane scope outranks the later press-feedback shorthand */ /* Beta 1.158: the menu's list rows wear the unified pill family's tint + ring tokens (Beta 1.222: the family's soft fill + soft shadow tokens - the ring retired with the rest of the family). Beta 1.159 (Andrew, overruling the 1.158 note that kept the rows left-aligned): the rows are pills in full - see the .routeMeta rule below. The row becomes the positioning frame: the extras (chevron, badge, Delete) stay in flow at the right edge (flex-end), and the row keeps a pill's height even when it carries no extras (the meta no longer sets it) */
 #routeMenu .routeMeta { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); align-items: center; text-align: center; padding: 0 54px; pointer-events: none; } /* Beta 1.159 (Andrew): the row's name and sub lines are CENTRED on the pill itself - the meta spans the row's full width (its side padding keeps wrapped lines clear of the chevron/Delete zone) and centres both lines, so the text sits on the row's centre no matter what rides at the right edge. pointer-events: none - taps belong to the row (a <button>, or the list's delegation for a created route's div) exactly as before */
 #routeMenu .routeCheck { width: 25px; height: 25px; flex: none; } /* Beta 1.233 (Andrew): the loaded route's disc check - 25px at the pill's right edge (the picked sample's size), clear of the meta column's 54px side padding, so the name stays dead centre */
 /* Beta 1.271: the :has(> .routeDel) meta clearances retire with .routeDel - Delete lives in the dropdown now; the check alone fits the base 54px clearance */
@@ -679,7 +679,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.290</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.291</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -7792,7 +7792,7 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.290', items: ["Route street names no longer blink on load - each name sits beside its street from the start"] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.291', items: ["The route menu's corners now stay square until the menu is fully closed, then round smoothly"] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

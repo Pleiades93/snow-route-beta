@@ -10092,6 +10092,19 @@
    "red": "drive219 18/23 then 19/23 on the final gate-fix bytes: D2 fails in both runs (B2, U3 and I1 also fail in both; B1 in run 1) - the per-tick anchor sampler sees the mid-window rewrite",
    "green": "drive219 23/23 on the unmutated final gate-fix tree",
    "issued": "2026-11-24 label-round gate fix (Codex PR #205)"
+  },
+  {
+   "id": "corner-timing-v2-drive222",
+   "check": "tests/browser/drive222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive222.mjs": "a683eb42a4abc1266d16bf446916236684165725bccff27e7b47e681c23d88f3",
+    "parts/head.html": "9987db49e2556790a7c38061b7ac5bf1d3759ab6f635804b4ec3d017fb23b0a4"
+   },
+   "mutation": "parts/head.html: the pane-row radius transition restored to the Beta 1.289 timing (border-bottom-left/right-radius 135ms var(--ease-close) 200ms) in place of the v2 spring spec (280ms cubic-bezier(.34,1.35,.5,1) 335ms), reassembled",
+   "red": "drive222 fails exactly 2 of 17 checks, observed twice with the identical set and witness: 'B close hold' (25 samples in the first 300ms, maxRad 11.3277 - the corners round inside the close) and 'B close round-over' (no post-close mid-round or bloom sample exists; the radius is already settled by the time the card is gone). The other 15 checks pass.",
+   "green": "drive222 17/17 PASS on the final tree (hold: 25 samples, maxRad 0; close landed 368ms; closed rest rad exactly 14), re-run after a byte-identical revert (parts/head.html sha256 9987db49..., src 3215661e..., index.html c12191ca...). One intervening run failed at boot with the documented reload/boot race (openRouteMenu is not defined) and passed on the immediate re-run.",
+   "issued": "2026-11-24 corner-timing-v2"
   }
  ]
 }

@@ -63,23 +63,24 @@ try {
   const swap = await J(`(() => { const c2 = document.querySelector('#rmRoutes .routeDrop[data-route="route-2"]'); const c3 = document.querySelector('#rmRoutes .routeDrop[data-route="route-3"]'); const back = document.getElementById('rmBack').getBoundingClientRect().top; return { c2open: c2.classList.contains('open'), c2disp: getComputedStyle(c2).display, c3open: c3.classList.contains('open'), back }; })()`);
   ok('B one-at-a-time: opening route-3 closes route-2 (class off, card landed out of the layout) and the growth is still exactly one dropdown | ' + JSON.stringify(swap), swap.c2open === false && swap.c2disp === 'none' && swap.c3open === true && Math.abs(swap.back - open.backTop) < 1.5);
 
-  // ---------- the close: 335ms; corners hold square 200ms, then round over ----------
+  // ---------- the close: 335ms; corners hold square the whole close, then spring round ----------
   await ev(REC('route-3'));
   await ev(`(() => { window.__ddT0 = performance.now(); document.querySelector('#rmRoutes .routeRow[data-route="route-3"]').click(); return true; })()`);
   const animC = await J(`(() => { const c = document.querySelector('#rmRoutes .routeDrop[data-route="route-3"]'); const a = c.getAnimations().find(x => x.transitionProperty === 'height'); return a ? { dur: a.effect.getTiming().duration, st: a.playState } : null; })()`);
   let closeLand = -1; let lastSt = null; for (let i = 0; i < 25; i++) { lastSt = await J(`(() => { const c = document.querySelector('#rmRoutes .routeDrop[data-route="route-3"]'); if (!c) return 'nocard'; const a = c.getAnimations().find(x => x.transitionProperty === 'height'); return a ? a.playState : 'gone'; })()`); if (lastSt === 'finished' || lastSt === 'gone') { closeLand = await J(`performance.now() - window.__ddT0`); break; } await sleep(30); }
-  await ev(STOPREC); await sleep(300);
+  await sleep(520); await ev(STOPREC); // keep sampling past the landing: the spring round runs 335-615ms and must be witnessed, not inferred
   const csmp = await J(`window.__dd`); const ct0 = await J(`window.__ddT0`);
+  const elC = await J(`performance.now() - window.__ddT0`); if (elC < 1100) await sleep(1100 - elC); // the closed read judges the SETTLE, so it waits out the spring (ends 615ms) with margin
   const closed = await J(`(() => { const c = document.querySelector('#rmRoutes .routeDrop[data-route="route-3"]'); const row = document.querySelector('#rmRoutes .routeRow[data-route="route-3"]'); const back = document.getElementById('rmBack').getBoundingClientRect().top; return { disp: getComputedStyle(c).display, td: getComputedStyle(c).transitionDuration, rad: parseFloat(getComputedStyle(row).borderBottomLeftRadius), back }; })()`);
   const smpLand = (() => { const hit = csmp.find(s => s.h <= 1); return hit ? hit.t - ct0 : -1; })();
   const closeDur = closeLand; // two landing witnesses (the transition's own finish, polled; the first geometry sample at h<=1) - this VM starves one or the other on a given run (healthy runs: poll ~360-520, samples ~359), so the pace passes on either, with the 335 duration itself asserted from the running animation above
-  const holdSmp = csmp.filter(s => s.t - ct0 >= 0 && s.t - ct0 <= 170); // the hold window: samples from the click through 170ms (30ms margin under the 200ms hold)
+  const holdSmp = csmp.filter(s => s.t - ct0 >= 0 && s.t - ct0 <= 300); // the hold window: samples from the click through 300ms (35ms margin under the 335ms hold - the whole close)
   const holdSquare = holdSmp.length >= 4 && holdSmp.every(s => s.rad <= 0.5);
-  const roundOver = csmp.some(s => s.t - ct0 > 200 && s.t - ct0 <= 560 && s.rad > 0.5 && s.rad < 13.95 && s.h > 1); // rounding witnessed mid-close: past the hold, radius between square and full, card still standing
+  const roundOver = csmp.some(s => s.t - ct0 > 360 && s.t - ct0 < 950 && ((s.rad > 0.5 && s.rad < 13.9) || s.rad > 14.1)); // the spring witnessed AFTER the card is gone: a sample caught mid-round, or in the bloom past 14 the overshoot curve produces - never capped at 14
   ok('B close pace: the close runs 335ms (the running transition own timing, NOT the 420 open) and lands in step (finish poll 280-520 or first flat sample 250-460) | ' + JSON.stringify({ anim: animC, land: closeDur, smpLand, lastSt }), animC !== null && animC.dur === 335 && ((closeDur > 280 && closeDur < 520) || (smpLand > 250 && smpLand < 460)));
-  ok('B close hold: the corners stay square through the first 200ms of the close | holdSamples=' + holdSmp.length + ' maxRad=' + (holdSmp.length ? Math.max(...holdSmp.map(s => s.rad)) : -1), holdSquare);
-  ok('B close round-over: after the hold the corners round inside the close, not at the click and not as a snap | samples=' + csmp.length, roundOver);
-  ok('B closed rest: the card leaves the layout, the corners are round again and Back is home | ' + JSON.stringify(closed), closed.disp === 'none' && closed.rad === 14 && Math.abs(closed.back - rest.backTop) < 1.5);
+  ok('B close hold: the corners stay square through the whole 335ms close | holdSamples=' + holdSmp.length + ' maxRad=' + (holdSmp.length ? Math.max(...holdSmp.map(s => s.rad)) : -1), holdSquare);
+  ok('B close round-over: the corners round only after the card is gone, on the spring, not at the click and not as a snap | samples=' + csmp.length, roundOver);
+  ok('B closed rest: the card leaves the layout, the corners settle at 14 and Back is home | ' + JSON.stringify(closed), closed.disp === 'none' && Math.abs(closed.rad - 14) < 0.5 && Math.abs(closed.back - rest.backTop) < 1.5);
 
   // ---------- A: seven routes, list at its cap ----------
   await ev(`document.getElementById('rmClose').click(); true`); await sleep(400);
