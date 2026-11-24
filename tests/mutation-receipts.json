@@ -9782,6 +9782,19 @@
    "red": "drive170 fails exactly its 3 D-01 checks (12/15): A1 FIRST PICK (a prompt rises and the pick never lands), A2 setup, A2 while-the-prompt-stands - observed twice, identical set",
    "green": "drive170 passes in full (15/15) with the direct crPickCity call shipped",
    "issued": "2026-11-24 d01"
+  },
+  {
+   "id": "d01-drive170-r2",
+   "check": "tests/browser/drive170.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive170.mjs": "1e337698f63667d6e8cb047fe8b7fe8d25d33806d5c6666a48969c1820209073",
+    "parts/create-pick.js": "a5bff03b12a53f1ca7b475769f8742aa2af0e28e5d94e1ece381a24dde6f4e4e"
+   },
+   "mutation": "parts/create-pick.js: crPackPickCity's pre-D-01 Beta 1.147 askDiscard wrapper restored (re-observation on the final tree after the comment commits moved the guarded file's hash)",
+   "red": "drive170 fails exactly its 3 D-01 checks (12/15) - observed twice, identical set",
+   "green": "drive170 passes in full (15/15) with the direct crPickCity call shipped",
+   "issued": "2026-11-24 d01"
   }
  ]
 }

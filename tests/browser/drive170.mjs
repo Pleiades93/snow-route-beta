@@ -2,20 +2,9 @@ import { launchDrive, finish, bootThrough } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 
-// drive170: the city doors' discard discipline. Beta 1.147 (hypothesis
-// round H2 hardening) wrapped BOTH doors' draft resets in askDiscard.
-// Beta 1.288 (D-01) removes the catalogue door's own wrap: crPackPickCity
-// now calls crPickCity directly, and the discard guard lives in crPickCity
-// itself (the D-08 branch, Beta 1.169) - the one landing every door
-// shares. This drive proves the list door's three cases through real row
-// clicks: (a) a FIRST pick with streets picked keeps the draft, its
-// selections and its pending rows, with no prompt; (b) a REPLACEMENT with
-// streets picked raises exactly one prompt, nothing resets while it
-// stands, and confirming replaces; (c) a replacement with nothing picked
-// lands at once, no prompt. The manual door keeps its own 1.147 wrap
-// (opening the city pane starts fresh) - B2/A3 still prove it. The pokes
-// are labelled non-UI (they invoke handlers no visible control can reach
-// mid-creation) - they test the guard, not reachability.
+// drive170: forced door clicks verify first-pick preservation and
+// replacement discard behaviour independently of pane reachability.
+// The manual door keeps its own askDiscard wrap (B2/A3).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 
