@@ -132,9 +132,7 @@ def build() -> bytes:
         chunks.append(data)
         if name == "head.html":
             chunks.append(b"<script>\n")
-            # The flags ride FIRST inside the one bundle script (the CSP
-            # stamp allows exactly one inline script): flags.js is the
-            # source, the inlined copy is a generated artifact.
+            # Flags ride FIRST inside the one bundle script (the CSP stamp allows exactly one): the parts read them.
             if not FLAGS.is_file():
                 raise SystemExit(f"assemble: missing flags file {FLAGS}")
             chunks.append(FLAGS.read_bytes())
