@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "c5ba7718564f044b4041b149b63357b11fb22609150f2aa27f6ce4b7093b3eb9",
+  "canonical_registry_sha256": "8e0657e71757b1ac8d9dfa1cc6c528fd05ce8ab8aebde7646bf819150f52231a",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -1866,9 +1866,9 @@
   {
    "added": "2026-11-05",
    "file": "parts/head.html",
-   "fix": "Route rows give pressed feedback (the :active rule, Beta 1.105): a route row that doesn't react to the tap reads as a dead button on the phone. Re-pinned in Beta 1.226 (PR #104): the .28 :active flash is deliberately superseded - the press feedback is now the shrink (proof-1226) and the row HOLDS its rest soft fill (.18) on press; this probe now pins the hold form.",
+   "fix": "Route rows give pressed feedback (the :active rule, Beta 1.105): a route row that doesn't react to the tap reads as a dead button on the phone. Re-pinned in Beta 1.226 (PR #104): the .28 :active flash is deliberately superseded - the press feedback is now the shrink (proof-1226) and the row HOLDS its rest soft fill (.18) on press; this probe now pins the hold form. Repointed 2026-11-23 (sweep round, coding-discipline rule 3): the rule now groups the Search online row beside the route rows; the pressed-fill claim is unchanged.",
    "id": "beta-1105-route-row-pressed",
-   "pattern": "#routeMenu .routeRow:active { background: rgba(255,255,255,.18); }",
+   "pattern": "#routeMenu .routeRow:active, #routeMenu .crOnlineRow:active { background: rgba(255,255,255,.18); }",
    "type": "grep_present"
   },
   {

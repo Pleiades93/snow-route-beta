@@ -9075,6 +9075,46 @@
    "red": "drive181 11/19 on CI run 45320268172 (head c18a382e, the pre-update tree): S1, S2a, S2b, S3, S4a, S4b, S5a, S5b red - the gazetteer Vaughan's real grid (30 cells) settles whole, so the fixture grid's wholly-failed and one-failed-cell cases never exist and the prep-state edges land wrong (S5b read done=30 viol=4). The local re-observation under the same mutation was started but exceeded the local runner window; the CI record is the observation of record",
    "green": "drive181 19/19 on the Beta 1.286 tree (observed locally): the helper taps Search online and picks the fixture's Vaughan from the merged wire results",
    "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "proof-1226-180-grouped-repin",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1226.mjs": "ec9deb104960054d4f19e096def15738c5ad667c5e0665bb939b3577cc7bdbdc",
+    "parts/head.html": "c2c2d66255707b1b7142fb0ca558dfa5c0cae120a1560edccd46f31b0bf74703"
+   },
+   "mutation": "parts/head.html: the grouped :active rule split back into two twin rules (the pre-composition shape)",
+   "red": "proof-1226 15/16: exactly 1h red - the re-pointed literal names the grouped selector the composition created",
+   "green": "proof-1226 16/16 on the composed tree (observed locally)",
+   "issued": "2026-11-23 sweep-180-r4"
+  },
+  {
+   "id": "proof-soft1222-180-grouped-repin",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "9867c83c071b48b7fc11f94ef63f5f54e7783dcc8e052c464f3f74978d1d072c",
+    "parts/head.html": "c2c2d66255707b1b7142fb0ca558dfa5c0cae120a1560edccd46f31b0bf74703"
+   },
+   "mutation": "parts/head.html: the grouped menu-pill rule's selector cut back to .routeRow alone (the online row un-grouped)",
+   "red": "proof-soft-1222 14 pass 1 fail: exactly A red - its rule() extraction names the grouped selector the composition created",
+   "green": "proof-soft-1222 15/15 on the composed tree (observed locally)",
+   "issued": "2026-11-23 sweep-180-r4"
+  },
+  {
+   "id": "proof-1233-179-scope-repin-r4",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "ada3ed1516d9547d896b695df3c72ad5cfed405cf851ca2f84604993c773398b",
+    "parts/app2.js": "1ad04ff086f5da620f6aaff5b323c7931dccecd6ef48730653c5be37318c8f32",
+    "parts/head.html": "c2c2d66255707b1b7142fb0ca558dfa5c0cae120a1560edccd46f31b0bf74703"
+   },
+   "mutation": "delete the window resize listener line only, the pane-show fade pair intact",
+   "red": "proof-1233 exit 1, check B4c FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
+   "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
+   "issued": "2026-11-23 sweep-180-r4"
   }
  ]
 }
