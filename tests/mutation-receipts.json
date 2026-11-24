@@ -9795,6 +9795,34 @@
    "red": "drive170 fails exactly its 3 D-01 checks (12/15) - observed twice, identical set",
    "green": "drive170 passes in full (15/15) with the direct crPickCity call shipped",
    "issued": "2026-11-24 d01"
+  },
+  {
+   "id": "corner-fix-drive222",
+   "check": "tests/browser/drive222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive222.mjs": "875546448eba1d493dec524a556c2566185292c62f601e194b19740e04e93597",
+    "parts/head.html": "4ff6fbf3834159414c55c41f63a2b80b9a23ae8f981d92d7164caad098976843",
+    "src/tracker-source.html": "c5a7e400752841f8170c56769600d71d31d4f24d2873dee3121d8dfb85bcfec0"
+   },
+   "mutation": "parts/head.html pane-row corner timing reverted to the pre-fix form (border-bottom radius transitions 335ms var(--ease-close), no delay) and the app reassembled - the Beta 1.273 close timing drive222's new hold check exists to refuse",
+   "red": "drive222 fails exactly the new 'B close hold' check (16/17, then 15/17 with an unrelated open-pace sampler flake): 14 samples inside the 170ms hold window, max radius 6.79px and 6.80px - observed twice",
+   "green": "drive222 passes in full (17/17) on the fixed tree - observed three times, including on the released Beta 1.289 tree",
+   "issued": "2026-11-24 corner-fix-1289"
+  },
+  {
+   "id": "corner-fix-drive222-r2",
+   "check": "tests/browser/drive222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive222.mjs": "b20a23c81ac1229533b5bd08f8c17e77e02955b840962da139e4eff48f1237e6",
+    "parts/head.html": "4ff6fbf3834159414c55c41f63a2b80b9a23ae8f981d92d7164caad098976843",
+    "src/tracker-source.html": "c5a7e400752841f8170c56769600d71d31d4f24d2873dee3121d8dfb85bcfec0"
+   },
+   "mutation": "parts/head.html pane-row corner timing reverted to the pre-fix form (border-bottom radius transitions 335ms var(--ease-close), no delay) and the app reassembled - the Beta 1.273 close timing drive222's new hold check exists to refuse",
+   "red": "drive222 fails exactly the new 'B close hold' check: 14 samples inside the 170ms hold window, max radius 6.79px, 6.80px and (with the final drive file, after the Codex-tightened round-over witness) 6.77px - observed three times",
+   "green": "drive222 passes in full (17/17) on the fixed tree, including the released Beta 1.289 tree and the final drive file with the card-standing round-over witness",
+   "issued": "2026-11-24 corner-fix-1289-r2"
   }
  ]
 }

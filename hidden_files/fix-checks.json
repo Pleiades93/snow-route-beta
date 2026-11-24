@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "421a4b822c92e57a053d0baf9b0012bf9a06384591e968024fdbe8e1866f0903",
+  "canonical_registry_sha256": "3067f7879d227e6cb4142f423e8bc0514cca246ecd6850c6dfd41ae502a90dbc",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1503,
-   "included": 1473,
+   "canonical": 1504,
+   "included": 1474,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -12329,6 +12329,15 @@
    "fix_id": "dropdown-grown-1273",
    "id": "dropdown1273-corner-morph",
    "pattern": "#routeMenu .routeRow.ddOpen { border-bottom-left-radius: 0;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/head.html",
+   "fix": "Beta 1.289 corner sync (Andrew's decision, 2026-11-22): on close the dropdown's bottom corners hold square for the first 200ms of the 335ms close, then round over the last 135ms - the pane rows' shared rule carries the delayed 135ms spec. Codex ahead-draft #1, taken over onto the composed .routeRow/.crOnlineRow rule. Observed by drive222's hold and round-over checks (mutation receipt corner-fix-drive222).",
+   "fix_id": "dropdown-corner-close-hold",
+   "id": "dropdown1289-corner-close-hold",
+   "pattern": "border-bottom-left-radius 135ms var(--ease-close) 200ms",
    "type": "grep_present"
   },
   {
