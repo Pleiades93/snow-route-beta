@@ -79,7 +79,10 @@ check('B15: Enter still cancels the pending debounce and runs the typed query NO
 check('N1: entering rows ride the city search\'s own shape; leaving rows fade in place', head.includes('#createResults .crRowIn { animation: crRowIn 260ms var(--ease-open) both; }') && head.includes('#createResults .crRowOut { transition: opacity 180ms ease; opacity: 0; pointer-events: none; }'));
 check('N2 (Beta 1.236 roll: the stagger reaches only the first screenful now - the first 8 rows by list position at 30ms steps; the 55ms fresh step and the entering-order counter are gone)', pick.includes("el.style.animationDelay = (ei * 30) + 'ms';") && !pick.includes('const stagger = fresh ? 55 : 30;') && !pick.includes('enterIdx'));
 check('N3: the render is a keyed diff - survivors keep their nodes (the row-state map and the shares-a-street continuation rule)', pick.includes('let crRowState = new Map();') && pick.includes('function crSharesStreet(a, b)'));
-check('N4: a leaving row is removed just past its fade, and reduced motion removes at once', pick.includes('}, 190);') && pick.includes("matchMedia('(prefers-reduced-motion: reduce)').matches") && head.includes('#createResults .crRowIn { animation: none; }') && head.includes('#createResults .crRowOut { transition: none; }'));
+check('N4: a leaving row is removed just past its fade, and reduced motion removes at once', pick.includes('}, 190);') &&
+  // issue #179: the reduced-motion read is scoped to crRenderRows - the
+  // intersection pulse reads the same media query and must not carry it.
+  pick.slice(pick.indexOf('function crRenderRows('), pick.indexOf('function crSharesStreet(')).includes("matchMedia('(prefers-reduced-motion: reduce)').matches") && head.includes('#createResults .crRowIn { animation: none; }') && head.includes('#createResults .crRowOut { transition: none; }'));
 check('N5: the hint row carries its own quiet style in both themes', head.includes('.crHintRow { padding: 11px 16px; font-size: 15.5px; color: rgba(20,24,31,.55); }') && head.includes('body.night .crHintRow { color: rgba(242,244,248,.55); }'));
 
 // ---------- F: fix round 1 (PR #114, Codex P2s 4618470453 + 4618470463) ----------

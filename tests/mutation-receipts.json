@@ -8587,6 +8587,138 @@
    "red": "Gate fixtures 78 pass, 1 FAIL - exactly the registry-sync refusal case: a vendored registry diverging from the canonical registry pushes (exit 0) instead of refusing (want 1).",
    "green": "Gate fixtures 79 pass, 0 fail on the real tree, including both registry-sync cases.",
    "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "proof-1271-179-scope-repin",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "e0a28fd2bef7e73d5bd6947d9c9c7d96cb6f9abf147b6f496d00c59ebb8821d5",
+    "parts/app5.js": "c76a2e97703abc115e832bd66157ce08b01540533b3e27545f002c29454e150d"
+   },
+   "mutation": "delete the pack-lookup line inside askDeleteRoute only, loadRoute copy intact (the old whole-file pin stayed satisfiable by the sibling)",
+   "red": "proof-1271 exit 1, check 2d FAIL, all other checks pass",
+   "green": "proof-1271 exit 0, 15 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1229-179-scope-repin",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "40e313cf58436cf0b6b3c9f4c29afae8dee6ec42d4e142307887e76d4260aee5",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c"
+   },
+   "mutation": "delete the progress stamp inside crGridResume only, pump and city-prepare copies intact",
+   "red": "proof-1229 exit 1, check 4b FAIL only",
+   "green": "proof-1229 exit 0, 33 passed 0 failed on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1232-179-scope-repin",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "e1171f20a096be48cc95ab27ef2146ada3cd97c61f71f6ba4722a5acd449225f",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "flip _isect: true to false inside crIntersectionItem only, crossing-rows copy intact",
+   "red": "proof-1232 exit 1, check 1i FAIL only",
+   "green": "proof-1232 exit 0, 27 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1233-179-scope-repin",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "ada3ed1516d9547d896b695df3c72ad5cfed405cf851ca2f84604993c773398b",
+    "parts/app2.js": "89f14cbd1a555ee7fc26a2658fb72a15ffffc571726b818fc29f084a903c4757",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d"
+   },
+   "mutation": "delete the window resize listener line only, the pane-show fade pair intact",
+   "red": "proof-1233 exit 1, check B4c FAIL only",
+   "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1234-179-scope-repin",
+   "check": "tests/proof/proof-1234.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1234.mjs": "53150a7834a6830eedbef6be335be872556b693a4e36fd82de114ba753f995f1",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "replace the reduced-motion read inside crRenderRows only, the pulse-start copy intact",
+   "red": "proof-1234 exit 1, check N4 FAIL only",
+   "green": "proof-1234 exit 0, 33 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1263-179-scope-repin",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "594290a30884dafa6bc8970f3b0b932d67ca011a06badc60a08f56794d5f36d8",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73"
+   },
+   "mutation": "delete the labelpts addSource line inside rePlaceTitles only, the stack-build copy intact",
+   "red": "proof-1263 exit 1, check 1 FAIL only",
+   "green": "proof-1263 exit 0, 13 passed 0 failed on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-glow-179-scope-repin",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "18f552675df012521121bc298296ff05cd9df8727bf06289d586e7447a4f3df7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "replace the street-record read inside syncCrGlow only, the four other reader copies intact",
+   "red": "proof-create-glow-casing-fix exit 1, the syncCrGlow G check FAIL only",
+   "green": "proof-create-glow-casing-fix exit 0, 19 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-ghr-179-scope-repin",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "79759f37662cfa05c062be983db0f400c6267ba54276fb81bf5dac30d1f2ee30",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73",
+    "parts/app2.js": "89f14cbd1a555ee7fc26a2658fb72a15ffffc571726b818fc29f084a903c4757"
+   },
+   "mutation": "delete the labelpts addSource inside addStack only, the rebuild copy intact",
+   "red": "proof-green-half-road exit 1, the R4 engine-builds check FAIL only",
+   "green": "proof-green-half-road exit 0, ALL CHECKS PASS on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-paint-179-def-repin",
+   "check": "tests/proof/proof-paint-model.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-paint-model.mjs": "87cf1b7fecd9391e1bc6589bda65c64d96ef3273af1378b4e5684b4f7963d8e6",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73"
+   },
+   "mutation": "reformat the PAINT classify definition with an extra space before its brace, every PAINT.classify call site intact (the old bare pin stayed satisfiable by the calls)",
+   "red": "proof-paint-model exit 1, check 2a FAIL only",
+   "green": "proof-paint-model exit 0, 17 passed 0 failed on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-trim-179-scope-repin",
+   "check": "tests/proof/proof-trim-glow-path-pills.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-trim-glow-path-pills.mjs": "8ab347462d06e4d689c3eb9422e28f20ea6740061b951332c672a0e4c08105f1",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "lowercase the caps ternary inside crRowEl only, the panel-row factory copy intact",
+   "red": "proof-trim-glow-path-pills exit 1, the pill-labels check FAIL only",
+   "green": "proof-trim-glow-path-pills exit 0 on the restored tree",
+   "issued": "2026-11-23 sweep-179"
   }
  ]
 }

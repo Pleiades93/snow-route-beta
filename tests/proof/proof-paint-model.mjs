@@ -54,7 +54,9 @@ check('1b: SEL_FILL_FADES survives nowhere as code (no declaration, no reset, no
 // ---------- 2: the owner and its seats ----------
 const paintAt = engine.indexOf('const PAINT = {');
 check('2a: the PAINT model is declared in engine.js with its three decisions and the strand seat',
-  paintAt > -1 && engine.includes('classify(n, idx)') && engine.includes('clipEnds(n, idx, pts, half, bandRule)') && engine.includes('fillCont(n, i, side)') && engine.includes('strands: null,'));
+  // issue #179: the classification pin is sharpened to the definition form -
+  // the bare text also matches every PAINT.classify call site.
+  paintAt > -1 && engine.includes('classify(n, idx) {') && engine.includes('clipEnds(n, idx, pts, half, bandRule)') && engine.includes('fillCont(n, i, side)') && engine.includes('strands: null,'));
 check('2b: buildFamilies publishes its merged strands into the model',
   extractFn(engine, 'function buildFamilies()').includes('PAINT.strands = { centres, bands, edges, fills };'));
 check('2c: buildSelFill reads the corner strands from the model and returns its fades through its return',

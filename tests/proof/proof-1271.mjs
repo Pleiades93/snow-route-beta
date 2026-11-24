@@ -49,7 +49,10 @@ check('2b every row renders with its dropdown sibling; the builder and the deleg
 check('2c the in-row Delete is retired (no routeDel anywhere in app2 or the stylesheet rules)',
   !app2.includes('routeDel') && !head.includes('.routeDel {') && !head.includes('.routeRow:has(> .routeDel)'));
 check('2d the shipped-route Delete is WIRED, not just drawn (Codex P2, PR #167): the ask opens for every pack, deleteRoute refuses nothing but a missing pack, and a shipped deletion writes the tombstone the boot applies before the created-pack merge',
-  app5.includes('const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;') &&
+  // issue #179: the pack-lookup pin is scoped to askDeleteRoute's own body -
+  // the identical line also stands in loadRoute, so the whole-file pin could
+  // pass on the wrong function.
+  app5.slice(app5.indexOf('function askDeleteRoute(id)')).includes('const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;') &&
   app5.includes('const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0) return;') &&
   app5.includes("lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id]))") &&
   packs.includes("const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted';") &&
