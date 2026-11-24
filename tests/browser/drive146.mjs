@@ -6,8 +6,7 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // convergence 2026-11-04, gate approved by Andrew incl. CG-196-02).
 // A: CG-196-02 - a NORMAL backup carries the active run's cancel snapshot; a run restored
 //    from it keeps the exact-restore Cancel (a pre-Start side unmarked mid-run comes back).
-// B: CG-196-01 - an idle backup asserts idle explicitly (start: null); restoring it onto a
-//    device with an active run clears that run's start + snapshot transactionally.
+// B: CG-196-01 - an idle backup asserts idle explicitly (start: null); under merge the resident run survives it.
 // C: Beta 1.110 - post-finish board work: the Undo is removed, so mutations after a
 //    confirmed finish are simply new work and the archived clean never comes back
 //    (this section was CG-196-03's undo-invalidation suite).
@@ -58,8 +57,8 @@ await ev(`(() => { $('xText').value = ${JSON.stringify(idleBk)}; doRestore(); re
 await bootThrough(ev, poll);
 await poll(`typeof runStart !== 'undefined'`, 30000);
 const postB = JSON.parse(await ev(`(() => JSON.stringify({ start: localStorage.getItem(LS.start), snap: localStorage.getItem(LS.snap), run: runStart, done: doneSet.size, astona: pieces.Astona[0], velmar: pieces.Velmar[0] }))()`));
-ok('B2 restoring an idle backup clears the destination run start + snapshot - no inherited run (CG-196-01) | ' + JSON.stringify(postB), postB.start === null && postB.snap === null && postB.run === 0);
-ok('B3 the restored board is the idle backup board (fixture mark present, the run mark gone) | ' + JSON.stringify(postB), postB.done === 0 && postB.astona === 0 && (postB.velmar & 1) === 1);
+ok('B2 restoring an idle backup does NOT clear the destination run: start + snapshot survive (merge never deletes; the CG-196-01 replace-era idle assertion is superseded for restore) | ' + JSON.stringify(postB), postB.start !== null && postB.snap !== null && postB.run > 0);
+ok('B3 the board after an idle restore is the union (the backup board stands, the run mark survives) | ' + JSON.stringify(postB), postB.done === 0 && postB.astona === 1 && (postB.velmar & 1) === 1);
 
 // ---- C: post-finish board work (Beta 1.110) ---- //
 const setupFinish = async () => { await ev(`(() => { runStart = Date.now() - 3600000; markDone('Velmar', 'tap'); markDone('Mellings', 'tap'); markDone('Astona', 'tap'); finishRun(); return true; })()`); await sleep(300); };
@@ -121,7 +120,7 @@ await ev(`(() => { $('xText').value = ${JSON.stringify(JSON.stringify(crafted))}
 await bootThrough(ev, poll);
 await poll(`typeof runStart !== 'undefined'`, 30000);
 const e1 = JSON.parse(await ev(`(() => JSON.stringify({ start: localStorage.getItem(LS.start), snap: localStorage.getItem(LS.snap) }))()`));
-ok('E1 an idle assertion paired with a crafted at:0 snapshot still clears BOTH keys - the snap branch never runs against a deleted start (CG-196-01, verify cycle 1) | ' + JSON.stringify(e1), e1.start === null && e1.snap === null);
+ok('E1 a snapshot carried without its run start never lands: the resident run start + snapshot are untouched (merge form of the CG-196-01 verify-cycle-1 rule) | ' + JSON.stringify(e1), e1.start !== null && e1.snap !== null && JSON.parse(e1.snap).at > 0);
 await ev(`startClean(); true`); await sleep(250);
 await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(250); // unmark the fixture side mid-run
 await ev(`(() => { runSnap = null; window.__og146 = Storage.prototype.getItem; Storage.prototype.getItem = function (k) { if (k === LS.snap) throw new Error('read fail'); return window.__og146.call(this, k); }; return true; })()`);

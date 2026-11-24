@@ -68,11 +68,17 @@ try {
   const t4b = await J(`({ probe: typeof window.__d171probe !== 'undefined', night: localStorage.getItem(LS_GLOBAL.night) })`);
   ok('T4 crafted night="banana" refused with a named message', /bad value for night/i.test(t4.toast || ''));
   ok('T4 night refusal wrote nothing and did not reload (night stays ' + JSON.stringify(nightBefore) + ')', t4b.probe === true && t4b.night === nightBefore && t4b.night !== 'banana');
+  // A resident override wins: the backup's value lands only once the resident pair is absent.
+  await ev(`(() => { const bk = { app: 'snowroute-backup', v: 2, routes: {}, night: '1' }; window.__d171probe = 1; restoreBackup(bk); return true; })()`);
+  await sleep(1200);
+  const t4c0 = await J(`({ probe: typeof window.__d171probe !== 'undefined', night: localStorage.getItem(LS_GLOBAL.night) })`);
+  ok('T4 control: a genuine night="1" backup does NOT displace the resident override (no write, no reload)', t4c0.probe === true && t4c0.night === nightBefore);
+  await ev(`(() => { localStorage.removeItem(LS_GLOBAL.night); localStorage.removeItem(LS_GLOBAL.nightExp); return true; })()`);
   await ev(`(() => { const bk = { app: 'snowroute-backup', v: 2, routes: {}, night: '1' }; restoreBackup(bk); return true; })()`);
   await sleep(3500); // an accepted restore reloads
   await waitBoot(); await sleep(1500);
   const t4c = await J(`localStorage.getItem(LS_GLOBAL.night)`);
-  ok('T4 control: a genuine night="1" backup restores and reloads', t4c === '1');
+  ok('T4 control: a genuine night="1" backup fills an ABSENT override and reloads', t4c === '1');
   await ev(`localStorage.removeItem(LS_GLOBAL.night); true`);
 
   // T5: the loader layer - a poisoned stored start is read as NO RUN,

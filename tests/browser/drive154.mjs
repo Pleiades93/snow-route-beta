@@ -351,33 +351,33 @@ ok('H4 SHIPPED IDS STAY RESERVED: with 5W tombstoned, a new route named 5W is as
 // data must NOT abort the whole restore - the tombstoned route is skipped
 // and reported, the surviving created route's data lands, and the shipped
 // route stays deleted through the restore's own reload.
-const preH5 = JSON.parse(await ev2(`(() => { const live = ROUTE_PACKS.find(p => !SHIPPED_PACK_IDS.has(p.id)); const bk = { app: 'snowroute-backup', v: 2, routes: { '5w': { notes: '{}' } }, userpacks: {} }; if (live) bk.routes[live.id] = { notes: '{}' }; document.getElementById('xText').value = JSON.stringify(bk); return JSON.stringify({ live: live ? live.id : null }); })()`)); // field values ride in their stored STRING form - pushField refuses anything else ('bad value', restore aborts), as drive136's real exports show
+const preH5 = JSON.parse(await ev2(`(() => { const live = ROUTE_PACKS.find(p => !SHIPPED_PACK_IDS.has(p.id)); const bk = { app: 'snowroute-backup', v: 2, routes: { '5w': { notes: '{}' } }, userpacks: {} }; if (live) { const st = [...packGeometry(live).set][0]; bk.routes[live.id] = { notes: JSON.stringify({ [st]: [{ k: 'note', at: '2026-01-05T12:00:00.000Z', text: 'h5 note' }] }) }; } document.getElementById('xText').value = JSON.stringify(bk); return JSON.stringify({ live: live ? live.id : null }); })()`)); // field values ride in their stored STRING form - pushField refuses anything else ('bad value', restore aborts), as drive136's real exports show. Beta 1.287: the live route's entry carries a REAL note - under merge an empty notes record adds nothing, so the note is what proves the rest still lands
 await ev2(`(() => { sessionStorage.removeItem('__h5toast'); const iv = setInterval(() => { const t = document.getElementById('toast').textContent; if (t) sessionStorage.setItem('__h5toast', t); }, 50); setTimeout(() => clearInterval(iv), 25000); return true; })()`); // the result toast lives only 600ms before the restore's own reload replaces the page - record it into sessionStorage (which survives the reload) instead of polling the doomed element
 await ev2(`doRestore(); true`);
 await poll(`!!sessionStorage.getItem('__h5toast')`, 20000);
 const toastH5txt = await ev2(`sessionStorage.getItem('__h5toast')`);
-const toastH5 = !!toastH5txt && /Backup restored/.test(toastH5txt) && /deleted on this phone/.test(toastH5txt);
+const toastH5 = !!toastH5txt && /Backup added data to/.test(toastH5txt) && /deleted on this phone/.test(toastH5txt);
 await ev2(`window.__userPacksReady`);
 await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 30000);
-const stH5 = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]') }))()`));
-ok('H5 RESTORE SKIPS THE TOMBSTONED ROUTE, RESTORES THE REST: the result names the skip, the restore completes and reloads, and 5W stays deleted | ' + JSON.stringify({ preH5, toastH5, toastH5txt, stH5 }),
-  !!preH5.live && toastH5 === true && stH5.pack === false && stH5.row === false);
+const stH5 = JSON.parse(await ev2(`(() => { const live = ROUTE_PACKS.find(p => !SHIPPED_PACK_IDS.has(p.id)); return JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]'), notes: live ? localStorage.getItem(routeKeys(live.id).notes) : null }); })()`));
+ok('H5 RESTORE SKIPS THE TOMBSTONED ROUTE, RESTORES THE REST: the result names the skip, the live route note lands, the restore completes and reloads, and 5W stays deleted | ' + JSON.stringify({ preH5, toastH5, toastH5txt, stH5 }),
+  !!preH5.live && toastH5 === true && stH5.pack === false && stH5.row === false && !!stH5.notes && stH5.notes.includes('h5 note'));
 
 // ---- phase H6: the v1 backup door gets the same tombstone rule (Codex P2, PR #167, third review) ----
 // A v1 backup's route data belongs to 5W alone. With 5W tombstoned, restoring
 // one must write NOTHING into the deleted slot (pre-fix it did - outside the
-// rollback scope, so a later failure could not put it back), must still
-// restore the backup's global night value, and must name the skip.
+// rollback scope, so a later failure could not put it back), and must name
+// the skip. The backup's night value fills only an absent resident one.
 await ev2(`(() => { localStorage.setItem('snowroute.v2.night', '1'); const bk = { app: 'snowroute-backup', v: 1, data: {} }; bk.data[LEGACY_KEYS.notes] = '{"Test Street":"planted by the v1 backup"}'; bk.data['snowroute.v2.night'] = '0'; document.getElementById('xText').value = JSON.stringify(bk); sessionStorage.removeItem('__h6toast'); const iv = setInterval(() => { const t = document.getElementById('toast').textContent; if (t) sessionStorage.setItem('__h6toast', t); }, 50); setTimeout(() => clearInterval(iv), 25000); return true; })()`);
 await ev2(`doRestore(); true`);
 await poll(`!!sessionStorage.getItem('__h6toast')`, 20000);
 const toastH6txt = await ev2(`sessionStorage.getItem('__h6toast')`);
-const toastH6 = !!toastH6txt && /Backup restored/.test(toastH6txt) && /deleted on this phone/.test(toastH6txt);
+const toastH6 = !!toastH6txt && /Backup added nothing/.test(toastH6txt) && /deleted on this phone/.test(toastH6txt);
 await ev2(`window.__userPacksReady`);
 await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 30000);
 const stH6 = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), notes: localStorage.getItem(routeKeys('5w').notes), fin: localStorage.getItem(routeKeys('5w').finclean), night: localStorage.getItem('snowroute.v2.night') }))()`));
-ok('H6 V1 RESTORE HONOURS THE TOMBSTONE: the skip is named, the global night value still restores, and the deleted slot takes no writes at all (notes and finclean stay absent) | ' + JSON.stringify({ toastH6, toastH6txt, stH6 }),
-  toastH6 === true && stH6.pack === false && stH6.notes === null && stH6.fin === null && stH6.night === '0');
+ok('H6 V1 RESTORE HONOURS THE TOMBSTONE: the skip is named, the resident night value stands (merge fills settings only when absent - the backup 0 does not displace the resident 1), and the deleted slot takes no writes at all (notes and finclean stay absent) | ' + JSON.stringify({ toastH6, toastH6txt, stH6 }),
+  toastH6 === true && stH6.pack === false && stH6.notes === null && stH6.fin === null && stH6.night === '1');
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);
 finishCreate(R, proc, server);

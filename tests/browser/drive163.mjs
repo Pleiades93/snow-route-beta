@@ -1,4 +1,4 @@
-import { launchDrive, finish, PATTERNS_GITHUB_IO, bootThrough } from './harness.mjs';
+import { launchDrive, finish, PATTERNS_GITHUB_IO, bootThrough, loadRoutePolled } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll: poll120, url, poll } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
 await bootThrough(ev, poll); // boots end at the route menu - click through to a loaded route
 
@@ -40,7 +40,7 @@ ok('S0 app boots for the created-route data-safety tests', await poll120(`!!wind
 
 const UPKEY = 'snowroute.v2.userpacks';
 const PACK = (name, street) => ({ name, area: 'Vaughan', primaries: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
-const reboot5w = async () => { await send('Page.navigate', { url }, S); await sleep(3500); await ev(`window.__userPacksReady`); await ev(`loadRoute('5w'); true`); await sleep(500); };
+const reboot5w = async () => { await send('Page.navigate', { url }, S); await sleep(3500); await ev(`window.__userPacksReady`); await loadRoutePolled(ev, sleep, 500); }; // reboot: navigate, drain the packs, then poll-with-load
 const seedLegacyAB = () => ev(`(() => { localStorage.setItem('${UPKEY}', JSON.stringify({ 'route-a': ${JSON.stringify(PACK('Route A', 'Alpha Street'))}, 'route-b': ${JSON.stringify(PACK('Route B', 'Beta Street'))} })); return true; })()`);
 const armDraft = async (nm) => ev(`(() => { draft = newDraft(); draft.roads['Test Street'] = [[[43.8, -79.57], [43.801, -79.571]]]; $('crNameInput').value = '${nm}'; $('crAreaInput').value = 'Vaughan'; return true; })()`);
 const storeKeys = async () => JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify(m ? Object.keys(m).sort() : null); })()`));
@@ -71,7 +71,8 @@ const bRes = JSON.parse(await ev(`(async () => { const m = await upGetAll(); ret
 ok('B1 DA-05 save with a FAILING store write: refusal toast, the store keeps exactly route-a + route-b + route-c, the new pack is never registered | ' + JSON.stringify(bRes.keys) + ' ' + bRes.toast,
   JSON.stringify(bRes.keys) === JSON.stringify(['route-a', 'route-b', 'route-c']) && /could not be saved/.test(bRes.toast) && bRes.registered === false);
 
-// ---------- C: a replacing restore is judged against the INCOMING definition ----------
+// ---------- C: a merge restore is judged against the RESIDENT definition ----------
+// The resident geometry governs: the snapshot is judged against it, dropped with disclosure when it does not fit.
 await ev(`(() => { localStorage.setItem('${UPKEY}', JSON.stringify({ 'route-x': ${JSON.stringify(PACK('Route X', 'Old Street'))} })); return true; })()`);
 await reboot5w(); // boot registers route-x with the OLD geometry (and drains it into the store)
 const setupC = await ev(`ROUTE_PACKS.some(p => p.id === 'route-x' && p.roads['Old Street'])`);
@@ -89,14 +90,14 @@ const cRes = JSON.parse(await ev(`(async () => {
   await restoreBackup(backup);
   const rk = routeKeys('route-x');
   const stored = await upGet('route-x');
-  return JSON.stringify({ snap: localStorage.getItem(rk.snap), done: localStorage.getItem(rk.done), storedNew: !!stored && !!stored.roads && !!stored.roads['New Street'], toast: $('toast').textContent });
+  return JSON.stringify({ snap: localStorage.getItem(rk.snap), done: localStorage.getItem(rk.done), storedNew: !!stored && !!stored.roads && !!stored.roads['New Street'], storedOld: !!stored && !!stored.roads && !!stored.roads['Old Street'], toast: $('toast').textContent });
 })()`));
-ok('C1 DA-01 the carried snapshot is judged against the INCOMING geometry and lands, naming the new street | ' + JSON.stringify(cRes).slice(0, 300),
-  !cRes.setupFail && !!cRes.snap && cRes.snap.includes('New Street'));
-ok('C2 DA-01 the done list is name-filtered against the INCOMING street set - New Street survives (legacy OBJECT form: the only form pushField name-filters; an array would pass unfiltered and prove nothing) | done=' + cRes.done,
-  !cRes.setupFail && cRes.done === '["New Street"]');
-ok('C3 DA-01 no unknown-name or dropped-snapshot report, and the incoming definition is installed IN THE STORE | ' + cRes.toast,
-  !cRes.setupFail && !/unknown street name/.test(cRes.toast) && !/start snapshot was not usable/.test(cRes.toast) && cRes.storedNew === true);
+ok('C1 DA-01 merge form: the carried snapshot is judged against the RESIDENT geometry and dropped with disclosure (it names the new street, which the resident route does not have) | ' + JSON.stringify(cRes).slice(0, 300),
+  !cRes.setupFail && cRes.snap === null && /snapshot was unusable/.test(cRes.toast));
+ok('C2 DA-01 merge form: the done list is name-filtered against the RESIDENT street set - New Street is filtered out and counted (legacy OBJECT form: the only form pushField name-filters; an array would pass unfiltered and prove nothing) | done=' + cRes.done,
+  !cRes.setupFail && cRes.done === '[]' && /1 unknown street name/.test(cRes.toast));
+ok('C3 DA-01 merge form: the RESIDENT definition stays installed in the store - the incoming one never replaces it | ' + cRes.toast,
+  !cRes.setupFail && cRes.storedNew === false && cRes.storedOld === true);
 await reboot5w(); // absorb the restore's reload
 
 // ---------- D: a failed strict prior-read refuses the whole restore ----------
@@ -166,7 +167,7 @@ const e3Res = JSON.parse(await ev(`(async () => {
   return JSON.stringify({ absent, stored: !!stored && !!stored.roads && !!stored.roads['Test Street'], snap: localStorage.getItem(routeKeys('route-r').snap), toast: $('toast').textContent });
 })()`));
 ok('E3 DA-09+DA-08 fresh-device restore of the recovery file: definition + slots proven absent first, definition rebuilt IN THE STORE, snapshot lands | ' + e3Res.toast,
-  e3Res.absent === true && e3Res.stored === true && !!e3Res.snap && e3Res.snap.includes('Test Street') && /Backup restored/.test(e3Res.toast));
+  e3Res.absent === true && e3Res.stored === true && !!e3Res.snap && e3Res.snap.includes('Test Street') && /Backup added data to /.test(e3Res.toast));
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);

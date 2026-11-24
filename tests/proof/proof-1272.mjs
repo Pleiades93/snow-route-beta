@@ -31,6 +31,7 @@ import vm from 'node:vm';
 
 const app1 = readFileSync('parts/app1.js', 'utf8');
 const app4 = readFileSync('parts/app4.js', 'utf8');
+const packsSrc = readFileSync('parts/create-packs.js', 'utf8');
 
 function extractFn(src, name) {
   const at = src.indexOf('function ' + name);
@@ -69,15 +70,24 @@ const srcs = [
   extractFn(app1, 'routeKeys(id)'),
   extractFn(app1, 'slotKeys(id)'),
   extractFn(app1, 'trailWindow(points, runStartMs)'),
-  extractFn(app4, 'countUnknownNames(parsed)'),
+  extractFn(app4, 'countUnknownNames(parsed, packs = ROUTE_PACKS)'),
   extractFn(app4, 'canonicalSettings(raw)'),
   extractFn(app4, 'canonicalFixLog(raw)'),
+  extractFn(app4, 'mergeRestoreEntries(entries, allPacks)'),
+  // restoreDisclosures takes a destructured parameter, so extractFn's
+  // first-brace rule would stop at the parameter list; slice to its
+  // closing brace line instead.
+  app4.slice(app4.indexOf('function restoreDisclosures'), app4.indexOf('\n}\n', app4.indexOf('function restoreDisclosures')) + 3),
+  extractFn(packsSrc, 'upCanon(v)'),
   extractObj(app4, 'RESTORE'),
 ].join('\n');
 
 const PLANT = `
-let restoreOverlayPacks = null;
 let __toasts = [];
+const RAW_READ_FAILED = {};
+let __store = {};
+function rawRead(k) { return Object.prototype.hasOwnProperty.call(__store, k) ? __store[k] : null; }
+function nextSunBoundary(ms) { return ms + 43200000; }
 function toast(m, ms) { __toasts.push(String(m)); }
 const SHIPPED_PACK_IDS = new Set(['5w']);
 const PACK5W = { id: '5w', name: 'Route 5W', roads: { Velmar: {}, Mellings: {} } };
@@ -162,22 +172,23 @@ for (const [name, frag, parsed, setup] of REFUSALS) {
 
 const has = (plan, k, v) => plan.entries.some(e => e[0] === k && (v === undefined || e[1] === v));
 
-// C1: a valid minimal v2 plan
+// C1: a valid minimal v2 plan (against an empty destination; the slot's
+// finish-cleanup obligation is planted armed, so its discharge can fire)
 {
-  const out = await runCase(null, V2({ '5w': { done: '["Velmar"]', sides: '{"p":{"Velmar":[3,3]},"t":{}}' } }));
+  const out = await runCase(`__store = { 'snowroute.5w.v5.finclean': '{"armed":true}' }`, V2({ '5w': { done: '["Velmar"]', sides: '{"p":{"Velmar":[3,3]},"t":{}}' } }));
   const p = out.plan;
   check('control: a valid v2 backup plans', !!p, 'toasts: ' + JSON.stringify(out.toasts));
   check('control: the plan carries the done entry verbatim', !!p && has(p, rk.done, '["Velmar"]'));
-  check('control: the plan carries the finclean discharge (null entry)', !!p && has(p, rk.finclean, null));
+  check('control: a slot that gained data discharges its armed finclean obligation (null entry)', !!p && has(p, rk.finclean, null));
   check('control: the rollback scope covers the written keys and the fixlog key', !!p && p.scope.includes(rk.done) && p.scope.includes('k.fixlog'));
   check('control: no unknown names counted', !!p && p.droppedNames === 0);
 }
-// C2: the explicit idle assertion
+// C2: the explicit idle assertion (Beta 1.287: a merge never deletes - an
+// idle assertion over a resident run adds nothing, and its snapshot drops)
 {
-  const out = await runCase(null, V2({ '5w': { start: null, snap: '{"x":1}' } }));
-  const p = out.plan;
-  check('control: an explicit idle assertion plans start+snap deletes', !!p && has(p, rk.start, null) && has(p, rk.snap, null));
-  check('control: a snapshot riding an idle assertion is dropped and reported', !!p && p.snapDropped === true);
+  const out = await runCase(`__store = { 'snowroute.5w.v5.start': '${START}' }`, V2({ '5w': { start: null, snap: '{"x":1}' } }));
+  check('control: an explicit idle assertion over a resident run plans nothing', out.plan === null, 'plan: ' + JSON.stringify(out.plan));
+  check('control: the idle outcome is reported, snapshot drop included', out.toasts.some(t => t.includes('Backup added nothing') && t.includes('snapshot was unusable')), 'toasts: ' + JSON.stringify(out.toasts));
 }
 // C3: an unparseable carried snapshot is dropped, not fatal
 {
@@ -201,10 +212,10 @@ const has = (plan, k, v) => plan.entries.some(e => e[0] === k && (v === undefine
   const out = await runCase(null, V2({ '5w': { start: START, trail: '[]' } }));
   check('control: a trail without markers gains the C06 session clear', !!out.plan && has(out.plan, rk.sess, '[]'));
 }
-// C7: C-01 — markers arriving without their trail are dropped from the plan
+// C7: C-01 — markers arriving without their trail add nothing under a merge
 {
   const out = await runCase(null, V2({ '5w': { sess: '[1762000000000]' } }));
-  check('control: markers without their trail leave the plan (C-01)', !!out.plan && !out.plan.entries.some(e => e[0] === rk.sess));
+  check('control: markers without their trail plan nothing (C-01)', out.plan === null && out.toasts.some(t => t.includes('Backup added nothing')), 'plan: ' + JSON.stringify(out.plan) + ' toasts: ' + JSON.stringify(out.toasts));
 }
 // C8: F06 — done without sides derives the side-marks in the plan
 {

@@ -1,4 +1,4 @@
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, loadRoutePolled } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
 
@@ -14,12 +14,13 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
+// Poll-with-load: a bare loadRoute after a fixed sleep races the fresh page's parse.
 await sleep(3000);
 
 // T1 (F-2): junk coverage indexes are stripped at load; only true sample indexes survive
 await ev(`(() => { localStorage.setItem(LS.cov, JSON.stringify({ Velmar: [-1, 1.5, '3', 99999, 0, 2, 2], Nope: [0, 1] })); location.reload(); return true; })()`);
 await sleep(3000);
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+await loadRoutePolled(ev, sleep);
 let A = await J(`({ cov: coveredIdx.Velmar, nope: 'Nope' in coveredIdx })`);
 ok('T1 junk coverage indexes stripped (kept [0,2,2])', JSON.stringify(A.cov) === '[0,2,2]');
 ok('T1 unknown-street coverage dropped', A.nope === false);
@@ -57,11 +58,14 @@ A = await J(`(() => { coveredIdx = {};
 ok('T4 fix covers only its own street (nearest other ' + (A.pick ? A.pick.dmin : '?') + 'm away)', A.gained && A.gained.length === 1 && A.pick && A.gained[0] === A.pick.n);
 
 // T5 (suite 5): a write failure mid-restore rolls everything back and says so
+// Velmar's resident sides entries are removed first, so the backup's completion is a genuine addition (current wins).
 await ev(`(() => { doneSet = new Set(['Velmar']); saveAll();
   window.__bak = buildBackup();
   doneSet = new Set(['Mellings']); saveAll();
+  const sd = JSON.parse(localStorage.getItem(LS.sides)); delete sd.p.Velmar; delete sd.t.Velmar;
+  localStorage.setItem(LS.sides, JSON.stringify(sd));
   window.__origSI = Storage.prototype.setItem;
-  Storage.prototype.setItem = function(k, v) { if (k === LS.sides) throw new Error('quota'); return window.__origSI.call(this, k, v); };
+  Storage.prototype.setItem = function(k, v) { if (k === LS.done) throw new Error('quota'); return window.__origSI.call(this, k, v); };
   restoreBackup(JSON.parse(window.__bak));
   return true; })()`);
 await sleep(400);
@@ -72,7 +76,7 @@ ok('T5 current data intact after rollback', A.done === '["Mellings"]');
 
 // T6 (suite 6): when the rollback itself cannot be verified, the app says so - never claims success
 await ev(`(() => { window.__origGI = Storage.prototype.getItem;
-  Storage.prototype.setItem = function(k, v) { if (k === LS.sides) { window.__rbBad = true; throw new Error('quota'); } return window.__origSI.call(this, k, v); };
+  Storage.prototype.setItem = function(k, v) { if (k === LS.done) { window.__rbBad = true; throw new Error('quota'); } return window.__origSI.call(this, k, v); };
   Storage.prototype.getItem = function(k) { const v = window.__origGI.call(this, k); return (window.__rbBad && k === LS.done) ? 'corrupted' : v; };
   restoreBackup(JSON.parse(window.__bak));
   return true; })()`);
@@ -91,7 +95,7 @@ ok('T6 unverifiable rollback is reported honestly', /could NOT be fully put back
     { at: '${iso}', items: { Mellings: null } } ]) } };
     restoreBackup(bad); return true; })()`);
   await sleep(3500); // restore reloads the page
-  await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+  await loadRoutePolled(ev, sleep);
   A = await J(`({ h: history.length, keys: history.map(x => Object.keys(x.items)) })`);
   ok('T7 invalid history entries dropped, valid kept (2)', A.h === 2);
   ok('T7 surviving entries hold only real streets', JSON.stringify(A.keys) === '[["Velmar"],["Mellings"]]');
@@ -99,7 +103,7 @@ ok('T6 unverifiable rollback is reported honestly', /could NOT be fully put back
 
 // T8 (suite 1): current-format backup round-trips - state survives export, wipe, restore
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+await loadRoutePolled(ev, sleep); // Beta 1.76: a reload lands on the route menu
 const rtRaw = await ev(`(() => { const n = STREETNAMES.find(x => STRETCH[x].parts.length === 1);
   togglePiece(n, 0, 0); togglePiece(n, 0, 1);
   notes[n] = [{ k: 'hazard', at: new Date().toISOString() }]; saveAll();
@@ -107,12 +111,12 @@ const rtRaw = await ev(`(() => { const n = STREETNAMES.find(x => STRETCH[x].part
   HIST.save(); return JSON.stringify({ n, bak: buildBackup() }); })()`);
 const RT = JSON.parse(rtRaw);
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+await loadRoutePolled(ev, sleep); // Beta 1.76: a reload lands on the route menu
 A = await J(`({ anyDone: STREETNAMES.some(x => streetComplete(x)), h: history.length })`);
 ok('T8 wipe really cleared the board first', A.anyDone === false && A.h === 0);
 await ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(RT.bak)})); return true; })()`);
 await sleep(3500); // restore reloads the page
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+await loadRoutePolled(ev, sleep); // Beta 1.76: a reload lands on the route menu
 A = await J(`({ complete: streetComplete(RT_N), flag: !!(notes[RT_N] && notes[RT_N].some(f => f.k === 'hazard')), h: history.length })`.replaceAll('RT_N', JSON.stringify(RT.n)));
 ok('T8 round-trip restores the completed street', A.complete === true);
 ok('T8 round-trip restores the flag note', A.flag === true);
@@ -135,7 +139,7 @@ ok('T9 run intact after stopped finish', A.done === 3 && A.run === true && A.lab
 
 // T10 (suite 12): a partial multi-key save cannot leave phantom state after reload
 await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(3000);
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+await loadRoutePolled(ev, sleep); // Beta 1.76: a reload lands on the route menu
 await ev(`(() => { const n = STREETNAMES.find(x => STRETCH[x].parts.length === 1); window.__pn = n;
   window.__origSI3 = Storage.prototype.setItem;
   Storage.prototype.setItem = function(k, v) { if (k === LS.sides) throw new Error('quota'); return window.__origSI3.call(this, k, v); };
@@ -143,7 +147,7 @@ await ev(`(() => { const n = STREETNAMES.find(x => STRETCH[x].parts.length === 1
   Storage.prototype.setItem = window.__origSI3;
   location.reload(); return true; })()`);
 await sleep(3000);
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+await loadRoutePolled(ev, sleep); // Beta 1.76: a reload lands on the route menu
 A = await J(`(() => { const bad = STREETNAMES.filter(x => doneSet.has(x) !== streetComplete(x)); return { bad, pn: window.__pn }; })()`);
 ok('T10 after partial save + reload, done set matches street pieces everywhere', A.bad && A.bad.length === 0);
 
@@ -177,7 +181,7 @@ await ev(`(() => {
   ]));
   location.reload(); return true; })()`);
 await sleep(3800);
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: a reload lands on the route menu
+await loadRoutePolled(ev, sleep); // Beta 1.76: a reload lands on the route menu
 const A = JSON.parse(await ev(`(() => JSON.stringify({ times: Object.keys(doneTimes), hist: history.map(h => Object.keys(h.items)), done: [...doneSet] }))()`));
 ok('A1 bad/foreign times dropped, good kept', JSON.stringify(A.times) === '["Columbus"]');
 ok('A4 doneSet intact', JSON.stringify(A.done) === '["Columbus"]');
@@ -217,13 +221,15 @@ await sleep(3200);
 
 await ev(`(() => { markDone('Columbus', 'tap'); saveAll(); HIST.save(); window.__good = buildBackup(); return true; })()`);
 await sleep(300);
-await ev(`(() => { markDone('Galloway', 'tap'); return true; })()`);
+// Galloway is marked and saved first, so the resident state is certain and the backup is fully contained in it.
+await ev(`(() => { markDone('Galloway', 'tap'); saveAll(); return true; })()`);
 await sleep(300);
 await ev(`(() => { $('xText').value = window.__good; doRestore(); return true; })()`);
 await sleep(2200);
-await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76: the restore reload lands on the route menu
-const B1 = JSON.parse(await ev(`(() => JSON.stringify([...doneSet]))()`));
-ok('B1 valid backup restores exactly', JSON.stringify(B1) === '["Columbus"]');
+const B1toast = await toast();
+await loadRoutePolled(ev, sleep); // Beta 1.76: the restore reload lands on the route menu
+const B1 = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
+ok('B1 a contained backup adds nothing and the resident marks survive', JSON.stringify(B1) === '["Columbus","Galloway"]' && B1toast.includes('Backup added nothing'));
 
 // recapture AFTER the reload wiped window.__good (the drive65 bug)
 await ev(`(() => { saveAll(); HIST.save(); window.__good = buildBackup(); markDone('Galloway', 'tap'); return true; })()`);

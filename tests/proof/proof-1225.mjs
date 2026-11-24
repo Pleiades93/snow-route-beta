@@ -36,7 +36,7 @@ check('2c: the not-saved toast wears the dash join', allParts.includes("toast('N
 check('2d: the restore results end with the dash join', app4.includes("' - nothing was changed'") && !app4.includes('. Nothing was changed'));
 check('2e: the restore-stopped family wears the dash join', app4.includes("'Restore stopped - your created-routes") && app4.includes("'Restore stopped - your current data") && !app4.includes('Restore stopped. Your'));
 check('2f: the update pill wears the dash join', app4.includes("'New version found - reloading…'") && !app4.includes('New version found. Reloading'));
-check('2g: the restored pill wears the dash join', app4.includes("'Backup restored - reloading'") && !app4.includes('Backup restored. Reloading'));
+check('2g: the restored pill wears the dash join', app4.includes("'Backup added data to '") && app4.includes("' - reloading'") && !app4.includes('Backup restored. Reloading'));
 check('2h: the storage family wears the dash join', app3.includes("'Storage problem - the note could not be saved'") && save.includes("'Storage problem - the route could not be saved'") && !allParts.includes('Storage problem. The'));
 check('2i: the clean-started warnings wear the dash join', app3.includes("'Clean started - warning: the ") && !app3.includes('Clean started. Warning'));
 check('2j: the cancel-erased pill wears the dash join whole (base + rebuilt suffix)', app3.includes("'Start cancelled - erased here, but the trail cleanup could not be saved yet; it will keep retrying'") && app3.includes("' - the board was rebuilt from the marks made during the clean ('"));

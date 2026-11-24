@@ -24,7 +24,7 @@ const SETKEY = 'snowroute.v2.settings';
 const PACK = (name, street) => ({ name, area: 'Vaughan', primaries: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
 const canon = v => { if (v === null || typeof v !== 'object') return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']'; return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}'; };
 const valEq = (a, b) => { if (a === b) return true; try { return canon(JSON.parse(a)) === canon(JSON.parse(b)); } catch (e) { return false; } }; // slot values compare semantically when they are JSON (a restore writes some records re-serialized), byte-exact otherwise
-const navigate = async () => { await send('Page.navigate', { url }, S); await sleep(3000); };
+const navigate = async () => { await send('Page.navigate', { url }, S); await sleep(3000); await poll(`typeof buildBackup === 'function' && typeof restoreBackup === 'function' && !!document.getElementById('ver')`, 30000); await ev(`window.__userPacksReady`); }; // Beta 1.287 harness repair: the fixed sleep alone races the fresh page's parse on a throttled runner ('buildBackup is not defined'), and a built backup taken before the pack drain settles misses the created routes - await the drain (drive154/drive183 idiom)
 // A snapshot of everything the backup promises, taken in a FRESH session
 // (post-reload, at the menu, no route loaded) so the seed and restored
 // snapshots are symmetric. Store records are compared through
@@ -71,6 +71,7 @@ ok('R2a the wipe is total: only the shipped route remains, settings are the defa
 // ---------- restore and compare field-for-field ----------
 await ev(`(async () => { await restoreBackup(JSON.parse(${JSON.stringify(JSON.stringify(bak))})); return true; })()`);
 await sleep(3500); // the restore reloads
+await ev(`window.__userPacksReady`); // the reload's pack drain settles before the store snapshot (same repair as navigate)
 const seed2 = await snapshot();
 ok('R2 the restored state matches the seed FIELD-FOR-FIELD (every slot value, the night pair, every store record through the validator) | slotsEq=' + slotsEq(seed1.slots, seed2.slots) + ' storeEq=' + (canon(seed1.store) === canon(seed2.store)),
   slotsEq(seed1.slots, seed2.slots) && canon(seed1.store) === canon(seed2.store) && seed1.night === seed2.night && seed1.nightExp === seed2.nightExp);
@@ -86,6 +87,7 @@ const deviceSettings = await ev(`localStorage.getItem('${SETKEY}')`);
 const oldBak = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes: { 'rt-old': { done: '["Old Street"]' } }, userpacks: { 'rt-old': PACK('Old Route', 'Old Street') }, night: '1' }; // no settings field, no nightExp - the pre-1.166 shape
 await ev(`(async () => { await restoreBackup(JSON.parse(${JSON.stringify(JSON.stringify(oldBak))})); return true; })()`);
 await sleep(3500); // the restore reloads
+await ev(`window.__userPacksReady`); // the reload's pack drain settles before the store read (same repair as navigate)
 const r4 = JSON.parse(await ev(`(async () => { const rec = await upGet('rt-old'); return JSON.stringify({ inStore: !!rec && !!rec.roads && !!rec.roads['Old Street'], done: localStorage.getItem(routeKeys('rt-old').done), legacy: localStorage.getItem('${UPKEY}'), settings: localStorage.getItem('${SETKEY}'), night: localStorage.getItem('snowroute.v2.night') }); })()`));
 ok('R4 a pre-1.166 backup restores into 1.166: the definition lands in the STORE, its state lands, no legacy record is resurrected | ' + JSON.stringify(r4),
   r4.inStore === true && r4.done === '["Old Street"]' && r4.legacy === null);

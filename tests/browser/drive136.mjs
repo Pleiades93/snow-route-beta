@@ -174,7 +174,7 @@ await bootThrough(ev, poll);
 const toast11d = await ev(`(function(){ document.getElementById('xText').value = sessionStorage.getItem('f11bad'); doRestore(); return document.getElementById('toast').textContent; })()`); await sleep(1500);
 await bootThrough(ev, poll);
 const f11d = JSON.parse(await ev(`(function(){ return JSON.stringify({ run: runStart > 0, velmar: doneSet.has('Velmar'), snapStored: localStorage.getItem(LS.snap) }); })()`));
-ok('F11d a corrupt snapshot inside a recovery file is dropped with a warning; the restore itself is unharmed (Beta 1.96, SR-195-02) | ' + toast11d + ' ' + JSON.stringify(f11d), /start snapshot was not usable/.test(toast11d) && f11d.run && f11d.velmar && f11d.snapStored === null);
+ok('F11d a corrupt snapshot inside a recovery file is dropped with a warning; the restore itself is unharmed (Beta 1.96, SR-195-02) | ' + toast11d + ' ' + JSON.stringify(f11d), /start snapshot was unusable/.test(toast11d) && f11d.run && f11d.velmar && f11d.snapStored === null);
 await ev(`cancelStart()`); await sleep(200);
 
 
