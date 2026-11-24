@@ -120,12 +120,13 @@ const TOPO = {
 // same rule for every street, fixed to the street itself, never flipping
 // with the direction of travel. LEFTBIT[name] = which state bit is Left.
 const LEFTBIT = {};
-function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, LEFTBIT, label features + tiers, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
+function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO offsets, LEFTBIT, label features + tiers + anchors, the route POI, the hit features) is built HERE from the host's CURRENT data - once at eval (no route loaded yet: empty) and again on every route switch via GLP.rebuildRoute. The containers are refilled in place, never rebound, so every module-level reader (buildFamilies, selectedGeom, addStack) keeps working unchanged.
   for (const k of Object.keys(GEO)) delete GEO[k];
   for (const k of Object.keys(LEFTBIT)) delete LEFTBIT[k];
   labelFeatures.length = 0; labelPointFeatures.length = 0;
   TOPO.reset(); // Beta 1.283 (#11): the run-structure table and the shared-vertex index are derivatives of the geometry - they die here and are re-seated street by street below, so they can never name a previous route's streets (the lesson the retired sharedVertexMap learned by hand in 1.117: its memo had to be nulled here or the strand builders read the previous route's vertices)
 
+  const titleDirections = new Map();
   H.names.forEach(n => {
   // The street's stitched line, RUN BY RUN (Beta 1.144, Package C DA-02/C1):
   // within a run, sectors are exact slices of it (sector k+1 starts at the
@@ -179,13 +180,26 @@ function buildEngineGeometry() { // Beta 1.117: the engine's route geometry (GEO
   // labels render regardless of segment length.
   const seg = segs[li], fr = spotE ? spotE[1] : 0.5;
   let target = segLenM(seg) * fr, acc = 0, anchor = seg[seg.length - 1];
-  for (let k = 1; k < seg.length; k++) { const d = H.jDistM(seg[k - 1], seg[k]); if (acc + d >= target) { const t = d ? (target - acc) / d : 0; anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t]; break; } acc += d; }
+  // The walk also captures the label edge's direction for the anchor pass.
+  let dirA = seg[0], dirB = anchor;
+  for (let k = 1; k < seg.length; k++) {
+    const d = H.jDistM(seg[k - 1], seg[k]);
+    if (acc + d >= target) {
+      const t = d ? (target - acc) / d : 0;
+      anchor = [seg[k - 1][0] + (seg[k][0] - seg[k - 1][0]) * t, seg[k - 1][1] + (seg[k][1] - seg[k - 1][1]) * t];
+      if (d) { dirA = seg[k - 1]; dirB = seg[k]; }
+      break;
+    }
+    acc += d;
+  }
+  titleDirections.set(n, Math.abs(dirB[1] - dirA[1]) * H.MLNG >= Math.abs(dirB[0] - dirA[0]) * H.MLAT);
   labelPointFeatures.push({ type: 'Feature', properties: { name: n, len: Math.round(stitchedLen) }, geometry: { type: 'Point', coordinates: GJ([anchor])[0] } }); // Beta 1.144: the length is the per-run sum (stitchedLen) - segLenM over the concatenated array would add the jumps between a disconnected street's runs
 });
   TOPO.classifyEnds(); // Beta 1.283 (#11, stage 3): with every street seated and indexed, classify every run end once - the feather consumers read the classification, never a per-slice re-derivation
   JUNC = null; // Beta 1.144 (found by drive165, proven on the pristine 1.143 tree): the junction table derives from GEO + the current name set but was built once and never invalidated - after a route switch it still named the PREVIOUS route's streets, and the first marked run's paint on the new route threw 'JUNC[n] is not iterable'. The geometry rebuild is the invalidation point: the table rebuilds lazily from the new geometry on next use.
   nudgeFifth();
   assignTiers();
+  assignAnchors(titleDirections);
   let a = 90, b = -90, c = 180, d = -180; H.names.forEach(n => GEO[n].stitched.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); c = Math.min(c, p[1]); d = Math.max(d, p[1]); }));
   if (H.names.length) ROUTEPOI.geometry.coordinates = [(c + d) / 2, (a + b) / 2]; // Beta 1.170 (Carbon fix round Phase 2, B-10): an empty geometry keeps the last real centre - through 1.169 the extrema never moved off their seeds when there were no streets to visit, and the midpoint of the seeds is [0,0] (Null Island), where the route-name POI then rendered at overview zooms
   HIT.features = H.names.flatMap(n => GEO[n].cuts.map((ab, i) => ({ type: 'Feature', properties: { name: n, idx: i }, geometry: { type: 'LineString', coordinates: GJ(GEO[n].stitched.slice(ab[0], ab[1] + 1)) } })));
@@ -226,6 +240,39 @@ function assignTiers() {
   labelPointFeatures.forEach(f => {
     f.properties.tier = H.PRIMARIES.has(f.properties.name) ? 4 : (f.properties.len < q1 ? 1 : f.properties.len < q2 ? 2 : f.properties.len < q3 ? 3 : 4);
   });
+}
+// A title's side is route data, decided here from street geometry alone.
+// Each other street's segments vote their closest point's side and distance.
+function assignAnchors(titleDirections) {
+  const ANCHOR = { north: 'bottom', south: 'top', east: 'left', west: 'right' }; // the stored value names the text edge seated at the point
+  for (const f of labelPointFeatures) {
+    const lng = f.geometry.coordinates[0], lat = f.geometry.coordinates[1];
+    const clearance = { north: Infinity, south: Infinity, east: Infinity, west: Infinity };
+    for (const n of H.names) {
+      if (n === f.properties.name) continue;
+      const stitched = GEO[n].stitched;
+      for (const range of TOPO.ranges(n)) {
+        const last = Math.max(range.start, range.end - 1); // a single-vertex run votes its point
+        for (let k = range.start; k <= last; k++) {
+          const a = stitched[k], b = stitched[Math.min(k + 1, range.end)];
+          const x = (a[1] - lng) * H.MLNG, y = (a[0] - lat) * H.MLAT;
+          const dx = (b[1] - a[1]) * H.MLNG, dy = (b[0] - a[0]) * H.MLAT;
+          const L2 = dx * dx + dy * dy;
+          const t = L2 ? Math.max(0, Math.min(1, -(x * dx + y * dy) / L2)) : 0;
+          const qx = x + dx * t, qy = y + dy * t;
+          const side = Math.abs(qx) > Math.abs(qy) ? (qx > 0 ? 'east' : 'west') : (qy >= 0 ? 'north' : 'south'); // diagonal ties vote north/south; coincidence votes north
+          const d = Math.hypot(qx, qy);
+          if (d < clearance[side]) clearance[side] = d;
+        }
+      }
+    }
+    const ns = clearance.north >= clearance.south ? 'north' : 'south'; // ties keep north, then east
+    const ew = clearance.east >= clearance.west ? 'east' : 'west';
+    const alongside = titleDirections.get(f.properties.name) ? ns : ew;
+    const alongAxis = titleDirections.get(f.properties.name) ? ew : ns;
+    // Along-axis wins only when decisively clearer: strictly over twice the alongside clearance.
+    f.properties.anchor = ANCHOR[clearance[alongAxis] > 2 * clearance[alongside] ? alongAxis : alongside];
+  }
 }
 const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
 const ROUTEPOI = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }; // Beta 1.117: the centre is filled per load by buildEngineGeometry (was an eval-time IIFE over the baked route)

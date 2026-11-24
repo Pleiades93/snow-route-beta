@@ -11295,6 +11295,65 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-24 corner-fix-1289"
+  },
+  {
+   "id": "label-anchors-c1",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "buildEngineGeometry",
+     "assignAnchors"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:assignAnchors:parts/engine.js:buildEngineGeometry",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - assignAnchors() is called from buildEngineGeometry in parts/engine.js",
+     "status": "covered",
+     "note": "the one call site, inside the geometry build right after assignTiers; proof-anchors checks 1a/1b pin the call, its order and its single ownership, and checks 2a/2b run this exact build on the real pack"
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:rebuildRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from rebuildRoute in parts/engine.js",
+     "status": "covered",
+     "note": "the route-switch rebuild door; the anchor pass rides the same build it always did, so a switch re-derives anchors from the new route's geometry - proof-anchors' split-run build (2b) exercises the same pass over re-cut runs"
+    },
+    {
+     "id": "caller:buildEngineGeometry:parts/engine.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildEngineGeometry() is called from top-level in parts/engine.js",
+     "status": "covered",
+     "note": "the eval-time build on the empty host (no route loaded, no titles) - unchanged behaviour; the anchor pass iterates zero label features there, proof-anchors' synthetic lone-street worlds cover the near-empty end of the same path"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "1ad04ff086f5da620f6aaff5b323c7931dccecd6ef48730653c5be37318c8f32",
+    "parts/app3.js": "11a34c61a1779d7e3ab5c04b1109489b0137b74e9bae6726c743b8e9e88c42e0",
+    "parts/app4.js": "977fb98c6cd3d101bed127407addcb265ebc1b263b15876fb8b392aa8ed70de8",
+    "parts/app5.js": "6876039faa426911b0f91b7e9c23b547442f488d8da0ffc5d3c2e49313069a14",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "a5bff03b12a53f1ca7b475769f8742aa2af0e28e5d94e1ece381a24dde6f4e4e",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "a2428a9d79eb15eaabeaeb5ea0e4bf761ec854e21b0d11375a3193499184c676",
+    "parts/head.html": "4ff6fbf3834159414c55c41f63a2b80b9a23ae8f981d92d7164caad098976843",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-24 label-round commit 1"
   }
  ]
 }

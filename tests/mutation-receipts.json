@@ -9823,6 +9823,59 @@
    "red": "drive222 fails exactly the new 'B close hold' check: 14 samples inside the 170ms hold window, max radius 6.79px, 6.80px and (with the final drive file, after the Codex-tightened round-over witness) 6.77px - observed three times",
    "green": "drive222 passes in full (17/17) on the fixed tree, including the released Beta 1.289 tree and the final drive file with the card-standing round-over witness",
    "issued": "2026-11-24 corner-fix-1289-r2"
+  },
+  {
+   "id": "anchors-factor2-1290",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "c9d7adf2de28a28dc33cbe219a678e29f597e325c38c3b2a1240e29201040026",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88",
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b"
+   },
+   "mutation": "assignAnchors displacement factor raised 2 -> 3 in parts/engine.js (along-axis wins only over three times the alongside clearance)",
+   "red": "proof-anchors: 15 passed, 2 failed (checks 2a/2b shipped-vs-rule equality; Mellings and Bayside flip), observed twice 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-anchors: 17 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
+  },
+  {
+   "id": "topo-ends-classify-1290",
+   "check": "tests/proof/proof-topo-ends.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ends.mjs": "c5898d923a9196f351f9de9b749a4bbfda9566ecaca595de1960b15572bad49e",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88"
+   },
+   "mutation": "classifyEnds' junction test removed in parts/engine.js (ends classify by record alone) - the 1283 receipt's mutation re-run because the label round added the assignAnchors extraction line to this proof's prelude",
+   "red": "proof-topo-ends: 10 passed, 1 failed (check 3b: the 53/15/0 census), observed 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-topo-ends: 11 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
+  },
+  {
+   "id": "topo-ranges-segreal-1290",
+   "check": "tests/proof/proof-topo-ranges.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-ranges.mjs": "e1d988e8c1e6490609052a3e6960bcafe94730011780b0f288a7c5bba1c48279",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88"
+   },
+   "mutation": "TOPO.segReal's negation dropped in parts/engine.js (it returns runStart directly) - the 1283 receipt's mutation re-run because the label round added the assignAnchors extraction line to this proof's prelude",
+   "red": "proof-topo-ranges: 12 passed, 2 failed (check 4 predicate agreement at 2205 readings, check 5a unseated-street contract), observed 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-topo-ranges: 14 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
+  },
+  {
+   "id": "topo-vertices-index-order-1290",
+   "check": "tests/proof/proof-topo-vertices.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-topo-vertices.mjs": "ac112c7fd79c18c4ac6567d5943bb00b733156ee1e312f5d582a35af2665b8d8",
+    "parts/engine.js": "8d8baa2761287bdc3f7c36e32acad2d46b4b920e7aa23527690f773103b53d88"
+   },
+   "mutation": "TOPO.index unshifts each entry instead of pushing in parts/engine.js (entry order reversed) - the 1283 receipt's mutation re-run because the label round added the assignAnchors extraction line to this proof's prelude",
+   "red": "proof-topo-vertices: 9 passed, 2 failed (check 3b index equality in build order, check 4 JUNC contents and per-street order over 114 entries), observed 2026-11-24 on the label-round commit-1 tree",
+   "green": "proof-topo-vertices: 11 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round"
   }
  ]
 }
