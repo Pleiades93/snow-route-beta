@@ -14,9 +14,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
-// Beta 1.287 harness repair: poll-with-load (the drive83 idiom) - a bare
-// loadRoute call after a fixed sleep races the fresh page's parse and
-// throws 'loadRoute is not defined' on a throttled runner.
+// Poll-with-load: a bare loadRoute after a fixed sleep races the fresh page's parse.
 await sleep(3000);
 
 // T1 (F-2): junk coverage indexes are stripped at load; only true sample indexes survive
@@ -60,11 +58,7 @@ A = await J(`(() => { coveredIdx = {};
 ok('T4 fix covers only its own street (nearest other ' + (A.pick ? A.pick.dmin : '?') + 'm away)', A.gained && A.gained.length === 1 && A.pick && A.gained[0] === A.pick.n);
 
 // T5 (suite 5): a write failure mid-restore rolls everything back and says so
-// Beta 1.287 (issue #172, merge restore): a resident sides entry lawfully
-// blocks the backup's record for that street (current wins), so Velmar's
-// resident sides entries are removed first - then the backup's Velmar
-// completion is a genuine addition and the merge writes the done record,
-// which is the faulted key here. The claim is unchanged.
+// Velmar's resident sides entries are removed first, so the backup's completion is a genuine addition (current wins).
 await ev(`(() => { doneSet = new Set(['Velmar']); saveAll();
   window.__bak = buildBackup();
   doneSet = new Set(['Mellings']); saveAll();
@@ -227,9 +221,7 @@ await sleep(3200);
 
 await ev(`(() => { markDone('Columbus', 'tap'); saveAll(); HIST.save(); window.__good = buildBackup(); return true; })()`);
 await sleep(300);
-// Beta 1.287 (issue #172): restore MERGES now - a resident record is never
-// removed by a backup. Galloway is marked AND saved, so the resident state
-// is certain: the Columbus-only backup is fully contained in it.
+// Galloway is marked and saved first, so the resident state is certain and the backup is fully contained in it.
 await ev(`(() => { markDone('Galloway', 'tap'); saveAll(); return true; })()`);
 await sleep(300);
 await ev(`(() => { $('xText').value = window.__good; doRestore(); return true; })()`);

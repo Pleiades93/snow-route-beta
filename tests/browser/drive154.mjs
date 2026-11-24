@@ -367,8 +367,7 @@ ok('H5 RESTORE SKIPS THE TOMBSTONED ROUTE, RESTORES THE REST: the result names t
 // A v1 backup's route data belongs to 5W alone. With 5W tombstoned, restoring
 // one must write NOTHING into the deleted slot (pre-fix it did - outside the
 // rollback scope, so a later failure could not put it back), and must name
-// the skip. Beta 1.287: the backup's global night value no longer displaces
-// a resident one (merge fills settings only when absent).
+// the skip. The backup's night value fills only an absent resident one.
 await ev2(`(() => { localStorage.setItem('snowroute.v2.night', '1'); const bk = { app: 'snowroute-backup', v: 1, data: {} }; bk.data[LEGACY_KEYS.notes] = '{"Test Street":"planted by the v1 backup"}'; bk.data['snowroute.v2.night'] = '0'; document.getElementById('xText').value = JSON.stringify(bk); sessionStorage.removeItem('__h6toast'); const iv = setInterval(() => { const t = document.getElementById('toast').textContent; if (t) sessionStorage.setItem('__h6toast', t); }, 50); setTimeout(() => clearInterval(iv), 25000); return true; })()`);
 await ev2(`doRestore(); true`);
 await poll(`!!sessionStorage.getItem('__h6toast')`, 20000);

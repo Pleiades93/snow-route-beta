@@ -104,8 +104,7 @@ try {
   ok('M7 a trail-only backup adds nothing beside resident markers (markers stand, no trail lands) | ' + toast7,
     toast7.includes('Backup added nothing') && m7[RK.sess] === '[1762000000]' && m7[RK.trail] === null);
   // ---- M13: an imported run's Cancel baseline keeps resident marks ----
-  // Build a genuine running backup in-page: Velmar marked before Start,
-  // unmarked mid-run (its snapshot holds the mark, its board does not).
+  // Build a genuine running backup in-page: Velmar marked before Start, unmarked mid-run.
   await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(1500);
   await loadRoutePolled(ev, sleep);
   await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(250);
@@ -130,6 +129,18 @@ try {
     post13.run === 0 && (post13.mellings & 1) === 1);
   ok('M13 Cancel still restores the snapshot own pre-Start mark | ' + JSON.stringify(post13),
     post13.run === 0 && (post13.velmar & 1) === 1);
+  // ---- M14: the street's text note is a singleton - the resident text wins ----
+  await ev(`(() => { localStorage.setItem(routeKeys('5w').notes, ${JSON.stringify(JSON.stringify({ Velmar: [{ k: 'note', at: T2, text: 'resident text' }] }))}); return true; })()`);
+  const bk14 = { app: 'snowroute-backup', v: 2, at: T4, routes: { '5w': {
+    notes: JSON.stringify({ Velmar: [{ k: 'note', at: T1, text: 'backup text' }] }) } } };
+  await ev(`(() => { restoreBackup(${JSON.stringify(bk14)}); return true; })()`);
+  await sleep(2500); await loadRoutePolled(ev, sleep);
+  const m14raw = await J(`localStorage.getItem(routeKeys('5w').notes)`);
+  const m14 = JSON.parse(m14raw || '{}');
+  ok('M14 a backup text note does not join a street that already has one | ' + JSON.stringify(m14.Velmar),
+    Array.isArray(m14.Velmar) && m14.Velmar.length === 1 && m14.Velmar[0].text === 'resident text');
+  const m14b = await ev(`(() => { setNoteText('Velmar', ''); return noteTextOf('Velmar'); })()`);
+  ok('M14 clearing the note leaves it empty (no older backup text resurfaces) | ' + JSON.stringify(m14b), m14b === '');
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

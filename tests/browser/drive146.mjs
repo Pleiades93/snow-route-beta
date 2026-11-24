@@ -6,9 +6,7 @@ await bootThrough(ev, poll); // boots end at the route menu - click through to a
 // convergence 2026-11-04, gate approved by Andrew incl. CG-196-02).
 // A: CG-196-02 - a NORMAL backup carries the active run's cancel snapshot; a run restored
 //    from it keeps the exact-restore Cancel (a pre-Start side unmarked mid-run comes back).
-// B: CG-196-01 - an idle backup asserts idle explicitly (start: null). Beta 1.287
-//    (issue #172): under merge restore the assertion no longer clears a resident
-//    run - merge never deletes, so the resident start + snapshot survive.
+// B: CG-196-01 - an idle backup asserts idle explicitly (start: null); under merge the resident run survives it.
 // C: Beta 1.110 - post-finish board work: the Undo is removed, so mutations after a
 //    confirmed finish are simply new work and the archived clean never comes back
 //    (this section was CG-196-03's undo-invalidation suite).

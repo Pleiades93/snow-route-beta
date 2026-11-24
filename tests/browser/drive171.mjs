@@ -68,9 +68,7 @@ try {
   const t4b = await J(`({ probe: typeof window.__d171probe !== 'undefined', night: localStorage.getItem(LS_GLOBAL.night) })`);
   ok('T4 crafted night="banana" refused with a named message', /bad value for night/i.test(t4.toast || ''));
   ok('T4 night refusal wrote nothing and did not reload (night stays ' + JSON.stringify(nightBefore) + ')', t4b.probe === true && t4b.night === nightBefore && t4b.night !== 'banana');
-  // Beta 1.287 (issue #172): a resident override WINS over the backup's -
-  // the genuine '1' is refused entry while the resident '0' stands, with
-  // no write and no reload; it lands only once the resident pair is absent.
+  // A resident override wins: the backup's value lands only once the resident pair is absent.
   await ev(`(() => { const bk = { app: 'snowroute-backup', v: 2, routes: {}, night: '1' }; window.__d171probe = 1; restoreBackup(bk); return true; })()`);
   await sleep(1200);
   const t4c0 = await J(`({ probe: typeof window.__d171probe !== 'undefined', night: localStorage.getItem(LS_GLOBAL.night) })`);

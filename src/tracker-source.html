@@ -7080,15 +7080,28 @@ function mergeRestoreEntries(entries, allPacks) {
       const key = rk[f], raw = read(key);
       const current = raw === null ? {} : decode(key, raw, object);
       const backup = JSON.parse(incoming.get(key));
+      // The text note is a singleton per street: a backup version never joins a resident one.
+      const noteGuard = (list, resident) => {
+        let taken = resident;
+        return list.filter(e => { if (e && e.k === 'note') { if (taken) return false; taken = true; } return true; });
+      };
       const additions = [];
       for (const [name, value] of Object.entries(backup)) {
-        if (!own(current, name)) additions.push([name, value]);
+        if (!own(current, name)) additions.push([name, f === 'notes' && Array.isArray(value) ? noteGuard(value, false) : value]);
         else if (f === 'notes' && Array.isArray(current[name]) && Array.isArray(value)) {
-          const notesAdded = newEntries(current[name], value, noteId);
+          const guarded = noteGuard(value, current[name].some(e => e && e.k === 'note'));
+          const notesAdded = newEntries(current[name], guarded, noteId);
           if (notesAdded.length) additions.push([name, [...current[name], ...notesAdded]]);
         }
       }
-      if (raw === null) merged.set(key, incoming.get(key));
+      if (raw === null) {
+        if (f === 'notes') {
+          let dropped = false;
+          const guardedObj = {};
+          for (const [n, v] of Object.entries(backup)) { const g = Array.isArray(v) ? noteGuard(v, false) : v; if (Array.isArray(v) && g.length !== v.length) dropped = true; guardedObj[n] = g; }
+          merged.set(key, dropped ? JSON.stringify(guardedObj) : incoming.get(key));
+        } else merged.set(key, incoming.get(key));
+      }
       else if (additions.length) merged.set(key, JSON.stringify({ ...current, ...Object.fromEntries(additions) }));
     }
 
@@ -7350,8 +7363,7 @@ const RESTORE = {
     if (restoredPacks) { // The created-route definitions still land before any localStorage write.
       let packFail = null;
       for (const rid of Object.keys(restoredPacks)) {
-        // Beta 1.287 (issue #172): IDB add enforces absence inside the write transaction,
-        // so a route saved after the priors read cannot be overwritten.
+        // IDB add enforces absence inside the write transaction, so a later-saved route cannot be overwritten.
         const pack = restoredPacks[rid];
         const inserted = await upTx('readwrite', store => store.add(pack));
         if (inserted === UP_TX_FAILED) { packFail = rid; break; }
@@ -7385,7 +7397,7 @@ const RESTORE = {
       }
     }
     if (restoredPacks) for (const rid of Object.keys(restoredPacks)) userPackCache[rid] = restoredPacks[rid]; // Beta 1.166: the backup picture joins the commit - the reload follows immediately, but the cache must never describe a store state that was rolled back or never written
-    // Beta 1.287 (issue #172): only a slot that gained data discharges its finish-cleanup obligation, inside the verified write set (Beta 1.150).
+    // Only a slot that gained data discharges its finish-cleanup obligation, inside the verified write set.
     PERSIST.fenceUp(); markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
     const added = entries.filter(([, value]) => value !== null).length;
     const packsAdded = Object.keys(restoredPacks || {}).length;

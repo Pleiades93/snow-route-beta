@@ -58,10 +58,7 @@ ok('S1 backup of the fixture state is meaning-identical on all 10 keys', Object.
 // ---- session 2: state B backup taken, state A restored, restore interrupted --
 await b.ev(`(() => { pieces.Woolacott = [3, 3, 3]; saveAll(); return true; })()`);
 const backupB = await b.ev(`buildBackup()`);
-// Beta 1.287 (issue #172, merge restore): a PARTIAL resident Woolacott would
-// lawfully block state B's completion (current wins), so state A is seeded
-// WITHOUT Woolacott's record - the merge must add it back, and the kill
-// during the reload pause must lose none of it.
+// State A is seeded without Woolacott's record, so the merge must add state B's completion back.
 await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]);
   const sd = JSON.parse(localStorage.getItem('snowroute.5w.v5.sides')); delete sd.p.Woolacott; delete sd.t.Woolacott;
   localStorage.setItem('snowroute.5w.v5.sides', JSON.stringify(sd));
@@ -87,11 +84,7 @@ ok('S3 restored state is stable across the relaunch boot', await b.ev(`[...doneS
 await closeBrowser(b);
 
 // ---- session 4: the marker rule in merge form (Beta 1.287, issue #172) -----
-// Replace-era C06 cleared the resident markers when a restored trail landed
-// without its sessions. Under merge a backup's trail never displaces the
-// resident run state, so the resident markers and trail stand exactly; a
-// backup whose records the resident already governs adds nothing and
-// reloads nothing; and its markers never displace resident markers.
+// Resident run state is never displaced by a backup's trail or markers.
 b = await launch(false);
 ok('S4 legacy-era page boots', await waitBoot(b.ev));
 await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]); localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); return true; })()`);

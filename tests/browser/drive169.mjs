@@ -17,11 +17,7 @@ await bootThrough(ev, poll);
 //   board B (the backup)   = Velmar + Mellings done
 //   board P (pre-restore)  = Mellings + Astona + Santa Barbara done
 //   in-window mark         = Valeria (in neither B nor P)
-// Beta 1.287 (issue #172): restore MERGES now, so the expected reloaded
-// board is the UNION of B and P, not B alone. For the union to be real,
-// P is staged with Velmar's sides entry deleted from storage first - a
-// resident entry (even all-zero) would lawfully block B's Velmar record
-// (current wins), and the fence would have no board write to protect.
+// The expected reloaded board is the union of B and P; P is staged with Velmar's sides entry deleted first.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const PRIMARIES = ['Velmar', 'Mellings', 'Astona', 'Santa Barbara', 'Valeria', 'Greenpark'];
@@ -122,12 +118,7 @@ try {
   // the write set - and leaves the resident markers untouched, since they
   // describe the trail that stays. Control: a backup carrying the pair
   // restores the pair untouched.
-  // Beta 1.287 (issue #172, merge restore): markers land only with their run
-  // cluster, so a markers-only backup - and a trail+markers pair over a
-  // resident pair - adds nothing, writes nothing and reloads nothing; the
-  // resident pair stands exactly. The Beta 1.193 load retirement (a finished
-  // trail windows away at load, its markers with it) is asserted separately
-  // in the control arm, at the load where it belongs.
+  // Markers land only with their run cluster; a markers-only backup adds nothing and the resident pair stands.
   const C01B = 1762000000; // fixed epoch base (seconds) for the staged trail
   const C01PTS = []; for (let i = 0; i <= 10; i++) C01PTS.push([+(43.9 + i * 0.001).toFixed(6), -79.5, C01B + i * 60]);
   const sessTrailState = async () => JSON.parse(await ev(`(() => { const rk = routeKeys('5w'); const tr = JSON.parse(localStorage.getItem(rk.trail) || '[]'); const se = JSON.parse(localStorage.getItem(rk.sess) || '[]'); return JSON.stringify({ sess: se, pts: tr.length, segs: trailSegments(tr, se).length }); })()`));
@@ -184,10 +175,7 @@ try {
   // was changed" message. Now: the fence is already up during phase 1 (the flush
   // is refused), and the failure exit drops the fence with the dirty flags
   // re-armed, so the in-window fix flushes from memory afterwards and survives.
-  // Beta 1.287: phase 1 writes through a transactional store.add inside upTx
-  // (fail-closed on a same-id race), so the gate wraps upTx's first readwrite
-  // call and fails it on release; the replace-era removeItem sabotage has no
-  // merge write left to bite on (an idle assertion deletes nothing).
+  // Phase 1 writes through a transactional store.add inside upTx, so the gate fails its first readwrite call on release.
   const P1T = 1762100000; // staged trail base (seconds)
   const p1stage = JSON.parse(await ev(`(() => { const rk = routeKeys('5w');
     trail = [[43.9, -79.5, ${P1T}], [43.901, -79.501, ${P1T} + 60]];

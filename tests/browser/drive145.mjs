@@ -176,10 +176,7 @@ await loadRoutePolled(ev, sleep);
 ok('N13b a done-only backup restores for real: the side-marks are derived from the list', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3); } catch (e) { return false; } })()`));
 
 // --- R03 (Beta 1.93): an explicitly EMPTY done list is applied, not skipped --
-// Beta 1.287 (issue #172): under merge an empty list never clears - on an
-// absent key it writes only the empty record itself, and the board it
-// meets is left exactly as it stood. The R03 clearing claim belongs to
-// the replace semantics.
+// Under merge an empty list never clears: on an absent key it writes only the empty record.
 const v1doneEmpty = JSON.stringify({ app: 'snowroute-backup', v: 1, at: '2026-11-02T00:00:00.000Z', data: { 'snowroute.v2': '[]' } });
 await ev(`localStorage.clear(); true`);
 await ev(`localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.5w.v4.trail', JSON.stringify([[43.8, -79.5, 1762000000]])); true`);

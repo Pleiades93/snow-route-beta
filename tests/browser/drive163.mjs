@@ -72,13 +72,7 @@ ok('B1 DA-05 save with a FAILING store write: refusal toast, the store keeps exa
   JSON.stringify(bRes.keys) === JSON.stringify(['route-a', 'route-b', 'route-c']) && /could not be saved/.test(bRes.toast) && bRes.registered === false);
 
 // ---------- C: a merge restore is judged against the RESIDENT definition ----------
-// Beta 1.287 (issue #172): DA-01's replace-era form judged the carried
-// snapshot against the INCOMING definition, which the restore installed.
-// Under merge a resident definition is never overwritten, so the RESIDENT
-// geometry governs: the incoming snapshot is judged against it, dropped
-// with disclosure when it does not fit, and its street names filtered
-// against it. The incoming-geometry half of DA-01 survives where the
-// incoming definition governs - a route the device lacks (arm E3 below).
+// The resident geometry governs: the snapshot is judged against it, dropped with disclosure when it does not fit.
 await ev(`(() => { localStorage.setItem('${UPKEY}', JSON.stringify({ 'route-x': ${JSON.stringify(PACK('Route X', 'Old Street'))} })); return true; })()`);
 await reboot5w(); // boot registers route-x with the OLD geometry (and drains it into the store)
 const setupC = await ev(`ROUTE_PACKS.some(p => p.id === 'route-x' && p.roads['Old Street'])`);
