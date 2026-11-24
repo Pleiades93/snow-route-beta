@@ -8891,6 +8891,20 @@
    "red": "proof-trim-glow-path-pills exit 1, the pill-labels check FAIL only Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
    "green": "proof-trim-glow-path-pills exit 0 on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
    "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "correct-phase3d-census-exclusions-r4",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "e9bd15f4e17ffcb54bd362bb7711a7584406cb1d0d106599f5c893ef134132f9",
+    "tests/browser/fixtures/foreign-writes-census.json": "b0df61f47a610c252dc961ce467ff7170ad05e6725cf4d5af349bda2744018b7",
+    "scripts/check-mirrors.py": "ba31bf8045d2e3ddf1b93423858f091e8ad691f796a7dd6a80e1f34631947c90"
+   },
+   "mutation": "the Beta 1.286 tree itself is the mutation: issue #180's Locate fix makes parts/app5.js loadRoute write gpsFromRun (owned by parts/app3.js) to clear the recording face on a switch to an idle route - one new foreign-write site against the pre-#180 pinned census",
+   "red": "selftest-foreign-writes FAIL on the 1.286 tree with the old pin: 'EXTRA/CHANGED in recomputed: app5.js|loadRoute|gpsFromRun#1->app3.js x1 (pinned x0)', totals 21 pinned vs 22 recomputed (registry probe tranche2-foreign-writes-passes red in CI)",
+   "green": "FOREIGN-WRITE CENSUS: PASS after the site is adjudicated (loadRoute is the route-switch seam; it already carries the adjudicated activeRoute/routeLoaded writes) and the pinned census is regenerated through the selftest's own --write; the regeneration differs from a hand edit only in scan order",
+   "issued": "2026-11-23 sweep-180-r2"
   }
  ]
 }
