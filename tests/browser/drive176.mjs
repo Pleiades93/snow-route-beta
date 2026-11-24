@@ -60,8 +60,12 @@ try {
   await waitBoot(); await sleep(1800);
   await ev(`loadRoute('5w'); true`); await sleep(900);
   const p2 = await J(`({ notes: localStorage.getItem(routeKeys('5w').notes), cov: localStorage.getItem(routeKeys('5w').cov), fin: localStorage.getItem(routeKeys('5w').finclean) })`);
-  ok('P2 control: a clean restore discharges the record and the restored notes/coverage survive the next load | ' + JSON.stringify(p2),
-    p2.notes === NEW_NOTES && p2.cov === NEW_COV && p2.fin === null);
+  // Beta 1.287 (issue #172): the restored records MERGE - the resident
+  // Velmar entries survive beside the restored Mellings ones. The 1.150
+  // claim is unchanged in form: the discharge lands and the merged
+  // notes/coverage survive the next load whole.
+  ok('P2 control: a clean restore discharges the record and the merged notes/coverage survive the next load | ' + JSON.stringify(p2),
+    p2.notes === '{"Velmar":[{"k":"hazard","at":"2026-01-01T00:00:00.000Z"}],"Mellings":[{"k":"flag","at":"2026-02-02T00:00:00.000Z"}]}' && p2.cov === '{"Velmar":[0],"Mellings":[1]}' && p2.fin === null);
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

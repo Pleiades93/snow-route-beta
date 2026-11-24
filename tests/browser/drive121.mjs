@@ -58,12 +58,20 @@ ok('S1 backup of the fixture state is meaning-identical on all 10 keys', Object.
 // ---- session 2: state B backup taken, state A restored, restore interrupted --
 await b.ev(`(() => { pieces.Woolacott = [3, 3, 3]; saveAll(); return true; })()`);
 const backupB = await b.ev(`buildBackup()`);
-await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]); return true; })()`);
+// Beta 1.287 (issue #172, merge restore): a PARTIAL resident Woolacott would
+// lawfully block state B's completion (current wins), so state A is seeded
+// WITHOUT Woolacott's record - the merge must add it back, and the kill
+// during the reload pause must lose none of it.
+await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]);
+  const sd = JSON.parse(localStorage.getItem('snowroute.5w.v5.sides')); delete sd.p.Woolacott; delete sd.t.Woolacott;
+  localStorage.setItem('snowroute.5w.v5.sides', JSON.stringify(sd));
+  const dn = JSON.parse(localStorage.getItem('snowroute.5w.v2')); localStorage.setItem('snowroute.5w.v2', JSON.stringify(dn.filter(n => n !== 'Woolacott')));
+  return true; })()`);
 await b.ev('location.reload()');
 await waitBoot(b.ev);
 await loadRouteWait(); await sleep(400);
-const s2state = await b.ev(`JSON.stringify({ w: pieces.Woolacott, stored: JSON.parse(localStorage.getItem('snowroute.5w.v5.sides')).p.Woolacott })`);
-ok('S2 back at fixture state A (Woolacott partial again) | state ' + s2state, JSON.stringify(JSON.parse(s2state).w) === '[3,1,0]');
+const s2state = await b.ev(`JSON.stringify({ stored: JSON.parse(localStorage.getItem('snowroute.5w.v5.sides')).p.Woolacott })`);
+ok('S2 state A-minus seeded (fixture minus Woolacott record) | state ' + s2state, JSON.parse(s2state).stored === undefined);
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
 // The restore has written and verified every key and is inside its 600ms reload
 // pause. Kill the browser NOW - the harshest moment to interrupt it.
@@ -78,11 +86,12 @@ ok('S3 interrupted restore still landed state B (Woolacott complete) | state ' +
 ok('S3 restored state is stable across the relaunch boot', await b.ev(`[...doneSet].includes('Woolacott')`));
 await closeBrowser(b);
 
-// ---- session 4: C06 legacy-restore marker rule (Beta 1.73) ------------------
-// A legacy backup (this fixture era: trail present, NO sess key) that replaces
-// the trail must clear the current markers; one WITHOUT a trail must not; a
-// current-format backup restores its own markers; and a restore that fails on
-// the marker write rolls BOTH the trail and the markers back.
+// ---- session 4: the marker rule in merge form (Beta 1.287, issue #172) -----
+// Replace-era C06 cleared the resident markers when a restored trail landed
+// without its sessions. Under merge a backup's trail never displaces the
+// resident run state, so the resident markers and trail stand exactly; a
+// backup whose records the resident already governs adds nothing and
+// reloads nothing; and its markers never displace resident markers.
 b = await launch(false);
 ok('S4 legacy-era page boots', await waitBoot(b.ev));
 await b.ev(`(() => { const F = ${FIXJ}; for (const k of Object.keys(F)) localStorage.setItem(k, F[k]); localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); return true; })()`);
@@ -93,34 +102,33 @@ const waitReload = async () => { await b.ev(`(() => { window.__preRestore = 1; r
 const waitApp = async () => !!(await until(async () => await b.ev(`typeof restoreBackup === 'function' && typeof buildBackup === 'function'`), 30000));
 await waitApp();
 const pollReload = async () => { const t0 = Date.now(); while (Date.now() - t0 < 25000) { const gone = await b.ev(`typeof window.__preRestore === 'undefined' && !!document.getElementById('ver')`); if (gone === true) return true; await sleep(400); } return false; };
+const pollAddedNothing = async what => !!(await until(async () => { let t = null; try { t = await b.ev(`$('toast').textContent`); } catch (e) { /* a mid-navigation read is a miss, not a failure */ } return typeof t === 'string' && t.indexOf('Backup added nothing') >= 0 ? t : false; }, 9000, what));
+const s4plan = await b.ev(`(() => { const p = RESTORE.plan(JSON.parse(${JSON.stringify(backupB)})); return p ? JSON.stringify(p.entries.map(e => e[0])) : 'null'; })()`);
 await waitReload();
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
-ok('S4a restore of the current-format backup completed (page reloaded)', await pollReload());
+ok('S4a restore of the governed backup completes (page reloaded)', await pollReload());
 await waitApp();
 const s4a = JSON.parse(await b.ev(`JSON.stringify({ sess: localStorage.getItem('snowroute.5w.v5.sess'), trail: localStorage.getItem('snowroute.5w.v4.trail') })`));
-ok('S4a current-format restore (trail, no markers) clears the current markers, trail restored | ' + JSON.stringify(s4a), s4a.sess === '[]' && s4a.trail === JSON.parse(backupB).routes['5w'].trail);
+ok('S4a a backup carrying a trail but no markers leaves the resident markers AND trail untouched; only the absent theme pair fills | plan keys ' + s4plan + ' ' + JSON.stringify(s4a), s4a.sess === '[1767650000]' && s4a.trail === JSON.parse(backupB).routes['5w'].trail && s4plan === '["snowroute.v2.night","snowroute.v2.nightExp"]');
 await b.ev(`(() => { localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); return true; })()`);
-await waitReload();
 await b.ev(`(() => { const nb = JSON.parse(${JSON.stringify(backupB)}); delete nb.routes['5w'].trail; restoreBackup(nb); return true; })()`);
-ok('S4b restore of the no-trail current-format backup completed', await pollReload());
+ok('S4b restore of the no-trail backup reports it added nothing', await pollAddedNothing('S4b added-nothing toast'));
 await waitApp();
 const s4b = await b.ev(`localStorage.getItem('snowroute.5w.v5.sess')`);
 ok('S4b current-format restore without a trail leaves the markers untouched | sess ' + s4b, s4b === '[1767650000]');
 await b.ev(`(() => { localStorage.setItem('snowroute.5w.v5.sess', '[1767650000,1767740000]'); return true; })()`);
 const backupC = await b.ev(`buildBackup()`);
 await b.ev(`(() => { localStorage.setItem('snowroute.5w.v5.sess', '[1]'); return true; })()`);
-await waitReload();
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupC)})); return true; })()`);
-ok('S4c restore of the current-format backup completed', await pollReload());
+ok('S4c restore of the marker-carrying backup reports it added nothing', await pollAddedNothing('S4c added-nothing toast'));
 await waitApp();
 const s4c = await b.ev(`localStorage.getItem('snowroute.5w.v5.sess')`);
-ok('S4c current-format backup restores its own markers | sess ' + s4c, s4c === '[1767650000,1767740000]');
-await b.ev(`(() => { localStorage.setItem('snowroute.5w.v4.trail', '[[43.9,-79.6,1767600000]]'); localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); window.__realLsSet = lsSet; lsSet = (k, v) => k === 'snowroute.5w.v5.sess' ? false : window.__realLsSet(k, v); return true; })()`);
+ok('S4c backup markers do not displace resident markers (run state is resident-governed) | sess ' + s4c, s4c === '[1]');
+await b.ev(`(() => { localStorage.setItem('snowroute.5w.v4.trail', '[[43.9,-79.6,1767600000]]'); localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); return true; })()`);
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
-await until(async () => { const t = await b.ev(`$('toast').textContent`); return typeof t === 'string' && t.indexOf('put back') >= 0 ? t : false; }, 9000, 'S4d rollback toast'); // T4: poll the terminal signal S4d asserts (the rollback toast), via this drive's own until idiom
+ok('S4d the governed restore reports it added nothing', await pollAddedNothing('S4d added-nothing toast'));
 const s4d = JSON.parse(await b.ev(`(() => JSON.stringify({ toast: $('toast').textContent, trail: localStorage.getItem('snowroute.5w.v4.trail'), sess: localStorage.getItem('snowroute.5w.v5.sess') }))()`));
-await b.ev(`(() => { lsSet = window.__realLsSet; return true; })()`);
-ok('S4d a restore failing on the marker write rolls the trail AND the markers back | ' + JSON.stringify(s4d), s4d.trail === '[[43.9,-79.6,1767600000]]' && s4d.sess === '[1767650000]' && s4d.toast.indexOf('put back') >= 0);
+ok('S4d a no-addition restore writes nothing: the resident trail and markers stand exactly | ' + JSON.stringify(s4d), s4d.trail === '[[43.9,-79.6,1767600000]]' && s4d.sess === '[1767650000]' && s4d.toast.indexOf('Backup added nothing') >= 0);
 await closeBrowser(b);
 
 R.exceptions = allExceptions;

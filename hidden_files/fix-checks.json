@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "a7012ebf012181b7ecf0004096fa4e8c65bb2fe116cc7007adbae6ea291c175f",
+  "canonical_registry_sha256": "27b80147f8bb057ce23a5023447b0d1da6a6e61ba01c4b95fb35396cbaf2e01a",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1502,
-   "included": 1472,
+   "canonical": 1503,
+   "included": 1473,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -544,9 +544,9 @@
   {
    "added": "2026-11-03",
    "file": "parts/app4.js",
-   "fix": "A legacy restore CLEARS the replaced trail's session markers inside the verified write set (Beta 1.73, C06): markers describe the trail being replaced and would split the restored trail at wrong places. Andrew's call; the entry is written and verified like every other.",
+   "fix": "A legacy restore CLEARS the replaced trail's session markers inside the verified write set (Beta 1.73, C06): markers describe the trail being replaced and would split the restored trail at wrong places. Andrew's call; the entry is written and verified like every other. Beta 1.287 (issue #172): the clear moved into the merge plan (incoming form); the claim is unchanged.",
    "id": "beta-restore-legacy-clears-markers",
-   "pattern": "entries.push([rk.sess, '[]']);",
+   "pattern": "if (!incoming.has(rk.sess)) incoming.set(rk.sess, '[]');",
    "type": "grep_present"
   },
   {
@@ -1031,9 +1031,9 @@
   {
    "added": "2026-11-03",
    "file": "parts/app4.js",
-   "fix": "A restore carrying done-but-no-sides DERIVES the side-marks by the loader's own rule (a completed street is all-sides-done, stamped with its completion time \u2014 Beta 1.92 F06, Andrew's pick): the old path restored into silence and the loader rebuilt the list from the phone's existing sides, erasing the restore while reporting success.",
+   "fix": "A restore carrying done-but-no-sides DERIVES the side-marks by the loader's own rule (a completed street is all-sides-done, stamped with its completion time \u2014 Beta 1.92 F06, Andrew's pick): the old path restored into silence and the loader rebuilt the list from the phone's existing sides, erasing the restore while reporting success. Beta 1.287 (issue #172): the derivation now runs inside the sides merge, only for a newly added street without incoming sides; the claim is unchanged.",
    "id": "beta-restore-derives-sides",
-   "pattern": "P[n] = pg.stretch[n].parts.map(() => 3);",
+   "pattern": "p[name] = stretch[name].parts.map(() => 3);",
    "type": "grep_present"
   },
   {
@@ -1079,9 +1079,9 @@
   {
    "added": "2026-11-03",
    "file": "parts/app4.js",
-   "fix": "The derived side-marks are ALWAYS written when a backup carries done-but-no-sides (Beta 1.93, R03): an explicitly EMPTY list is an intentional empty state \u2014 skipping the write left the phone's old sides in charge, and {} read back as nothing done.",
+   "fix": "The derived side-marks are ALWAYS written when a backup carries done-but-no-sides (Beta 1.93, R03): an explicitly EMPTY list is an intentional empty state \u2014 skipping the write left the phone's old sides in charge, and {} read back as nothing done. Beta 1.287 (issue #172): in merge form the guarantee is the done write firing for an explicitly empty incoming done list into an absent slot, so the destination's old state never silently governs; the claim is unchanged.",
    "id": "beta-restore-empty-done-derives",
-   "pattern": "entries.push([rk.sides, JSON.stringify({ p: P, t: T })]); // Beta 1.93 (follow-up audit R03)",
+   "pattern": "if (added.length || (rawDone === null && !backupDone.length)) merged.set(rk.done, JSON.stringify([...currentDone, ...added]));",
    "type": "grep_present"
   },
   {
@@ -1152,9 +1152,9 @@
   {
    "added": "2026-11-04",
    "file": "parts/app4.js",
-   "fix": "Restore COUNTS unknown street names from the RAW backup, each name once, judged per route (Beta 1.95, SR-194-08) \u2014 1.94 counted what survived normalization, so unknowns filtered out before counting vanished from the report.",
+   "fix": "Restore COUNTS unknown street names from the RAW backup, each name once, judged per route (Beta 1.95, SR-194-08) \u2014 1.94 counted what survived normalization, so unknowns filtered out before counting vanished from the report. Beta 1.287 (issue #172): the signature gained a defaulted packs parameter when the planner began judging against the restored route set; the claim is unchanged.",
    "id": "beta-restore-counts-unknown",
-   "pattern": "function countUnknownNames(parsed) {",
+   "pattern": "function countUnknownNames(parsed, packs = ROUTE_PACKS) {",
    "type": "grep_present"
   },
   {
@@ -1374,9 +1374,9 @@
   {
    "added": "2026-11-04",
    "file": "parts/app4.js",
-   "fix": "An explicit idle assertion in a backup (start: null) CLEARS the destination's run state inside the verified write set (Beta 1.97, CG-196-01) \u2014 a restore must be able to say 'no run' as firmly as 'run', and a failed restore rolls the clearing back too.",
+   "fix": "An explicit idle assertion in a backup (start: null) CLEARS the destination's run state inside the verified write set (Beta 1.97, CG-196-01) \u2014 a restore must be able to say 'no run' as firmly as 'run', and a failed restore rolls the clearing back too. SUPERSEDED Beta 1.287 (issue #172, Andrew's 2026-11-23 merge ruling): a backup no longer clears a resident run - resident state wins every conflict. This probe now pins the merge guard: an incoming run cluster is considered only when no live start stands.",
    "id": "beta-197-idle-assertion-restore",
-   "pattern": "if (data.start === null) { entries.push([rk.start, null]); entries.push([rk.snap, null]);",
+   "pattern": "if (incoming.has(rk.start) && liveStart === null) {",
    "type": "grep_present"
   },
   {
@@ -3034,17 +3034,17 @@
   {
    "added": "2026-11-07",
    "file": "parts/app4.js",
-   "fix": "Restore MERGES user packs strictly (Beta 1.142, DA-05; re-seated Beta 1.166): restored geometry lands in the IndexedDB store per route, and the still-standing legacy record is rewritten inside the same verified write set with the restored ids REMOVED - the pre-migration fallback can never shadow the newer store copy, and routes created after the backup survive in their true home.",
+   "fix": "Restore MERGES user packs strictly (Beta 1.142, DA-05; re-seated Beta 1.166): restored geometry lands in the IndexedDB store per route, and the still-standing legacy record is rewritten inside the same verified write set with the restored ids REMOVED - the pre-migration fallback can never shadow the newer store copy, and routes created after the backup survive in their true home. Beta 1.287 (issue #172): the rewrite mechanism is superseded by the merge - definitions are insert-only and the legacy record is never rewritten; the planner reads the legacy shadow AS the resident definition, so the fallback can never shadow a restored route. This probe now pins that residency read.",
    "id": "beta-1142-da05-restore-strict-merge",
-   "pattern": "entries.push([USERPACKS_KEY, Object.keys(shadow).length ? JSON.stringify(shadow) : null]);",
+   "pattern": "const current = shadowed ? legacy[rid] : stored[rid];",
    "type": "grep_present"
   },
   {
    "added": "2026-11-07",
    "file": "parts/app4.js",
-   "fix": "On name collision the INCOMING pack wins (Beta 1.142, DA-01): restored packs replace built-ins of the same id in the merged list \u2014 the backup's version of a route is the one Andrew means to restore.",
+   "fix": "On name collision the INCOMING pack wins (Beta 1.142, DA-01): restored packs replace built-ins of the same id in the merged list \u2014 the backup's version of a route is the one Andrew means to restore. SUPERSEDED for restore Beta 1.287 (issue #172, Andrew's 2026-11-23 merge ruling): the resident definition wins; an incoming definition lands only for a route with no resident definition in either home. This probe now pins the landing half.",
    "id": "beta-1142-da01-incoming-wins",
-   "pattern": "allPacks = ROUTE_PACKS.filter(p => !restoredPacks[p.id]).concat(Object.values(restoredPacks));",
+   "pattern": "additions[rid] = restoredPacks[rid];",
    "type": "grep_present"
   },
   {
@@ -3894,10 +3894,10 @@
   {
    "added": "2026-11-09",
    "file": "parts/app4.js",
-   "fix": "Beta 1.150 (NV5): the restore discharges each restored route's finclean record as a verified-delete inside the restore's write set (rollback scope covers the keys). If this fails, a refused discharge can leave the record armed over restored data.",
+   "fix": "Beta 1.150 (NV5): the restore discharges each restored route's finclean record as a verified-delete inside the restore's write set (rollback scope covers the keys). If this fails, a refused discharge can leave the record armed over restored data. Beta 1.287 (issue #172): the discharge moved into the merge plan (merged.set) and fires only for a route slot the merge actually changed; the claim is unchanged.",
    "fix_id": "security-finclean-verified-discharge",
    "id": "security-finclean-verified-discharge",
-   "pattern": "entries.push([routeKeys(rid).finclean, null])",
+   "pattern": "merged.set(rk.finclean, null);",
    "type": "grep_present"
   },
   {
@@ -4409,10 +4409,10 @@
   {
    "added": "2026-11-10",
    "file": "parts/app4.js",
-   "fix": "Restore writes restored geometry into the IndexedDB store FIRST, one verified upPut per route (Beta 1.166), before the localStorage write phase - and any failure in either phase rolls back BOTH homes, so a restore stays all-or-nothing across the split storage exactly as it was across the monolith.",
+   "fix": "Restore writes restored geometry into the IndexedDB store FIRST, one verified upPut per route (Beta 1.166), before the localStorage write phase - and any failure in either phase rolls back BOTH homes, so a restore stays all-or-nothing across the split storage exactly as it was across the monolith. Beta 1.287 (issue #172): phase 1's seam moved from upPut to a transactional store.add inside upTx (insert-only, fail-closed on a same-id race), still before any localStorage write, with verified read-back and both-homes rollback; the claim is unchanged.",
    "fix_id": "beta-1166-storage",
    "id": "restore-store-phase",
-   "pattern": "await upPut(rid, restoredPacks[rid])",
+   "pattern": "const inserted = await upTx('readwrite', store => store.add(pack));",
    "type": "grep_present"
   },
   {
@@ -5285,10 +5285,10 @@
   {
    "added": "2026-11-13",
    "file": "parts/app4.js",
-   "fix": "Beta 1.186 storage fix round (PR #25, merge 0c66e05fe5fe): the three adjudicated storage findings closed - P2 run-distance undercount, C-01 sess/trail marker mismatch, P1 restore write-fence race - plus the gate-round corrections (Codex F1 adopt-before-bank, F2 primary re-arm, F3 drop-don't-clear). If a probe fails, that fix has regressed or been reverted in the source - restore the fixed form and re-run drive169/drive187.",
+   "fix": "Beta 1.186 storage fix round (PR #25, merge 0c66e05fe5fe): the three adjudicated storage findings closed - P2 run-distance undercount, C-01 sess/trail marker mismatch, P1 restore write-fence race - plus the gate-round corrections (Codex F1 adopt-before-bank, F2 primary re-arm, F3 drop-don't-clear). If a probe fails, that fix has regressed or been reverted in the source - restore the fixed form and re-run drive169/drive187. Beta 1.287 (issue #172): in merge form the same guarantee is the plan deleting the incoming sess when the cluster carries no trail; the claim is unchanged.",
    "fix_id": "storage-fix-round-1186",
    "id": "storage1186-c01-incoming-markers-dropped",
-   "pattern": "if (si >= 0 && !entries.some(e => e[0] === rk.trail)) entries.splice(si, 1);",
+   "pattern": "} else incoming.delete(rk.sess);",
    "type": "grep_present"
   },
   {
@@ -5894,10 +5894,10 @@
   {
    "added": "2026-11-14",
    "file": "parts/app4.js",
-   "fix": "Beta 1.193: a restored trail is windowed to the pack\u2019s own live run before it is written (validate-then-write: the stored value is the windowed one).",
+   "fix": "Beta 1.193: a restored trail is windowed to the pack\u2019s own live run before it is written (validate-then-write: the stored value is the windowed one). Beta 1.287 (issue #172): the merge windows the incoming trail at plan time, before any write; the claim is unchanged.",
    "fix_id": "trail-window-counter-harden",
    "id": "trail1193-restore-window",
-   "pattern": "entries[ti][1] = JSON.stringify(windowed);",
+   "pattern": "incoming.set(rk.trail, JSON.stringify(trailWindow(cleanTrail(trailRaw), start)));",
    "type": "grep_present"
   },
   {
@@ -13102,6 +13102,15 @@
    "pattern": "",
    "type": "command_exit0",
    "command": "cd . && node tests/proof/proof-icon-swap-1213.mjs"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "tests/browser/drive145.mjs",
+   "fix": "Restore #172 round (Beta 1.287): the restore-family drives wait for the app instead of sleeping a fixed span - drive118 and drive145 poll-with-load via their loadRoutePolled helper, drive163's reboot and drive184's navigate and post-restore reads await window.__userPacksReady. The bare-call-after-sleep form throws 'loadRoute is not defined' on a throttled runner (__bootAt is set before the parts finish parsing), and a backup built before the pack drain settles misses the created routes.",
+   "fix_id": "restore-172-harness-poll-with-load",
+   "id": "restore-172-harness-poll-with-load",
+   "pattern": "const loadRoutePolled",
+   "type": "grep_present"
   }
  ]
 }
