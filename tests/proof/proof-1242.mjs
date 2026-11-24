@@ -39,7 +39,7 @@ const head = read('parts/head.html');
 const app3 = read('parts/app3.js');
 const pick = read('parts/create-pick.js');
 const whatsnew = read('parts/whatsnew.js');
-const changelog = read('CHANGELOG.md');
+const changelog = read('docs/archive/CHANGELOG-beta-history.md');
 const partsDir = new URL('parts/', root);
 const allParts = readdirSync(partsDir).filter(f => f.endsWith('.js')).map(f => read('parts/' + f)).join('\n');
 const allPartsNoWn = readdirSync(partsDir).filter(f => f.endsWith('.js') && f !== 'whatsnew.js').map(f => read('parts/' + f)).join('\n'); // the What's New editorial may NAME a cut pop-up; history comments may quote retired text - the pins below are on the painting calls, the codebase's own convention (app3's comments quote the cancel texts they adjudicate)

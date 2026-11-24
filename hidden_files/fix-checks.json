@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "8e0657e71757b1ac8d9dfa1cc6c528fd05ce8ab8aebde7646bf819150f52231a",
+  "canonical_registry_sha256": "a7012ebf012181b7ecf0004096fa4e8c65bb2fe116cc7007adbae6ea291c175f",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -1689,7 +1689,7 @@
   },
   {
    "added": "2026-11-04",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.103 record stays at its place in the CHANGELOG (Phase 6's version guard, repointed to the changelog entry): release history is the audit trail \u2014 a missing entry means a build shipped undocumented.",
    "id": "phase6-version-1103",
    "pattern": "## Beta 1.103 \u2014 2026-11-04",
@@ -1721,7 +1721,7 @@
   },
   {
    "added": "2026-11-04",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.104 record stays in the CHANGELOG (round 103's version guard \u2014 it guards the live marker's history).",
    "id": "round103-version-1104",
    "pattern": "## Beta 1.104 \u2014 2026-11-04",
@@ -1729,7 +1729,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.105 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1105-version",
    "pattern": "## Beta 1.105 \u2014 2026-11-05",
@@ -1737,7 +1737,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.106 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1106-version",
    "pattern": "## Beta 1.106 \u2014 2026-11-05",
@@ -1745,7 +1745,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.107 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1107-version",
    "pattern": "## Beta 1.107 \u2014 2026-11-05",
@@ -1753,7 +1753,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.108 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1108-version",
    "pattern": "## Beta 1.108 \u2014 2026-11-05",
@@ -1761,7 +1761,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.109 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1109-version",
    "pattern": "## Beta 1.109 \u2014 2026-11-05",
@@ -1769,7 +1769,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.110 record stays in the CHANGELOG \u2014 release history is the audit trail (1.110 also carries the undo retirement).",
    "id": "beta-1110-version",
    "pattern": "## Beta 1.110 \u2014 2026-11-05",
@@ -1777,7 +1777,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.111 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1111-version",
    "pattern": "## Beta 1.111 \u2014 2026-11-05",
@@ -1785,7 +1785,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.112 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1112-version",
    "pattern": "## Beta 1.112 \u2014 2026-11-05",
@@ -1793,7 +1793,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.113 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1113-version",
    "pattern": "## Beta 1.113 \u2014 2026-11-05",
@@ -1801,7 +1801,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.114 record stays in the CHANGELOG \u2014 release history is the audit trail (1.114 also carries the What's-New-latest-only rule).",
    "id": "beta-1114-version",
    "pattern": "## Beta 1.114 \u2014 2026-11-05",
@@ -1809,7 +1809,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.115 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1115-version",
    "pattern": "## Beta 1.115 \u2014 2026-11-05",
@@ -1817,7 +1817,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.116 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1116-version",
    "pattern": "## Beta 1.116 \u2014 2026-11-05",
@@ -1825,7 +1825,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.117 record stays in the CHANGELOG \u2014 release history is the audit trail (1.117 also carries route separation).",
    "id": "beta-1117-version",
    "pattern": "## Beta 1.117 \u2014 2026-11-05",
@@ -1833,7 +1833,7 @@
   },
   {
    "added": "2026-11-05",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.118 record stays in the CHANGELOG \u2014 release history is the audit trail (1.118 also carries Create-a-Route).",
    "id": "beta-1118-version",
    "pattern": "## Beta 1.118 \u2014 2026-11-05",
@@ -1841,7 +1841,7 @@
   },
   {
    "added": "2026-11-06",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.119 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1119-version",
    "pattern": "## Beta 1.119 \u2014 2026-11-06",
@@ -1849,7 +1849,7 @@
   },
   {
    "added": "2026-11-06",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.120 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1120-version",
    "pattern": "## Beta 1.120 \u2014 2026-11-06",
@@ -1857,7 +1857,7 @@
   },
   {
    "added": "2026-11-06",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.121 record stays in the CHANGELOG \u2014 release history is the audit trail.",
    "id": "beta-1121-version",
    "pattern": "## Beta 1.121 \u2014 2026-11-06",
@@ -2947,7 +2947,7 @@
   },
   {
    "added": "2026-11-07",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "The Beta 1.134 record tops the CHANGELOG (the split build) \u2014 release history is the audit trail.",
    "id": "beta-1134-changelog-top",
    "pattern": "## Beta 1.134 \u2014 2026-11-07",
@@ -3902,7 +3902,7 @@
   },
   {
    "added": "2026-11-09",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "Beta 1.150: CHANGELOG top-entry pin (house convention).",
    "fix_id": "beta-1150-ship",
    "id": "beta-1150-changelog-top",
@@ -5047,7 +5047,7 @@
   },
   {
    "added": "2026-11-12",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "Beta 1.178: CHANGELOG top-entry pin (house convention).",
    "fix_id": "beta-1178-ship",
    "id": "beta-1178-changelog-top",
@@ -10430,7 +10430,7 @@
   },
   {
    "added": "2026-11-19",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "Beta 1.242 (PR #124, merge 9ba5d84b; rollback: revert the merge -> Beta 1.241 at 7fd50737). Andrew's black buttons round: the night dock recipe he picked 2026-11-18 (Bar black, rim light), the three pop-up cuts (the sector pill removed here; 'Clean in progress' and the plain 'Start cancelled' confirmed still absent - both were cut in Beta 1.221), and the hint wording (his exact words, styling untouched). Pinned in tests by proof-1242 and the round's rendered QA (DOM 9/9, pixels 3/3: night button face == tab bar face, diff 0).",
    "fix_id": "buttons-1242",
    "id": "buttons1242-changelog-top",
@@ -10555,7 +10555,7 @@
   },
   {
    "added": "2026-11-19",
-   "file": "CHANGELOG.md",
+   "file": "docs/archive/CHANGELOG-beta-history.md",
    "fix": "Beta 1.243 (PR #125, merge 2a82aaa0; rollback: revert the merge -> Beta 1.242 at 9ba5d84b). The create-route round + Arch-3 (Andrew's orders 2026-11-18/19): (1) the Upload photo door, its pane, its handlers and importDraft are removed whole - Create keeps Select from list and Manual search; the Settings backup import (#xFile -> doRestore) is a separate feature and stands. (2) The city box's white pill (white fill, ink #14161c, shadow 0 6px 18px rgba(0,0,0,.18)) is one group rule for #crCityInput / #crNameInput / #crAreaInput, and the street search wrap wears the same values in BOTH themes (its night glass retired; the input takes the pill ink in both themes; the magnifier and clear glyphs stamp the dark variant in both themes). (3) The proportion / centring census over both blue menus came back clean - no fix (the table stands in the round's RECORD.md). (4) Arch-3: crResetSearch() owns the search close at all five seats and the dead crSearchCtl is removed - zero behaviour change, proven by the identical search open/pick/close/reopen cycle on both trees in the round's rendered QA. Gate: plan, build-and-test, offline-e2e, all 8 shards, tier drives and the codex review gate all SUCCESS (drive166 I2 re-derived in a gate-fix commit; drive180 NOTILE2 classified a standing flake per the goal's known-env-failures.md and passed on the focused re-run); merged tree == tested tree (2c938a30); live page byte-identical to the merged build (sha256 e9f26978). Proof: tests/proof/proof-1243.mjs (20 checks). If a probe here fails, the round has regressed - restore the shipped form.",
    "fix_id": "create-1243",
    "id": "create1243-changelog-top",
