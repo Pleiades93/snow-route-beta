@@ -704,7 +704,10 @@ locally, first:
    observation, and the clean pass, pinning the sha256 of every file
    the evidence depends on. `scripts/check-receipts.py` issues and
    verifies receipts; `scripts/push.py` refuses a push whose changed
-   check/judge files no current receipt names. A check whose evidence
+   check/judge files no current receipt names. Since the #178
+   machinery round (2026-11-23), CI's `build-and-test` job runs the
+   same gate over the pull request's changed set, so the refusal no
+   longer depends on the push route. A check whose evidence
    is a rendered or manual measurement carries a receipt of kind
    `rendered` recording that evidence - never a fabricated mutation.
 7. **Sibling paths are enumerated before the first push
@@ -725,6 +728,9 @@ locally, first:
    marked covered or not-applicable-with-reason before the push;
    `scripts/push.py` re-derives the rows from the prospective tree
    and refuses a parts push no current, fully-marked census names.
+   CI's `build-and-test` job runs the same gate over the pull
+   request's changed set, deriving rows from the checked-out merge
+   tree (the #178 machinery round, 2026-11-23).
    The class this closes: first submissions covered the named path
    and the review seat enumerated the siblings afterwards - Beta
    1.255's confirmation took four heads (the unbound question, the
@@ -742,7 +748,9 @@ locally, first:
    a fact owned elsewhere - is either GENERATED from its source or
    verified against it by `scripts/check-mirrors.py`, which
    `scripts/push.py` runs on every push (the mirrors gate) against
-   the tree the push would create. The families: the declaration
+   the tree the push would create, and which CI's `build-and-test`
+   job runs on every event against the checked-out tree (the #178
+   machinery round, 2026-11-23). The families: the declaration
    file `scripts/app1-types.d.ts` (its RoutePack typedef against
    PACK_FIELDS, its RouteKeys typedef against routeKeys()'s keys,
    and every section-2 cross-part global against the home part its

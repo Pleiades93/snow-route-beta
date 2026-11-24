@@ -426,6 +426,40 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a changed judge named by a current receipt pushes",
           run_push(t / "rcjudge2", ["scripts/push.py", "tests/mutation-receipts.json"],
                    mode="push", env_extra=rc_judge2), 0)
+    # Registry sync gate (issue #178's registry half): the vendored
+    # pair in the push tree must equal what the canonical registry
+    # generates - a stale or hand-edited vendored copy refuses the
+    # push. The fixture tree carries a copy of the real
+    # scripts/sync-fix-checks.py (push.py loads its gate logic from
+    # the push tree, the measuring instrument), and the fixture
+    # environment names the fixture registry plus this tree as the
+    # canonical coordinates, so the vendored pair is generated from
+    # the fixture registry itself.
+    def sync_tree(name):
+        env = push_tree2(t / name, parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                         tracker="AB", index="shell Beta 1.0 AB")
+        w(t / name / "scripts" / "sync-fix-checks.py",
+          (ROOT / "scripts" / "sync-fix-checks.py").read_text())
+        # The canonical coordinates are fixture-local: the runner is
+        # a stub file here (the real one's path exists only on the
+        # maintainer machine - naming it broke this case in CI,
+        # PR #197's first vendored head).
+        w(t / name / "fixture-runner.py", "fixture runner\n")
+        env = {**env, "SNOW_FIX_CHECKS_REPO_ROOT": str(t / name),
+               "SNOW_FIX_CHECKS_RUNNER": str(t / name / "fixture-runner.py")}
+        proc = subprocess.run([PY, str(t / name / "scripts" / "sync-fix-checks.py"),
+                               str(t / name)], capture_output=True, text=True,
+                              timeout=120, env={**os.environ, **env})
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        return env
+    sync_ok = sync_tree("syncok")
+    check("push: a vendored registry in sync with the canonical registry pushes (registry sync gate)",
+          run_push(t / "syncok", ["index.html"], mode="push", env_extra=sync_ok), 0)
+    sync_stale = sync_tree("syncstale")
+    w(t / "syncstale" / "hidden_files" / "fix-checks.json",
+      (t / "syncstale" / "hidden_files" / "fix-checks.json").read_text() + "\n")
+    check("push: a vendored registry diverging from the canonical registry refuses the push (registry sync gate)",
+          run_push(t / "syncstale", ["index.html"], mode="push", env_extra=sync_stale), 1)
 
 # ------------------------------------------------- mutation receipts
 with tempfile.TemporaryDirectory() as td:
@@ -937,6 +971,132 @@ with tempfile.TemporaryDirectory() as td:
     check("shard coverage: a smoke list naming a non-roster drive fails",
           run_shard_coverage(shard_tree(t / "sc-smoke", bogus_smoke=True)), 1)
 
-total = 72
+# ------------------------------------------------------- CI gate wiring
+# (issue #178, Codex P1 on PR #197): DEVELOPMENT_RULES §3 names the
+# checks workflow itself as test machinery - changed only with
+# verdict fixtures and mutation receipts. These cases extract the
+# Collect / Receipts / Census step bodies from the REAL checks.yml
+# and execute them in synthetic git repositories, proving the
+# workflow supplies the triggering paths and propagates refusals.
+# (A tiny indentation parser extracts the bodies: PyYAML is not
+# available in the CI Python, and a moved step fails these cases
+# loudly rather than silently passing.)
+def workflow_step_body(step_name):
+    lines = (ROOT / ".github" / "workflows" / "checks.yml").read_text().splitlines()
+    for i, line in enumerate(lines):
+        if line.strip() == f"- name: {step_name}":
+            j = i + 1
+            while not lines[j].strip().startswith("run:"):
+                j += 1
+            indent = len(lines[j]) - len(lines[j].lstrip())
+            body = []
+            for k in range(j + 1, len(lines)):
+                ln = lines[k]
+                if ln.strip() and (len(ln) - len(ln.lstrip())) <= indent:
+                    break
+                body.append(ln[indent + 2:] if ln.strip() else "")
+            return "\n".join(body) + "\n"
+    raise AssertionError(f"step not found in checks.yml: {step_name}")
+
+
+def run_body(body, cwd, env_extra):
+    env = dict(os.environ)
+    env.update(env_extra)
+    proc = subprocess.run(["bash", "-c", body], cwd=cwd, env=env,
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def ci_wiring_tree(base):
+    """A git repo whose head commit changes a proof (a receipts
+    trigger), renames a doc and touches a plain file."""
+    def git(*args):
+        env = dict(os.environ, GIT_AUTHOR_NAME="fixture",
+                   GIT_AUTHOR_EMAIL="fixture@example.com",
+                   GIT_COMMITTER_NAME="fixture",
+                   GIT_COMMITTER_EMAIL="fixture@example.com")
+        subprocess.run(["git", *args], cwd=base, env=env, check=True,
+                       capture_output=True, text=True)
+    base.mkdir(parents=True)
+    git("init", "-q")
+    w(base / "README.md", "base\n")
+    w(base / "docs" / "old.md", "doc\n")
+    w(base / "tests" / "proof" / "proof-9001.mjs", "proof v1\n")
+    w(base / "scripts" / "check-receipts.py",
+      (ROOT / "scripts" / "check-receipts.py").read_text())
+    w(base / "scripts" / "check-census.py",
+      (ROOT / "scripts" / "check-census.py").read_text())
+    w(base / "tests" / "mutation-receipts.json", json.dumps({"receipts": []}))
+    w(base / "tests" / "sibling-census.json",
+      (ROOT / "tests" / "sibling-census.json").read_text())
+    git("add", "-A")
+    git("commit", "-q", "-m", "base")
+    base_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=base,
+                              capture_output=True, text=True).stdout.strip()
+    w(base / "tests" / "proof" / "proof-9001.mjs", "proof v2\n")
+    w(base / "README.md", "head\n")
+    git("mv", "docs/old.md", "docs/new.md")
+    git("add", "-A")
+    git("commit", "-q", "-m", "head")
+    return base_sha
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    tree = t / "ciw"
+    base_sha = ci_wiring_tree(tree)
+    collect = workflow_step_body(
+        "Collect changed paths (event base tree against head tree)")
+    receipts_step = workflow_step_body(
+        "Receipts gate (refuse changed checks without current mutation receipts, class N1)")
+    census_step = workflow_step_body(
+        "Census gate (refuse parts changes without a current sibling census, class N2)")
+    rc, out = run_body(collect, tree, {
+        "EVENT": "pull_request", "BASE_SHA": base_sha,
+        "GITHUB_WORKSPACE": str(tree), "GITHUB_ENV": str(tree / ".gh-env")})
+    changed = set()
+    if rc == 0 and (tree / ".gh-env").is_file():
+        for line in (tree / ".gh-env").read_text().splitlines():
+            if line.startswith("CHANGED_FILES="):
+                raw = Path(line.split("=", 1)[1]).read_bytes()
+                changed = {p for p in raw.decode().split("\0") if p}
+    check("ci wiring: the Collect step supplies the exact changed set (both sides of a rename)",
+          0 if changed == {"README.md", "docs/new.md", "docs/old.md",
+                           "tests/proof/proof-9001.mjs"} else 1, 0)
+    changed_file = [l.split("=", 1)[1] for l in
+                    (tree / ".gh-env").read_text().splitlines()
+                    if l.startswith("CHANGED_FILES=")][0]
+    check("ci wiring: the Receipts step refuses a changed check with no mutation receipt (refusal propagates)",
+          run_body(receipts_step, tree, {"EVENT": "pull_request",
+                                         "CHANGED_FILES": changed_file})[0], 1)
+    issue_receipt(tree, "fixture-ci-wiring", "tests/proof/proof-9001.mjs",
+                  "mutation", ["tests/proof/proof-9001.mjs"])
+    check("ci wiring: the Receipts step passes once a current receipt covers the changed check",
+          run_body(receipts_step, tree, {"EVENT": "pull_request",
+                                         "CHANGED_FILES": changed_file})[0], 0)
+    benign = tree / ".changed-benign"
+    benign.write_bytes(b"README.md\0")
+    check("ci wiring: the Census step runs on the collected set (a benign change passes)",
+          run_body(census_step, tree, {"EVENT": "pull_request",
+                                       "CHANGED_FILES": str(benign)})[0], 0)
+    rc1, _ = run_body(collect, tree, {
+        "EVENT": "workflow_dispatch", "BASE_SHA": base_sha,
+        "GITHUB_WORKSPACE": str(tree), "GITHUB_ENV": str(tree / ".gh-env2")})
+    rc2, _ = run_body(receipts_step, tree, {"EVENT": "workflow_dispatch"})
+    check("ci wiring: workflow_dispatch skips the diff-scoped gates cleanly (Collect + Receipts)",
+          0 if (rc1 == 0 and rc2 == 0) else 1, 0)
+    # The workflow is itself a receipts trigger (§3's machinery list,
+    # made mechanical in check-receipts.py's CHECK_PATTERNS).
+    wf = t / "wftree"
+    w(wf / ".github" / "workflows" / "checks.yml", "fixture workflow\n")
+    w(wf / "tests" / "mutation-receipts.json", json.dumps({"receipts": []}))
+    check("receipts: a changed checks workflow with no receipt is refused by the gate",
+          run_receipts(wf, [".github/workflows/checks.yml"]), 1)
+    issue_receipt(wf, "fixture-wf", ".github/workflows/checks.yml",
+                  "mutation", [".github/workflows/checks.yml"])
+    check("receipts: a changed checks workflow named by a current receipt passes the gate",
+          run_receipts(wf, [".github/workflows/checks.yml"]), 0)
+
+total = 79
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

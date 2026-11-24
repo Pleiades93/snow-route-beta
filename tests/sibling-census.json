@@ -10431,6 +10431,12 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 beta-1285-offline-cluster"
+  },
+  {
+   "id": "machinery-issues-173-178",
+   "kind": "machinery-exempt",
+   "reason": "Machinery only: this round adds the receipts, census and mirrors gates as build-and-test steps in .github/workflows/checks.yml and updates the gate wording in DEVELOPMENT_RULES.md and docs/TESTING.md (rules 6-8); it changes no parts/ surface, so there are no anchors to enumerate.",
+   "issued": "2026-11-23 machinery-issues-173-178"
   }
  ]
 }

@@ -8493,6 +8493,100 @@
    "red": "gate attempt 1 (head 6abd08a2, run 45289771170): FAIL E18 trim observed at -1 with the extensionless flood; gate attempt 2 (head 8f10ca98, run 45291978253): FAIL E18 at -1 again - the .mvt flood covered the trigger template's own row (y=1490, x 1140-1439 inside the flooded 0-3099), so all 300 trigger fetches were cache hits; Codex P1 on that head confirmed by exercising the shipped worker (3100 tiles intact, zero fetches/writes/deletes)",
    "green": "the corrected check (flood at y=2000, disjoint from the trigger row; tile-key reading) passes in the PR #196 gate re-run on the head carrying this receipt; the run id is recorded in the round RECORD.md",
    "issued": "2026-11-23 offline-cluster"
+  },
+  {
+   "id": "gate-fixtures-registry-sync-neuter-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d109696211901d0a9e39f237f46a8371d33d65fa7640cc176c25fc7267d08c42",
+    "scripts/push.py": "682c41e19b2cc6ae90fadb020fa8574ea11127c8c5ced6c822aef373f5669980",
+    "scripts/sync-fix-checks.py": "b21af83d7bb863ac971a2e2f0e1b2f84305f216d59f5d566ee568c4329316db2"
+   },
+   "mutation": "Scratch copy of the tree with scripts/push.py's registry_sync_gate neutered to return None unconditionally (the vendored registry pair is never compared against the canonical registry, so a divergent vendored copy certifies every push).",
+   "red": "Gate fixtures 71 pass, 1 FAIL - exactly the registry-sync refusal case: a vendored registry diverging from the canonical registry pushes (exit 0) instead of refusing (want 1). The in-sync case still passes under the neuter.",
+   "green": "Gate fixtures 72 pass, 0 fail on the real tree, including both registry-sync cases (in-sync pushes, divergent refuses).",
+   "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "gate-fixtures-ci-wiring-neuter-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "5f66a0b474ab97790c2ca24bb477849bcc061d6f5081c4de3015ae4a8db6f4e2",
+    ".github/workflows/checks.yml": "f63f1fce852cf243c638abd0731a803954bd6b13700045020c6299c3d230af4a"
+   },
+   "mutation": "Scratch copy of the tree with the Collect step's diff line in .github/workflows/checks.yml neutered to write an empty changed-files list (the CI wiring supplies no triggering paths to the gate steps downstream).",
+   "red": "Gate fixtures 77 pass, 2 FAIL - exactly the CI wiring cases: the Collect step no longer supplies the exact changed set, and the Receipts step's refusal never fires (the changed proof reaches no gate). All other cases pass under the neuter.",
+   "green": "Gate fixtures 79 pass, 0 fail on the real tree, including all seven CI wiring / workflow-scope cases.",
+   "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "gate-fixtures-receipts-workflow-scope-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "5f66a0b474ab97790c2ca24bb477849bcc061d6f5081c4de3015ae4a8db6f4e2",
+    "scripts/check-receipts.py": "2b2915b1e304ff1951708615e8eb43e09f2a97d28db15605ecbefb5c18dcab00"
+   },
+   "mutation": "Scratch copy of the tree with '.github/workflows/checks.yml' removed from CHECK_PATTERNS in scripts/check-receipts.py (the checks workflow stops being a receipts trigger, so a workflow change needs no mutation receipt - the gap DEVELOPMENT_RULES S3's machinery clause forbids).",
+   "red": "Gate fixtures 78 pass, 1 FAIL - exactly the workflow-scope case: a changed checks workflow with no receipt is accepted by the gate (exit 0) instead of refused (want 1).",
+   "green": "Gate fixtures 79 pass, 0 fail on the real tree.",
+   "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "gate-fixtures-registry-sync-neuter-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "5f66a0b474ab97790c2ca24bb477849bcc061d6f5081c4de3015ae4a8db6f4e2",
+    "scripts/push.py": "682c41e19b2cc6ae90fadb020fa8574ea11127c8c5ced6c822aef373f5669980",
+    "scripts/sync-fix-checks.py": "b21af83d7bb863ac971a2e2f0e1b2f84305f216d59f5d566ee568c4329316db2"
+   },
+   "mutation": "Scratch copy of the tree with scripts/push.py's registry_sync_gate neutered to return None unconditionally (the vendored registry pair is never compared against the canonical registry). Re-observation of r1 after the CI wiring cases joined the fixture suite (the suite grew; the sync cases are unchanged).",
+   "red": "Gate fixtures 78 pass, 1 FAIL - exactly the registry-sync refusal case: a vendored registry diverging from the canonical registry pushes (exit 0) instead of refusing (want 1).",
+   "green": "Gate fixtures 79 pass, 0 fail on the real tree, including both registry-sync cases.",
+   "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "gate-fixtures-ci-wiring-neuter-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "99dfb7394fb91a0290c293c1c95607a942e45b88c3bd3f1b3ab9f5b13fb5e740",
+    ".github/workflows/checks.yml": "f63f1fce852cf243c638abd0731a803954bd6b13700045020c6299c3d230af4a"
+   },
+   "mutation": "Scratch copy of the tree with the Collect step's diff line in .github/workflows/checks.yml neutered to write an empty changed-files list (the CI wiring supplies no triggering paths to the gate steps downstream). Re-issuance of r1: a co-pinned file changed (the sync fixture cases learned to name a fixture-local runner after PR #197's first vendored head failed in CI on the maintainer-only default path); the mutation and its red observation are unchanged.",
+   "red": "Gate fixtures 77 pass, 2 FAIL - exactly the CI wiring cases: the Collect step no longer supplies the exact changed set, and the Receipts step's refusal never fires (the changed proof reaches no gate). All other cases pass under the neuter.",
+   "green": "Gate fixtures 79 pass, 0 fail on the real tree, including all seven CI wiring / workflow-scope cases.",
+   "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "gate-fixtures-receipts-workflow-scope-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "99dfb7394fb91a0290c293c1c95607a942e45b88c3bd3f1b3ab9f5b13fb5e740",
+    "scripts/check-receipts.py": "2b2915b1e304ff1951708615e8eb43e09f2a97d28db15605ecbefb5c18dcab00"
+   },
+   "mutation": "Scratch copy of the tree with '.github/workflows/checks.yml' removed from CHECK_PATTERNS in scripts/check-receipts.py (the checks workflow stops being a receipts trigger). Re-issuance of r1 for the same co-pin refresh as gate-fixtures-ci-wiring-neuter-r2; the mutation and its red observation are unchanged.",
+   "red": "Gate fixtures 78 pass, 1 FAIL - exactly the workflow-scope case: a changed checks workflow with no receipt is accepted by the gate (exit 0) instead of refused (want 1).",
+   "green": "Gate fixtures 79 pass, 0 fail on the real tree.",
+   "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "gate-fixtures-registry-sync-neuter-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "99dfb7394fb91a0290c293c1c95607a942e45b88c3bd3f1b3ab9f5b13fb5e740",
+    "scripts/push.py": "682c41e19b2cc6ae90fadb020fa8574ea11127c8c5ced6c822aef373f5669980",
+    "scripts/sync-fix-checks.py": "b21af83d7bb863ac971a2e2f0e1b2f84305f216d59f5d566ee568c4329316db2"
+   },
+   "mutation": "Scratch copy of the tree with scripts/push.py's registry_sync_gate neutered to return None unconditionally. Re-issuance of r2 for the same co-pin refresh as gate-fixtures-ci-wiring-neuter-r2; the mutation and its red observation are unchanged.",
+   "red": "Gate fixtures 78 pass, 1 FAIL - exactly the registry-sync refusal case: a vendored registry diverging from the canonical registry pushes (exit 0) instead of refusing (want 1).",
+   "green": "Gate fixtures 79 pass, 0 fail on the real tree, including both registry-sync cases.",
+   "issued": "machinery-issues-173-178"
   }
  ]
 }
