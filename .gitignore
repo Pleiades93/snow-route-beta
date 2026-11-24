@@ -4,3 +4,4 @@ __pycache__/
 node_modules/
 tests/browser/.sw-fixture/
 tests/browser/.upd-fixture/
+tests/browser/*.png
