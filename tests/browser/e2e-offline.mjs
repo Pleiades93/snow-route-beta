@@ -252,15 +252,28 @@ ok('E16 process killed mid-download: relaunch on the same profile and the resume
 // within a few batches (a single end-state reading is racy - the trim can
 // fire mid-flood while the page-side puts keep landing, as the first CI run
 // of this check showed: pack intact at 897/897, count caught at 3126).
-await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); const res = new Response('x'); for (let i = 0; i < 3100; i++) await tc.put('https://tiles.basemaps.cartocdn.com/flood/' + i, res.clone()); return true; })()`);
+// Beta 1.285 (issue #175): the cap counts VECTOR TILES ONLY, so the flood
+// uses the realistic CARTO .mvt shape (the same correction F-03's fixture
+// took in sw.test) and the reading below counts tile keys - the quantity
+// the policy actually caps; glyphs/sprites/styles resident in the cache
+// are exempt from the trim and no longer pollute the observation. With
+// the old extensionless flood this check failed on the 1.285 worker
+// (trim observed at -1: exempt entries are never counted or cut, so the
+// total count never fell to the threshold). The flood's y (2000) is
+// DISJOINT from the trigger loop's template (y=1490): a first attempt
+// flooded the template's own row, so every trigger fetch was a cache
+// hit - cacheFirst returns hits before bumpTileCount, no trim could
+// ever fire, and the check failed at -1 again (gate attempt 2; Codex
+// flagged the same collision as a P1 on that head).
+await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); const res = new Response('x'); for (let i = 0; i < 3100; i++) await tc.put('https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/' + i + '/2000.mvt', res.clone()); return true; })()`);
 let trimSeen = -1;
 for (let batch = 0; batch < 60 && trimSeen < 0; batch++) {
   await ev2(`(async () => { const tpl = 'https://tiles.basemaps.cartocdn.com/v/20261026-01/vectortiles/carto.streets/v2/12/{x}/1490.mvt'; for (let i = 0; i < 5; i++) { try { await fetch(tpl.replace('{x}', ${1140 + batch * 5} + i)); } catch (e) {} } return true; })()`);
-  const n = JSON.parse(await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); return JSON.stringify((await tc.keys()).length); })()`));
+  const n = JSON.parse(await ev2(`(async () => { const tc = await caches.open('snowroute-tiles-v1'); return JSON.stringify((await tc.keys()).filter(k => new URL(k.url).pathname.endsWith('.mvt')).length); })()`));
   if (n <= 3024) trimSeen = n;
 }
 const e18 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const base = ${JSON.stringify(baseKeys)}; let have = 0; for (const u of base) { if (await oc.match(u)) have++; } return JSON.stringify({ have }); })()`));
-ok('E18 browsing-cache eviction (flooded past its cap, trim observed at ' + trimSeen + ') leaves the downloaded pack untouched | pack ' + e18.have + ' of ' + baseKeys.length, e18.have === baseKeys.length && trimSeen > 0);
+ok('E18 browsing-cache eviction (flooded past its tile cap, tile trim observed at ' + trimSeen + ') leaves the downloaded pack untouched | pack ' + e18.have + ' of ' + baseKeys.length, e18.have === baseKeys.length && trimSeen > 0);
 // E17 (Beta 1.74 audit E02): process death vs APP STATE. E14/E16 prove the
 // map cache survives a kill; this proves the WORK does: an open clean, its
 // session marker, marked streets and the GPS trail, all written through the

@@ -10392,6 +10392,45 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "offline-cluster-1285",
+   "kind": "machinery-exempt",
+   "reason": "Worker round: src/sw.js + its generated root copy, the sw suite, receipts, README counts and docs only - no parts/ surface changes, so no sibling census rows derive.",
+   "issued": "2026-11-23 beta-1285-offline-cluster"
+  },
+  {
+   "id": "offline-release-1285",
+   "kind": "app",
+   "anchors": {
+    "functions": [],
+    "elements": []
+   },
+   "changed": [
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "a271bdfb82dfaa7464df5eb13ab0fc721deeffa672180b3657cd954fed5f5ddc",
+    "parts/app2.js": "89f14cbd1a555ee7fc26a2658fb72a15ffffc571726b818fc29f084a903c4757",
+    "parts/app3.js": "32a294c5e73690cee65be215c1d6d145e29ae4224171b620bf5d4fee9c59375d",
+    "parts/app4.js": "e3f5c009919742ac66741aa6a1811917df29460cdbee5cf4eab4c5244773e961",
+    "parts/app5.js": "c76a2e97703abc115e832bd66157ce08b01540533b3e27545f002c29454e150d",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "ae69f4bff3c901a068f0a02436ae052545a9accf993a465d4cf1ec0dda5d5fa8",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-23 beta-1285-offline-cluster"
   }
  ]
 }

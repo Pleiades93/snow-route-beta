@@ -8428,6 +8428,71 @@
    "red": "selftest-round112 on the mutated Beta 1.284 tree: '01 failed flush -> rebuilt editor says Not saved - Storage problem' FAILS (16 passed, 1 failed)",
    "green": "selftest-round112: 17 passed, 0 failed on the byte-exact revert. This r2 refreshes the 1.279 receipt's pins on the 1.284 tree: the selftest's stDel extraction marker was re-pointed to the handler's event-taking head (Beta 1.284 #170) with its claim unchanged, and app2/app3 carry the round's call-site changes",
    "issued": "2026-11-23 beta-1284-marking-cluster"
+  },
+  {
+   "id": "offline171-shell-keys",
+   "check": "tests/sw.test.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/sw.test.mjs": "d4e7f2456c1698a4eebf5829a62e7b901dd9d081a76a716ff1c98e821332711c",
+    "src/sw.js": "051bfdafedc51edb89521f01528f4f22104a71348743b0b7462aeef31323c0fe"
+   },
+   "mutation": "src/sw.js at base f29ce154 (pre-1.285): netFirst stored a fast navigation under the request URL, query included, and the 2s shortcut, error and catch fallbacks matched the shell with ignoreSearch, so an older query-keyed entry wins insertion order forever; activate never pruned inside the shell cache",
+   "red": "New suite against the base worker (scratch copy, work/offline-cluster-2026-11-23/red171): exit 1, exactly 5 FAIL - '#171 offline root navigation serves BUILD-C', '#171 HTTP 503 on a query navigation serves BUILD-C', '#171 stalled query navigation serves BUILD-C at the shortcut', '#171 fast query navigation stores only the two canonical keys', '#171 activation prunes only stray entries before claiming clients'; all 45 pre-existing assertions PASS (47 PASS total)",
+   "green": "Shipped worker: node tests/sw.test.mjs exit 0, 52/52 PASS (45 pre-existing + 7 new #171 assertions)",
+   "issued": "2026-11-23 offline-cluster round (issue #171 takeover), local run"
+  },
+  {
+   "id": "offline171-narrow-prune",
+   "check": "tests/sw.test.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/sw.test.mjs": "d4e7f2456c1698a4eebf5829a62e7b901dd9d081a76a716ff1c98e821332711c",
+    "src/sw.js": "051bfdafedc51edb89521f01528f4f22104a71348743b0b7462aeef31323c0fe"
+   },
+   "mutation": "src/sw.js activate with the Codex draft's broad keep-set prune (keep only scope, scope+index.html and CORE URLs; delete every other shell-cache entry)",
+   "red": "Suite against the broad-prune worker (scratch copy, work/offline-cluster-2026-11-23/red171-broad): exit 1, exactly 2 FAIL - '#171 activation prunes only stray entries before claiming clients' and '#171 activation keeps legitimate non-shell residents (narrow prune)' - the prune deleted a same-origin asset entry and a non-CORE CDN entry; all navigation checks PASS (50 PASS total)",
+   "green": "Shipped narrowed prune (only query-keyed variants of the two shell keys are deleted): suite exit 0, 52/52 PASS",
+   "issued": "2026-11-23 offline-cluster round (issue #171 takeover adjudication), local run"
+  },
+  {
+   "id": "offline175-tile-trim",
+   "check": "tests/sw.test.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/sw.test.mjs": "2d57c72770ed25bc3392f8377628a594ad24b34d0d6ae563f664227bb94491f2",
+    "src/sw.js": "18c5864567555a5eee6d6250c91d569e2b5409d11b27d3dae192b19d7e698f1a"
+   },
+   "mutation": "src/sw.js at the #171 commit of this branch (pre-#175): bumpTileCount's batched trim deleted the browsing cache's oldest keys indiscriminately - glyphs (.pbf), sprites and style JSON counted toward MAX_TILES and were evicted oldest-first, and a cacheFirst hit never re-inserts, so a first-view glyph range stayed oldest until evicted",
+   "red": "Current suite against the pre-#175 worker (scratch copy, work/offline-cluster-2026-11-23/red175): exit 1, exactly 3 FAIL - '#175 the oldest browsing glyph survives the trim', '#175 the oldest browsing sprite survives the trim', '#175 the browsing glyph is still served offline'; the F-03 cap assertion and the exactly-3000 tile count PASS on the old worker (53 PASS total) - the cap existed, it counted the wrong entries",
+   "green": "Shipped tile-only trim: node tests/sw.test.mjs exit 0, 56/56 PASS (52 prior + 4 new #175 assertions)",
+   "issued": "2026-11-23 offline-cluster round (issue #175 takeover), local run"
+  },
+  {
+   "id": "offline-e18-tile-flood",
+   "check": "tests/browser/e2e-offline.mjs",
+   "kind": "historical",
+   "files": {
+    "src/sw.js": "18c5864567555a5eee6d6250c91d569e2b5409d11b27d3dae192b19d7e698f1a",
+    "tests/browser/e2e-offline.mjs": "80a72c4508efb4a62596deafeb6168edc16102a2e01b426141926d65a96bc841"
+   },
+   "mutation": "premise correction, no code mutation: E18's flood shape and observation predate the tile-only cap (issue #175) - extensionless flood entries are exempt from the trim by design",
+   "red": "CI gate attempt 1 on PR #196 head 6abd08a2 (run 45289771170, offline-e2e job 138095820763): FAIL E18 - trim observed at -1, pack intact 897 of 897",
+   "green": "the corrected check (realistic CARTO .mvt flood; the reading counts tile keys) passes in the PR #196 gate re-run on the head carrying this receipt; the run id is recorded in the round RECORD.md",
+   "issued": "2026-11-23 offline-cluster"
+  },
+  {
+   "id": "offline-e18-tile-flood-2",
+   "check": "tests/browser/e2e-offline.mjs",
+   "kind": "historical",
+   "files": {
+    "src/sw.js": "18c5864567555a5eee6d6250c91d569e2b5409d11b27d3dae192b19d7e698f1a",
+    "tests/browser/e2e-offline.mjs": "97a345658f2a27b13fecb953eb7256403e478ac6009f4f89a471b2910ca37783"
+   },
+   "mutation": "premise correction, no code mutation: E18's flood shape and observation predate the tile-only cap (issue #175); the flood must be .mvt-shaped AND disjoint from the trigger template's row, or every trigger fetch is a cache hit and no trim can fire",
+   "red": "gate attempt 1 (head 6abd08a2, run 45289771170): FAIL E18 trim observed at -1 with the extensionless flood; gate attempt 2 (head 8f10ca98, run 45291978253): FAIL E18 at -1 again - the .mvt flood covered the trigger template's own row (y=1490, x 1140-1439 inside the flooded 0-3099), so all 300 trigger fetches were cache hits; Codex P1 on that head confirmed by exercising the shipped worker (3100 tiles intact, zero fetches/writes/deletes)",
+   "green": "the corrected check (flood at y=2000, disjoint from the trigger row; tile-key reading) passes in the PR #196 gate re-run on the head carrying this receipt; the run id is recorded in the round RECORD.md",
+   "issued": "2026-11-23 offline-cluster"
   }
  ]
 }

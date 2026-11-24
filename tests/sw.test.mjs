@@ -12,9 +12,25 @@ if (start < 0 || end < 0) throw new Error('worker functions not found');
 const fnSrc = sw.slice(start, end);
 
 const store = new Map();   // url -> Response
+const withoutSearch = url => {
+  const parsed = new URL(url);
+  parsed.search = '';
+  return parsed.href;
+};
 const cacheMock = {
-  async match(r) { const u = typeof r === 'string' ? r : r.url; return store.get(u); },
-  async put(r, res) { const u = typeof r === 'string' ? r : r.url; store.set(u, res); }
+  async match(r, { ignoreSearch = false } = {}) {
+    const url = typeof r === 'string' ? r : r.url;
+    if (!ignoreSearch) return store.get(url)?.clone();
+    const target = withoutSearch(url);
+    for (const [key, response] of store) {
+      if (withoutSearch(key) === target) return response.clone();
+    }
+  },
+  async put(r, res) {
+    const url = typeof r === 'string' ? r : r.url;
+    store.delete(url);
+    store.set(url, res);
+  }
 };
 globalThis.caches = { async open() { return cacheMock; } };
 globalThis.self = { registration: { scope: 'https://example.test/app/' } };
@@ -71,6 +87,7 @@ async function advance(ms) {
 }
 
 const req = new Request('https://example.test/app/');
+const shellCacheName = 'snowroute-shell-v1';
 const cachedResp = new Response('CACHED-SHELL', { status: 200 });
 const results = [];
 const check = (name, cond) => results.push([name, !!cond]);
@@ -161,7 +178,7 @@ fetchImpl = () => new Promise(() => {});   // never settles
 const navReq = { url: req.url, mode: 'navigate' };
 const t0 = Date.now();
 let servedAt = null;
-const p11 = netFirst(navReq, 'c').then(v => { servedAt = Date.now() - t0; return v; });
+const p11 = netFirst(navReq, shellCacheName).then(v => { servedAt = Date.now() - t0; return v; });
 await advance(3000);
 r = await p11;
 check('B03 stalled navigation falls back to cache', (await r.text()) === 'CACHED-SHELL');
@@ -177,7 +194,7 @@ fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); retur
 const navReq2 = { url: req.url, mode: 'navigate' };
 const t1 = Date.now();
 let servedAt1 = null;
-const p11b = netFirst(navReq2, 'c').then(v => { servedAt1 = Date.now() - t1; return v; });
+const p11b = netFirst(navReq2, shellCacheName).then(v => { servedAt1 = Date.now() - t1; return v; });
 await advance(2500);
 r = await p11b;
 check('1.221 slow navigation serves the cached shell at once', (await r.text()) === 'CACHED-SHELL' && servedAt1 < 4000);
@@ -189,7 +206,7 @@ check('1.221 background refresh updates the cached shell', (await store.get(req.
 // to serve early).
 store.clear();
 fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('FIRST-SHELL', { status: 200 }); };
-const p11c = netFirst(navReq2, 'c'); await advance(5000); r = await p11c;
+const p11c = netFirst(navReq2, shellCacheName); await advance(5000); r = await p11c;
 check('1.221 uncached slow navigation awaits the network answer', (await r.text()) === 'FIRST-SHELL');
 
 // 11d. Beta 1.221 gate fix (Codex P2, PR #98): the Update reload navigation
@@ -210,10 +227,36 @@ check('1.221 updnav stores the new shell under the index.html key', (await store
 store.clear(); store.set(req.url, cachedResp.clone());
 fetchImpl = async () => { await new Promise(res => setTimeout(res, 4200)); return new Response('FRESH-SHELL', { status: 200 }); };
 const navReqQ = { url: req.url + '?from=shortcut', mode: 'navigate' };
-const p11e = netFirst(navReqQ, 'c'); await advance(2500); r = await p11e;
+const p11e = netFirst(navReqQ, shellCacheName); await advance(2500); r = await p11e;
 check('1.221 query navigation serves the cached shell at once', (await r.text()) === 'CACHED-SHELL');
 await advance(3000);
 check('1.221 query navigation background refresh updates the canonical shell', (await store.get(req.url).text()) === 'FRESH-SHELL');
+
+// #171: an older query entry precedes the rewritten canonical shell.
+store.clear();
+const shareNav = { url: req.url + '?share=1', mode: 'navigate' };
+await cacheMock.put(req.url, new Response('BUILD-A'));
+await cacheMock.put(shareNav, new Response('BUILD-B'));
+await cacheMock.put(req.url, new Response('BUILD-C'));
+fetchImpl = async () => { throw new Error('offline'); };
+r = await netFirst(navReq, shellCacheName);
+check('#171 offline root navigation serves BUILD-C', (await r.text()) === 'BUILD-C');
+fetchImpl = async () => new Response('SERVER ERROR', { status: 503 });
+r = await netFirst(shareNav, shellCacheName);
+check('#171 HTTP 503 on a query navigation serves BUILD-C', (await r.text()) === 'BUILD-C');
+fetchImpl = () => new Promise(() => {});
+const stalledShare = netFirst(shareNav, shellCacheName);
+await advance(2000);
+r = await stalledShare;
+check('#171 stalled query navigation serves BUILD-C at the shortcut', (await r.text()) === 'BUILD-C');
+
+store.clear();
+fetchImpl = async () => new Response('BUILD-D');
+r = await netFirst(shareNav, shellCacheName);
+check('#171 fast query navigation returns BUILD-D', (await r.text()) === 'BUILD-D');
+check('#171 fast query navigation stores only the two canonical keys',
+  store.size === 2 && (await store.get(req.url)?.text()) === 'BUILD-D'
+    && (await store.get(req.url + 'index.html')?.text()) === 'BUILD-D');
 
 // 12. Beta 1.48 (audit B07): SWR answers from cache at once AND binds the
 // background refresh to the fetch event's lifetime; the refresh lands.
@@ -262,8 +305,8 @@ check('1.57 seed: after a restart the counter re-seeds from the real size (26 st
 
 // 14. Beta 1.94 (audit F-03): the downloaded offline pack lives in its OWN
 // cache (snowroute-offline-v1). mapFetch serves a pack hit with the network
-// DOWN, and the browsing cache's FIFO eviction (which trims
-// snowroute-tiles-v1 to MAX_TILES) can never reach into the pack cache -
+// DOWN, and the browsing cache's FIFO eviction (which trims vector tiles
+// in snowroute-tiles-v1 to MAX_TILES) can never reach into the pack cache -
 // before 1.94 the pack shared the browsing cache and ordinary browsing
 // could silently evict the download the operator was relying on. This case
 // needs NAME-AWARE cache mocks; the earlier cases shared one store.
@@ -281,16 +324,40 @@ fetchImpl = async () => { throw new Error('offline'); };
 r = await mapFetch(packTile, null);
 check('F-03 pack hit is served with the network down', (await r.text()) === 'PACK-TILE');
 const floodStore = new Map();
-for (let i = 0; i < 3010; i++) floodStore.set('https://tiles.basemaps.cartocdn.com/flood/' + i, new Response('F'));
+for (let i = 0; i < 3010; i++) floodStore.set('https://tiles.basemaps.cartocdn.com/v/t/15/1/' + i + '.mvt', new Response('F'));
 namedStores.set('snowroute-tiles-v1', floodStore);
 fetchImpl = async () => new Response('FRESH-TILE', { status: 200 });
 delete cacheFirst._n; // fresh worker: the eviction counter re-seeds from the flooded cache
-for (let i = 0; i < 14; i++) await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/fresh/' + i), 'snowroute-tiles-v1'); // 14 puts cross the seeded counter's first batch boundary (3025): the trim fires exactly there - between boundaries the cache may sit up to 24 over the cap by design (Beta 1.50 batching)
+for (let i = 0; i < 14; i++) await cacheFirst(new Request('https://tiles.basemaps.cartocdn.com/v/t/15/2/' + i + '.mvt'), 'snowroute-tiles-v1'); // 14 puts cross the seeded counter's first batch boundary (3025): the trim fires exactly there - between boundaries the cache may sit up to 24 over the cap by design (Beta 1.50 batching)
 check('F-03 eviction trims the browsing cache back to its cap at the batch boundary', floodStore.size === 3000);
 check('F-03 the pack entry survives browsing-cache eviction', namedStores.get('snowroute-offline-v1').has(packTile.url));
 fetchImpl = async () => { throw new Error('offline'); };
 r = await mapFetch(packTile, null);
 check('F-03 pack hit still served after the eviction ran', (await r.text()) === 'PACK-TILE');
+
+// 14a. Beta 1.285 (issue #175): the earliest glyph and sprite survive a browsing trim,
+// and the glyph still answers a map request when the network is down.
+const glyphReq = new Request('https://protomaps.github.io/basemaps-assets/fonts/Noto%20Sans%20Regular/0-255.pbf');
+const spriteReq = new Request('https://protomaps.github.io/basemaps-assets/sprites/v4/light.png');
+const mixedStore = new Map([
+  [glyphReq.url, new Response('BROWSING-GLYPH')],
+  [spriteReq.url, new Response('BROWSING-SPRITE')]
+]);
+for (let i = 0; i < 3010; i++) mixedStore.set('https://tiles.basemaps.cartocdn.com/v/t/15/1/' + i + '.mvt', new Response('TILE'));
+namedStores.set('snowroute-tiles-v1', mixedStore);
+delete cacheFirst._n;
+fetchImpl = async () => new Response('FRESH-TILE');
+// 3012 seeded entries plus 12 puts and the initial post-put increment reach 3025.
+for (let i = 0; i < 12; i++) {
+  await mapFetch(new Request('https://tiles.basemaps.cartocdn.com/v/t/15/2/' + i + '.mvt?v=1'), null);
+}
+check('#175 the oldest browsing glyph survives the trim', mixedStore.has(glyphReq.url));
+check('#175 the oldest browsing sprite survives the trim', mixedStore.has(spriteReq.url));
+const mixedTileCount = [...mixedStore.keys()].filter(url => url.includes('.mvt')).length;
+check('#175 browsing vector tiles trim to exactly 3000 in the mixed cache', mixedTileCount === 3000);
+fetchImpl = async () => { throw new Error('offline'); };
+r = await mapFetch(glyphReq, null);
+check('#175 the browsing glyph is still served offline', (await r.text()) === 'BROWSING-GLYPH');
 
 // 15. Beta 1.96 (audit-2, N-2): a request in reload mode (the Download button's
 // deliberate re-download, which fetches with cache:'reload') must BYPASS the
@@ -308,16 +375,18 @@ check('N-2 a reload-mode request bypasses the pack and returns the network respo
 // scope + 'index.html' (the explicit-file launch).
 {
   const iStart = sw.indexOf("self.addEventListener('install'");
-  const iEnd = sw.indexOf("self.addEventListener('activate'");
+  const iEnd = sw.indexOf('async function netFirst');
   const coreStart = sw.indexOf('const CORE = [');
   const coreEnd = sw.indexOf('];', coreStart) + 2;
   const shellStore = new Map();
   const shellCache = {
     async put(r, res) { const u = typeof r === 'string' ? r : r.url; shellStore.set(u, res); },
-    async add(r) { const res = await fetch(r); if (!res || !res.ok) throw new Error('add failed'); shellStore.set(typeof r === 'string' ? r : r.url, res); }
+    async add(r) { const res = await fetch(r); if (!res || !res.ok) throw new Error('add failed'); shellStore.set(typeof r === 'string' ? r : r.url, res); },
+    async keys() { return [...shellStore.keys()].map(url => ({ url })); },
+    async delete(r) { return shellStore.delete(r.url); }
   };
   const handlers = {}; let skipped = false;
-  globalThis.caches = { async open() { return shellCache; } };
+  globalThis.caches = { async open() { return shellCache; }, async keys() { return [shellCacheName]; } };
   globalThis.self = { registration: { scope: 'https://example.test/app/' }, addEventListener: (n, f) => { handlers[n] = f; }, skipWaiting: async () => { skipped = true; } };
   eval(constLine + '\n' + sw.slice(coreStart, coreEnd) + '\n' + sw.slice(iStart, iEnd));
   const runInstall = async () => { let wu = null, err = null; handlers.install({ waitUntil(p) { wu = p; } }); try { await wu; } catch (e) { err = e; } return err; };
@@ -327,6 +396,25 @@ check('N-2 a reload-mode request bypasses the pack and returns the network respo
   check('C-07 shell cached under the scope', shellStore.has('https://example.test/app/'));
   check('C-07 shell cached under scope + index.html', shellStore.has('https://example.test/app/index.html'));
   check('C-07 skipWaiting follows a good install', skipped === true);
+  // #171: activation keeps the install's shell and CORE entries before claiming clients.
+  const installedKeys = [...shellStore.keys()];
+  shellStore.set(shareNav.url, new Response('STALE'));
+  shellStore.set(req.url + 'index.html?v=1', new Response('STALE'));
+  // Takeover adjudication: the prune is NARROW - only shell-key variants go.
+  // Legitimate non-shell residents of the shell cache (a same-origin asset
+  // netFirst stored under its own URL, a non-CORE CDN file) must survive.
+  const residentKeys = ['https://example.test/app/favicon.svg', 'https://cdn.jsdelivr.net/npm/other-lib@1/file.js'];
+  for (const u of residentKeys) shellStore.set(u, new Response('RESIDENT'));
+  let claimedKeys;
+  self.clients = { async claim() { claimedKeys = [...shellStore.keys()]; } };
+  let activation;
+  handlers.activate({ waitUntil(p) { activation = p; } });
+  await activation;
+  check('#171 activation prunes only stray entries before claiming clients',
+    claimedKeys?.length === 4 + residentKeys.length && installedKeys.every(url => claimedKeys.includes(url)));
+  check('#171 activation keeps legitimate non-shell residents (narrow prune)',
+    residentKeys.every(url => claimedKeys.includes(url)));
+
   shellStore.clear(); skipped = false;
   fetchImpl = async (r) => { const u = typeof r === 'string' ? r : r.url; if (u === 'https://example.test/app/') throw new Error('offline'); return new Response('LIB', { status: 200 }); };
   err = await runInstall();
