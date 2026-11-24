@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "cca1f52bc9923c03323c7c6f1d30b9c15b0ee2f4b55c276b6282eb851d78a368",
+  "canonical_registry_sha256": "c32165a135fce632ceced19a1ff96461f7f2a0be1c9f2b5540848c32ecafa012",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1490,
-   "included": 1460,
+   "canonical": 1492,
+   "included": 1462,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -12991,6 +12991,24 @@
    "fix": "Issue #178 (Codex P1 on PR #197): DEVELOPMENT_RULES S3 names the checks workflow as test machinery, changed only with verdict fixtures and mutation receipts - scripts/check-receipts.py's CHECK_PATTERNS now includes .github/workflows/checks.yml so the receipts gate enforces that mechanically (the gate fixtures' CI wiring cases exercise the workflow's own step bodies). If this probe fails, the workflow fell out of the receipts scope - restore the pattern; a workflow change without fixtures + receipt is the gap this closes.",
    "pattern": "\".github/workflows/checks.yml\",",
    "file": "scripts/check-receipts.py",
+   "type": "grep_present",
+   "added": "2026-11-23"
+  },
+  {
+   "id": "sweep-177-firebase-staged-refs-step",
+   "fix_id": "sweep-177-firebase-staged-refs",
+   "fix": "Sweep round (issue #177): the manual Firebase deploy's staging step asserts file COUNTS, which passed while four referenced icons were missing from the publish tree. The workflow now carries a 'Validate staged references resolve (issue #177)' step running scripts/validate-staged-tree.py, which compares the staged set against every local reference in the staged page and manifest. If this probe fails, the validation step was removed - restore it; a hand-kept staging list with no reference tripwire is the defect class #177 names.",
+   "pattern": "Validate staged references resolve (issue #177)",
+   "file": ".github/workflows/firebase-manual-deploy.yml",
+   "type": "grep_present",
+   "added": "2026-11-23"
+  },
+  {
+   "id": "sweep-177-firebase-staged-refs-icons",
+   "fix_id": "sweep-177-firebase-staged-refs",
+   "fix": "Sweep round (issue #177): the Firebase staging cp list now stages the four icons the page and manifest reference (favicon.svg, icon-16.png and icon-32.png from parts/head.html, icon-1024.png from manifest.json) - 11 root files, 36 staged total. If this probe fails, an icon fell out of the staging list; the reference validation step should also have caught it at deploy time.",
+   "pattern": "favicon.svg icon-16.png icon-32.png icon-1024.png",
+   "file": ".github/workflows/firebase-manual-deploy.yml",
    "type": "grep_present",
    "added": "2026-11-23"
   }
