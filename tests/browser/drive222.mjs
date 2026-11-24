@@ -68,17 +68,18 @@ try {
   await ev(`(() => { window.__ddT0 = performance.now(); document.querySelector('#rmRoutes .routeRow[data-route="route-3"]').click(); return true; })()`);
   const animC = await J(`(() => { const c = document.querySelector('#rmRoutes .routeDrop[data-route="route-3"]'); const a = c.getAnimations().find(x => x.transitionProperty === 'height'); return a ? { dur: a.effect.getTiming().duration, st: a.playState } : null; })()`);
   let closeLand = -1; let lastSt = null; for (let i = 0; i < 25; i++) { lastSt = await J(`(() => { const c = document.querySelector('#rmRoutes .routeDrop[data-route="route-3"]'); if (!c) return 'nocard'; const a = c.getAnimations().find(x => x.transitionProperty === 'height'); return a ? a.playState : 'gone'; })()`); if (lastSt === 'finished' || lastSt === 'gone') { closeLand = await J(`performance.now() - window.__ddT0`); break; } await sleep(30); }
-  await sleep(520); await ev(STOPREC); // keep sampling past the landing: the spring round runs 335-615ms and must be witnessed, not inferred
+  await sleep(520); await ev(STOPREC); // keep sampling past the landing: the spring round (335-615ms) must be witnessed
   const csmp = await J(`window.__dd`); const ct0 = await J(`window.__ddT0`);
-  const elC = await J(`performance.now() - window.__ddT0`); if (elC < 1100) await sleep(1100 - elC); // the closed read judges the SETTLE, so it waits out the spring (ends 615ms) with margin
+  const elC = await J(`performance.now() - window.__ddT0`); if (elC < 1100) await sleep(1100 - elC); // the closed read judges the settle, so it waits out the spring with margin
   const closed = await J(`(() => { const c = document.querySelector('#rmRoutes .routeDrop[data-route="route-3"]'); const row = document.querySelector('#rmRoutes .routeRow[data-route="route-3"]'); const back = document.getElementById('rmBack').getBoundingClientRect().top; return { disp: getComputedStyle(c).display, td: getComputedStyle(c).transitionDuration, rad: parseFloat(getComputedStyle(row).borderBottomLeftRadius), back }; })()`);
   const smpLand = (() => { const hit = csmp.find(s => s.h <= 1); return hit ? hit.t - ct0 : -1; })();
   const closeDur = closeLand; // two landing witnesses (the transition's own finish, polled; the first geometry sample at h<=1) - this VM starves one or the other on a given run (healthy runs: poll ~360-520, samples ~359), so the pace passes on either, with the 335 duration itself asserted from the running animation above
-  const holdSmp = csmp.filter(s => s.t - ct0 >= 0 && s.t - ct0 <= 300); // the hold window: samples from the click through 300ms (35ms margin under the 335ms hold - the whole close)
-  const holdSquare = holdSmp.length >= 4 && holdSmp.every(s => s.rad <= 0.5);
-  const roundOver = csmp.some(s => s.t - ct0 > 360 && s.t - ct0 < 950 && ((s.rad > 0.5 && s.rad < 13.9) || s.rad > 14.1)); // the spring witnessed AFTER the card is gone: a sample caught mid-round, or in the bloom past 14 the overshoot curve produces - never capped at 14
+  const holdSmp = csmp.filter(s => s.t - ct0 >= 0 && s.t - ct0 <= 300); // the hold window: the click through 300ms, 35ms under the 335ms hold
+  const cardUp = csmp.filter(s => s.h > 1); // samples while the card still stands (h > 1 = not yet landed)
+  const holdSquare = holdSmp.length >= 4 && holdSmp.every(s => s.rad <= 0.5) && cardUp.length >= 4 && cardUp.every(s => s.rad <= 0.5);
+  const roundOver = csmp.some(s => s.t - ct0 > 360 && s.t - ct0 < 950 && s.h <= 1 && ((s.rad > 0.5 && s.rad < 13.9) || s.rad > 14.1)); // the spring witnessed after the card lands: mid-round, or in the bloom past 14
   ok('B close pace: the close runs 335ms (the running transition own timing, NOT the 420 open) and lands in step (finish poll 280-520 or first flat sample 250-460) | ' + JSON.stringify({ anim: animC, land: closeDur, smpLand, lastSt }), animC !== null && animC.dur === 335 && ((closeDur > 280 && closeDur < 520) || (smpLand > 250 && smpLand < 460)));
-  ok('B close hold: the corners stay square through the whole 335ms close | holdSamples=' + holdSmp.length + ' maxRad=' + (holdSmp.length ? Math.max(...holdSmp.map(s => s.rad)) : -1), holdSquare);
+  ok('B close hold: the corners stay square through the whole 335ms close and for as long as the card stands | holdSamples=' + holdSmp.length + ' maxRad=' + (holdSmp.length ? Math.max(...holdSmp.map(s => s.rad)) : -1) + ' upSamples=' + cardUp.length + ' maxRadUp=' + (cardUp.length ? Math.max(...cardUp.map(s => s.rad)) : -1), holdSquare);
   ok('B close round-over: the corners round only after the card is gone, on the spring, not at the click and not as a snap | samples=' + csmp.length, roundOver);
   ok('B closed rest: the card leaves the layout, the corners settle at 14 and Back is home | ' + JSON.stringify(closed), closed.disp === 'none' && Math.abs(closed.rad - 14) < 0.5 && Math.abs(closed.back - rest.backTop) < 1.5);
 

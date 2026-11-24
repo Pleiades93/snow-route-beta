@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "b3ee66c3158f6c92350ec36a70dfe5043bc14884b82bab7c7d80aa12432a5fc6",
+  "canonical_registry_sha256": "6b37ba2b934f8ab0fa84e6ff56f504ce42b0b62eb0c189e565327d2e3c8e2ae7",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -12337,7 +12337,7 @@
     "dropdown-corner-close-hold"
    ],
    "file": "parts/head.html",
-   "fix": "Beta 1.291 corner timing v2 (Andrew's decision, 2026-11-24, from interactive samples - polished option C): on close the dropdown's bottom corners hold square for the FULL 335ms close, then round over 280ms on a spring curve (cubic-bezier(.34,1.35,.5,1)) settling at 14px; no press animation added - the .97 dip stays the tap-time press. Supersedes the Beta 1.289 timing (200ms hold, 135ms round) on Andrew's live verdict: the rounding showed while the card still stood. Observed by drive222's extended hold, post-close round-over and settle checks (mutation receipt corner-timing-v2-drive222).",
+   "fix": "Beta 1.291 corner timing v2 (Andrew's decision, 2026-11-24, from interactive samples - polished option C): on close the dropdown's bottom corners hold square for the FULL 335ms close, then round over 280ms on a spring curve (cubic-bezier(.34,1.35,.5,1)) settling at 14px; no press animation added - the .97 dip stays the tap-time press. Supersedes the Beta 1.289 timing (200ms hold, 135ms round) on Andrew's live verdict: the rounding showed while the card still stood. Observed by drive222's extended hold, post-close round-over and settle checks (mutation receipts corner-timing-v2-drive222 and corner-timing-v2-drive222-r2).",
    "fix_id": "dropdown-corner-timing-v2",
    "id": "dropdown1289-corner-close-hold",
    "pattern": "border-bottom-left-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms",
