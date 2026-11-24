@@ -50,9 +50,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Confirmation and branch gate
+        env:
+          DEPLOY_CONFIRM: ${{ inputs.confirm }}
         run: |
           set -euo pipefail
-          if [ "${{ inputs.confirm }}" != "DEPLOY" ]; then
+          if [ "$DEPLOY_CONFIRM" != "DEPLOY" ]; then
             echo "Confirmation input was not DEPLOY - refusing to deploy."
             exit 1
           fi
@@ -82,6 +84,7 @@ jobs:
           mkdir -p "$stage/public/assets" "$stage/public/packs"
           cp index.html sw.js manifest.json \
              apple-touch-icon.png icon-192.png icon-512.png icon-maskable-512.png \
+             favicon.svg icon-16.png icon-32.png icon-1024.png \
              "$stage/public/"
           cp -r assets/launch "$stage/public/assets/"
           cp packs/*.json "$stage/public/packs/"
@@ -89,12 +92,12 @@ jobs:
           pack_count=$(find "$stage/public/packs" -type f | wc -l)
           total_count=$(find "$stage/public" -type f | wc -l)
           echo "Staged: launch=$launch_count packs=$pack_count total=$total_count"
-          # The public set is exactly 32 files (7 root + 12 launch + 13 packs).
+          # The public set is exactly 36 files (11 root + 12 launch + 13 packs).
           # If the app ever gains a public file, this gate fails loudly instead
           # of silently publishing an incomplete site - update the counts here.
           test "$launch_count" -eq 12
           test "$pack_count" -eq 13
-          test "$total_count" -eq 32
+          test "$total_count" -eq 36
           sha256sum "$stage/public/index.html" | awk '{print $1}' > "$stage/expected-index.sha256"
           # Deliberate cache headers (cache fix-all S3, 2026-11-12): NO app
           # file is hash-named and sw.js changes content under its name every
@@ -105,6 +108,10 @@ jobs:
           # Firebase matches header rules against the request URL, not the
           # resolved file, so "/" needs its own rule beside "/index.html"
           # (Codex review, PR #20) - the root URL is the primary launch path.
+          # Issue #180: the "**" rule also carries the security headers on
+          # every response - X-Frame-Options DENY (the app is framed
+          # nowhere) and X-Content-Type-Options nosniff. GitHub Pages
+          # cannot send headers, so this protection exists only here.
           cat > "$stage/firebase.json" <<'JSON'
           {
             "hosting": {
@@ -112,6 +119,7 @@ jobs:
               "site": "snowroute-tracker",
               "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
               "headers": [
+                { "source": "**", "headers": [{ "key": "X-Frame-Options", "value": "DENY" }, { "key": "X-Content-Type-Options", "value": "nosniff" }] },
                 { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
                 { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
                 { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
@@ -124,6 +132,14 @@ jobs:
           }
           JSON
           echo "FIREBASE_STAGE=$stage" >> "$GITHUB_ENV"
+
+      # Issue #177: the count assertions above cannot see a referenced
+      # asset that was never staged (the four icons passed them while
+      # missing). Compare the staged set against the referenced set:
+      # every local reference in the staged page and manifest must
+      # resolve inside the staged tree, or the deploy refuses.
+      - name: Validate staged references resolve (issue #177)
+        run: python3 scripts/validate-staged-tree.py "$FIREBASE_STAGE/public"
 
       - name: Authenticate to Google Cloud (keyless)
         id: auth

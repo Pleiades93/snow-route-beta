@@ -706,7 +706,7 @@ function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))
 function streetHalf(n) { const p = pieces[n]; return Array.isArray(p) && !streetComplete(n) && p.some(v => v !== 0); } // Beta 1.184: ONE SIDE DONE - some side bit set on some stretch, the street not complete. The Streets list half state and the Pace menu Progress-by-group half count share this one predicate. Streets whose pieces are not an array (doneSet-only) are binary by construction and never half.
 function srowClass(n) { return 'srow' + (streetComplete(n) ? ' done' : '') + (PRIMARIES.has(n) ? ' primary' : '') + (streetHalf(n) ? ' half' : ''); }
 function srowStatus(n) { // Beta 1.184: the row right-hand status slot. A completed street keeps the list full historical string (done <when> (<ago>), check-flag prefix included); where the old list showed nothing, the redesign words apply: 'completed' (a completion with no recorded time), 'one side done' (a half), an em dash (untouched). The flag prefix rides every state, exactly as the old .tm string did.
-  const flag = (notes[n] && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : '';
+  const flag = (Array.isArray(notes[n]) && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : ''; // issue #180: Array.isArray, not truthiness - notes is a plain object, so a street named 'constructor' (or 'toString') reads the inherited member here and .some on it throws, killing the row
   const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
   if (doneAt) return { t: flag + 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')', c: 'st-done' };
   if (streetComplete(n)) return { t: flag + 'completed', c: 'st-done' };

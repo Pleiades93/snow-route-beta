@@ -284,12 +284,21 @@ def preflight_prospective(root, gh, branch, resolved):
     # version), and local-only files outside the set (drop them).
     # The checker itself is exempt from overlay/drop: it is the
     # measuring instrument, not a measured input (and a prospective
-    # copy without it could not be checked at all).
-    checker = "scripts/build-pages.py"
+    # copy without it could not be checked at all). The exemption
+    # covers the checker's whole import closure (issue #180): the
+    # temp copy's build-pages.py imports csp_stamp, assemble and
+    # release from its own directory, and release loads
+    # source_query by path - exempting only the entry point left
+    # those four branch-sourced and locally EXECUTED whenever they
+    # differed outside the push set. Instruments run from trusted
+    # local code; the prospective tree is their data.
+    instruments = {"scripts/build-pages.py", "scripts/csp_stamp.py",
+                   "scripts/assemble.py", "scripts/release.py",
+                   "scripts/source_query.py"}
     overlay = sorted(p for p in remote
-                     if p not in resolved and p != checker and remote[p] != local.get(p))
+                     if p not in resolved and p not in instruments and remote[p] != local.get(p))
     drop = sorted(p for p in local
-                  if p not in resolved and p != checker and p not in remote)
+                  if p not in resolved and p not in instruments and p not in remote)
     if not overlay and not drop:
         proc = subprocess.run([sys.executable, str(root / "scripts" / "build-pages.py"), "--check"],
                               cwd=root, capture_output=True, text=True, timeout=300)

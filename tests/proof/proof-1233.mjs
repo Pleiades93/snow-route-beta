@@ -118,12 +118,17 @@ check('B3b: the list box is capped, not stretched (Beta 1.241 roll: seven and a 
 // ---------- B4: feathered edges ----------
 check('B4a: the three mask states stand for both lists (one gradient, mirrored)', head.includes('#crCityList.fadeT, #rmRoutes.fadeT {') && head.includes('#crCityList.fadeB, #rmRoutes.fadeB {') && head.includes('#crCityList.fadeT.fadeB, #rmRoutes.fadeT.fadeB {') && (head.match(/transparent 0, #000 30px/g) || []).length >= 4);
 check('B4b: menuListFade toggles from the scroll position alone', app2.includes('function menuListFade(el)') && app2.includes("el.classList.toggle('fadeT', el.scrollTop > 1);") && app2.includes("el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1);"));
-check('B4c: the updater is wired to scroll, render, pane show and resize', app2.includes("el.addEventListener('scroll', () => menuListFade(el), { passive: true });") && app2.includes('menuListFade($(\'crCityList\')); menuListFade($(\'rmRoutes\'));') && pick.includes('menuListFade(boxEl);'));
+// issue #179: B4c's fade-pair pin is split by wiring site - the pane-show copy is
+// scoped to showRmPane and the resize copy is pinned by its full listener line;
+// either copy alone must not carry the conjunctive claim.
+check('B4c: the updater is wired to scroll, render, pane show and resize', app2.includes("el.addEventListener('scroll', () => menuListFade(el), { passive: true });") && app2.slice(app2.indexOf('function showRmPane(id)'), app2.indexOf('function openRouteMenu()')).includes('menuListFade($(\'crCityList\')); menuListFade($(\'rmRoutes\'));') && app2.includes('window.addEventListener(\'resize\', () => { menuListFade($(\'crCityList\')); menuListFade($(\'rmRoutes\')); });') && pick.includes('menuListFade(boxEl);'));
 
 // ---------- B5: icon swaps ----------
 check('B5a: the Back payload is byte-pinned', sha(Buffer.from(payload('GLYPH_MENU', 'back'), 'base64')) === '6aca616ccc89e3a8261a9607f9588c378fee7c3082dc406d6a2bd1b5afd14d4f');
 check('B5b: renderIcons stamps every Back with the disc beside its word', app4.includes("document.querySelectorAll('.rmBack').forEach(el => { el.innerHTML = `<img class=\"rmBackIco\" alt=\"\" src=\"${GLYPH_MENU.back}\"> Back`; });"));
-check('B5c: the Back button is a flex row and the glyph stands at 20px', head.includes('display: flex; align-items: center; gap: 8px; }') && head.includes('.rmBackIco { width: 20px; height: 20px; display: block; flex: none; }'));
+// issue #179: B5c's flex-row pin is lengthened to the .rmBack rule's full unique
+// form - the bare fragment also matches the #hud.row rule.
+check('B5c: the Back button is a flex row and the glyph stands at 20px', head.includes('align-self: flex-start; display: flex; align-items: center; gap: 8px; }') && head.includes('.rmBackIco { width: 20px; height: 20px; display: block; flex: none; }'));
 check('B5d: Settings keeps its gear - the gear payload is the 1.221 cog, byte-for-byte', (() => { const m = /gear: \{ d: 'data:image\/webp;base64,([A-Za-z0-9+/=]+)'/.exec(app4); return !!m && sha(Buffer.from(m[1], 'base64')) === '903ed9f57d1aa48fe28fc1f0d75a3723afe6d966dfd2f3ac56e7ff0a4172691e'; })());
 
 // ---------- B6: About ----------

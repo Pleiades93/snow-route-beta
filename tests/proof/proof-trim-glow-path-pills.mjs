@@ -93,7 +93,11 @@ console.log('S3 - pill ink is true black, metrics unchanged');
     const base = rule(sel);
     check(sel + ' base metrics unchanged', /font-size: 12px/.test(base) && /font-weight: 800/.test(base) && /letter-spacing: \.3px/.test(base) && /padding: 6px 10px/.test(base) && /border-radius: 999px/.test(base), base.slice(0, 120));
   }
-  check('pill labels stay ALL CAPS literals', createPick.includes("? 'PRIMARY' : 'SECONDARY'"));
+  // issue #179: the caps-literal pin is scoped to BOTH pill factories - the
+  // claim covers both row builders, so each must carry its own copy.
+  check('pill labels stay ALL CAPS literals',
+    createPick.slice(createPick.indexOf('function crRowEl('), createPick.indexOf('function crPanelRowEl(')).includes("? 'PRIMARY' : 'SECONDARY'") &&
+    createPick.slice(createPick.indexOf('function crPanelRowEl('), createPick.indexOf('function renderCrLists()')).includes("? 'PRIMARY' : 'SECONDARY'"));
 }
 
 // ================= S1 - trim glow covers chosen sectors only =================

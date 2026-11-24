@@ -71,8 +71,11 @@ check('G: crGlowStitchFeats chains parts on endpoint coincidence, both direction
 const buildSrc = extractFn(pick, 'crGlowBuildMesh');
 check('G: crGlowBuildMesh stitches and drops repeated points before meshing',
   !!buildSrc && buildSrc.includes('crGlowStitchFeats(feats)') && buildSrc.includes('a[i - 1][0]) > 1e-12'));
+const syncSrc = extractFn(pick, 'syncCrGlow');
 check('G: syncCrGlow chosen-sectors computation untouched (the 1.209 feed contract)',
-  pick.includes('const rec = crStreetParts(name);') && pick.includes('if (!set.has(i)) continue; const L = rec.parts[i];') && pick.includes('crGlowSetFeatures(feats);'));
+  // issue #179: all three pins scoped to syncCrGlow's own body - the street
+  // record read also stands in four other functions and must not carry them.
+  !!syncSrc && syncSrc.includes('const rec = crStreetParts(name);') && syncSrc.includes('if (!set.has(i)) continue; const L = rec.parts[i];') && syncSrc.includes('crGlowSetFeatures(feats);'));
 
 const stitchSrc = extractFn(pick, 'crGlowStitchFeats');
 const rgbSrc = extractFn(pick, 'crGlowRgb');

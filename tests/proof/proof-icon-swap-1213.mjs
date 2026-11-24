@@ -16,6 +16,18 @@ import zlib from 'node:zlib';
 // hash differs, the maskable wears the old composition, the splash
 // asset is 512x423, and favicon.svg is the old artwork.
 //
+// Issue #180 amendment (2026-11-23, sweep cluster round): the M
+// section's maskable is no longer the pack composition byte-for-byte -
+// the composition's artwork reached radius 270 px, beyond the maskable
+// safe zone's guaranteed circle (radius 204.8 px, 40% of 512), so
+// launchers applying round or squircle masks could crop the artwork
+// itself. The shipped file is the pack composition scaled by 0.74
+// about the centre onto the same flat field (artwork max radius now
+// 199 px); the M byte pin is re-pinned to the transformed file with
+// this reason stated, exactly as the 1.260 amendment treated the
+// splash, and a radius check joins the M section so the safe zone is
+// pinned as a circle, not only as the square bbox below.
+//
 // Beta 1.260 amendment (2026-11-20, TEST class): the P section's
 // splash file is no longer the pack's byte-for-byte foreground -
 // it is Andrew's approved edit OF that foreground (the snow mound's
@@ -93,14 +105,15 @@ for (const f of ['icon-512.png', 'icon-192.png', 'icon-1024.png', 'apple-touch-i
 console.log('M - maskable: the pack composition, artwork inside the safe zone');
 const mask = decodePng(readFileSync('icon-maskable-512.png'));
 check('M: the maskable is byte-identical to the pack composition (sha256)',
-  sha256('icon-maskable-512.png') === 'dde7c142e5da20333d7638c2ecab32e8473e089cc2df76529c5e5c8a34e67151');
+  sha256('icon-maskable-512.png') === 'a15c58d8cfec4bf0fb3d972e05cab6f14bc32dd581ec31aef9e3054ec0d08518'); // issue #180 re-pin: the safe-zone-scaled composition (see the header amendment)
 check('M: maskable corners and edge midpoints are the flat field (27,47,182)',
   [pxAt(mask, 0, 0), pxAt(mask, 511, 0), pxAt(mask, 0, 511), pxAt(mask, 511, 511), pxAt(mask, 0, 256), pxAt(mask, 511, 256), pxAt(mask, 256, 0), pxAt(mask, 256, 511)].every(isField));
-let minx = 512, miny = 512, maxx = -1, maxy = -1, sqOut = 0;
+let minx = 512, miny = 512, maxx = -1, maxy = -1, sqOut = 0, maxR = 0;
 for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
   const p = pxAt(mask, x, y);
   if (Math.abs(p[0] - FIELD[0]) + Math.abs(p[1] - FIELD[1]) + Math.abs(p[2] - FIELD[2]) > 60) {
     if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y;
+    const rr = Math.hypot(x - 255.5, y - 255.5); if (rr > maxR) maxR = rr;
     // the squircle of the round's rendered mask QA (rounded rect, r=115):
     const qx = Math.max(Math.abs(x - 255.5) - (255.5 - 115), 0), qy = Math.max(Math.abs(y - 255.5) - (255.5 - 115), 0);
     if (qx * qx + qy * qy > 115 * 115) sqOut++;
@@ -109,6 +122,7 @@ for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
 check('M: maskable artwork bbox (' + minx + ',' + miny + ')-(' + maxx + ',' + maxy + ') sits inside the 80% safe zone [51..461] on every side',
   minx >= 51 && maxx <= 461 && miny >= 51 && maxy <= 461);
 check('M: zero artwork pixels outside the squircle mask (the rendered overlay QA crops nothing)', sqOut === 0, sqOut + ' outside');
+check('M: every artwork pixel sits inside the maskable safe-zone CIRCLE (radius <= 204.8, issue #180)', maxR <= 204.8, 'maxR ' + maxR.toFixed(1));
 
 // ================= P - the splash artwork is the pack's transparent foreground =================
 console.log('P - splash artwork: 512x512, transparent where the tile would have painted');

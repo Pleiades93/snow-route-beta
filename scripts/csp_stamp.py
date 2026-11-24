@@ -22,12 +22,18 @@ Design notes (adjudicated 2026-10-28):
   generated index.html and --check verifies it, alongside the existing
   parity and SEC-10a gates. A stale stamp therefore fails the build
   instead of shipping.
-- Policy shape: default-src 'none', then explicit allowances inventoried
-  from the page itself - the two CDN origins that serve the pinned,
-  SRI-checked libraries (unpkg for Leaflet in the canonical file,
-  jsdelivr for the MapLibre tags the Pages build injects), the three map
-  hosts (Esri tiles, OpenFreeMap, CARTO), same-origin for the update
-  check's self-fetch and the manifest, blob: workers for MapLibre GL.
+- Policy shape, by directive (issue #180: this summary previously
+  described retired Leaflet/unpkg and Esri/OpenFreeMap hosts): default-src
+  'none'; script-src is the page's own inline hash plus the ONE MapLibre
+  library file on jsDelivr (narrowed in Beta 1.254, O-08); style-src-elem
+  is the inline hash plus that library's ONE CSS file (issue #180);
+  img-src is same-origin, data:/blob:, the CARTO basemap host and the
+  Protomaps host (sprites); connect-src is same-origin (the update
+  check's self-fetch), the two map hosts (tiles, glyphs), and the
+  create-a-route flow's three service origins (Nominatim search,
+  Overpass geometry, the Overpass fallback - the Beta 1.119/1.120
+  notes below); worker-src/child-src are blob: plus 'self' (MapLibre's
+  workers; the service worker); font-src 'none'; manifest-src 'self'.
   Beta 1.119: connect-src ALSO names the create-a-route flow's two
   service origins (Nominatim street search, the Overpass API for street
   geometry) - the only third-party calls the app itself makes. Beta
@@ -60,14 +66,13 @@ import sys
 POLICY_TEMPLATE = (
     "default-src 'none'; "
     "script-src 'sha384-{script}' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; " # Beta 1.254 (O-08): script-src names the ONE library file the page loads, not the whole jsdelivr origin (any npm package was script-allowed through 1.253). The worker is unaffected: MapLibre spawns it from a blob, and worker-src below already carries blob:. style-src-elem keeps the origin for the matching CSS file - the finding and this narrowing are about script.
-    "style-src-elem 'sha384-{style}' https://cdn.jsdelivr.net; "
+    "style-src-elem 'sha384-{style}' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; " # issue #180: style-src-elem names the ONE library CSS file, not the whole jsdelivr origin (the script-src narrowing of Beta 1.254, O-08, applied to style).
     "style-src-attr 'unsafe-inline'; "
     "img-src 'self' data: blob: "
-    "https://tiles.basemaps.cartocdn.com https://protomaps.github.io "
-    "https://cdn.jsdelivr.net; "
+    "https://tiles.basemaps.cartocdn.com https://protomaps.github.io; " # issue #180: jsdelivr dropped - the page loads no image from it (the library CSS/JS are element loads under their own directives; the worker's install fetches are not page-policy governed)
     "connect-src 'self' "
     "https://tiles.basemaps.cartocdn.com https://protomaps.github.io "
-    "https://cdn.jsdelivr.net https://nominatim.openstreetmap.org "
+    "https://nominatim.openstreetmap.org " # issue #180: jsdelivr dropped - the page opens no connection to it
     "https://overpass-api.de https://overpass.kumi.systems; "
     "worker-src blob: 'self'; child-src blob: 'self'; "   # 'self' is load-bearing: the service worker is a same-origin file, and blob:-only here silently blocked its registration - killing ALL offline capability while the app looked fine online (2026-11-01, Andrew's 'saved 0 of 894'). blob: stays for the map library's internal workers. The build gate asserts 'self' is present.
     "font-src 'none'; manifest-src 'self'; "

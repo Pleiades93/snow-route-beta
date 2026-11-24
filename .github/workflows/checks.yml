@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5 (node24 runtime; issue #180 - the v4 pins declare node20)
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
@@ -233,7 +233,7 @@ jobs:
       - name: Proof coverage (every proof gate-run or retired with a reason)
         run: python3 scripts/check-proof-coverage.py
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5 (node24 runtime; issue #180)
         with:
           node-version: '22'
           # Testing-efficiency rollout (2026-11-23): cache the npm downloads
@@ -335,9 +335,9 @@ jobs:
         # disjoint and in agreement with the rule's statement.
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5 (node24 runtime; issue #180 - the v4 pins declare node20)
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5 (node24 runtime; issue #180)
         with:
           node-version: '22'
       - name: Locate Chrome
@@ -357,9 +357,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5 (node24 runtime; issue #180 - the v4 pins declare node20)
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5 (node24 runtime; issue #180)
         with:
           node-version: '22'
       - name: Locate Chrome
@@ -377,9 +377,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5 (node24 runtime; issue #180 - the v4 pins declare node20)
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5 (node24 runtime; issue #180)
         with:
           node-version: '22'
       - name: Locate Chrome
@@ -389,7 +389,8 @@ jobs:
       - name: Offline end-to-end (real service worker, real caches; Beta 1.53 / audit B08)
         run: |
           python3 -m http.server 8077 --directory . >/dev/null 2>&1 &
-          sleep 1
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8077/ >/dev/null && break; sleep 0.5; done
+          curl -sf http://127.0.0.1:8077/ >/dev/null
           node tests/browser/e2e-offline.mjs
   tier-drives-gate:
     # Audit gate (2026-11-11, Andrew approved): fixed-name aggregate of the

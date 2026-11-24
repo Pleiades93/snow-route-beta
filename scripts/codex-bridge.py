@@ -27,7 +27,7 @@ Modes:
                   --timeout-seconds elapse (then fail, exit 1).
   --once --comments-file F: decide once from a saved comments JSON
                   (a list of issue-comment objects); exit 0 pass,
-                  1 fail, 2 wait. Used by the script-level tests.
+                  1 fail, 2 wait.
 """
 import argparse
 import json

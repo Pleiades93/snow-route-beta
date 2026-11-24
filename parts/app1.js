@@ -793,10 +793,28 @@ let themeOverride = null, themeOverrideUntil = 0; // null = automatic
     while (cand >= dayStart + 86400000) cand -= 86400000;
     return cand;
   };
-  return { rise: one(true), set: one(false) };
+  const rise = one(true), set = one(false);
+  // issue #180: when NEITHER event exists the day is polar, and which kind
+  // matters - through this fix autoNightAt read the missing pair as day, so
+  // a polar night wore the day theme. The discriminator is the same cosH
+  // `one` judges by, evaluated at midday: > 1 the sun never rises (polar
+  // night), < -1 it never sets (polar day). Unreachable inside the app's
+  // Ontario bounds (the sun always rises and sets there); the function is
+  // general, so its answer is correct for every position it can be given.
+  let /** @type {'day' | 'night' | null} */ polar = null;
+  if (rise == null && set == null) {
+    const t = N + (12 - lngHour) / 24, M = 0.9856 * t - 3.289;
+    let L = M + 1.916 * Math.sin(M * rad) + 0.020 * Math.sin(2 * M * rad) + 282.634; L = ((L % 360) + 360) % 360;
+    const sinDec = 0.39782 * Math.sin(L * rad), cosDec = Math.cos(Math.asin(sinDec));
+    const cosH = (Math.cos(90.833 * rad) - sinDec * Math.sin(lat * rad)) / (cosDec * Math.cos(lat * rad));
+    polar = cosH > 1 ? 'night' : 'day';
+  }
+  return { rise, set, polar };
 }
 /** @returns {number[]} */ function themePos() { try { if (typeof lastGood !== 'undefined' && lastGood && lastGood.ll) return lastGood.ll; } catch (e) {} try { if (typeof routeBox !== 'undefined' && routeBox) return [(routeBox.s + routeBox.n) / 2, (routeBox.w + routeBox.e) / 2]; } catch (e) {} return [43.82, -79.57]; } // Beta 1.92 (deep audit F01): lastGood/routeBox are declared LATER in the assembled script - a bare typeof probe throws in the temporal dead zone during early boot (initTheme runs before they exist), which killed the boot outright when a stored override had no usable expiry. The probes are guarded so the fixed fallback below is actually reachable.
-/** @param {number} ms @returns {boolean} */ function autoNightAt(ms) { const p = themePos(), st = sunTimes(ms, p[0], p[1]); if (!st || st.rise == null || st.set == null) return false; return ms >= st.set || ms < st.rise; }
+/** @param {number} ms @returns {boolean} */ function autoNightAt(ms) { const p = themePos(), st = sunTimes(ms, p[0], p[1]); if (!st) return false; if (st.rise != null && st.set != null) return ms >= st.set || ms < st.rise; if (st.rise == null && st.set == null) return st.polar === 'night'; // issue #180: a polar day is day and a polar night is night - the missing pair alone used to read as day either way
+  if (st.set != null) return ms >= st.set; // one boundary only: the sun set without rising today (it was up from before) - night from the set on
+  return ms < st.rise; } // the sun rises without setting today - night until the rise
 /** @param {number} ms @returns {number} */ function nextSunBoundary(ms) { const p = themePos(), out = []; for (let d = 0; d <= 1; d++) { const st = sunTimes(ms + d * 86400000, p[0], p[1]); if (st) { if (st.rise != null) out.push(st.rise); if (st.set != null) out.push(st.set); } } const nx = out.filter(t => t > ms).sort((a, b) => a - b)[0]; return nx || ms + 12 * 3600000; }
 /** @returns {boolean} */ function isNight() { return themeOverride !== null ? themeOverride : autoNightAt(Date.now()); }
 /** @returns {void} */ function clearThemeOverride() { themeOverride = null; themeOverrideUntil = 0; lsDel(LS.night); lsDel(LS.nightExp); }

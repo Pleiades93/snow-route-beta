@@ -235,6 +235,16 @@ if m and ("Beta " + m.group(1)) not in idx:
     print("VERSION FAIL (fixture stub)"); sys.exit(1)
 sys.exit(0)
 '''
+STUB_BUILD_PAGES_IMPORTING = """import csp_stamp
+csp_stamp.verify()
+""" + STUB_BUILD_PAGES
+BENIGN_HELPER = "def verify():\n    return True\n"
+POISON_HELPER = ("import os\n"
+                 "def verify():\n"
+                 "    p = os.environ.get('SNOW_FIXTURE_MARKER')\n"
+                 "    if p: open(p, 'w').write('executed')\n"
+                 "    return True\n")
+
 MOCK_HELPER = '''import base64, hashlib, json, os, sys
 STATE = os.environ["SNOW_MOCK_STATE"]
 def _blob(data): return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\\0" + data).hexdigest()
@@ -263,10 +273,13 @@ if __name__ == "__main__":
 '''
 
 
-def push_tree2(base, *, parts, changelog, tracker, index, branch_parts=None):
+def push_tree2(base, *, parts, changelog, tracker, index, branch_parts=None,
+               build_pages=None, local_extra=None, branch_extra=None):
     """A buildable fixture tree + the mock branch state for it.
     branch_parts overrides the parts the BRANCH holds (default: the
-    same as the local tree). Returns the env for run_push."""
+    same as the local tree). build_pages replaces the stub checker;
+    local_extra / branch_extra add files to the local tree / the
+    branch state under arbitrary paths. Returns the env for run_push."""
     import base64
     import hashlib
     for name, text in parts.items():
@@ -274,7 +287,9 @@ def push_tree2(base, *, parts, changelog, tracker, index, branch_parts=None):
     w(base / "src/tracker-source.html", tracker)
     w(base / "index.html", index)
     w(base / "CHANGELOG.md", changelog)
-    w(base / "scripts/build-pages.py", STUB_BUILD_PAGES)
+    w(base / "scripts/build-pages.py", build_pages or STUB_BUILD_PAGES)
+    for rel, text in (local_extra or {}).items():
+        w(base / rel, text)
     mock = base / "mock_github.py"
     w(mock, MOCK_HELPER)
     bp = branch_parts if branch_parts is not None else parts
@@ -282,6 +297,7 @@ def push_tree2(base, *, parts, changelog, tracker, index, branch_parts=None):
     branch_files = {**{f"parts/{k}": v for k, v in bp.items()},
                     "src/tracker-source.html": tracker, "index.html": index,
                     "CHANGELOG.md": changelog}
+    branch_files.update(branch_extra or {})
     for rel, text in branch_files.items():
         data = text.encode()
         h = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
@@ -367,6 +383,24 @@ with tempfile.TemporaryDirectory() as td:
           run_push(t / "prosp", ["README.md"], mode="push", env_extra=prosp), 1)
     check("push: pushing the fixing file itself passes the prospective-tree registry gate",
           run_push(t / "prosp", ["README.md", "docs/guard.md"], mode="push", env_extra=prosp), 0)
+    # Instrument closure (issue #180): the prospective preflight runs
+    # the temp tree's build-pages.py, which imports its sibling
+    # helpers (here csp_stamp, as the real checker does). A helper
+    # that differs on the branch and is NOT in the push set must
+    # never be the copy that executes locally: the whole import
+    # closure is exempt from the overlay, like the checker itself.
+    # The branch helper below is poisoned (it leaves a marker when
+    # imported); the push must succeed AND the marker must not exist.
+    marker = t / "instrument-marker.txt"
+    instr = push_tree2(t / "instr", parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                       tracker="AB", index="shell Beta 1.0 AB",
+                       build_pages=STUB_BUILD_PAGES_IMPORTING,
+                       local_extra={"scripts/csp_stamp.py": BENIGN_HELPER},
+                       branch_extra={"scripts/csp_stamp.py": POISON_HELPER})
+    rc = run_push(t / "instr", ["index.html"], mode="push",
+                  env_extra={**instr, "SNOW_FIXTURE_MARKER": str(marker)})
+    check("push: a branch-differing checker helper never executes locally (instrument closure)",
+          (rc, marker.exists()), (0, False))
     # Receipts gate (/correct Phase 3 round (b)): a changed check or
     # judge file must be named by a CURRENT mutation receipt - rule 6
     # as a precondition, not a hope (class N1). The fixture trees

@@ -108,7 +108,7 @@ const resolveNomi = i => ev(`(() => { const p = window.__pend.filter(x => x.url.
 // Case 1: search in flight, the field is CLEARED, the answer lands late.
 await ev(`(() => { const i = $('crCityInput'); i.value = 'Vaugh'; $('crCityResults').innerHTML = ''; crRunCitySearch(); return true; })()`);
 ok('E0b first search is in flight', await poll(`window.__pend.filter(x => x.url.includes('nominatim')).length === 1`, 8000) === true);
-await ev(`(() => { $('crCityInput').value = ''; crRunCitySearch(); return true; })()`); // what the debounce timer calls after the field is cleared
+await ev(`(() => { $('crCityInput').value = ''; crRunCitySearch(); return true; })()`); // the online search's own short-query seat: an empty field invalidates + aborts through the owner (issue #180: the debounce itself now runs the on-device type-ahead)
 await resolveNomi(0);
 await sleep(500);
 const e1 = JSON.parse(await ev(`JSON.stringify({ kids: $('crCityResults').children.length, aborted: (() => { const p = window.__pend.filter(x => x.url.includes('nominatim'))[0]; return !!(p && p.signal && p.signal.aborted); })() })`));
@@ -134,8 +134,12 @@ ok('E3 guard: a normal city search still renders its row', e3 === true);
 // happen at the input event itself, not when the 500 ms debounce would
 // next run the search. A response landing inside that window renders
 // nothing, and the request is already aborted at clear time.
+// Issue #180 re-point: typing now runs the on-device type-ahead (no
+// public request); the in-flight search here is the explicit online
+// search, started by tapping the type-ahead's Search online row.
 await ev(`(() => { const i = $('crCityInput'); i.value = 'Vaug'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-await sleep(750); // the debounce fires; the search is in flight
+await sleep(750); // the debounce fires; the type-ahead renders its rows
+await ev(`(() => { const r = $('crCityResults').querySelector('.crOnlineRow'); if (r) r.click(); return !!r; })()`); // the explicit online search starts
 const e1bStart = await poll(`window.__pend.filter(x => x.url.includes('nominatim')).length === 4`, 8000);
 await ev(`(() => { const i = $('crCityInput'); i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`); // the clear - invalidation must be immediate
 const e1bAborted = await ev(`(() => { const p = window.__pend.filter(x => x.url.includes('nominatim'))[3]; return !!(p && p.signal && p.signal.aborted); })()`);

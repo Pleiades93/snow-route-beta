@@ -37,8 +37,14 @@ The generated files are never hand-edited: `src/tracker-source.html`,
    the `WHATSNEW` entry (`parts/whatsnew.js`), and the build gate fails
    the build if the stamped copies disagree (the What's New comparison
    is gated since Beta 1.133; before that a stale entry shipped once and
-   only a registry probe noticed). If the worker changed, bump its cache
-   name (`snowroute-shell-vN`) too.
+   only a registry probe noticed). The worker's cache names are FIXED
+   identities — `snowroute-shell-v1`, `snowroute-tiles-v1` and
+   `snowroute-offline-v1` in `src/sw.js` — and are never bumped: the
+   app opens those names directly, and the worker's activate step
+   deletes every other `snowroute-*` cache, so a renamed cache would
+   be purged as a stranger and its contents (including the offline
+   pack) lost. A worker change ships under the same names; the new
+   worker's own install/activate cycle is what replaces the contents.
 2. Run `python3 scripts/release-op.py` — the one release operation: it
    derives the README battery counts from the suite and rewrites them
    (generated bookkeeping is never typed by hand; the build asserts the
@@ -68,6 +74,26 @@ page without cache, compares its version label with the running one, and
 reloads into the new build, confirming "Updated to vX.Y ✓". If it reports
 you are up to date but the version at the bottom right of Settings shows an older one,
 the edge cache has not caught up yet — wait a few minutes and retry.
+
+## Firebase Hosting (manual mirror)
+
+GitHub Pages is the live channel. A second copy of the same build is
+kept on Firebase Hosting (project `snowroute-tracker`,
+snowroute-tracker.web.app) as a standby mirror. It updates ONLY when
+a human dispatches the **Deploy to Firebase (manual)** workflow
+(`.github/workflows/firebase-manual-deploy.yml`) with the
+confirmation input `DEPLOY` — nothing deploys there on a push or a
+merge. The workflow stages the current `main` build, validates that
+every reference in the staged page resolves, generates the hosting
+config (cache rules plus the framing and MIME-sniffing headers), and
+publishes keylessly: GitHub's identity token is exchanged through
+Workload Identity Federation for a deploy robot that can publish
+Hosting and nothing else — there is no service-account key or secret
+anywhere. The one-time Google-side setup (provider, robot account,
+and the repository/branch/workflow restrictions on the trust) is
+recorded in the workspace at
+`beta1/work/firebase-prep/manual-deploy-setup.md`; it is not part of
+the published site.
 
 ## Rollback
 
