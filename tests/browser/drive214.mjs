@@ -308,12 +308,7 @@ ok('E3 rendered: 6 m PAST the join (the old overshoot stub) there is no gold lef
 // toggle comparison is retired where it stood below, with its evidence.
 // F5/F6/F7
 // (the lane's angle law) are retired where they stood, below.
-// Beta 1.294 REWORK (the handover, Andrew's decision 2026-11-24): the
-// titles fade across 15-16 and cap at maxzoom 16; route-names-only
-// clones take route naming over above the band. M3 keeps its reads
-// (mid-band titles present, originals printing no route names) under
-// the handover claim; M4's read-back flips to title maxzoom 16; F3/F4
-// flip to the re-picked spacing value 250.
+// Beta 1.294 REWORK: M3/M4 read the handover shape (title cap 16); F3/F4 pin spacing 250.
 const routeFullNames = await J(`(() => {
   const pack = ROUTE_PACKS.find(p => p.id === '5w');
   const ORD = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
@@ -432,12 +427,8 @@ const m2mid = await basemapRouteNamesBelow15();
 ok('M2b no basemap route full-names below 15 at zoom 14.7 either (layer provably live first: ' + m2live + ') | full names rendered: ' + JSON.stringify(m2mid.hits),
   m2live === true && Array.isArray(m2mid.hits) && m2mid.hits.length === 0);
 
-// M3 (the handover form, Beta 1.294): at 15.7 - mid-band - the app
-// titles still render (fading, not yet capped away) and the basemap
-// ORIGINALS print NO route full name (the exclusion holds at every
-// zoom), so a route street is never named twice at any zoom; the route
-// names at this zoom ride the handover clones, graded rendered in
-// drive219 phase V and drive130 L7.
+// M3 (the handover form, Beta 1.294): at 15.7 the titles still render
+// (mid-fade) and the originals print no route name - never a double.
 await ev(`(() => { map.jumpTo({ zoom: 15.7 }); return true; })()`);
 await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000);
 await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 5; } catch (e) { return false; } })()`, 30000); // the basemap layers must be provably rendering (non-route names) before an empty route-name read counts as the exclusion working
@@ -456,11 +447,8 @@ const m3 = await J(`(() => {
 ok('M3 mid-band, no doubles: the app titles still render at zoom 15.7 (inside the 15-16 fade, below the cap) and the basemap originals print no route full name there (the exclusion holds at every zoom) | titles ' + m3.titleFeats + ', basemap route full-names: ' + JSON.stringify(m3.fullHits),
   m3.titleFeats >= 5 && (m3.fullHits || []).length === 0);
 
-// M4 (the handover form, Beta 1.294): the live read-back of the live
-// shape - the title layers carry maxzoom 16, both basemap originals wear
-// the blanket 13-24 range the pass sets, the exclusion filter (naming
-// the route's tile names) sits on BOTH originals, and no '-pre15' layer
-// exists.
+// M4 (the handover form, Beta 1.294): the live read-back - title
+// maxzoom 16, blanket 13-24 originals, exclusion on both, no '-pre15'.
 const m4 = await J(`(() => {
   const L = id => map.getLayer(id);
   return {

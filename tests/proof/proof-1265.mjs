@@ -44,13 +44,8 @@ check('2: the exclusion clause is built exactly once (the exclF literal) and rea
   exclBuilds === 1 && setFilterCalls === 1 && app2.includes("const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];"));
 
 // ---------- (3) no forked label layers ----------
-// Beta 1.294 re-scope: this check's claim was always CREATE MODE's fork
-// (its fail-first baseline is the 1.264 tree's create-mode fork). The
-// handover clones Andrew ordered on 2026-11-24 are a separate,
-// non-create mechanism (built only while NOT creating; proof-anchors
-// section 4 and proof-1263 check 5 pin them). Create mode itself still
-// forks nothing: no -create clone ids, and create-pick adds no label
-// layer.
+// Beta 1.294 re-scope: the claim is create mode's own fork (the 1.264
+// baseline). The handover clones are a separate non-create mechanism.
 check('3: create mode forks no label layer of its own (no -create clone ids anywhere, create-pick adds no road-label layer) - the handover clones are a separate non-create mechanism',
   !/addLayer\(\{[^}]*id: 'roads_labels/.test(createPick) &&
   !app2.includes("roads_labels_major-create") && !app2.includes("roads_labels_minor-create") &&

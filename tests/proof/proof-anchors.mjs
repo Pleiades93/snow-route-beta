@@ -138,11 +138,8 @@ check('3c: no part writes a title layer\'s properties by literal id (the specs i
   !/set(?:Layout|Paint)Property\('streetnamespt/.test(allParts));
 
 // ---------- (4) the handover (Beta 1.294) ----------
-// Andrew's decision of 2026-11-24: the titles name the route at far
-// zooms and fade out across 15-16; route-names-only clones of the two
-// basemap road-label layers fade in across the same band and name the
-// route streets above it. The zoom behaviour lives in the layer specs
-// (a spec value is not a code write - section 3's pins stand).
+// The titles fade out across 15-16 in their spec; route-only clones
+// fade in across the same band (decision record: CHANGELOG 1.294).
 check('4a: the title spec fades out across 15-16 and is capped at maxzoom 16',
   engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0]") &&
   engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 16, filter:'));

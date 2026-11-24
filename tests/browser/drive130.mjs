@@ -3,12 +3,7 @@
 // to its 1.257 form above (titles at every zoom, originals excluding route
 // names, no clones), which is again the live rule. proof-1263 pins the
 // shape; drive216 grades presence during settles.
-// Beta 1.294 addendum (Andrew's handover decision, 2026-11-24): the
-// handover returns in a new form - the titles fade out across zoom 15-16
-// and end at maxzoom 16; route-names-only clones of the two road-label
-// layers fade in across the same band and name the route streets above
-// it; the originals exclude route names at every zoom; the basemap
-// repetition is 250. L2/L3/L7/L9 below grade that form.
+// Beta 1.294: L2/L3/L7/L9 grade the handover (titles fade 15-16, capped at 16; clones name route streets above).
 import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
@@ -104,12 +99,9 @@ ok('L6 the reference source draws nothing (West link off the map) | ref features
 const poiTxt = await ev(`map.getLayer('routepoi-txt') ? JSON.stringify(map.getLayoutProperty('routepoi-txt', 'text-field')) : 'missing'`);
 ok('L6b the point of interest wears the route name, not the app name (Beta 1.79, Andrew) | poi ' + poiTxt, poiTxt === '"Route 5W"');
 
-// The rendered proof at close zoom (Beta 1.294 form): centred on Woolacott's title
-// anchor at zoom 17.5, the titles are gone (maxzoom 16) and the route name prints
-// on the CLONE layers - the originals must return none of the route names (no
-// route name on the wrong layer, ever). Basemap repeats of the same name on the
-// clones are the renderer's own placement (spacing 250, Andrew's pick) and are
-// not counted; the one-name-per-street property belongs to the titles' zoom band.
+// The rendered proof at close zoom (Beta 1.294 form): at zoom 17.5 the titles are
+// gone (maxzoom 16), the route name prints on the clones, the originals print none.
+// Clone repeats are the renderer's own placement and are not counted.
 // 2026-11-09 (L7 root hardening, part 2 - Andrew's flake-gate order; tests-only): with
 // the camera provably at rest (part 1, the intro gate at the top of this drive), the
 // read is gated on the render pipeline's TERMINAL state, not on a momentary predicate.

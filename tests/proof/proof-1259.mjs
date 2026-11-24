@@ -70,9 +70,7 @@ check('11: RETIRED by 1.261 - the ordinal spelling lookup is gone with the lane 
   !app2.includes("Fifth: '5th'"));
 
 // ---------- (3) R1 repetition ----------
-// Beta 1.294 ROLL (label handover): Andrew re-picked the repetition at
-// 250 on 2026-11-24 from the basemap options sample. The R1 ownership
-// stands (one owned write in glUnifyLabels); the value is 250 now.
+// Beta 1.294: the repetition is re-picked at 250; the ownership stands.
 check('12: symbol-spacing 250 is set in the normalization path on the road-label layers (Beta 1.294 premise update: value re-picked from 500 to 250)',
   app2.includes("setL(L.id, 'symbol-spacing', 250);"));
 

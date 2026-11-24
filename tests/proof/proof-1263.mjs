@@ -36,13 +36,8 @@
 // drive). Fail-first baseline: on the Beta 1.262 tree checks 2, 3, 4, 7,
 // 8 and 9 fail (cap present, band split present, heal present, hook
 // absent, residue absent).
-// Beta 1.294 premise update (Andrew's handover decision, 2026-11-24,
-// which supersedes the no-cap form this proof restored): the titles
-// are capped at maxzoom 16 and fade out across zoom 15-16 inside their
-// spec (check 2 flips); the '-route' clones are built again for the
-// handover - route names only, titles on, not creating (check 5
-// flips); R1's value is re-picked at 250 (check 6 flips). The revert's
-// no-teardown shape otherwise stands exactly as restored.
+// Beta 1.294 premise update: the handover caps the titles at 16 with
+// the spec fade (check 2), rebuilds the clones (check 5), R1 at 250 (6).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 

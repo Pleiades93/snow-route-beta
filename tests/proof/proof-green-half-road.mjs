@@ -366,16 +366,8 @@ GLP.sync();
 // layer is sanctioned; the engine builds the title layers; the
 // exclusion is back on the originals. proof-1263 pins the reverted
 // shape; drive214's reworked M sections and drive216 grade it rendered.
-// Beta 1.294 premise update (Andrew's handover decision, 2026-11-24,
-// which supersedes the 1.263 form of the first three pins below): the
-// titles fade out across zoom 15-16 in their spec and are capped at
-// maxzoom 16; the '-route' tile-fed clones are sanctioned again for
-// the handover - route names only, built only while the titles are on
-// and no route is being created; R1's value is re-picked at 250 (the
-// one owned write now sits at the top of the road branch, covering the
-// originals and the clones). The lane and the -pre15 band stay deleted;
-// the exclusion stays on the originals. proof-anchors pins the
-// handover's full shape; drive219 grades it rendered.
+// Beta 1.294 premise update: the titles cap at 16 with the spec fade,
+// the '-route' clones return for the handover, R1 is re-picked at 250.
 check('R4: the owned R1 symbol-spacing write appears exactly once in app2.js (Beta 1.294 premise update: the value is 250, re-picked by Andrew on 2026-11-24)',
   app2.split("setL(L.id, 'symbol-spacing', 250);").length - 1 === 1);
 check('R4: the tile-fed clones exist only as the handover pair (route names only, handover state only), the 1.259 lane stays deleted, and the 1.261 -pre15 band stays deleted whole (Beta 1.294 premise update)',

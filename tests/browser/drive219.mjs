@@ -3,18 +3,13 @@ import { laneViolations } from './lane-judge.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 1, mobile: true }, S); // this lane grades presence and paint, not pixels: at the harness's retina factor the software-rendered headless map eats the main thread and the 50 ms sampler starves to a few ticks a second (measured), which would stretch the very timings under grade. At factor 1 the sampler holds its 50 ms median (measured).
 
-// drive219: the title lane. Phase 0 grades the shipped ON state
-// (Beta 1.294: centred titles live, the handover clones built); the
-// middle phases grade centred, spec-fixed titles; phase V grades the
-// zoom 15-16 handover itself; phase Z forces the switch off and grades
-// the 1.293 off contract (no title layers, no clones; the basemap
-// names route streets).
+// drive219: the title lane. Phase 0 grades the shipped ON state, the
+// middle phases centred spec-fixed titles, phase V the zoom 15-16
+// handover, phase Z the forced-off contract.
 // Settled-frame rule: names are judged only over samples at or after the
 // flight's moveend (mid-flight, the wide view legitimately loses names).
-// Basemap names are the renderer's own collision placement: the lane
-// grades only that the app never dims or hides an ORIGINAL basemap
-// layer (A5, B1) - the handover clones carry their own spec fade,
-// graded as their own group (phase V).
+// The lane grades that the app never dims or hides an ORIGINAL basemap
+// layer (A5, B1); the clones' own spec fade is graded as its own group.
 // Theme-swap limit (flagged, not fixed): setStyle recreates labelpts, so
 // source identity breaks at a swap; the centre spec survives as layer
 // spec and phase B grades exactly that boundary.
@@ -341,12 +336,8 @@ ok('U3 THE TOUR: zoom in, back out to the fit and a pan - across every leg: zero
   U.tears.length === 0 && srcTokens(U.samples).length === 1 && uTourSamples.every((s) => s.visNoneT === 0) && uBack === true && uMaxBack >= 30);
 
 // ================= Phase V: the handover, graded on the zoom journey =================
-// Same page as phase U (the instrument is live, throttle restored).
-// Baseline at the fit view, then a two-leg zoom to 17 UNDER the
-// sampler with a held stop at 15.5: both fades must be caught mid-band
-// (the 1.290 blind-window lesson - sample during, not only after
-// settlement; the held stop makes the mid-band read a standing state,
-// not a chase), and at 17 the clones, not the titles, carry the names.
+// Same page as phase U. A two-leg zoom to 17 with a held stop at 15.5:
+// both fades are caught mid-band as a standing state, not a chase.
 const vBaseOk = await poll(`(() => { try { const last = window.__li.samples[window.__li.samples.length - 1]; return !!last && last.titles.length >= 30 && last.clone.length === 0; } catch (e) { return false; } })()`, 30000); // the fit-view state itself, polled: the sampler starves under load, so a single read (or a windowed max, which reaches back across camera moves) cannot grade a standing state
 const vBase = await J(`(() => { const last = window.__li.samples[window.__li.samples.length - 1]; return last ? { titles: last.titles.length, clone: last.clone.length } : { titles: 0, clone: -1 }; })()`);
 const vFrom = await J(`window.__li.samples.length`);
@@ -462,9 +453,7 @@ ok('J1 unloading MID-FLIGHT and picking again strands nothing: the re-pick strea
   jDone === true && J219.tears.length === 0 && jLast.titles.length >= 30 && jLast.visNoneT === 0);
 
 // ================= Phase Z: the forced OFF state (the 1.293 contract) =================
-// The switch still governs: forced off before the pick, the off state
-// must be exactly what Beta 1.293 proved - no titles, no clones, the
-// exclusion lifted, the basemap naming the route streets itself.
+// Forced off before the pick: no titles, no clones, exclusion lifted.
 await send('Page.reload', {}, S);
 await bootToPicker();
 await forceRouteTitlesOff(ev, poll);
