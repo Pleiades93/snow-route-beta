@@ -1,9 +1,10 @@
 // Beta 1.263 addendum (Andrew's naming-revert decision, 2026-11-21): the
 // mix is reverted - W4 is back to its 1.257 form (titles present, clones
 // retired), again the live rule.
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: this drive grades the titles - force the source switch on
 
 
 

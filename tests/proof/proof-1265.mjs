@@ -31,9 +31,13 @@ const changelog = read('CHANGELOG.md');
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
-// ---------- (1) the single condition in glUnifyLabels ----------
-check("1: glUnifyLabels computes the road-label target from the create-mode state - while creating the target is the basemap's own stock filter (baseF), otherwise the pre-1.265 exclusion shape",
-  app2.includes("const targetF = (typeof creating !== 'undefined' && creating) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);"));
+// ---------- (1) the lift conditions in glUnifyLabels ----------
+// Beta 1.293: the titles switch is the second lift - while the app-drawn
+// titles are off (flags.js), the basemap names the route streets too,
+// because no title exists to name them. Both lifts share the one target.
+check("1: glUnifyLabels computes the road-label target from the lift conditions - while creating OR titles off the target is the basemap's own stock filter (baseF), otherwise the pre-1.265 exclusion shape",
+  app2.includes("const titlesOff = typeof ROUTE_TITLES_ON === 'undefined' || !ROUTE_TITLES_ON;") &&
+  app2.includes("const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);"));
 
 // ---------- (2) the exclusion is built in exactly one place, applied by one call ----------
 const exclBuilds = (app2.match(/\['!', \['in', \['get', 'name'\], \['literal', ROUTE_TILE_NAMES\]\]\]/g) || []).length;

@@ -21,7 +21,7 @@
 // Beta 1.263 addendum (Andrew's naming-revert decision, 2026-11-21): the
 // mix is reverted - the app titles hide in create again (the hide list
 // carries them, as through 1.257), so H1 is back to its 1.257 form.
-import { launchDrive, bootThrough, finish } from './harness.mjs';
+import { launchDrive, bootThrough, finish, forceRouteTitlesOn } from './harness.mjs';
 // Beta 1.144 TEST-PREMISE UPDATE (Package C, DA-04): the create draft and the packs it saves now key streets by their FULL map name ('Bordeaux Drive', 'Alderson Avenue'); through 1.143 they keyed on the shortened name. Every key read in this drive (draft.roads, computeStretches, mains, markDone/streetComplete on the created route, saved-pack mains) follows the full name; DISPLAY reads (panel/preview row text, search text) still match the short form, and the photo-import fixtures' authored keys (the envelope's 'Bordeaux') are unchanged - the import keeps the file's own keys. Ship-gate completion (2026-11-07 night): the J-section fixture-street reads ('Faraway Avenue', 'Farfaraway Avenue', 'Edgewater Avenue', 'Crosscell Avenue', incl. the crPending key) and P1's saved-key expectation were missed by the first repair pass and are full-name now; the first local run exposed them as 6 failures + ~150 s of dead polls (TEST, flake log).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -211,6 +211,7 @@ await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 await poll(`!document.getElementById('splash')`, 20000);
 await poll(`typeof map === 'undefined' || !map || !map.isMoving()`, 25000);
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: section (h) grades the title layers in the backdrop hide list - force the source switch on
 await ev(installStub);
 // Test-suite restructure (2026-11-09): the ONE static cap assertion. The two
 // 45 s latency cases (J2a2, J7d) now run SCALED through the CR_TIMING seam
@@ -960,6 +961,7 @@ await ev(`localStorage.clear(); location.reload(); true`);
 await sleep(500);
 await poll(`!!document.getElementById('ver')`, 20000);
 await bootThrough(ev, poll);
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: the reload reset the flag - keep the switch on for this session too
 const polE = await ev(`(function(){ const m = document.querySelector('meta[http-equiv="Content-Security-Policy"]'); return m ? m.getAttribute('content') : ''; })()`);
 const csTokens = (() => { const d = (polE || '').split(';').map(s => s.trim()).find(s => s === 'connect-src' || s.indexOf('connect-src ') === 0); return d ? d.split(/\s+/) : []; })();
 ok('E1 (CSP seam) the stamped page\'s connect-src names https://nominatim.openstreetmap.org (the create-flow search origin)', csTokens.includes('https://nominatim.openstreetmap.org'));

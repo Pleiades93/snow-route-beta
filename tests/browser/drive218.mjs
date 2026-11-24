@@ -1,6 +1,7 @@
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, send, S, ev, shot, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: this drive grades the exclusion in title mode - force the source switch on
 if (!await poll(`!!(window.map && map.getLayer && map.getLayer('roads_labels_major'))`, 45000)) throw new Error('drive218: the basemap label layers never landed - the naming reads would measure an empty map and pass vacuously');
 
 // drive218: Beta 1.265 - create-mode naming reverts to MAP DEFAULTS

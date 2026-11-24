@@ -1,7 +1,7 @@
 // Beta 1.263 addendum (Andrew's naming-revert decision, 2026-11-21): the
 // mix is reverted - the street-title layers are the setFont fan-out's
 // first citizens again, as through 1.257; this drive is back to that form.
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 
@@ -156,6 +156,7 @@ try {
   ok('F4 the reset line falls back to any route\'s download record instead of contradicting the maps line | pre: ' + f.pre, /^Offline maps downloaded /.test(f.pre || ''));
 
   // ---- G: B-04 + B-09 on the live map ----
+  await forceRouteTitlesOn(ev, poll); // Beta 1.293: the toMenu reloads reset the flag - force the switch on for the live title layers
   const mapUp = await poll(`typeof map !== 'undefined' && !!map && !!map.getSource && !!map.getSource('selGlow') && !!map.getLayer && !!map.getLayer('streetnamespt1')`, 20000).catch(() => false);
   const g = mapUp ? await J(`(() => {
     selSet = [{ name: 'Velmar', idx: 0 }, { name: 'Mellings', idx: 0 }];

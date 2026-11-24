@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "0d95dce4b544e647e42cf010af270ebb5cb91dd65ad7bd6dbb49d79e392699fd",
+  "canonical_registry_sha256": "d42ef5ce16bdbe9311d31412a1e0ca2b3af6fb79cff6cefce2bff4d644b5b968",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1509,
-   "included": 1479,
+   "canonical": 1515,
+   "included": 1485,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -5894,7 +5894,7 @@
   {
    "added": "2026-11-14",
    "file": "parts/app4.js",
-   "fix": "Beta 1.193: a restored trail is windowed to the pack\u2019s own live run before it is written (validate-then-write: the stored value is the windowed one). Beta 1.287 (issue #172): the merge windows the incoming trail at plan time, before any write; the claim is unchanged.",
+   "fix": "Beta 1.193: a restored trail is windowed to the pack\u2019s own live run before it is written (validate-then-write: the stored value is the windowed one). Beta 1.287 (issue #172): the merge windows the incoming trail at plan time, before any write; the claim is unchanged. [Re-pinned 2026-11-24 by label-switch-1293 (Beta 1.293): the targetF lift condition is now creating OR titles-off (the source switch ships off); the claim this probe guards is unchanged.] [Re-pinned 2026-11-24 by label-switch-1293 (Beta 1.293): the targetF lift condition is now creating OR titles-off (the source switch ships off); the claim this probe guards is unchanged.]",
    "fix_id": "trail-window-counter-harden",
    "id": "trail1193-restore-window",
    "pattern": "incoming.set(rk.trail, JSON.stringify(trailWindow(cleanTrail(trailRaw), start)));",
@@ -11447,7 +11447,7 @@
    "fix": "Beta 1.258 (labelretire-1258; Andrew's decision, 2026-11-20): the map's own street names replace the app's titles. The engine's streetnamespt1-4 layers over the labelpts source and the Beta 1.248 re-placement helper are retired; glUnifyLabels (app2, renamed from glHideLabels) restores the basemap road-label originals' stock filters from the embedded spec and their stock zoom ranges (major from 11, minor from 15), so route streets carry the map's own full names (Ferrari Court, Santa Barbara Place). Proof: tests/proof/proof-1258.mjs (15 checks, both-ways verified); drive130 grades the rendered rule. Rollback: a revert PR restoring the Beta 1.257 behaviour under Beta 1.259. [Re-pinned 2026-11-21 by labelrevert-1263 (Beta 1.263, Andrew's naming-revert decision): the naming system is restored to its Beta 1.257 state; this probe now pins the restored form.] [Re-pinned 2026-11-21 by createmodenaming-1265 (Beta 1.265): glUnifyLabels' target filter is now conditional on the create-mode state - while creating, the target is the basemap's stock filter (map defaults, Andrew's rule); outside create mode the computed filter is the same shape this probe has always guarded, with the exclusion literal built once as exclF.]",
    "fix_id": "labelretire-1258",
    "id": "labelretire1258-stock-filter",
-   "pattern": "const targetF = (typeof creating !== 'undefined' && creating) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);",
+   "pattern": "const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);",
    "type": "grep_present"
   },
   {
@@ -11903,7 +11903,7 @@
    "fix": "Beta 1.265 (createmodenaming-1265; PR #161, merge 9fa014bc887ebc53a00197b8c9825ea7762d52f5; live sha256 d607c45ca9e380bd6ef98d037317708451367d76df663928725f54f24b04675e, reads Beta 1.265). Andrew's rule of 2026-11-21: while creating a route, street naming reverts to MAP DEFAULTS everywhere - the basemap names every street including an existing route's streets. Through 1.264 the create backdrop hid the loaded route's title layers with its paint while glUnifyLabels' basemap exclusion of route streets kept applying, leaving the loaded route's area with NO street names at all. The fix makes the create-mode state (`creating`) the single condition inside glUnifyLabels (parts/app2.js): while creating, the road-label layers' target filter is the basemap's own stock filter with the exclusion clause not added (the literal is built once, as exclF); outside create mode the computed filter is byte-for-byte the pre-1.265 one. crSetBackdrop (parts/create-pick.js) re-runs the label pass on both backdrop flips so the lift lands on entry and the restore on exit; restacks (mid-create theme swaps) recompute from the same state. drive218 grades the rendered behaviour (14/14; 9/14 on the 1.264 tree, failing exactly the five create-mode checks); proof-1265 pins the shape statically (6/6; an in-tree mutation removing the condition fails exactly its check 1). If a probe here fails, the round has regressed - restore the shipped form.",
    "fix_id": "createmodenaming-1265",
    "id": "createmodenaming1265-condition",
-   "pattern": "const targetF = (typeof creating !== 'undefined' && creating) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);",
+   "pattern": "const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);",
    "type": "grep_present"
   },
   {
@@ -13118,24 +13118,6 @@
   {
    "added": "2026-11-24",
    "file": "parts/engine.js",
-   "fix": "Beta 1.290 (the label round): route title layers read their side from feature data - the title spec's text-anchor is the data-driven ['get', 'anchor'] form and text-variable-anchor is gone from the engine, so a title's side is decided once by geometry (assignAnchors) and never re-decided by the renderer. proof-anchors section 5 pins the shape; drive219 grades it live.",
-   "fix_id": "label-round-1290",
-   "id": "label290-anchor-spec",
-   "pattern": "'text-anchor': ['get', 'anchor']",
-   "type": "grep_present"
-  },
-  {
-   "added": "2026-11-24",
-   "file": "parts/engine.js",
-   "fix": "Beta 1.290 (the label round): the geometry build assigns every title's anchor in one pass - assignAnchors(titleDirections) is called inside buildEngineGeometry right after assignTiers. proof-anchors checks 1a/1b pin the call and its order.",
-   "fix_id": "label-round-1290",
-   "id": "label290-assignanchors-call",
-   "pattern": "assignAnchors(titleDirections);",
-   "type": "grep_present"
-  },
-  {
-   "added": "2026-11-24",
-   "file": "parts/engine.js",
    "fix": "Beta 1.290 (the label round): text-variable-anchor must never return to the engine's title spec - variable placement is what let a mid-flight anchor stick wrongly and forced the deleted flight-end cure. The basemap's own styles in parts/pmstyles.js keep theirs legitimately; this probe is engine-scoped.",
    "fix_id": "label-round-1290",
    "id": "label290-no-variable-anchor",
@@ -13168,6 +13150,77 @@
    "id": "issue-176-download-wake-want",
    "pattern": "((!!runStart && settings.awake) || preloadRunning)",
    "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "flags.js",
+   "fix": "Beta 1.293 (label-switch-1293; Andrew's decision, 2026-11-24): the route titles ship turned OFF behind a source-only switch. flags.js at the repo root carries the one flag, ROUTE_TITLES_ON, with the shipped value false; there is no control for it in the app. A flip edits this one line and rebuilds (assemble, build-pages). proof-anchors section 1d pins the default; drive219 phase 0 (W1) reads it live in the running app.",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-flag-off-default",
+   "pattern": "var ROUTE_TITLES_ON = false;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.293 (label-switch-1293): in the on state the title layers carry the centre spec Andrew approved from the real-app sample on 2026-11-24 - text-anchor center, radial offset 0, on the unchanged Beta 1.290 label points. proof-anchors check 1b pins the literal; drive219 B2/D2 read it live per-tick and across a theme swap (mutation receipt labelswitch-1293-drive219-centre).",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-centre-spec",
+   "pattern": "'text-anchor': 'center', 'text-radial-offset': 0",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.293 (label-switch-1293): the Beta 1.290 data-driven side spec is gone - no title layer reads a stored anchor any more. Supersedes the label290-anchor-spec probe, deleted this round because the shape it pinned was removed. proof-anchors checks 1a/1b pin the absence.",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-side-spec-gone",
+   "pattern": "'text-anchor': ['get', 'anchor']",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.293 (label-switch-1293): assignAnchors and titleDirections are removed as dead code - once the spec is the centre literal, nothing reads the per-feature side data they computed. Supersedes the label290-assignanchors-call probe, deleted this round. proof-anchors check 1a pins the absence across all parts.",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-assignanchors-gone",
+   "pattern": "assignAnchors",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.293 (label-switch-1293): both title entry points (the labelpts source and the four tier layers in addStack) sit behind this one typeof-guarded read of the flags.js global - the #176 sandbox lesson: an undeclared global must never throw. Bypassing this gate fails drive219 W2 and proof-anchors 1c (mutation receipt labelswitch-1293-drive219-offstate).",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-gate",
+   "pattern": "const titlesOn = () => typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app2.js",
+   "fix": "Beta 1.293 (label-switch-1293): while the switch is off, glUnifyLabels lifts the route-name exclusion from roads_labels_major/minor (the titlesOff local feeds the same targetF lift create mode uses), so the basemap names the route streets like every other street. Without the lift the off state would show no name at all on route streets. drive219 W3/W4 grade it live; proof-1265 check 1 pins the condition.",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-exclusion-lift",
+   "pattern": "const titlesOff = typeof ROUTE_TITLES_ON === 'undefined' || !ROUTE_TITLES_ON;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "scripts/assemble.py",
+   "fix": "Beta 1.293 (label-switch-1293): assemble.py inlines flags.js FIRST inside the one bundle script, so the same flag reaches both boots (the harness file:// boot of src/tracker-source.html and the Pages index.html). An external script tag cannot serve both paths and a second inline script is refused by build-pages; the inlined copy is a generated artifact, flags.js is the one source.",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-flag-inlined",
+   "pattern": "FLAGS = ROOT / \"flags.js\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "command": "cd . && node tests/proof/proof-anchors.mjs",
+   "fix": "Beta 1.293 (label-switch-1293): proof-anchors is re-premised for the switch world - the side-rule sections are replaced by the centre-spec and switch-gate sections, the label points are pinned to their own streets (Fifth keeps its nudge), and the Beta 1.290 structural ban (no cure machinery, labelpts created once) is kept. Mutation receipts labelswitch-1293-proof-anchors-centre and labelswitch-1293-proof-anchors-gate.",
+   "fix_id": "label-switch-1293",
+   "id": "labelswitch1293-proof-wired",
+   "type": "command_exit0"
   }
  ]
 }

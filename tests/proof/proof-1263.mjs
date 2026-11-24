@@ -126,9 +126,12 @@ check('11: the create-pick hide list carries the four title layers',
 // The engine fixture pattern of proof-leftside-removal-b05, narrowed to
 // the hazard: a street named 'constructor', SPOT empty (sparse - no own
 // entry). On a plain-read build GLP.init throws inside the label build;
-// on this build it completes and the street gets its fallback anchor.
+// on this build it completes and the street gets its label point.
 // Reverting this guard would reintroduce the proven route-load crash of
 // PR #154 - it changes no naming behaviour for real streets.
+// Beta 1.293: the fixture carries the titles switch ON, as an assembled
+// boot always carries the flag - this check grades the label build, and
+// the off state is drive219's phase 0.
 const fixMLAT = 111132, fixMLNG = 82000;
 const fixPt = (xM, yM) => [43.8 + yM / fixMLAT, -79.5 + xM / fixMLNG];
 const fixSeg = (x0, y0, x1, y1) => { const pts = []; const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 20)); for (let k = 0; k <= n; k++) pts.push(fixPt(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n)); return pts; };
@@ -157,13 +160,13 @@ try {
     setLayerZoomRange: () => {}, setLayoutProperty: () => {}, setPaintProperty: () => {},
     on: () => {}, once: () => {},
   };
-  const ctx = { GL_HOST: host, window: {}, setInterval: () => 1, clearInterval: () => {} };
+  const ctx = { GL_HOST: host, window: {}, setInterval: () => 1, clearInterval: () => {}, ROUTE_TITLES_ON: true };
   vm.runInNewContext(engine, ctx);
   ctx.window.GLP.init(mockGLM, host);
   fixNamesOut = sources.labelpts && sources.labelpts.data ? sources.labelpts.data.features.map(f => f.properties.name) : [];
   fixOk = fixNamesOut.includes('constructor') && fixNamesOut.includes('LongAve');
 } catch (e) { fixOk = false; }
-check('12: a street named like an inherited object key (constructor) with no SPOT entry still loads and anchors - the SPOT read is own-entry-only (the 1.261 gate fix, kept by the revert as a named deviation)',
+check('12: a street named like an inherited object key (constructor) with no SPOT entry still loads and gets its label point - the SPOT read is own-entry-only (the 1.261 gate fix, kept by the revert as a named deviation)',
   engine.includes('Object.prototype.hasOwnProperty.call(H.SPOT, n)') && fixOk);
 
 // ---------- (13) the release editorial ----------

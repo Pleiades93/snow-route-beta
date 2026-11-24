@@ -120,10 +120,14 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
           // mid-create theme swap included) recomputes the filter from the same
           // state. Outside create mode the target is byte-for-byte the filter
           // above. No label layer is forked - the same two layers carry both.
+          // Beta 1.293: titles off (the flags.js source switch) lifts the
+          // exclusion the same way - the basemap names every street, the
+          // route's included, because no app titles exist to name them.
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
           const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
-          const targetF = (typeof creating !== 'undefined' && creating) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);
+          const titlesOff = typeof ROUTE_TITLES_ON === 'undefined' || !ROUTE_TITLES_ON;
+          const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);
           if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
           setL(L.id, 'symbol-spacing', 500); // Beta 1.259 (Andrew, the repetition sample), KEPT by the Beta 1.263 naming revert as its one named exception: R1 for the WHOLE map - a street's name repeats every 500 px instead of the engine default 250 (half as often; at zoom 17 Santa Barbara Place went 3 -> 2 repeats, Velmar Drive 2 -> 1). The value is owned HERE: before 1.259 it was set nowhere in the app, so the engine default decided it silently. Wider spacings were rejected in the sample - anchors laid from the line start can leave a street unnamed in a given view.
           if (!(typeof isNight === 'function' && isNight())) {

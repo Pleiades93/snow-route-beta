@@ -1,7 +1,8 @@
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 import { judgeTitleDrops } from './title-drop.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: this drive grades the titles - force the source switch on
 if (!await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000)) throw new Error('drive216: the GL stack never landed - the sampler would measure an empty map and pass vacuously');
 
 // drive216: Beta 1.263 - PRESENCE DURING SETTLE, the flicker's standing

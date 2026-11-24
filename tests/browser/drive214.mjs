@@ -1,7 +1,8 @@
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 import fs from 'node:fs';
 const { proc, send, S, ev, shot, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
+await forceRouteTitlesOn(ev, poll); // Beta 1.293: this drive grades the titles - force the source switch on
 if (!await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000)) throw new Error('drive214: the GL stack never landed - sections C-E would measure an empty map and pass vacuously'); // bootThrough lands the route; the GL stack (sources/layers) lands after - sections C-E read sources and must not race it
 
 // drive214: Beta 1.259 - the road-end feather (Andrew's FINAL decision,

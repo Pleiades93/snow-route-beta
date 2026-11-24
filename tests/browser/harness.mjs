@@ -243,6 +243,15 @@ export async function pinDayTheme(ev) {
   return await ev(`(function(){ if (typeof setThemeOverride === 'function') { const wasNight = (typeof isNight === 'function') ? isNight() : false; setThemeOverride(false); if (typeof applyNight === 'function') applyNight(); if (wasNight && typeof map !== 'undefined' && map && typeof setBasemap === 'function') { setBasemap(); return new Promise(res => { const t0 = Date.now(); (function chk(){ let loaded = false; try { loaded = !map || map.isStyleLoaded(); } catch (e) {} if (loaded || Date.now() - t0 > 20000) res(true); else setTimeout(chk, 200); })(); }); } } return true; })()`);
 }
 
+// Titles ship off behind the flags.js switch; this sets it on, restacking when a route is already loaded.
+export async function forceRouteTitlesOn(ev, poll) {
+  const loaded = await ev(`(() => { ROUTE_TITLES_ON = true; return typeof routeLoaded !== 'undefined' && routeLoaded === true && !!window.map; })()`);
+  if (!loaded) return true; // no stack exists yet: the coming route load builds it with the flag on
+  await ev(`(() => { setBasemap(); return true; })()`);
+  if (!await poll(`!!(window.map && map.getLayer && map.getLayer('streetnamespt1') && map.isStyleLoaded())`, 45000)) throw new Error('forceRouteTitlesOn: the titles never appeared on the basemap restack');
+  return true;
+}
+
 // T4/T7 (Tranche 4): scoped per-scenario reset. Deletes exactly the keys
 // the named route owns, derived page-side from the app's OWN routeKeys(id)
 // — never a copied key list in the test, so the reset cannot drift from the
