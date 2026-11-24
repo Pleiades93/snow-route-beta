@@ -9115,6 +9115,32 @@
    "red": "proof-1233 exit 1, check B4c FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
    "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
    "issued": "2026-11-23 sweep-180-r4"
+  },
+  {
+   "id": "changelog-archive-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "a70c3418ce5cf58969a3564ec8ced8016fa31140b17cbed1f870fe88d2b97ad5",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.242 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1242 fails exactly check 18, the CHANGELOG order check (16 pass, 1 fail) - observed twice",
+   "green": "proof-1242 passes in full (17 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "a93f58dc8b4df5c27a6f3d1ebca1fca44329479133d5535800c446ccc5f3b4fc",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.243 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1243 fails exactly check 20, the CHANGELOG order check (18 pass, 1 fail) - observed twice",
+   "green": "proof-1243 passes in full (19 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
   }
  ]
 }
