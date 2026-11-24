@@ -50,9 +50,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Confirmation and branch gate
+        env:
+          DEPLOY_CONFIRM: ${{ inputs.confirm }}
         run: |
           set -euo pipefail
-          if [ "${{ inputs.confirm }}" != "DEPLOY" ]; then
+          if [ "$DEPLOY_CONFIRM" != "DEPLOY" ]; then
             echo "Confirmation input was not DEPLOY - refusing to deploy."
             exit 1
           fi
@@ -106,6 +108,10 @@ jobs:
           # Firebase matches header rules against the request URL, not the
           # resolved file, so "/" needs its own rule beside "/index.html"
           # (Codex review, PR #20) - the root URL is the primary launch path.
+          # Issue #180: the "**" rule also carries the security headers on
+          # every response - X-Frame-Options DENY (the app is framed
+          # nowhere) and X-Content-Type-Options nosniff. GitHub Pages
+          # cannot send headers, so this protection exists only here.
           cat > "$stage/firebase.json" <<'JSON'
           {
             "hosting": {
@@ -113,6 +119,7 @@ jobs:
               "site": "snowroute-tracker",
               "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
               "headers": [
+                { "source": "**", "headers": [{ "key": "X-Frame-Options", "value": "DENY" }, { "key": "X-Content-Type-Options", "value": "nosniff" }] },
                 { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
                 { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
                 { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },

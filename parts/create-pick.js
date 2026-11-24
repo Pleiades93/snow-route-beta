@@ -510,6 +510,7 @@ function crOpenCityPane(ret) {
   showRmPane('rmCityPane');
 }
 let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
+let crCityOnlineAt = 0; // issue #180: the last PUBLIC city-search request's moment - the public service's policy caps requests at one per second, and crRunCitySearch (the explicit online search) waits out the remainder of the second rather than fire early
 function crResetCitySearch() { // Architecture #19: THE city-search close owner - the mirror of crResetSearch (the street search's owner, Beta 1.243). Ending a held city search was spelled out at four seats (the pane open in crOpenCityPane, the input event, the city pane's Back, and the short-query return inside crRunCitySearch): the same moves - bump the sequence (the family's invalidation: crCitySearchCurrent and crCitySearchSeqCurrent answer to it), abort the in-flight request and drop its handle, clear the pending debounce. The ritual lives here now; the seats keep only their own extras (the input event re-arms its debounce after the close, the short-query return clears the results box, the pane open resets the pane itself). The short-query seat never held a timer to clear - its only caller is the debounce, which spends the timer before running the search - so the owner's timer clear is a no-op at that seat, exactly as the seat's omission was. What the owner deliberately does NOT do: bump the sequence at exitCreate - the catch's seq-only asymmetry (crCitySearchSeqCurrent) is documented there and is not this ritual's to change.
   crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
   if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
@@ -969,6 +970,27 @@ function crCityLocalMatches(q) {
   head.sort(byPop); word.sort(byPop);
   return head.concat(word).slice(0, 6).map(i => { const e = CR_CITY_GAZETTEER[i]; return { display_name: e[0] + ', Ontario, Canada', category: 'boundary', type: 'administrative', lat: String(e[1]), lon: String(e[2]), boundingbox: [String(e[3]), String(e[4]), String(e[5]), String(e[6])], address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' } }; }); // the service's own item shape, so the row renderer and crPickCity consume a suggestion exactly like a service row
 }
+function crCityResultRow(it, i) { // one city result row, shared by the type-ahead and the online search (extracted in the issue #180 round - the two renders must never drift apart)
+  const dn = it.display_name || '', cut = dn.indexOf(',');
+  const row = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null); // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
+  row.classList.add('crRowIn'); row.style.animationDelay = (i * 55) + 'ms'; // Beta 1.229: the approved stagger - each row settles in a beat after the one above it (fade + a small rise, the .crRowIn keyframes in head.html)
+  row.addEventListener('click', () => crPickCity(it));
+  return row;
+}
+function crRunCityTypeahead() { // issue #180: typing answers from the ON-DEVICE gazetteer ONLY. Through this fix the 500 ms debounce fired the public Nominatim service on every typing pause - client-side autocomplete, which the service's usage policy prohibits (and it caps requests at one per second besides). The street search went on-device in Beta 1.234 for its own reasons; the city search now follows: local matches as you type, and the public service is asked only when the search-online row below is tapped (crRunCitySearch, rate-limited to one request per second). The gazetteer is Ontario-only, so a place it cannot name stays reachable through that row and through the city list.
+  const q = $('crCityInput').value.trim();
+  if (q.length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the input event already invalidated through the owner; this seat only clears
+  const places = crCityLocalMatches(q);
+  crCityBoxSwap(b => {
+    b.innerHTML = '';
+    places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
+    if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
+    const on = routeRowShell('button', 'Search online', 'Ask the live service about \u201c' + q + '\u201d');
+    on.classList.add('crOnlineRow');
+    on.addEventListener('click', () => crRunCitySearch());
+    b.appendChild(on);
+  });
+}
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
   if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change. Architecture #19: the invalidation runs through crResetCitySearch, the one owner
@@ -977,6 +999,9 @@ async function crRunCitySearch() {
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
   crCityShowSkeletons();
   try {
+    const waitMs = 1000 - (Date.now() - crCityOnlineAt); // issue #180: the public service's one-request-per-second cap, honoured at the only seat that fires it - a tap inside the second waits out the remainder (the sequence check after the wait drops a wait the user has already moved past)
+    if (waitMs > 0) { await new Promise(r => setTimeout(r, waitMs)); if (!crCitySearchCurrent(seq, session)) return; }
+    crCityOnlineAt = Date.now();
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined }); // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
     const list = await r.json();
@@ -986,13 +1011,7 @@ async function crRunCitySearch() {
     for (const loc of crCityLocalMatches(q)) { if (places.length >= 6) break; const lk = crCityGazKey(loc.address.city); if (!seen.has(lk)) { seen.add(lk); places.push(loc); } }
     crCityBoxSwap(b => {
       b.innerHTML = '';
-      places.forEach((it, i) => {
-        const dn = it.display_name || '', cut = dn.indexOf(',');
-        const row = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null); // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
-        row.classList.add('crRowIn'); row.style.animationDelay = (i * 55) + 'ms'; // Beta 1.229: the approved stagger - each row settles in a beat after the one above it (fade + a small rise, the .crRowIn keyframes in head.html)
-        row.addEventListener('click', () => crPickCity(it));
-        b.appendChild(row);
-      });
+      places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
       if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
     });
   } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } } // Beta 1.229: a failed search resolves through the same animation - the skeletons leave by the glide, never a pop and never a stuck skeleton
@@ -1485,9 +1504,9 @@ $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = n
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
   crResetCitySearch(); // Architecture #19: the invalidation runs through crResetCitySearch, the one owner - the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
-  crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500);
+  crCityTimer = setTimeout(() => { crCityTimer = null; crRunCityTypeahead(); }, 500); // issue #180: the debounce runs the on-device type-ahead - the public search fires only from its own row
 });
-// Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches go through the Ontario-scoped crRunCitySearch, list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
+// Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches answer from the on-device gazetteer (crRunCityTypeahead; issue #180 - the public service is asked only on the explicit search-online tap, through the Ontario-scoped crRunCitySearch), list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
 $('crCityBack').addEventListener('click', () => {
   crResetCitySearch(); // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does. Architecture #19: the close runs through crResetCitySearch, the one owner
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }

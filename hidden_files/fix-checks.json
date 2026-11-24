@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "c32165a135fce632ceced19a1ff96461f7f2a0be1c9f2b5540848c32ecafa012",
+  "canonical_registry_sha256": "aa1b31347943dc3bd45d62837f5e7503d4ab5b32052ccb7bf9f191e7730df732",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1492,
-   "included": 1462,
+   "canonical": 1502,
+   "included": 1472,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -1320,7 +1320,7 @@
    "file": ".github/workflows/checks.yml",
    "fix": "Every CI action is pinned to the exact commit SHA of its release tag (Beta 1.96, F-08): a tag can be re-pointed by its owner; a SHA cannot \u2014 the workflow runs exactly the code reviewed when the pin was set.",
    "id": "beta-ci-actions-sha-pinned",
-   "pattern": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4",
+   "pattern": "actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
    "type": "grep_present"
   },
   {
@@ -2517,9 +2517,9 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "City autocomplete is DEBOUNCED (500 ms, Beta 1.120): one Nominatim call per keystroke is rate-limit bait and out-of-order responses scramble the list.",
+   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete.",
    "id": "beta-1120-autocomplete-debounce",
-   "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; crRunCitySearch(); }, 500);",
+   "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; crRunCityTypeahead(); }, 500);",
    "type": "grep_present"
   },
   {
@@ -13011,6 +13011,97 @@
    "file": ".github/workflows/firebase-manual-deploy.yml",
    "type": "grep_present",
    "added": "2026-11-23"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "parts/app3.js",
+   "fix": "Issue #180 (Beta 1.286): a FULL clean archives at any route size - the finish rule is size >= 3 OR every street of the route done, so a one- or two-street route's complete clean reaches history.",
+   "fix_id": "sweep-180-finish-full-clean",
+   "id": "sweep-180-finish-full-clean-archives",
+   "pattern": "doneSet.size >= 3 || (doneSet.size > 0 && STREETNAMES.every(n => doneSet.has(n)))",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "parts/app2.js",
+   "fix": "Issue #180 (Beta 1.286): street-keyed notes reads test Array.isArray - a street named 'constructor' reads the inherited member on the plain notes object and .some on it crashed the Streets row.",
+   "fix_id": "sweep-180-constructor-guards",
+   "id": "sweep-180-constructor-notes-guard",
+   "pattern": "Array.isArray(notes[n]) && notes[n].some(f => f.k !==",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "parts/app5.js",
+   "fix": "Issue #180 (Beta 1.286): switching to a route with no live clean clears the Locate button's recording face and gpsFromRun; the watch itself is device state and keeps running view-only.",
+   "fix_id": "sweep-180-locate-face",
+   "id": "sweep-180-locate-face-clear",
+   "pattern": "gpsFromRun = false; $('gpsBtn').classList.toggle('rec', false); renderIcons();",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "parts/create-pick.js",
+   "fix": "Issue #180 (Beta 1.286): city search typing answers from the on-device gazetteer (crRunCityTypeahead); the public Nominatim service is asked only from the explicit Search online row, at most once per second (its policy prohibits client-side autocomplete).",
+   "fix_id": "sweep-180-nominatim-typeahead",
+   "id": "sweep-180-nominatim-typeahead-local",
+   "pattern": "function crRunCityTypeahead()",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "parts/app1.js",
+   "fix": "Issue #180 (Beta 1.286): polar day and polar night are distinguished in the theme's sun math - a missing sunrise/sunset pair no longer reads as day in polar night.",
+   "fix_id": "sweep-180-polar-theme",
+   "id": "sweep-180-polar-theme",
+   "pattern": "st.polar === 'night'",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "scripts/csp_stamp.py",
+   "fix": "Issue #180 (Beta 1.286): the CSP names the one MapLibre CSS file for style-src-elem instead of the whole jsDelivr origin (jsDelivr also dropped from img-src and connect-src, which the page never uses).",
+   "fix_id": "sweep-180-csp-narrow",
+   "id": "sweep-180-csp-style-narrow",
+   "pattern": "style-src-elem 'sha384-{style}' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "scripts/push.py",
+   "fix": "Issue #180 (Beta 1.286, major): the push preflight exempts the build checker's whole import closure (build-pages, csp_stamp, assemble, release, source_query) from the prospective-tree overlay - branch-sourced helper modules are never executed locally.",
+   "fix_id": "sweep-180-push-instruments",
+   "id": "sweep-180-push-instrument-closure",
+   "pattern": "\"scripts/source_query.py\"}",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": ".github/workflows/checks.yml",
+   "fix": "Issue #180 (Beta 1.286): CI action pins run on the Node 24 runtime (checkout + setup-node v5) - the v4 pins declared the deprecated node20.",
+   "fix_id": "sweep-180-ci-pins",
+   "id": "sweep-180-ci-node24-pins",
+   "pattern": "actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": ".github/workflows/firebase-manual-deploy.yml",
+   "fix": "Issue #180 (Beta 1.286): the generated Firebase hosting config carries X-Frame-Options DENY and X-Content-Type-Options nosniff on every response.",
+   "fix_id": "sweep-180-firebase-headers",
+   "id": "sweep-180-firebase-security-headers",
+   "pattern": "\"key\": \"X-Frame-Options\", \"value\": \"DENY\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-23",
+   "file": "/home/hatch/workspace/snow-route-5w/beta1/repo/icon-maskable-512.png",
+   "fix": "Issue #180 (Beta 1.286): the maskable icon's artwork sits inside the guaranteed safe-zone circle (radius <= 204.8 of 512); proof-icon-swap-1213's M section measures it.",
+   "fix_id": "sweep-180-maskable-safezone",
+   "id": "sweep-180-maskable-safe-zone",
+   "pattern": "",
+   "type": "command_exit0",
+   "command": "cd . && node tests/proof/proof-icon-swap-1213.mjs"
   }
  ]
 }

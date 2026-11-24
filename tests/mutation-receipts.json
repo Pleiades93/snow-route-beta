@@ -8719,6 +8719,85 @@
    "red": "proof-trim-glow-path-pills exit 1, the pill-labels check FAIL only",
    "green": "proof-trim-glow-path-pills exit 0 on the restored tree",
    "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1235-180-scoped-repin",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "9995a6014819bad007b368b1d06e685da6f2f1c20fcf9426aba7a201fced64b3",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "parts/create-pick.js: the online search's render call (inside crRunCitySearch) renamed to a private builder crCityRowInline. The first re-point of B10 in this round was a whole-file pin and stayed GREEN under this mutation (the type-ahead's identical call satisfied it) - the issue #179 class recurring in the round's own edit; B10 is now scoped to crRunCitySearch's body (slice from its start, the proof-1271 idiom)",
+   "red": "proof-1235 17 passed, 1 failed with the scoped pin: exactly B10 red",
+   "green": "proof-1235 18 passed, 0 failed on the Beta 1.286 tree",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "proof-icon-180-safezone",
+   "check": "tests/proof/proof-icon-swap-1213.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-icon-swap-1213.mjs": "b27fdd3b7d4f8671a4f4d3016b25ab2f69e5e3e670a84aac6a0b54434cb102c5",
+    "icon-maskable-512.png": "a15c58d8cfec4bf0fb3d972e05cab6f14bc32dd581ec31aef9e3054ec0d08518"
+   },
+   "mutation": "the pre-fix icon-maskable-512.png (artwork max radius 270.8, outside the maskable safe zone) swapped back in",
+   "red": "proof-icon-swap-1213: M sha FAIL and M safe-zone radius FAIL (maxR 270.8 > 204.8)",
+   "green": "24 pass, 0 fail with the rescaled icon (artwork max radius 199.4)",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "gate-fixtures-180-instrument-closure",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "be6e90ccb5270d492b1dea765fd1fade6482b71e09ceafb417f17b9cfd4e2a42",
+    "scripts/push.py": "b41ff114c59e21557019e6d4ebad3f0eda8e875eae613dc526d8369cc86060de",
+    ".github/workflows/checks.yml": "67242aaad18ddb34f56ddf26f2f515d29ff17cbc286180383f1a7db391986d49"
+   },
+   "mutation": "scripts/push.py neutered: the prospective preflight's instrument set reduced from the build checker's import closure (build-pages, csp_stamp, assemble, release, source_query) to build-pages.py alone - the pre-issue-#180 shape",
+   "red": "gate fixtures 78 pass, 1 fail: exactly the new instrument-closure case - the branch-poisoned csp_stamp helper executed locally (marker present) while the push still succeeded",
+   "green": "gate fixtures 79 pass, 0 fail on the Beta 1.286 tree",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "drive164-180-typeahead-repoint",
+   "check": "tests/browser/drive164.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive164.mjs": "fbdae75e9787998a375ac2ad547aea2448f77fcb730191dc28f7fff0ec8a2f02",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (page rebuilt) - the re-pointed Case 3 reaches the online search only through that row",
+   "red": "drive164 15/16: exactly E1b red - abortedAtClear false, no fetch ever in flight for the clear to abort",
+   "green": "drive164 16/16 on the Beta 1.286 tree (observed locally)",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "drive188-180-banner-repoint",
+   "check": "tests/browser/drive188.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive188.mjs": "0bd7a00ff0282a7de211125fbb09d5906d629abf863e625d91ce828180f47c22",
+    "parts/app3.js": "11a34c61a1779d7e3ab5c04b1109489b0137b74e9bae6726c743b8e9e88c42e0"
+   },
+   "mutation": "parts/app3.js: the reference banner reverted to the pre-issue-#180 shape (', ' + fmtHM + ' total \u00b7 ') (page rebuilt)",
+   "red": "drive188 14/15: exactly A3 red - the banner reads '0:34 total \u00b7'",
+   "green": "drive188 15/15 on the Beta 1.286 tree (observed locally)",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "drive192-180-labels-repoint",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "d0df680079ba101340817450a5c76e1c8338dfc91f03ae0bbbf3b8990b2d5a16",
+    "parts/app3.js": "11a34c61a1779d7e3ab5c04b1109489b0137b74e9bae6726c743b8e9e88c42e0"
+   },
+   "mutation": "parts/app3.js: the reference banner reverted to ' total \u00b7 ' and the clean-detail stat cell label reverted to TOTAL TIME (page rebuilt)",
+   "red": "drive192: P3 red (banner '1:42 total \u00b7') and P8 red (the detail stats map carries TOTAL TIME and no STREETS DONE IN key)",
+   "green": "drive192 47/51 locally on the Beta 1.286 tree: every functional check green incl. P3 and P8; the 4 failures are the D detents at 360x740, the recorded pristine-identical fixed-window sampler env family (known-env-failures) - CI is the credible read for detents",
+   "issued": "2026-11-23 sweep-180"
   }
  ]
 }

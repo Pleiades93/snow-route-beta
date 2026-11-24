@@ -57,7 +57,7 @@ try {
   ok('P2 Last clean and Last pace /km still populate from the most recent clean | ' + JSON.stringify({ seed: { last: seed.last, pace: seed.pace }, pm }),
     pm['LAST CLEAN'] === seed.last && pm['LAST PACE /KM'] === seed.pace);
   ok('P3 the banner slot carries the REFERENCE line, never a verdict, when no run is live | ' + ph.banner,
-    ph.bannerRef === true && ph.banner.includes('Reference clean (' + seed.ttl + ')') && ph.banner.includes(seed.last + ' total') && ph.head.includes('not started'));
+    ph.bannerRef === true && ph.banner.includes('Reference clean (' + seed.ttl + ')') && ph.banner.includes('streets done in ' + seed.last) && ph.head.includes('not started'));
   ok('P4 Progress by group credits the half street (Velmar done + Mellings half on Primaries) | ' + JSON.stringify(ph.gm),
     ph.gm[0].includes('1.5 of 6 streets') && ph.gm[1].includes('0 of 28 streets'));
   ok('P5 the seeded clean is listed under Saved cleans | rows ' + ph.rows, ph.rows === 1);
@@ -84,7 +84,7 @@ try {
   ok('P7 tapping a saved clean opens its detail INSIDE the Pace sheet (sheet stays open, pace content yields) | ' + JSON.stringify({ open: dt.open, cvShown: dt.cvShown, padHidden: dt.padHidden }),
     dt.open === true && dt.cvShown === true && dt.padHidden === true);
   ok('P8 the detail header and stats bind to the clean - GPS trail is its OWN figure, distinct from road cleared | ' + JSON.stringify({ dt, dm }),
-    dt.ttl === seed.ttl && dt.sub.includes(PACK5W.names + ' streets · finished') && dm['TOTAL TIME'] === seed.last && dm['GPS TRAIL'] === '21.4 km' && dm['ROAD CLEARED'] === seed.tw + ' km' && dm['ROAD CLEARED'] !== dm['GPS TRAIL'] && dm['PACE'] === seed.pace + ' /km' && dt.rows === PACK5W.names);
+    dt.ttl === seed.ttl && dt.sub.includes(PACK5W.names + ' streets · finished') && dm['STREETS DONE IN'] === seed.last && dm['GPS TRAIL'] === '21.4 km' && dm['ROAD CLEARED'] === seed.tw + ' km' && dm['ROAD CLEARED'] !== dm['GPS TRAIL'] && dm['PACE'] === seed.pace + ' /km' && dt.rows === PACK5W.names);
   ok('P9 no Locate pill anywhere in the detail; a note icon ONLY on the street that had a note saved on this clean | pills ' + dt.locs + ' icons ' + dt.icons,
     dt.locs === 0 && dt.icons === 1 && dt.velmarIcon === true);
   await ev(`(() => { const r = [...$('cleanView').querySelectorAll('.cvRow')].find(x => x.querySelector('.cvNm').textContent === 'Velmar'); r.click(); return true; })()`); await sleep(200);

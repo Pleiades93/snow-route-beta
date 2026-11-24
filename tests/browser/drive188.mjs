@@ -59,7 +59,7 @@ try {
   })()`);
   ok('A1 histDur counts the null-timestamped street (count === route size) | ' + JSON.stringify({ n: a.n, dcount: a.dcount }), a.dcount === a.n && a.n > 5);
   ok('A2 refRun takes the clean as the FULL reference (a null time is still a cleaned street) | refIs=' + a.refIs, a.refIs === true);
-  ok('A3 the pace surfaces read the same count in the Beta 1.184 slots (the saved-clean row count; the reference banner total = the histDur span) | ' + (a.pad || '').slice(0, 200), a.pad.includes('· ' + a.n + ' streets') && a.pad.includes('Reference clean (') && a.pad.includes(a.bannerWant + ' total'));
+  ok('A3 the pace surfaces read the same count in the Beta 1.184 slots (the saved-clean row count; the reference banner names the histDur span "streets done in", issue #180) | ' + (a.pad || '').slice(0, 200), a.pad.includes('· ' + a.n + ' streets') && a.pad.includes('Reference clean (') && a.pad.includes('streets done in ' + a.bannerWant));
   ok('A4 the clean detail header agrees | meta: ' + (a.meta || '').slice(0, 120), (a.meta || '').includes(a.n + ' streets'));
 
   // ---- B: B-06 the fuller legacy derivation ----

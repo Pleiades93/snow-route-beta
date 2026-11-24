@@ -16,7 +16,7 @@ Each route keeps its own progress, notes, and history. Snow Route is designed fo
 - **Track street sections and sides:** Streets are divided into sections at junctions. Each side of a section can be marked complete independently, and a whole street can also be completed from its information panel.
 - **See work as it is completed:** Completed sections and sides are shown on the map, finished stretches join into a continuous line, and the app shows how much of each street and route is done.
 - **Run a work session:** Start and finish a work session, review the streets completed during it, and compare pace with the most recent full work session. Previous work sessions remain available in the route history.
-- **Use GPS without giving it control:** GPS follow keeps the operator’s position on the map during a work session. The app can suggest streets that appear covered, but it never marks a street automatically.
+- **Use GPS without giving it control:** GPS follow keeps the operator’s position on the map during a work session. The app records which streets the GPS path covers, but a street is only ever marked by hand.
 - **Keep street notes:** Notes can be kept with individual streets and reviewed as part of that route’s information.
 - **Work in day or night conditions:** The map provides day and night styles, switches automatically according to the sun, and allows a manual override for the current session.
 - **See buildings in three dimensions:** Tilting the map can show building footprints as three-dimensional forms while the top-down view remains unchanged.

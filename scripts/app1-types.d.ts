@@ -111,7 +111,7 @@ type StretchMap = { [street: string]: Stretch };
 type RouteKeys = { done: string, times: string, hist: string, notes: string, via: string, trail: string, cov: string, start: string, flip: string, sides: string, sess: string, pre: string, snap: string, mig: string, migfill: string, finclean: string, rundist: string, rundist2: string };
 
 /** sunTimes' return: the day's sunrise/sunset as epoch ms, null when the sun never rises or sets that day (CODE-ONLY, app1). */
-type SunTimes = { rise: number | null, set: number | null };
+type SunTimes = { rise: number | null, set: number | null, polar: 'day' | 'night' | null };
 
 // ---- 2. Cross-part globals (home part named per declaration) ----
 
