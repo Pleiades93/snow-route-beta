@@ -8493,6 +8493,20 @@
    "red": "gate attempt 1 (head 6abd08a2, run 45289771170): FAIL E18 trim observed at -1 with the extensionless flood; gate attempt 2 (head 8f10ca98, run 45291978253): FAIL E18 at -1 again - the .mvt flood covered the trigger template's own row (y=1490, x 1140-1439 inside the flooded 0-3099), so all 300 trigger fetches were cache hits; Codex P1 on that head confirmed by exercising the shipped worker (3100 tiles intact, zero fetches/writes/deletes)",
    "green": "the corrected check (flood at y=2000, disjoint from the trigger row; tile-key reading) passes in the PR #196 gate re-run on the head carrying this receipt; the run id is recorded in the round RECORD.md",
    "issued": "2026-11-23 offline-cluster"
+  },
+  {
+   "id": "gate-fixtures-registry-sync-neuter-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d109696211901d0a9e39f237f46a8371d33d65fa7640cc176c25fc7267d08c42",
+    "scripts/push.py": "682c41e19b2cc6ae90fadb020fa8574ea11127c8c5ced6c822aef373f5669980",
+    "scripts/sync-fix-checks.py": "b21af83d7bb863ac971a2e2f0e1b2f84305f216d59f5d566ee568c4329316db2"
+   },
+   "mutation": "Scratch copy of the tree with scripts/push.py's registry_sync_gate neutered to return None unconditionally (the vendored registry pair is never compared against the canonical registry, so a divergent vendored copy certifies every push).",
+   "red": "Gate fixtures 71 pass, 1 FAIL - exactly the registry-sync refusal case: a vendored registry diverging from the canonical registry pushes (exit 0) instead of refusing (want 1). The in-sync case still passes under the neuter.",
+   "green": "Gate fixtures 72 pass, 0 fail on the real tree, including both registry-sync cases (in-sync pushes, divergent refuses).",
+   "issued": "machinery-issues-173-178"
   }
  ]
 }

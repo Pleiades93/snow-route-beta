@@ -103,8 +103,9 @@ through the helper directly — the discipline it cannot enforce is the
 point. Since the #178 machinery round (2026-11-23), the receipts,
 census and mirrors gates below also run as steps in CI's
 `build-and-test` job, so the pull-request gate enforces them even
-when a change did not arrive via this path; the registry gate
-remains push-path-only (below). Since /correct Phase 3 round (a), a push also runs the
+when a change did not arrive via this path. Since the same round's
+registry half (Andrew's ruling, 2026-11-23), the registry also runs
+in CI: it is vendored into the repo (below). Since /correct Phase 3 round (a), a push also runs the
 **registry gate** first: the fix-checks registry's grep probes run
 serially against the push tree, and any failure outside the recorded
 standing-failures baseline refuses the push — a round whose code
@@ -114,10 +115,20 @@ hand (the C1 class: six stale patterns reached the Beta 1.258
 close-out unrun, and eight more had accumulated by 1.260). The gate
 runs against the prospective tree the push would create as well as
 the local tree, so a fix that is not in the push set cannot certify
-the push. This gate has no CI step: the registry lives outside the
-repo, so it runs only where the registry is present (this push path
-and the weekly runner); issue #178 tracks the open decision on its
-merge-gate status. Since /correct Phase 3 round (b), a push also runs the
+the push. The canonical registry still lives outside the repo (the
+goal's hidden_files/fix-checks.json), and the full set still runs
+where it lives — this push path and the weekly runner. For CI, the
+registry is VENDORED into the repo: `hidden_files/fix-checks.json`
+carries the repo-pinned subset (every probe whose targets live
+inside the repo tree, selected mechanically by
+`scripts/sync-fix-checks.py`) and `scripts/run_fix_checks.py` is a
+byte copy of the canonical runner; CI's `build-and-test` runs that
+subset as the Registry gate step. The vendored pair is GENERATED,
+never hand-edited: a push whose vendored files diverge from the
+canonical registry is refused (the registry sync gate), so a round
+that registers a probe in the canonical registry re-runs
+`python3 scripts/sync-fix-checks.py` and pushes the regenerated
+files in the same round. Since /correct Phase 3 round (b), a push also runs the
 **receipts gate**: a check or judge file the push changes (proofs,
 drives, selftests, fixture suites, and the gate scripts they
 exercise — the scope lives in `scripts/check-receipts.py`) must be

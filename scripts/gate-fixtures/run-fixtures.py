@@ -426,6 +426,34 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a changed judge named by a current receipt pushes",
           run_push(t / "rcjudge2", ["scripts/push.py", "tests/mutation-receipts.json"],
                    mode="push", env_extra=rc_judge2), 0)
+    # Registry sync gate (issue #178's registry half): the vendored
+    # pair in the push tree must equal what the canonical registry
+    # generates - a stale or hand-edited vendored copy refuses the
+    # push. The fixture tree carries a copy of the real
+    # scripts/sync-fix-checks.py (push.py loads its gate logic from
+    # the push tree, the measuring instrument), and the fixture
+    # environment names the fixture registry plus this tree as the
+    # canonical coordinates, so the vendored pair is generated from
+    # the fixture registry itself.
+    def sync_tree(name):
+        env = push_tree2(t / name, parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
+                         tracker="AB", index="shell Beta 1.0 AB")
+        w(t / name / "scripts" / "sync-fix-checks.py",
+          (ROOT / "scripts" / "sync-fix-checks.py").read_text())
+        env = {**env, "SNOW_FIX_CHECKS_REPO_ROOT": str(t / name)}
+        proc = subprocess.run([PY, str(t / name / "scripts" / "sync-fix-checks.py"),
+                               str(t / name)], capture_output=True, text=True,
+                              timeout=120, env={**os.environ, **env})
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        return env
+    sync_ok = sync_tree("syncok")
+    check("push: a vendored registry in sync with the canonical registry pushes (registry sync gate)",
+          run_push(t / "syncok", ["index.html"], mode="push", env_extra=sync_ok), 0)
+    sync_stale = sync_tree("syncstale")
+    w(t / "syncstale" / "hidden_files" / "fix-checks.json",
+      (t / "syncstale" / "hidden_files" / "fix-checks.json").read_text() + "\n")
+    check("push: a vendored registry diverging from the canonical registry refuses the push (registry sync gate)",
+          run_push(t / "syncstale", ["index.html"], mode="push", env_extra=sync_stale), 1)
 
 # ------------------------------------------------- mutation receipts
 with tempfile.TemporaryDirectory() as td:
