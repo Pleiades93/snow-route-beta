@@ -4207,9 +4207,7 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
           // mid-create theme swap included) recomputes the filter from the same
           // state. Outside create mode the target is byte-for-byte the filter
           // above. No label layer is forked - the same two layers carry both.
-          // Beta 1.293: titles off (the flags.js source switch) lifts the
-          // exclusion the same way - the basemap names every street, the
-          // route's included, because no app titles exist to name them.
+          // Beta 1.293: titles off lifts the exclusion too - the basemap names every street.
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
           const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];

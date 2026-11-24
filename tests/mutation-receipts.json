@@ -10388,6 +10388,100 @@
    "red": "no red run: the A-phase exclusion claim is the on-state claim by construction (while off the exclusion is lifted, proven by drive219 W4)",
    "green": "drive218 14/14 locally on the final tree (2026-11-24)",
    "issued": "2026-11-24 label-switch-1293"
+  },
+  {
+   "id": "labelswitch-1293-proof-anchors-centre-v2",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "0852099d858c49aba582cb6bf9d3532b497c4921eb218f93950e43d5c6aaf75d",
+    "parts/engine.js": "4e8279a43feb257111a1c91ce6537ab19e32e3caf8859d3b406b14c05932ce29"
+   },
+   "mutation": "parts/engine.js title spec restored to the Beta 1.290 side form: 'text-anchor': ['get', 'anchor'], 'text-radial-offset': 0.8",
+   "red": "proof-anchors failed checks 1a (a stored anchor read is back) and 1b (the centre literal is gone) on both runs, exit 1 twice (2026-11-24 local, re-observed after the comment trims)",
+   "green": "proof-anchors 10/10 on the reverted final tree, exit 0; full proof suite 90/90",
+   "issued": "2026-11-24 label-switch-1293 gate fix"
+  },
+  {
+   "id": "labelswitch-1293-proof-anchors-gate-v2",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "0852099d858c49aba582cb6bf9d3532b497c4921eb218f93950e43d5c6aaf75d",
+    "parts/engine.js": "4e8279a43feb257111a1c91ce6537ab19e32e3caf8859d3b406b14c05932ce29"
+   },
+   "mutation": "parts/engine.js titlesOn bypassed: the gate body replaced with () => true",
+   "red": "proof-anchors failed check 1c (the switch gates both title entry points behind one typeof-guarded read) on both runs, exit 1 twice (2026-11-24 local, re-observed after the comment trims)",
+   "green": "proof-anchors 10/10 on the reverted final tree, exit 0",
+   "issued": "2026-11-24 label-switch-1293 gate fix"
+  },
+  {
+   "id": "labelswitch-1293-proof-1263-fixture-v2",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "4477ec9e0c0e60485e494e0c263179f6522ef294709b46d995122f11b55b2092",
+    "parts/engine.js": "4e8279a43feb257111a1c91ce6537ab19e32e3caf8859d3b406b14c05932ce29"
+   },
+   "mutation": "the proof's VM fixture context lost ROUTE_TITLES_ON: true, simulating an assembled boot without the flag",
+   "red": "proof-1263 failed check 12 (the constructor-named street gets no label point: the title build never runs) on both runs, exit 1 twice (2026-11-24 local, re-observed after the comment trims)",
+   "green": "proof-1263 13/13 on the restored final file, exit 0",
+   "issued": "2026-11-24 label-switch-1293 gate fix"
+  },
+  {
+   "id": "labelswitch-1293-proof-1265-lift-v2",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "f504254fceba57d51eb8d6b764ee8d671be5c663fcc217866ec6f349b18c4ff8",
+    "parts/app2.js": "51886d87f7ebebff2e772906fea9297b839e8df20f075047e04badaad012ca95"
+   },
+   "mutation": "parts/app2.js targetF reverted to the pre-1.293 form: the titlesOff condition dropped from the lift",
+   "red": "proof-1265 failed check 1 (the target is computed from the lift conditions: creating OR titles off) on both runs, exit 1 twice (2026-11-24 local, re-observed after the comment trims)",
+   "green": "proof-1265 6/6 on the reverted final tree, exit 0",
+   "issued": "2026-11-24 label-switch-1293 gate fix"
+  },
+  {
+   "id": "labelswitch-1293-drive219-centre-v2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "3a06041ffbebff9f90ad73b056a39a6d67e9d242669d5174f1ad93b276393c4f",
+    "parts/engine.js": "4e8279a43feb257111a1c91ce6537ab19e32e3caf8859d3b406b14c05932ce29",
+    "tests/browser/harness.mjs": "d73d470f1685f6e33bd79a87c6bb86d7c78f6fd6e8d0973d0ffec09929e6b677"
+   },
+   "mutation": "parts/engine.js title spec restored to the Beta 1.290 side form: 'text-anchor': ['get', 'anchor'], 'text-radial-offset': 0.8 (assembled before the runs)",
+   "red": "drive219 25/27 on both clean runs: B2 and D2 failed, reading the mutated spec {a: ['get','anchor'], r: 0.8} on all four title layers; every other check passed (2026-11-24 local, re-observed after the comment trims; two further attempts died on the local 300 s wrapper under load and are not counted)",
+   "green": "drive219 27/27 on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-switch-1293 gate fix"
+  },
+  {
+   "id": "labelswitch-1293-drive219-offstate-v2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "3a06041ffbebff9f90ad73b056a39a6d67e9d242669d5174f1ad93b276393c4f",
+    "parts/engine.js": "4e8279a43feb257111a1c91ce6537ab19e32e3caf8859d3b406b14c05932ce29",
+    "tests/browser/harness.mjs": "d73d470f1685f6e33bd79a87c6bb86d7c78f6fd6e8d0973d0ffec09929e6b677"
+   },
+   "mutation": "parts/engine.js titlesOn bypassed: the gate body replaced with () => true, so the title layers are added while the shipped flag reads false (assembled before the runs)",
+   "red": "drive219 26/27 on both clean runs: W2 alone failed - all four title layers and the labelpts source present on a settled pick while off; W1/W3/W4 and all on-state phases passed (2026-11-24 local, re-observed after the comment trims; two earlier attempts died on the local 300 s wrapper under load and are not counted)",
+   "green": "drive219 27/27 on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-switch-1293 gate fix"
+  },
+  {
+   "id": "labelswitch-1293-drive218-force-v2",
+   "check": "tests/browser/drive218.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive218.mjs": "09373070f5495f481c68b358fafa8f92158cead3c441007a0d8b7f350a5c986b",
+    "tests/browser/harness.mjs": "d73d470f1685f6e33bd79a87c6bb86d7c78f6fd6e8d0973d0ffec09929e6b677",
+    "parts/app2.js": "51886d87f7ebebff2e772906fea9297b839e8df20f075047e04badaad012ca95"
+   },
+   "mutation": "Beta 1.293 premise re-point: titles ship off, so the drive forces the source switch on (forceRouteTitlesOn after bootThrough) to grade the exclusion in title mode; no check changed. Re-issued after the gate-fix comment trim in parts/app2.js (comment only, no behaviour delta)",
+   "red": "no red run: the A-phase exclusion claim is the on-state claim by construction (while off the exclusion is lifted, proven by drive219 W4)",
+   "green": "drive218 14/14 locally on the final tree (2026-11-24, re-run after the comment trims)",
+   "issued": "2026-11-24 label-switch-1293 gate fix"
   }
  ]
 }

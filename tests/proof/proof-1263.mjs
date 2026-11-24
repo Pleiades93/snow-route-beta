@@ -129,9 +129,7 @@ check('11: the create-pick hide list carries the four title layers',
 // on this build it completes and the street gets its label point.
 // Reverting this guard would reintroduce the proven route-load crash of
 // PR #154 - it changes no naming behaviour for real streets.
-// Beta 1.293: the fixture carries the titles switch ON, as an assembled
-// boot always carries the flag - this check grades the label build, and
-// the off state is drive219's phase 0.
+// Beta 1.293: the fixture carries the switch ON, as an assembled boot always carries the flag.
 const fixMLAT = 111132, fixMLNG = 82000;
 const fixPt = (xM, yM) => [43.8 + yM / fixMLAT, -79.5 + xM / fixMLNG];
 const fixSeg = (x0, y0, x1, y1) => { const pts = []; const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 20)); for (let k = 0; k <= n; k++) pts.push(fixPt(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n)); return pts; };

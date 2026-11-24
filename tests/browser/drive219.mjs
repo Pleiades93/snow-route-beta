@@ -3,14 +3,9 @@ import { laneViolations } from './lane-judge.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 1, mobile: true }, S); // this lane grades presence and paint, not pixels: at the harness's retina factor the software-rendered headless map eats the main thread and the 50 ms sampler starves to a few ticks a second (measured), which would stretch the very timings under grade. At factor 1 the sampler holds its 50 ms median (measured).
 
-// drive219: the title lane for the Beta 1.293 source switch.
-// Phase 0 grades the shipped OFF state: the flag reads false, no title
-// layers or labelpts source exist, and the basemap names the route
-// streets (the exclusion is lifted). Every later phase forces the
-// switch on (forceRouteTitlesOn) and grades the ON state: titles
-// centred on their label points, spec-fixed - nothing writes a title
-// layer's visibility or opacity after the layers are added, and
-// labelpts is never torn down.
+// drive219: the title lane. Phase 0 grades the shipped OFF state (no
+// title layers; the basemap names route streets); later phases force
+// the switch on and grade centred, spec-fixed titles.
 // Settled-frame rule: names are judged only over samples at or after the
 // flight's moveend (mid-flight, the wide view legitimately loses names).
 // Basemap names are the renderer's own collision placement: the lane

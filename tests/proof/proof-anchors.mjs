@@ -1,19 +1,6 @@
-// proof-anchors.mjs - the route title placement contract.
-// Beta 1.290 seated each title on a geometry-decided side (assignAnchors,
-// a data-driven text-anchor). Beta 1.293 (Andrew, from the real-app
-// sample) replaces the sides with CENTRE placement - every title sits on
-// its label point, over the middle of its street - and puts the whole
-// title system behind the source-only switch in flags.js
-// (ROUTE_TITLES_ON, shipped OFF). The side rule and its fixtures are
-// deleted with the feature; what this proof pins now:
-//   1. the centre spec and the switch gate, structurally;
-//   2. the label points themselves on the real pack (on their streets,
-//      Fifth's nudge intact) - the geometry half of centre placement;
-//   3. the label round's structural ban (no cure machinery, labelpts
-//      created once and never torn down, no literal-id title writes).
-// The live behaviour is graded by drive219 (off state, then the forced
-// on state). Fail-first baseline: on the Beta 1.292 tree checks 1a-1d
-// fail (side spec, no switch, no flags file).
+// proof-anchors.mjs - pins centred title placement, the flags.js switch
+// gate and the label points, so naming cannot silently regress.
+// drive219 grades the live behaviour.
 import { readFileSync, readdirSync } from 'node:fs';
 import vm from 'node:vm';
 
