@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "7e6dc98e90088ad8dc3c7502b23e1ad70b96b46d90994a42d8a3d09d1353c2d5",
+  "canonical_registry_sha256": "6b37ba2b934f8ab0fa84e6ff56f504ce42b0b62eb0c189e565327d2e3c8e2ae7",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -12333,11 +12333,14 @@
   },
   {
    "added": "2026-11-24",
+   "also_fix_ids": [
+    "dropdown-corner-close-hold"
+   ],
    "file": "parts/head.html",
-   "fix": "Beta 1.289 corner sync (Andrew's decision, 2026-11-22): on close the dropdown's bottom corners hold square for the first 200ms of the 335ms close, then round over the last 135ms - the pane rows' shared rule carries the delayed 135ms spec. Codex ahead-draft #1, taken over onto the composed .routeRow/.crOnlineRow rule. Observed by drive222's hold and round-over checks (mutation receipt corner-fix-drive222).",
-   "fix_id": "dropdown-corner-close-hold",
+   "fix": "Beta 1.291 corner timing v2 (Andrew's decision, 2026-11-24, from interactive samples - polished option C): on close the dropdown's bottom corners hold square for the FULL 335ms close, then round over 280ms on a spring curve (cubic-bezier(.34,1.35,.5,1)) settling at 14px; no press animation added - the .97 dip stays the tap-time press. Supersedes the Beta 1.289 timing (200ms hold, 135ms round) on Andrew's live verdict: the rounding showed while the card still stood. Observed by drive222's extended hold, post-close round-over and settle checks (mutation receipts corner-timing-v2-drive222 and corner-timing-v2-drive222-r2).",
+   "fix_id": "dropdown-corner-timing-v2",
    "id": "dropdown1289-corner-close-hold",
-   "pattern": "border-bottom-left-radius 135ms var(--ease-close) 200ms",
+   "pattern": "border-bottom-left-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms",
    "type": "grep_present"
   },
   {

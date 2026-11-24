@@ -11746,6 +11746,162 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-24 label-round release"
+  },
+  {
+   "id": "corner-timing-v2-1291",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "ddOpen",
+     "ddClose"
+    ],
+    "elements": [
+     "routeDrop",
+     "routeRow",
+     "crOnlineRow"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:ddClose:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ddClose() is called from container:click in parts/app2.js",
+     "status": "unmarked",
+     "note": ""
+    },
+    {
+     "id": "caller:ddOpen:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ddOpen() is called from container:click in parts/app2.js",
+     "status": "unmarked",
+     "note": ""
+    },
+    {
+     "id": "theme:crOnlineRow",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crOnlineRow has NO day rule and NO body.night rule",
+     "status": "unmarked",
+     "note": ""
+    },
+    {
+     "id": "theme:routeDrop",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeDrop has NO day rule and NO body.night rule",
+     "status": "unmarked",
+     "note": ""
+    },
+    {
+     "id": "theme:routeRow",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeRow has NO day rule and NO body.night rule",
+     "status": "unmarked",
+     "note": ""
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "5db9ad1e48acfee27db4a19a57d34048ea930916aa077304d0d498a0327b885b",
+    "parts/app3.js": "11a34c61a1779d7e3ab5c04b1109489b0137b74e9bae6726c743b8e9e88c42e0",
+    "parts/app4.js": "977fb98c6cd3d101bed127407addcb265ebc1b263b15876fb8b392aa8ed70de8",
+    "parts/app5.js": "99c6114ae682585c58d0700bb7f17f0107084848c9f72bddfe75622039e068a0",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "59a0d853703b11d0e4d3035fad2c07da6b260d1e10d0633417bcd497bf3e555f",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "2c45d7f8e983d51bac896950ffad475529add177d44ed13ecd61b6a91ffc08eb",
+    "parts/head.html": "9987db49e2556790a7c38061b7ac5bf1d3759ab6f635804b4ec3d017fb23b0a4",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-24 corner-timing-v2"
+  },
+  {
+   "id": "corner-timing-v2-1291-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "ddOpen",
+     "ddClose"
+    ],
+    "elements": [
+     "routeDrop",
+     "routeRow",
+     "crOnlineRow"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:ddClose:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ddClose() is called from container:click in parts/app2.js",
+     "status": "covered",
+     "note": "the routes-list click delegation - the exact door drive222 clicks to close; the caller is unchanged, and the close it triggers now holds the corners square for the whole 335ms, then spring-rounds them after the card is gone - observed by drive222 extended hold, post-close round-over and settle checks"
+    },
+    {
+     "id": "caller:ddOpen:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ddOpen() is called from container:click in parts/app2.js",
+     "status": "covered",
+     "note": "the same delegation's open door; the open timing (the .ddOpen rule, var(--anim-dur) on --ease-open) is untouched by this round, and drive222's open checks (fluid pair, open pace) cover it"
+    },
+    {
+     "id": "theme:crOnlineRow",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crOnlineRow has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "same as routeRow: no day or night rule exists for the class; it shares the one composed pane-row rule this round retimes"
+    },
+    {
+     "id": "theme:routeDrop",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeDrop has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "the dropdown card has no theme variant - its tint and geometry are the blue menu's fixed faces in both themes; this round changes no card rule"
+    },
+    {
+     "id": "theme:routeRow",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeRow has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no theme face exists for the class - the blue menu wears one tint and one timing in both themes, and the changed transition rule is the single shared rule, so there is no second face to keep in step"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "5db9ad1e48acfee27db4a19a57d34048ea930916aa077304d0d498a0327b885b",
+    "parts/app3.js": "11a34c61a1779d7e3ab5c04b1109489b0137b74e9bae6726c743b8e9e88c42e0",
+    "parts/app4.js": "977fb98c6cd3d101bed127407addcb265ebc1b263b15876fb8b392aa8ed70de8",
+    "parts/app5.js": "99c6114ae682585c58d0700bb7f17f0107084848c9f72bddfe75622039e068a0",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "59a0d853703b11d0e4d3035fad2c07da6b260d1e10d0633417bcd497bf3e555f",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "70dc80d8d36d3fc0ab9e0bf24e111fabedb5b74e904cb61ae362fb2d54203c4d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "2c45d7f8e983d51bac896950ffad475529add177d44ed13ecd61b6a91ffc08eb",
+    "parts/head.html": "9987db49e2556790a7c38061b7ac5bf1d3759ab6f635804b4ec3d017fb23b0a4",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-24 corner-timing-v2"
   }
  ]
 }
