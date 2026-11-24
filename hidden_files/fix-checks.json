@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "632084d13fa4cbd0ca36994fc6386ddfae48a7c3113cb99e08693a8c646dc2ea",
+  "canonical_registry_sha256": "c5ba7718564f044b4041b149b63357b11fb22609150f2aa27f6ce4b7093b3eb9",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -2517,9 +2517,9 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete.",
+   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete. The timer also carries the armSeq stand-down (Beta 1.286, drive153 D5): a public search started before the timer fires supersedes the type-ahead, whose render must not land on the search's answer or re-fill the empty box its failure honestly leaves.",
    "id": "beta-1120-autocomplete-debounce",
-   "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; crRunCityTypeahead(); }, 500);",
+   "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500);",
    "type": "grep_present"
   },
   {

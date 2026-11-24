@@ -215,12 +215,21 @@ packMode = 'ok';
 // manual-search results from .rmBtn boxes to .routeRow rows (name in
 // .routeName, the dim remainder in .routeArea); this phase's selectors and
 // text reads follow the shipped shape. The assertions' meanings are unchanged.
+// Issue #180 TEST-PREMISE UPDATE (Beta 1.286): typing answers from the
+// on-device gazetteer; the public search fires only from the Search online
+// row. D1/D2 grade the SERVICE path (the 1.121 place-filter defect) and D3's
+// grid is graded on the fixture's Caledon answer, so they tap that row and
+// read the merged results; D5 grades the search REQUEST failing, so it taps
+// the row to make the request at all. D4's empty state reads the same in
+// the new shape and is unchanged.
 await ev2(`exitCreate()`);
 await openChooserTab();
 await ev2(`document.getElementById('crDoorManual').click()`);
 const paneD = await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 await typeCity('Vaughan');
-const resultsD = await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
+await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 15000);
+await ev2(`document.querySelector('#crCityResults .crOnlineRow').click()`);
+const resultsD = await poll(`[...document.querySelectorAll('#crCityResults .routeRow')].some(b => { const a = b.querySelector('.routeArea'); return a && a.textContent.indexOf('York Region') === 0; })`, 15000);
 const btnD = await J(`({ texts: [...document.querySelectorAll('#crCityResults .routeRow')].map(b => { const n = b.querySelector('.routeName'); const a = b.querySelector('.routeArea'); return (n ? n.textContent : '') + ', ' + (a ? a.textContent : ''); }) })`);
 ok('D1 MANUAL DOOR SEARCH (the 1.121 defect): typing "Vaughan" against REAL jsonv2-shaped answers (category, not class) renders SELECTABLE results - the place filter accepts the payload the service actually sends | ' + JSON.stringify(btnD.texts),
   paneD === true && resultsD === true && (btnD.texts || []).some(t => t.indexOf('Vaughan, York Region') === 0));
@@ -233,6 +242,8 @@ await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
 const wireD0 = wire.length;
 await typeCity('Caledon');
+await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 15000);
+await ev2(`document.querySelector('#crCityResults .crOnlineRow').click()`);
 const resultsK = await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
 await ev2(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (b) b.click(); return true; })()`);
 const readyK = await poll(`crPrepState === 'ready'`, 30000);
@@ -248,7 +259,9 @@ await typeCity('Zzzzz');
 const emptyD = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 0 && /No city matched/.test(document.getElementById('crCityResults').textContent)`, 15000);
 ok('D4 HONEST EMPTY: a search with no matches shows a "No city matched" line in the results - not the 1.121 silence', emptyD === true);
 await typeCity('Failtown');
-const failBox = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 0 && document.getElementById('crCityResults').textContent.trim() === ''`, 15000);
+await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 15000);
+await ev2(`document.querySelector('#crCityResults .crOnlineRow').click()`);
+const failBox = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 0 && document.querySelectorAll('#crCityResults .crSkel').length === 0 && document.getElementById('crCityResults').textContent.trim() === ''`, 15000);
 await sleep(1200);
 const failSettled = await J(`({ rows: document.querySelectorAll('#crCityResults .routeRow').length, txt: document.getElementById('crCityResults').textContent })`);
 ok('D5 HONEST FAILURE (Beta 1.221 form): when the search request itself fails, the app shows NOTHING false - no rows, and no "No city matched" line masquerading as an answer it never got (the connection pill itself was cut under Andrew\'s keep-list ruling; the honesty that survives is that a failure never claims an empty result)', failBox === true && failSettled.rows === 0 && !/No city matched/.test(failSettled.txt));

@@ -986,7 +986,7 @@ function crRunCityTypeahead() { // issue #180: typing answers from the ON-DEVICE
     places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
     if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
     const on = routeRowShell('button', 'Search online', 'Ask the live service about \u201c' + q + '\u201d');
-    on.classList.add('crOnlineRow');
+    on.classList.remove('routeRow'); on.classList.add('crOnlineRow'); // the search-online row is an ACTION, not a result: it deliberately does not wear .routeRow (the .crSkel precedent - the box's non-result occupants never wear the result class), so result-row counts in the box count results only; its look rides the same rules under its own class in head.html
     on.addEventListener('click', () => crRunCitySearch());
     b.appendChild(on);
   });
@@ -1504,7 +1504,8 @@ $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = n
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
   crResetCitySearch(); // Architecture #19: the invalidation runs through crResetCitySearch, the one owner - the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
-  crCityTimer = setTimeout(() => { crCityTimer = null; crRunCityTypeahead(); }, 500); // issue #180: the debounce runs the on-device type-ahead - the public search fires only from its own row
+  const armSeq = crCitySeq; // the invalidation above settled the sequence for THIS input; a public search starting before the timer fires bumps it again, and the type-ahead then stands down - its render would land on top of the search's own answer, or re-fill the honest empty box a failed search leaves (drive153 D5's masquerade, in local form)
+  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // issue #180: the debounce runs the on-device type-ahead - the public search fires only from its own row
 });
 // Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches answer from the on-device gazetteer (crRunCityTypeahead; issue #180 - the public service is asked only on the explicit search-online tap, through the Ontario-scoped crRunCitySearch), list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
 $('crCityBack').addEventListener('click', () => {
