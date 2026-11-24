@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "323bc2e3147687ac14df2eeb8dbbcf1a5817a826167eff11bb910524ead20e7b",
+  "canonical_registry_sha256": "cca1f52bc9923c03323c7c6f1d30b9c15b0ee2f4b55c276b6282eb851d78a368",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1489,
-   "included": 1459,
+   "canonical": 1490,
+   "included": 1460,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -12983,6 +12983,15 @@
    "pattern": "(see \u00a73, including the test",
    "file": "DEVELOPMENT_RULES.md",
    "type": "grep_absent",
+   "added": "2026-11-23"
+  },
+  {
+   "id": "receipts-workflow-scope-178",
+   "fix_id": "receipts-workflow-scope-178",
+   "fix": "Issue #178 (Codex P1 on PR #197): DEVELOPMENT_RULES S3 names the checks workflow as test machinery, changed only with verdict fixtures and mutation receipts - scripts/check-receipts.py's CHECK_PATTERNS now includes .github/workflows/checks.yml so the receipts gate enforces that mechanically (the gate fixtures' CI wiring cases exercise the workflow's own step bodies). If this probe fails, the workflow fell out of the receipts scope - restore the pattern; a workflow change without fixtures + receipt is the gap this closes.",
+   "pattern": "\".github/workflows/checks.yml\",",
+   "file": "scripts/check-receipts.py",
+   "type": "grep_present",
    "added": "2026-11-23"
   }
  ]

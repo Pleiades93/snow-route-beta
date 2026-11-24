@@ -61,8 +61,14 @@ RECEIPTS_REL = "tests/mutation-receipts.json"
 
 # Files whose verdicts decide pass/fail for the gate: proofs, browser
 # drives, the runner's own selftests, the service-worker suite, and
-# the fixture suites that judge the gate scripts.
+# the fixture suites that judge the gate scripts. The checks
+# workflow itself joined the scope in the #178 machinery round
+# (2026-11-23, Codex P1 on PR #197): DEVELOPMENT_RULES §3 names the
+# workflow as test machinery - changed only with verdict fixtures
+# and mutation receipts - and this list is where that rule becomes
+# mechanical.
 CHECK_PATTERNS = [
+    ".github/workflows/checks.yml",
     "tests/proof/proof-*.mjs",
     "tests/browser/drive*.mjs",
     "tests/browser/selftest-*.mjs",
