@@ -26,7 +26,7 @@ const cache = read('parts/create-cache.js');
 const csp = read('scripts/csp_stamp.py');
 const schema = read('docs/STORAGE-SCHEMA.md');
 const whatsnew = read('parts/whatsnew.js');
-const changelog = read('CHANGELOG.md');
+const changelog = read('docs/archive/CHANGELOG-beta-history.md');
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };

@@ -62,7 +62,7 @@ function extractFn(src, name) {
 const pick = readFileSync('parts/create-pick.js', 'utf8');
 const head = readFileSync('parts/head.html', 'utf8');
 const app4 = readFileSync('parts/app4.js', 'utf8');
-const changelog = readFileSync('CHANGELOG.md', 'utf8');
+const changelog = readFileSync('docs/archive/CHANGELOG-beta-history.md', 'utf8');
 
 // ================= G - the glow spears =================
 console.log('G - the create glow mesh cannot throw spears');

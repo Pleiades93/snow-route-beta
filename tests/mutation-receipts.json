@@ -9115,6 +9115,188 @@
    "red": "proof-1233 exit 1, check B4c FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
    "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
    "issued": "2026-11-23 sweep-180-r4"
+  },
+  {
+   "id": "changelog-archive-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "a70c3418ce5cf58969a3564ec8ced8016fa31140b17cbed1f870fe88d2b97ad5",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.242 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1242 fails exactly check 18, the CHANGELOG order check (16 pass, 1 fail) - observed twice",
+   "green": "proof-1242 passes in full (17 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1243",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "a93f58dc8b4df5c27a6f3d1ebca1fca44329479133d5535800c446ccc5f3b4fc",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.243 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1243 fails exactly check 20, the CHANGELOG order check (18 pass, 1 fail) - observed twice",
+   "green": "proof-1243 passes in full (19 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1241",
+   "check": "tests/proof/proof-1241.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1241.mjs": "8d941689f29bc1e36f21a3d5c3d92f5b73b04368b11349801a2b5fe97bc363b4",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.241 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1241 fails exactly check 17, the CHANGELOG order check (15 pass, 1 fail) - observed twice",
+   "green": "proof-1241 passes in full (16 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1244",
+   "check": "tests/proof/proof-1244.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1244.mjs": "712213b2c9e5c21ba0dae08f5f347110e55b919cc7b7592c2114a802f5b392c2",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.244 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1244 fails exactly check 16, the CHANGELOG order check (14 pass, 1 fail) - observed twice",
+   "green": "proof-1244 passes in full (15 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1245.mjs": "96aeb578333f98d885f94b43c5597f47d25506c24bac46046c860ff56ef26f52",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.245 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1245 fails exactly check 12, the CHANGELOG order check (11 pass, 1 fail) - observed twice",
+   "green": "proof-1245 passes in full (12 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1246",
+   "check": "tests/proof/proof-1246.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1246.mjs": "8a5190e3e40dc0c231076ea83adda2e7d024afe7ac1ff1db068930de39c0c985",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.246 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1246 fails exactly check 10, the CHANGELOG top check (9 passed, 1 failed) - observed twice",
+   "green": "proof-1246 passes in full (10 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1247",
+   "check": "tests/proof/proof-1247.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1247.mjs": "e9788b300953dacf600c3efd0a4d25fa6f5bfcb435dc247e780cc4155a36dc01",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.247 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1247 fails exactly check 7, the CHANGELOG order check (6 passed, 1 failed) - observed twice",
+   "green": "proof-1247 passes in full (7 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "2e8ade51793e9e10369d2c96f7c5304493bb36b435660cb5d19047f0a81b17e5",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.251 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1249 fails exactly check 16, the CHANGELOG top check (16 passed, 1 failed) - observed twice",
+   "green": "proof-1249 passes in full (17 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": "bc2d601c37fbd8fe6775f5bc84520bdba79d2f9945142c175c64485f5e4883c4",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.252 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1252 fails exactly check 10, the CHANGELOG top check (9 passed, 1 failed) - observed twice",
+   "green": "proof-1252 passes in full (10 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1253.mjs": "404debc53f4b70f7dbfdf7d3e8749d8e8c17583ab4b82ca84ca93be7657a30bc",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.253 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1253 fails exactly check 11, the CHANGELOG top check (11 passed, 1 failed) - observed twice",
+   "green": "proof-1253 passes in full (12 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "eada27a25d4b1aa62f4a15bba8dd057da998f0344a4e814e9bf8358777f81dfa",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.254 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1254 fails exactly check 13, the CHANGELOG top check (12 passed, 1 failed) - observed twice",
+   "green": "proof-1254 passes in full (13 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1255",
+   "check": "tests/proof/proof-1255.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1255.mjs": "b91f613ef76997bfa64612f56cb4792a7551e45e34ef78d6c928621f0d2e262d",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.255 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1255 fails exactly check 8, the CHANGELOG top check (10 passed, 1 failed) - observed twice",
+   "green": "proof-1255 passes in full (11 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-1256",
+   "check": "tests/proof/proof-1256.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1256.mjs": "26145a43e3ce61c4eec943a1779a5a21154d365cb72ea08db65f9dc27d0e401f",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the Beta 1.256 entry heading deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-1256 fails exactly check 4, the CHANGELOG top check (3 passed, 1 failed) - observed twice",
+   "green": "proof-1256 passes in full (4 passed, 0 failed) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
+  },
+  {
+   "id": "changelog-archive-proof-create-glow-casing-fix",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "cde56972bcaac62563195a475c3f8e04929d6461b418afae92e474d5d98aba97",
+    "docs/archive/CHANGELOG-beta-history.md": "164eea1e8542f220cd8b81d4d78e52247802b268396e021dbfd89931054dbae1"
+   },
+   "mutation": "the line recording 1 maintenance PR since Beta 1.215 deleted from docs/archive/CHANGELOG-beta-history.md (slimming phase 2 moved this proof's changelog read from CHANGELOG.md to the archive home)",
+   "red": "proof-create-glow-casing-fix fails exactly check V, the CHANGELOG accounting check (18 pass, 1 fail) - observed twice",
+   "green": "proof-create-glow-casing-fix passes in full (19 pass, 0 fail) with the archive entry in place",
+   "issued": "2026-11-24 slimming-phase2"
   }
  ]
 }

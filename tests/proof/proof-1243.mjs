@@ -31,7 +31,7 @@ const app5 = read('parts/app5.js');
 const pick = read('parts/create-pick.js');
 const fetchJs = read('parts/create-fetch.js');
 const whatsnew = read('parts/whatsnew.js');
-const changelog = read('CHANGELOG.md');
+const changelog = read('docs/archive/CHANGELOG-beta-history.md');
 const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i)); };
 
 let pass = 0, fail = 0;

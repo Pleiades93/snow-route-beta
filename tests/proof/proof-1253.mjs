@@ -23,7 +23,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const pick = read('parts/create-pick.js');
 const cache = read('parts/create-cache.js');
 const whatsnew = read('parts/whatsnew.js');
-const changelog = read('CHANGELOG.md');
+const changelog = read('docs/archive/CHANGELOG-beta-history.md');
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
