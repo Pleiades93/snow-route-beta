@@ -3,6 +3,12 @@
 // to its 1.257 form above (titles at every zoom, originals excluding route
 // names, no clones), which is again the live rule. proof-1263 pins the
 // shape; drive216 grades presence during settles.
+// Beta 1.294 addendum (Andrew's handover decision, 2026-11-24): the
+// handover returns in a new form - the titles fade out across zoom 15-16
+// and end at maxzoom 16; route-names-only clones of the two road-label
+// layers fade in across the same band and name the route streets above
+// it; the originals exclude route names at every zoom; the basemap
+// repetition is 250. L2/L3/L7/L9 below grade that form.
 import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
@@ -87,10 +93,10 @@ const S1 = await jread(`(() => {
   });
 })()`);
 ok('L1 our line-following streetnames layer is retired | streetnamesGone ' + S1.streetnamesGone, S1.streetnamesGone === true);
-ok('L2 our titles stay up at close zoom (Beta 1.208: no fade-out, no maxzoom) | opacity ' + S1.ptOpacity + ' maxzoom ' + S1.ptMax,
-  S1.ptOpacity.includes('15.4') && !S1.ptOpacity.includes('16.4') && (typeof S1.ptMax !== 'number' || S1.ptMax === 24));
-ok('L3 route-name clone layers are retired (Beta 1.208: never built) | clones ' + S1.cloneMaj + '/' + S1.cloneMin,
-  S1.cloneMaj === false && S1.cloneMin === false);
+ok('L2 our titles fade out across 15-16 and end at maxzoom 16 (Beta 1.294 handover: the 1.208 no-fade form is superseded by Andrew\'s decision) | opacity ' + S1.ptOpacity + ' maxzoom ' + S1.ptMax,
+  S1.ptOpacity.includes('15,1') && S1.ptOpacity.includes('16,0') && S1.ptMax === 16);
+ok('L3 the handover clones are built (Beta 1.294: the 1.208 retirement is superseded) with the spec fade in across 15-16 and a route-only filter | clones ' + S1.cloneMaj + '/' + S1.cloneMin + ' opacity ' + S1.cloneOpacity + ' filter ' + S1.cloneFilter.slice(0, 60),
+  S1.cloneMaj === true && S1.cloneMin === true && S1.cloneOpacity.includes('15,0') && S1.cloneOpacity.includes('16,1') && S1.cloneFilter.includes('Velmar Drive') && !S1.cloneFilter.includes('"!"'));
 ok('L4 originals exclude route names by a valid combined filter | orig ' + S1.origFilter.slice(0, 60),
   S1.origFilter.startsWith('["all"') && S1.origFilter.includes('Velmar Drive'));
 ok('L5 day road names wear the readable restyle | color ' + S1.dayColor + ' halo ' + S1.dayHalo, S1.dayColor === '#333333' && S1.dayHalo === '1.5');
@@ -98,9 +104,12 @@ ok('L6 the reference source draws nothing (West link off the map) | ref features
 const poiTxt = await ev(`map.getLayer('routepoi-txt') ? JSON.stringify(map.getLayoutProperty('routepoi-txt', 'text-field')) : 'missing'`);
 ok('L6b the point of interest wears the route name, not the app name (Beta 1.79, Andrew) | poi ' + poiTxt, poiTxt === '"Route 5W"');
 
-// The rendered proof at close zoom (Beta 1.208 form): centred on Woolacott's title
-// anchor, the route name prints on the TITLE layers exactly once - the originals
-// must return none of the route names (no basemap route names, no doubling, ever).
+// The rendered proof at close zoom (Beta 1.294 form): centred on Woolacott's title
+// anchor at zoom 17.5, the titles are gone (maxzoom 16) and the route name prints
+// on the CLONE layers - the originals must return none of the route names (no
+// route name on the wrong layer, ever). Basemap repeats of the same name on the
+// clones are the renderer's own placement (spacing 250, Andrew's pick) and are
+// not counted; the one-name-per-street property belongs to the titles' zoom band.
 // 2026-11-09 (L7 root hardening, part 2 - Andrew's flake-gate order; tests-only): with
 // the camera provably at rest (part 1, the intro gate at the top of this drive), the
 // read is gated on the render pipeline's TERMINAL state, not on a momentary predicate.
@@ -117,7 +126,7 @@ ok('L6b the point of interest wears the route name, not the app name (Beta 1.79,
 // graded sample - and the graded sample IS the last stable sample, not a fresh read
 // taken after the wait. A page that never converges still fails, on its final sample.
 await ev(`(() => { window.__l7idleAt = 0; map.once('idle', () => { window.__l7idleAt = Date.now(); }); map.jumpTo({ center: [-79.56061255176667, 43.8186978701749], zoom: 17.5 }); return true; })()`);
-let S2 = { titles: [], orig: [] };
+let S2 = { titles: [], clone: [], orig: [] };
 let settled = false, l7PrevKey = '', l7Streak = 0, l7Samples = 0;
 const l7T0 = Date.now();
 while (Date.now() - l7T0 < 60000) {
@@ -126,21 +135,22 @@ while (Date.now() - l7T0 < 60000) {
     loaded: map.loaded(),
     idle: (window.__l7idleAt || 0) > 0,
     titles: map.queryRenderedFeatures({ layers: ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'] }).map(f => f.properties.name),
+    clone: map.queryRenderedFeatures({ layers: ['roads_labels_major-route', 'roads_labels_minor-route'] }).map(f => f.properties.name),
     orig: map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] }).map(f => f.properties.name)
   }))()`).catch(() => null);
   if (s) {
-    S2 = { titles: s.titles, orig: s.orig };
-    const key = JSON.stringify([[...new Set(s.titles)].sort(), [...new Set(s.orig)].sort()]);
-    const pred = s.titles.includes('Woolacott') && !s.orig.includes('Woolacott Road') && !s.orig.includes('Malden Street') && !s.orig.includes('Cartwright Boulevard');
+    S2 = { titles: s.titles, clone: s.clone, orig: s.orig };
+    const key = JSON.stringify([[...new Set(s.titles)].sort(), [...new Set(s.clone)].sort(), [...new Set(s.orig)].sort()]);
+    const pred = s.titles.length === 0 && s.clone.includes('Woolacott Road') && !s.orig.includes('Woolacott Road') && !s.orig.includes('Malden Street') && !s.orig.includes('Cartwright Boulevard');
     if (s.loaded && s.idle && pred && key === l7PrevKey) { l7Streak++; if (l7Streak >= 3) { settled = true; break; } }
     else { l7Streak = 0; l7PrevKey = key; }
   }
   await sleep(400);
 }
-ok('L7 at close zoom the route name prints on the titles exactly once and never on the basemap | titles ' + JSON.stringify(S2.titles) + ' orig ' + JSON.stringify(S2.orig) + ' | settle ' + (settled ? (Date.now() - l7T0) + 'ms' : 'NEVER') + ' samples ' + l7Samples,
-  settled === true && S2.titles.filter(n => n === 'Woolacott').length === 1 && !S2.orig.includes('Woolacott Road') && !S2.orig.includes('Malden Street') && !S2.orig.includes('Cartwright Boulevard'));
+ok('L7 at close zoom the route name prints on the handover clones, the titles print nothing, and the originals print no route name (Beta 1.294: the 1.208 titles-print form is inverted by the handover) | titles ' + JSON.stringify(S2.titles) + ' clone ' + JSON.stringify(S2.clone) + ' orig ' + JSON.stringify(S2.orig) + ' | settle ' + (settled ? (Date.now() - l7T0) + 'ms' : 'NEVER') + ' samples ' + l7Samples,
+  settled === true && S2.titles.length === 0 && S2.clone.includes('Woolacott Road') && !S2.orig.includes('Woolacott Road') && !S2.orig.includes('Malden Street') && !S2.orig.includes('Cartwright Boulevard'));
 
-// Night: the titles wear the engine's night colour and the clones stay retired.
+// Night: the titles wear the engine's night colour and the handover clones are built under the night style too.
 await ev(`(() => { localStorage.setItem('snowroute.v2.night', '1'); localStorage.setItem('snowroute.v2.nightExp', '4102444800000'); location.reload(); return true; })()`); // Beta 1.77: a stored override carries its sun-boundary expiry with it
 await sleep(3000);
 await bootThrough(ev, poll, { pinTheme: false }); // Beta 1.76: the reload returns to the route menu - pick 5W so the engine rebuilds the titles under the night style; Beta 1.77: keep the seeded night override (no day pin)
@@ -150,7 +160,7 @@ const S3 = await jread(`(() => JSON.stringify({
   clone: !!map.getLayer('roads_labels_major-route'),
   col: map.getLayer('streetnamespt4') ? String(map.getPaintProperty('streetnamespt4', 'text-color')) : ''
 }))()`);
-ok('L9 night titles wear the lifted name colour and no clones return | clone ' + S3.clone + ' color ' + S3.col, S3.clone === false && S3.col === '#e8e8e8');
+ok('L9 night titles wear the lifted name colour and the handover clones are built under the night style | clone ' + S3.clone + ' color ' + S3.col, S3.clone === true && S3.col === '#e8e8e8');
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

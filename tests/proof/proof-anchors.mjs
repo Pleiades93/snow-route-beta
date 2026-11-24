@@ -9,6 +9,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const engine = read('parts/engine.js');
 const data = read('parts/data.js');
 const app1 = read('parts/app1.js');
+const app2 = read('parts/app2.js');
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
@@ -47,8 +48,8 @@ check('1c: the switch gates both title entry points - the labelpts source and th
   let flags = '';
   try { flags = read('flags.js'); } catch (e) { flags = ''; }
   const assemble = read('scripts/assemble.py');
-  check('1d: flags.js at the repo root carries the shipped OFF default, and assembly inlines it into the bundle',
-    flags.includes('var ROUTE_TITLES_ON = false;') && assemble.includes('FLAGS = ROOT / "flags.js"') && assemble.includes('FLAGS.read_bytes()'));
+  check('1d: flags.js at the repo root carries the shipped ON default (Beta 1.294: Andrew ships the handover turned on; the 1.293 OFF default is superseded), and assembly inlines it into the bundle',
+    flags.includes('var ROUTE_TITLES_ON = true;') && assemble.includes('FLAGS = ROOT / "flags.js"') && assemble.includes('FLAGS.read_bytes()'));
 }
 
 // ---------- 2: the label points on the real pack ----------
@@ -135,6 +136,26 @@ check('3b: labelpts is created exactly once and never removed in any part',
   (engine.split("addSource('labelpts'").length - 1) === 1 && !allParts.includes("removeSource('labelpts')"));
 check('3c: no part writes a title layer\'s properties by literal id (the specs in addStack are the only seat; the create backdrop\'s recorded-pair restore is the one sanctioned visibility writer and it names no title id literally)',
   !/set(?:Layout|Paint)Property\('streetnamespt/.test(allParts));
+
+// ---------- (4) the handover (Beta 1.294) ----------
+// Andrew's decision of 2026-11-24: the titles name the route at far
+// zooms and fade out across 15-16; route-names-only clones of the two
+// basemap road-label layers fade in across the same band and name the
+// route streets above it. The zoom behaviour lives in the layer specs
+// (a spec value is not a code write - section 3's pins stand).
+check('4a: the title spec fades out across 15-16 and is capped at maxzoom 16',
+  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0]") &&
+  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 16, filter:'));
+check('4b: the clones are built only in the handover state (titles on, not creating), from zoom 15, with the spec fade in across 15-16',
+  app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") &&
+  app2.includes('clone.id = cloneId; clone.minzoom = 15; clone.maxzoom = 24;') &&
+  app2.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1]"));
+check('4c: the clone filter is route-names only (the positive name test, never the exclusion)',
+  app2.includes("const routeCF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];") &&
+  app2.includes('const targetCF = baseCF ? [\'all\', baseCF, routeCF] : routeCF;'));
+check('4d: the basemap repetition is 250, one owned write in the label pass',
+  (app2.split("setL(L.id, 'symbol-spacing', 250);").length - 1) === 1 &&
+  !app2.includes("'symbol-spacing', 500"));
 
 console.log(`proof-anchors: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

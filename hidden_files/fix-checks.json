@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "d42ef5ce16bdbe9311d31412a1e0ca2b3af6fb79cff6cefce2bff4d644b5b968",
+  "canonical_registry_sha256": "22c74fc1a261a11bc19d16e9c56555476ef2b8dbefb5d0af70a43cdfa5cfd059",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1515,
-   "included": 1485,
+   "canonical": 1519,
+   "included": 1489,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -7636,10 +7636,10 @@
   {
    "added": "2026-11-15",
    "file": "parts/engine.js",
-   "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the titles are restored below zoom 15 (the R4 form is re-pinned in proof-green-half-road itself); this probe pins the title spec's opacity tail again)",
+   "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the titles are restored below zoom 15 (the R4 form is re-pinned in proof-green-half-road itself); this probe pins the title spec's opacity tail again) (Rolled 2026-11-24 by label-handover-1294, Beta 1.294: the titles fade out across zoom 15-16 and end at maxzoom 16 for the handover; this probe pins the spec's opacity tail in its new form)",
    "fix_id": "green-half-road",
    "id": "green-half-road-titles-retired-1258",
-   "pattern": "15.4, 1]",
+   "pattern": "15, 1, 16, 0]",
    "type": "grep_present"
   },
   {
@@ -11533,10 +11533,10 @@
   {
    "added": "2026-11-20",
    "file": "parts/app2.js",
-   "fix": "Beta 1.259 (feather-1259; Andrew's decisions, 2026-11-20): where route paint ends at a boundary while the street continues, the paint ends AT the join with a gradient fade over the last 15 m (option C, final); every route street shows its basemap name at the home zoom (priority lane); street-name repetition R1 (symbol-spacing 500) for the whole map. PR #151 merged at 673f43dc; live page sha256-verified. Rollback: a revert PR restoring the Beta 1.258 behaviour under Beta 1.260.",
+   "fix": "Beta 1.259 (feather-1259; Andrew's decisions, 2026-11-20): where route paint ends at a boundary while the street continues, the paint ends AT the join with a gradient fade over the last 15 m (option C, final); every route street shows its basemap name at the home zoom (priority lane); street-name repetition R1 (symbol-spacing 500) for the whole map. PR #151 merged at 673f43dc; live page sha256-verified. Rollback: a revert PR restoring the Beta 1.258 behaviour under Beta 1.260. (Rolled 2026-11-24 by label-handover-1294, Beta 1.294: Andrew re-picked the R1 value at 250 from the basemap options sample; the one owned write stands, at the top of the road branch now, covering the originals and the handover clones - this probe pins it at the new value.)",
    "fix_id": "feather-1259",
    "id": "feather1259-spacing",
-   "pattern": "setL(L.id, 'symbol-spacing', 500);",
+   "pattern": "setL(L.id, 'symbol-spacing', 250);",
    "type": "grep_present"
   },
   {
@@ -11856,10 +11856,10 @@
   {
    "added": "2026-11-21",
    "file": "parts/app2.js",
-   "fix": "Beta 1.263 (labelrevert-1263): R1 (symbol-spacing 500) is the revert's ONE named exception, kept inside the restored exclusion branch of glUnifyLabels with its provenance comment. If this fails, the exception was silently dropped or its provenance lost.",
+   "fix": "Beta 1.263 (labelrevert-1263): R1 (symbol-spacing 500) is the revert's ONE named exception, kept inside the restored exclusion branch of glUnifyLabels with its provenance comment. If this fails, the exception was silently dropped or its provenance lost. (Rolled 2026-11-24 by label-handover-1294, Beta 1.294: the exception value is re-picked at 250 and the owned write moves to the top of the road branch with a new provenance comment; this probe pins the write with that comment.)",
    "fix_id": "labelrevert-1263",
    "id": "labelrevert1263-r1-exception",
-   "pattern": "KEPT by the Beta 1.263 naming revert as its one named exception",
+   "pattern": "setL(L.id, 'symbol-spacing', 250); // Andrew re-picked 250 on 2026-11-24: names repeat sooner when zoomed in.",
    "type": "grep_present"
   },
   {
@@ -13154,10 +13154,10 @@
   {
    "added": "2026-11-24",
    "file": "flags.js",
-   "fix": "Beta 1.293 (label-switch-1293; Andrew's decision, 2026-11-24): the route titles ship turned OFF behind a source-only switch. flags.js at the repo root carries the one flag, ROUTE_TITLES_ON, with the shipped value false; there is no control for it in the app. A flip edits this one line and rebuilds (assemble, build-pages). proof-anchors section 1d pins the default; drive219 phase 0 (W1) reads it live in the running app.",
-   "fix_id": "label-switch-1293",
-   "id": "labelswitch1293-flag-off-default",
-   "pattern": "var ROUTE_TITLES_ON = false;",
+   "fix": "Beta 1.294 (label-handover-1294; Andrew's decision, 2026-11-24): the label handover ships TURNED ON. flags.js carries ROUTE_TITLES_ON with the shipped value true (this probe replaces labelswitch1293-flag-off-default, whose OFF default Beta 1.294 supersedes; the switch itself and the off state are unchanged). proof-anchors section 1d pins the default; drive219 phase 0 (N1) reads it live and phase Z grades the forced-off state.",
+   "fix_id": "label-handover-1294",
+   "id": "labelhandover1294-flag-on-default",
+   "pattern": "var ROUTE_TITLES_ON = true;",
    "type": "grep_present"
   },
   {
@@ -13221,6 +13221,42 @@
    "fix_id": "label-switch-1293",
    "id": "labelswitch1293-proof-wired",
    "type": "command_exit0"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.294 (label-handover-1294): the title layers fade out across zoom 15-16 inside their own spec (a spec value, not a code write). If the band stops leave the spec, the titles stay at full strength into the basemap's zoom band and double-print against the handover copies. drive219 V2/V3 grade it live; proof-anchors 4a pins the spec.",
+   "fix_id": "label-handover-1294",
+   "id": "labelhandover1294-title-fade",
+   "pattern": "'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0]",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.294 (label-handover-1294): the title layers end at maxzoom 16 - above the band the basemap names everything. Opacity alone would still place the title symbols and steal collisions, so the cap is what makes 'gone above 16' true. drive219 V3 and drive130 L2 grade it live; proof-anchors 4a pins it.",
+   "fix_id": "label-handover-1294",
+   "id": "labelhandover1294-title-cap",
+   "pattern": "minzoom: PT_MIN[t - 1], maxzoom: 16, filter:",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app2.js",
+   "fix": "Beta 1.294 (label-handover-1294): glUnifyLabels builds the route-names-only handover clones of roads_labels_major/minor only in the handover state (titles on, not creating). In create mode or with titles off, no clones exist and the map is the plain basemap. drive219 N4/Z5 and drive130 L3 grade it live; proof-anchors 4b pins the gate.",
+   "fix_id": "label-handover-1294",
+   "id": "labelhandover1294-clones-gated",
+   "pattern": "const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app2.js",
+   "fix": "Beta 1.294 (label-handover-1294): the basemap name repetition is 250, Andrew's re-pick of 2026-11-24 replacing the Beta 1.259 pick of 500 - one owned symbol-spacing write in glUnifyLabels covers the originals and the handover clones. drive219 N5 and drive214 F3 grade it live; proof-anchors 4d pins it.",
+   "fix_id": "label-handover-1294",
+   "id": "labelhandover1294-spacing-250",
+   "pattern": "setL(L.id, 'symbol-spacing', 250);",
+   "type": "grep_present"
   }
  ]
 }

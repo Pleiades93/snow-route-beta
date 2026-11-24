@@ -1,6 +1,9 @@
 // Beta 1.263 addendum (Andrew's naming-revert decision, 2026-11-21): the
 // mix is reverted - W4 is back to its 1.257 form (titles present, clones
 // retired), again the live rule.
+// Beta 1.294 addendum (Andrew's handover decision, 2026-11-24): the
+// handover clones are built again - W4 flips to titles present AND the
+// clone present.
 import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
@@ -33,7 +36,7 @@ ok('W1 canvas pixel ratio is capped at 2 | ' + JSON.stringify(W), W.pr === 2);
 ok('W2 tile fade duration is 200ms (tiles melt in, no snap) | fade=' + W.fade, W.fade === 200);
 ok('W3 tile cache sized for a zoom sweep and back (200 tiles / 6 zoom levels) | ' + W.mcs + '/' + W.mcz, W.mcs === 200 && W.mcz === 6);
 const W4 = JSON.parse(await ev(`(() => JSON.stringify({ titles: !!map.getLayer('streetnamespt4'), clone: !!map.getLayer('roads_labels_major-route') }))()`));
-ok('W4 the label rule survived the new constructor (titles present, route clones retired in Beta 1.208)', W4.titles === true && W4.clone === false);
+ok('W4 the label rule survived the new constructor (titles present, handover clones built - Beta 1.294)', W4.titles === true && W4.clone === true);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));
 finish(R, proc);

@@ -10482,6 +10482,141 @@
    "red": "no red run: the A-phase exclusion claim is the on-state claim by construction (while off the exclusion is lifted, proven by drive219 W4)",
    "green": "drive218 14/14 locally on the final tree (2026-11-24, re-run after the comment trims)",
    "issued": "2026-11-24 label-switch-1293 gate fix"
+  },
+  {
+   "id": "labelhandover-1294-drive219-fade",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "9b21a16d2b99d5ea57c55a2565a72d70d2930eb5d50a10a072ddd1c1d39a9036",
+    "tests/browser/harness.mjs": "b9d3c844dc3007e9e016637cc2115a14c4178caf31e1ee6f9f3e5651e829d731",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "parts/engine.js title spec restored to the Beta 1.293 form: the 15-16 fade stops and maxzoom 16 removed (assembled before the runs)",
+   "red": "drive219 failed on both runs: V2 (titles never sampled mid-fade, 0 samples; clones still faded) and V3 (2 title names rendered at zoom 17) - 36/38 and 35/38 (the second run also flickered F1, the known load-sensitive lane) (2026-11-24 local)",
+   "green": "drive219 38/38 on the reverted final tree (2026-11-24 local reruns, twice)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-drive130-clones",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive130.mjs": "76d86984b39a7d725137089de2450f4f2ae605014dedb9d9396853769a56f7b5",
+    "tests/browser/harness.mjs": "b9d3c844dc3007e9e016637cc2115a14c4178caf31e1ee6f9f3e5651e829d731",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "parts/app2.js clone creation disabled in glUnifyLabels (the handover build gated off), so no clone layers are ever built (assembled before the runs)",
+   "red": "drive130 8/11 on both runs: L3 (clones false/false), L7 (no clone names at zoom 17.5, settle never reached) and L9 (no night clone) failed (2026-11-24 local)",
+   "green": "drive130 11/11 on the reverted final tree (2026-11-24 local rerun)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-drive214-spacing",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive214.mjs": "9a8eb348c5771dde5dde48a0c10eeb71a9647e61c41ad7182ab50b9cce687efd",
+    "tests/browser/harness.mjs": "b9d3c844dc3007e9e016637cc2115a14c4178caf31e1ee6f9f3e5651e829d731",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "parts/app2.js symbol-spacing write restored to 500 (assembled before the runs)",
+   "red": "drive214 24/26 on both runs: F3 (spacing read 500/500) and F4 (major stayed 500 after the excursion) failed (2026-11-24 local)",
+   "green": "drive214 26/26 on the reverted final tree (2026-11-24 local rerun)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-drive131-historical",
+   "check": "tests/browser/drive131.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive131.mjs": "b5ff7b5ca34935dc8fb9444f4acd5fc58cddcdefc8de551cf764c35bec1debbe",
+    "tests/browser/harness.mjs": "b9d3c844dc3007e9e016637cc2115a14c4178caf31e1ee6f9f3e5651e829d731",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "Beta 1.294 premise re-point: the handover clones are built again, so W4 asserts titles present AND the clone present (was: clones retired); no other check changed",
+   "red": "no red run of this drive: the clone-presence claim is mutation-graded on drive130 (labelhandover-1294-drive130-clones) and drive219 N4",
+   "green": "drive131 5/5 locally on the final tree (2026-11-24)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-proof-anchors-fade",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "5445c05f43a3fd16c4840611ce9373d4343b20b6b8430e2cbccd4c2c83792326",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d"
+   },
+   "mutation": "parts/engine.js title spec restored to the Beta 1.293 form (fade stops and maxzoom removed)",
+   "red": "proof-anchors check 4a failed on both runs (13 passed, 1 failed) (2026-11-24 local)",
+   "green": "proof-anchors 14/14 on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-proof-anchors-clones",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "5445c05f43a3fd16c4840611ce9373d4343b20b6b8430e2cbccd4c2c83792326",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "parts/app2.js clone spec line removed (the minzoom/maxzoom assignment on the clone), so the built clones lose their handover shape",
+   "red": "proof-anchors check 4b failed on both runs (13 passed, 1 failed) (2026-11-24 local)",
+   "green": "proof-anchors 14/14 on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-proof-1263-cap",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "bef45bf3f81348b4f22a98642a398f79b21420fc9c24129585c7189956844db7",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d"
+   },
+   "mutation": "parts/engine.js title spec restored to the Beta 1.293 form (fade stops and maxzoom removed)",
+   "red": "proof-1263 check 2 failed on both runs (12 passed, 1 failed) (2026-11-24 local)",
+   "green": "proof-1263 13/13 on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-proof-1259-spacing",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "639d3b44cdbfb1787f631d57582db8cdc9ef993b436f76d26e5efff069f5a891",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "parts/app2.js symbol-spacing write restored to 500",
+   "red": "proof-1259 check 12 failed on both runs (12 passed, 1 failed) (2026-11-24 local)",
+   "green": "proof-1259 13/13 on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-proof-greenhalf-spacing",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "5128b94756d0112f2f8d94fe1a86a874ad32889381823c1dba8d46f5ec7d796a",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "parts/app2.js symbol-spacing write restored to 500",
+   "red": "proof-green-half-road R4 (spacing write count/value) failed on both runs (2026-11-24 local)",
+   "green": "proof-green-half-road ALL CHECKS PASS on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-handover-1294"
+  },
+  {
+   "id": "labelhandover-1294-proof-1265-createfork",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "f701384ad959ef866a92160e3086da1b84f4d80cfb45ed6d8c7ec573432c8ede",
+    "parts/app2.js": "6e5e7f65798c0cdbbf9bb6727a4fc69dc84ff65f7242e761f4b2709cba8ce99d"
+   },
+   "mutation": "parts/app2.js given a create-mode fork literal (a roads_labels_major-create id), the 1.264 failure mode proof-1265 check 3 guards",
+   "red": "proof-1265 check 3 failed on both runs (5 passed, 1 failed) (2026-11-24 local)",
+   "green": "proof-1265 6/6 on the reverted final tree (2026-11-24 local)",
+   "issued": "2026-11-24 label-handover-1294"
   }
  ]
 }

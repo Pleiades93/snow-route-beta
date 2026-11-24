@@ -308,6 +308,12 @@ ok('E3 rendered: 6 m PAST the join (the old overshoot stub) there is no gold lef
 // toggle comparison is retired where it stood below, with its evidence.
 // F5/F6/F7
 // (the lane's angle law) are retired where they stood, below.
+// Beta 1.294 REWORK (the handover, Andrew's decision 2026-11-24): the
+// titles fade across 15-16 and cap at maxzoom 16; route-names-only
+// clones take route naming over above the band. M3 keeps its reads
+// (mid-band titles present, originals printing no route names) under
+// the handover claim; M4's read-back flips to title maxzoom 16; F3/F4
+// flip to the re-picked spacing value 250.
 const routeFullNames = await J(`(() => {
   const pack = ROUTE_PACKS.find(p => p.id === '5w');
   const ORD = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };
@@ -348,8 +354,8 @@ const dayTitleHits = shortNames.filter(n => (dayCount.rendered || []).includes(n
 ok('M1 the app titles render at the home framing (day): ' + dayTitleHits.length + ' of 34 route streets carry their app title | zoom ' + (dayCount.zoom || 0).toFixed(2) + ' pitch ' + dayCount.pitch + ', lane layer present: ' + dayCount.lanePresent + ', missing: ' + shortNames.filter(n => !dayTitleHits.includes(n)).join(', '),
   shortNames.length === 34 && dayTitleHits.length >= 30 && dayCount.lanePresent === false);
 const spacingDay = await J(`(() => ({ major: map.getLayoutProperty('roads_labels_major', 'symbol-spacing'), minor: map.getLayoutProperty('roads_labels_minor', 'symbol-spacing') }))()`);
-ok('F3 R1 repetition is owned live: symbol-spacing reads 500 on both basemap road-label layers (it was set nowhere before this round - the engine default 250 decided silently) | ' + JSON.stringify(spacingDay),
-  spacingDay.major === 500 && spacingDay.minor === 500);
+ok('F3 R1 repetition is owned live: symbol-spacing reads 250 on both basemap road-label layers (Beta 1.294: Andrew re-picked the value from 500 to 250 on 2026-11-24) | ' + JSON.stringify(spacingDay),
+  spacingDay.major === 250 && spacingDay.minor === 250);
 await ev(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return true; })()`); // the night button's own path
 await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000);
 const nightCount = await countTitlesAtHome();
@@ -374,12 +380,14 @@ await poll(`!!(window.map && map.getSource && map.getSource('centres'))`, 45000)
 // effect was proven where it can be seen - the repetition sample Andrew
 // picked R1 from, on desktop-width frames (Santa Barbara Place 3 -> 2,
 // Velmar Drive 2 -> 1 at zoom 17). What this section still pins: the
-// toggle excursion leaves the live value at 500 (state restored).
-await ev(`(() => { map.setLayoutProperty('roads_labels_minor', 'symbol-spacing', 250); map.setLayoutProperty('roads_labels_minor', 'symbol-spacing', 500); return true; })()`);
+// toggle excursion leaves the live value at the owned value (state
+// restored). Beta 1.294: the owned value is 250 now (Andrew's re-pick),
+// so the excursion runs 500 -> 250.
+await ev(`(() => { map.setLayoutProperty('roads_labels_minor', 'symbol-spacing', 500); map.setLayoutProperty('roads_labels_minor', 'symbol-spacing', 250); return true; })()`);
 await sleep(400);
 const f4rest = await J(`(() => ({ minor: map.getLayoutProperty('roads_labels_minor', 'symbol-spacing'), major: map.getLayoutProperty('roads_labels_major', 'symbol-spacing') }))()`);
-ok('F4 (retired toggle, see the note above) the spacing excursion restores the owned R1 value live: 500 on both basemap road-label layers | ' + JSON.stringify(f4rest),
-  f4rest.minor === 500 && f4rest.major === 500);
+ok('F4 (retired toggle, see the note above) the spacing excursion restores the owned R1 value live: 250 on both basemap road-label layers | ' + JSON.stringify(f4rest),
+  f4rest.minor === 250 && f4rest.major === 250);
 
 // F5/F6/F7 RETIRED by Beta 1.261: they graded the priority lane's stored
 // angle law (bearing - 90, upright under camera rotation). The lane is
@@ -424,11 +432,12 @@ const m2mid = await basemapRouteNamesBelow15();
 ok('M2b no basemap route full-names below 15 at zoom 14.7 either (layer provably live first: ' + m2live + ') | full names rendered: ' + JSON.stringify(m2mid.hits),
   m2live === true && Array.isArray(m2mid.hits) && m2mid.hits.length === 0);
 
-// M3 (INVERTED by the 1.263 revert): NO handover - at 15.7 the app titles
-// still render (no cap) and the basemap prints NO route full name (the
-// exclusion holds above 15 too), so a route street is never named twice
-// at any zoom. On the mix tree the titles are capped away here and the
-// basemap owns the names: this fails there by design.
+// M3 (the handover form, Beta 1.294): at 15.7 - mid-band - the app
+// titles still render (fading, not yet capped away) and the basemap
+// ORIGINALS print NO route full name (the exclusion holds at every
+// zoom), so a route street is never named twice at any zoom; the route
+// names at this zoom ride the handover clones, graded rendered in
+// drive219 phase V and drive130 L7.
 await ev(`(() => { map.jumpTo({ zoom: 15.7 }); return true; })()`);
 await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000);
 await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 5; } catch (e) { return false; } })()`, 30000); // the basemap layers must be provably rendering (non-route names) before an empty route-name read counts as the exclusion working
@@ -444,14 +453,14 @@ const m3 = await J(`(() => {
   const full = ${JSON.stringify(routeFullNames)};
   return { zoom: map.getZoom(), titleFeats, fullHits: full.filter(n => seen.has(n)) };
 })()`);
-ok('M3 no handover, no doubles at 15+: the app titles still render at zoom 15.7 (no cap) and the basemap prints no route full name there (the exclusion holds at every zoom) | titles ' + m3.titleFeats + ', basemap route full-names: ' + JSON.stringify(m3.fullHits),
+ok('M3 mid-band, no doubles: the app titles still render at zoom 15.7 (inside the 15-16 fade, below the cap) and the basemap originals print no route full name there (the exclusion holds at every zoom) | titles ' + m3.titleFeats + ', basemap route full-names: ' + JSON.stringify(m3.fullHits),
   m3.titleFeats >= 5 && (m3.fullHits || []).length === 0);
 
-// M4 (INVERTED by the 1.263 revert): the live read-back of the restored
-// shape - the title layers carry NO maxzoom, both basemap originals wear
-// the blanket 13-24 range the restored pass sets, the exclusion filter
-// (naming the route's tile names) sits on BOTH originals, and no
-// '-pre15' layer exists.
+// M4 (the handover form, Beta 1.294): the live read-back of the live
+// shape - the title layers carry maxzoom 16, both basemap originals wear
+// the blanket 13-24 range the pass sets, the exclusion filter (naming
+// the route's tile names) sits on BOTH originals, and no '-pre15' layer
+// exists.
 const m4 = await J(`(() => {
   const L = id => map.getLayer(id);
   return {
@@ -464,8 +473,8 @@ const m4 = await J(`(() => {
     minorFilter: JSON.stringify(map.getFilter('roads_labels_minor')),
   };
 })()`);
-ok('M4 the restored shape live: no title maxzoom, blanket 13-24 on both basemap originals, the route-name exclusion in both filters, no -pre15 layer | ' + JSON.stringify({ t: m4.titleMax, maj: [m4.majorMin, m4.majorMax], min: m4.minorMin, pre: m4.prePresent }),
-  m4.titleMax === null && m4.majorMin === 13 && (m4.majorMax === null || m4.majorMax === 24) && m4.minorMin === 13 && m4.prePresent === false && (m4.majorFilter || '').includes('Valeria Boulevard') && (m4.minorFilter || '').includes('Valeria Boulevard'));
+ok('M4 the handover shape live: title maxzoom 16, blanket 13-24 on both basemap originals, the route-name exclusion in both filters, no -pre15 layer | ' + JSON.stringify({ t: m4.titleMax, maj: [m4.majorMin, m4.majorMax], min: m4.minorMin, pre: m4.prePresent }),
+  m4.titleMax === 16 && m4.majorMin === 13 && (m4.majorMax === null || m4.majorMax === 24) && m4.minorMin === 13 && m4.prePresent === false && (m4.majorFilter || '').includes('Valeria Boulevard') && (m4.minorFilter || '').includes('Valeria Boulevard'));
 
 // M5 (INVERTED by the 1.263 revert): NO standing heal - after the pick
 // flight's one re-place (the restored 1.248 hook, long landed by this

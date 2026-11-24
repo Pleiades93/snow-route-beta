@@ -44,9 +44,17 @@ check('2: the exclusion clause is built exactly once (the exclF literal) and rea
   exclBuilds === 1 && setFilterCalls === 1 && app2.includes("const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];"));
 
 // ---------- (3) no forked label layers ----------
-check('3: no part forks the road-label layers for create mode (no addLayer of a roads_labels clone anywhere in parts) - the same two layers carry both states',
-  !/addLayer\(\{[^}]*id: 'roads_labels/.test(app2) && !/addLayer\(\{[^}]*id: 'roads_labels/.test(createPick) &&
-  !app2.includes("roads_labels_major-create") && !app2.includes("roads_labels_minor-create"));
+// Beta 1.294 re-scope: this check's claim was always CREATE MODE's fork
+// (its fail-first baseline is the 1.264 tree's create-mode fork). The
+// handover clones Andrew ordered on 2026-11-24 are a separate,
+// non-create mechanism (built only while NOT creating; proof-anchors
+// section 4 and proof-1263 check 5 pin them). Create mode itself still
+// forks nothing: no -create clone ids, and create-pick adds no label
+// layer.
+check('3: create mode forks no label layer of its own (no -create clone ids anywhere, create-pick adds no road-label layer) - the handover clones are a separate non-create mechanism',
+  !/addLayer\(\{[^}]*id: 'roads_labels/.test(createPick) &&
+  !app2.includes("roads_labels_major-create") && !app2.includes("roads_labels_minor-create") &&
+  !createPick.includes("roads_labels_major-create") && !createPick.includes("roads_labels_minor-create"));
 
 // ---------- (4) the backdrop re-runs the label pass on the flip ----------
 const bdStart = createPick.indexOf('function crSetBackdrop(on) {');
