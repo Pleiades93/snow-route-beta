@@ -457,7 +457,7 @@ function crPickCity(it) {
     try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
     crEnterPickFromCity();
   };
-  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // Beta 1.169 (Carbon fix round, D-08): a pick that REPLACES a chosen city is a draft reset, through the same askDiscard guard as the list door (crPackPickCity) and the manual door. Through 1.168 the search and last-city paths landed here directly: the old city's streets stayed in the draft under the new city's preparation, its pending rows were stranded on the old coverage, and draft.area kept the old city's name into the save form. The reset is a fresh draft plus crPending cleared (its rows belong to the old city's coverage); askDiscard no-ops on an empty draft, so re-picking with nothing picked costs no prompt. A FIRST pick (no city in force - e.g. answering the city step for a photo draft) is not a switch and keeps its draft, exactly as through 1.168.
+  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // D-08: the replacement reset is guarded here - crPickCity is the one landing both city doors share; a first pick keeps its draft.
   apply();
 }
 function crEnterPickFromCity() { // the city is chosen: land in the pick stage, the map flown to the city, and its whole-city preparation started (from the on-device cache when saved - crCityPrepare)
@@ -497,10 +497,9 @@ function crRenderCityChoices() {
     menuListFade(boxEl); // Beta 1.233: the feather settles on what the landed list covers
   });
 }
-function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching and the pick stage behave identically whichever door named the city. Beta 1.147 (hypothesis H2 hardening): the reset + pick run through askDiscard, so the discard guard is local to this handler and not just a property of the pane graph - askDiscard no-ops on an empty draft, so first entry is unchanged
+function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching, the discard guard on city replacement, and first-pick draft preservation behave identically whichever door named the city.
   const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
-  askDiscard(() => { draft = newDraft();
-  crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } }); });
+  crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
 }
 function crOpenCityPane(ret) {
   crResetCitySearch(); // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from. Architecture #19: the close runs through crResetCitySearch, the one owner
@@ -1500,7 +1499,7 @@ $('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreat
 // ---- The doors: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
 $('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Beta 1.124: Select from list - the city rows render fresh on every entry to the list pane
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
-$('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147 (hypothesis H2 hardening): the same local askDiscard wrap as crPackPickCity - no-op on an empty draft, so first entry is unchanged
+$('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147: opening the city pane starts a fresh draft, so a live draft asks first; askDiscard no-ops on an empty draft.
 $('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
   crResetCitySearch(); // Architecture #19: the invalidation runs through crResetCitySearch, the one owner - the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
