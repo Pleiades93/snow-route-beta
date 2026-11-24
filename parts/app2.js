@@ -128,23 +128,14 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
           const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
           const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);
           if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
-          if (!(typeof isNight === 'function' && isNight())) {
-            // DAY READABILITY (Andrew, Beta 1.40): the stock day road names are pale and wash
-            // out over the app's coloured route lines. Darken them to the app's own label ink
-            // with a firm light edge - the same treatment our titles use. Day only; the night
-            // branch above already lifts every name for the dark map.
-            setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5);
-          }
         }
-        if (isClone) {
-          // The clone carries route names only: its base kind filter plus the route-name test.
-          const baseId = id.slice(0, -6);
-          const specC = (spec.layers || []).find(x => x.id === baseId);
-          const baseCF = specC && specC.filter ? convF(specC.filter) : null;
-          const routeCF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
-          const targetCF = baseCF ? ['all', baseCF, routeCF] : routeCF;
-          if (!eq(L.filter, targetCF)) { try { m.setFilter(L.id, targetCF); } catch (e2) {} }
-          if (!(typeof isNight === 'function' && isNight())) { setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5); }
+        if ((id === 'roads_labels_major' || id === 'roads_labels_minor' || isClone) && !(typeof isNight === 'function' && isNight())) {
+          // DAY READABILITY (Andrew, Beta 1.40): the stock day road names are pale and wash
+          // out over the app's coloured route lines. Darken them to the app's own label ink
+          // with a firm light edge - the same treatment our titles use. Day only; the night
+          // branch above already lifts every name for the dark map. The handover clones
+          // wear it too; their route-only filter is set once, at their creation above.
+          setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5);
         }
       }
     }

@@ -150,9 +150,9 @@ check('4b: the clones are built only in the handover state (titles on, not creat
   app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") &&
   app2.includes('clone.id = cloneId; clone.minzoom = 15; clone.maxzoom = 24;') &&
   app2.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1]"));
-check('4c: the clone filter is route-names only (the positive name test, never the exclusion)',
-  app2.includes("const routeCF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];") &&
-  app2.includes('const targetCF = baseCF ? [\'all\', baseCF, routeCF] : routeCF;'));
+check('4c: the clone filter is route-names only (the positive name test, never the exclusion), set once at creation',
+  app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];") &&
+  app2.includes("clone.filter = baseF0 ? ['all', baseF0, routeF] : routeF;"));
 check('4d: the basemap repetition is 250, one owned write in the label pass',
   (app2.split("setL(L.id, 'symbol-spacing', 250);").length - 1) === 1 &&
   !app2.includes("'symbol-spacing', 500"));

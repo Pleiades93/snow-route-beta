@@ -96,7 +96,7 @@ check("4: the 1.259 priority lane stays deleted - no lane layer id, no 'route-la
 check("5: the '-route' clone layers are removed at the top of the label pass and rebuilt only in the handover state, route names only (Beta 1.294 premise update: the 1.208 retirement is superseded by the handover)",
   app2.includes("const cloneId = baseId + '-route';") && app2.includes('if (m.getLayer(cloneId))') &&
   app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") &&
-  app2.includes("const routeCF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];"));
+  app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];"));
 
 // ---------- (6) THE NAMED EXCEPTION: R1 ----------
 check("6: R1 symbol-spacing is owned in glUnifyLabels at the top of the road branch, value 250 (Beta 1.294 premise update: Andrew re-picked the repetition on 2026-11-24; the write now covers the originals and the handover clones)",
