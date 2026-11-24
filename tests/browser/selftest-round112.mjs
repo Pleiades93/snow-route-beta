@@ -169,7 +169,7 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
     const navigatorStub = { wakeLock: { request: () => new Promise(res => { resolveReq = () => res(fakeLock); }) } };
     const settingsObj = { awake: true };
     const api = new Function('navigator', 'document', 'settings',
-      'let wakeLock = null, wakePending = null; let runStart = 1000;\n' + syncWake + // Beta 1.254 (O-04): syncWake's shared in-flight request lives in wakePending, declared beside wakeLock in app3 - the sandbox declares both, as it always declared wakeLock
+      'let wakeLock = null, wakePending = null; let runStart = 1000; let preloadRunning = false;\n' + syncWake + // Beta 1.254 (O-04): syncWake's shared in-flight request lives in wakePending, declared beside wakeLock in app3 - the sandbox declares both, as it always declared wakeLock. Beta 1.292 (#176) adds preloadRunning, declared idle: no download runs in these run-want scenarios
       '\nreturn { syncWake, setRun: t => { runStart = t; }, held: () => wakeLock !== null };')(
       navigatorStub, { visibilityState: 'visible' }, settingsObj);
     return { api, settingsObj, resolve: () => resolveReq(), releases: () => releaseCalls };

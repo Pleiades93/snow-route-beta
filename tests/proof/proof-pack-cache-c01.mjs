@@ -165,6 +165,7 @@ const sandbox = {
   fmtStoreSize: () => 'TESTCAP',
   toast: () => {},
   renderStatus: () => {},
+  syncWake: () => {}, // #176: the handler syncs the wake want at its running flips; the wake gate itself is app3's, judged by drive123 A8e
   __harness: harness
 };
 sandbox.window = sandbox;

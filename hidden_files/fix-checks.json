@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "6b37ba2b934f8ab0fa84e6ff56f504ce42b0b62eb0c189e565327d2e3c8e2ae7",
+  "canonical_registry_sha256": "0d95dce4b544e647e42cf010af270ebb5cb91dd65ad7bd6dbb49d79e392699fd",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1507,
-   "included": 1477,
+   "canonical": 1509,
+   "included": 1479,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -1986,9 +1986,9 @@
   {
    "added": "2026-11-05",
    "file": "parts/app3.js",
-   "fix": "The wake lock is wanted only while the page is VISIBLE and the keep-awake setting is on (Beta 1.111): holding a wake lock for a hidden page burns battery for nothing.",
+   "fix": "The wake lock is wanted only while the page is VISIBLE (Beta 1.111): holding a wake lock for a hidden page burns battery for nothing. The run want still requires the keep-awake setting; Beta 1.292 (issue #176) added a second want beside it - a live offline download - inside the same visibility gate. Re-pinned 2026-11-24 in the #176 round: the old pattern matched the pre-1.292 single-want line.",
    "id": "beta-1111-wake-gate",
-   "pattern": "document.visibilityState === 'visible' && settings.awake",
+   "pattern": "document.visibilityState === 'visible' && ((!!runStart && settings.awake)",
    "type": "grep_present"
   },
   {
@@ -13149,6 +13149,24 @@
    "fix_id": "restore-172-harness-poll-with-load",
    "id": "restore-172-harness-poll-with-load",
    "pattern": "loadRoutePolled(ev, sleep)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app4.js",
+   "fix": "Issue #176 (Beta 1.292): the offline download's fetch set is census-driven - when the pack census shows any manifest entry missing, a press is a retry and fetches only the missing set; on a complete pack the deliberate press stays the full refresh. Observed by drive123 A8d (mutation receipt issue-176-drive123-fillmissing).",
+   "fix_id": "issue-176-fill-missing",
+   "id": "issue-176-fill-missing-targets",
+   "pattern": "const targets = missing.length ? missing : list;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app3.js",
+   "fix": "Issue #176 (Beta 1.292): syncWake's want includes a live offline download (preloadRunning), so the download holds a screen wake lock of its own while visibly active and releases it when it ends; the run want (runStart + settings.awake) is unchanged. Observed by drive123 A8e (mutation receipt issue-176-drive123-wakelock).",
+   "fix_id": "issue-176-download-wake-lock",
+   "id": "issue-176-download-wake-want",
+   "pattern": "((!!runStart && settings.awake) || preloadRunning)",
    "type": "grep_present"
   }
  ]

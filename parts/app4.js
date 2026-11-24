@@ -757,7 +757,7 @@ function preloadUrlList() { // Beta 1.95 (deep audit SR-194-06): the determinist
 $('xPre').addEventListener('click', async ev => {
   if (!tapGuard('xPre', ev)) return;
   if (preloadRunning) { return; }
-  preloadRunning = true; let releasePack = () => {};
+  preloadRunning = true; syncWake(); let releasePack = () => {}; // #176: the download holds its own wake want from this flip until the exits below clear it
   const st = $('xPreStat'); st.textContent = 'Preparing map list…';
   // Beta 1.53: the files are SAVED by the service worker as they pass through it - with no
   // worker controlling this page, fetching all 894 files saves nothing (2026-11-01: Andrew's
@@ -777,7 +777,7 @@ $('xPre').addEventListener('click', async ev => {
         new Promise(res => setTimeout(res, 3000))]);
       swOk = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
     }
-    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; return; } // Beta 1.57: wording stands on its own (second audit, item 5)
+    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; syncWake(); return; } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
     releasePack = await takePackWriteTurn(); // Beta 1.183 (Codex P2, PR #21): the download takes the pack writers' turn before its census - see takePackWriteTurn (below, with packMigFingerprint). Codex P2, PR #70 (2026-11-15): the turn is taken FIRST, before the registration refresh and the manifest build below - the turn serializes the pack's writers, so a snapshot taken before acquiring it can be overtaken by a preceding writer's completed download (a route created and downloaded from another tab while this handler waited), whose fresh tiles this handler's older manifest would then name as orphans to the prune; refreshing and building inside the turn makes the manifest as fresh as the serialization itself
@@ -804,6 +804,11 @@ const list = preloadUrlList();
     if (packCache) { try { for (const req of await packCache.keys()) { try { const r0 = await packCache.match(req); if (r0) { const sz0 = (await r0.blob()).size; packSizes.set(req.url, sz0); packBytes += sz0; } } catch (e) {} } } catch (e) {} }
     // Carbon sweep C-01 fix (2026-11-15): prune what the current manifest no longer names, HERE in the download - through this fix the download only ever PUT manifest URLs and never deleted a stored entry the manifest had dropped, so tiles orphaned by a route deletion or update (deleteRoute never touches the pack cache) survived every same-session download while the census above weighed their bytes against the cap, stopping a later download early over dead tiles; the only prune was migratePack's, at boot. The comparison is URL-normalized hrefs on both sides, exactly like migratePack's prune - stored keys are normalized (the glyph ranges' 'Noto Sans Regular' is stored %20-encoded), so a raw-string comparison would delete the pack's own glyphs. A pruned entry's weighed bytes come back out of packBytes/packSizes with it, so the budget the workers below spend against is the healed pack's, not the orphans'
     if (packCache && pruneProven) { const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); try { for (const req of await packCache.keys()) { if (!want.has(req.url)) { try { if (await packCache.delete(req.url)) { packBytes -= packSizes.get(req.url) || 0; packSizes.delete(req.url); } } catch (e) {} } } } catch (e) {} } // the prune runs only under the pruneProven gate computed above the manifest: an unproven registration read preserves the cache whole
+    // Issue #176: a retry fetches only census-missing entries; a complete pack's press stays the full refresh
+    const hrefOf = u => { try { return new URL(u).href; } catch (e) { return u; } };
+    const missing = list.filter(u => !packSizes.has(hrefOf(u)));
+    const targets = missing.length ? missing : list;
+    done = list.length - targets.length; // entries already held count toward the progress below from the start
     // Beta 1.87 (Andrew's request): a slim green progress bar under the buttons, and the
     // count SWEEPS up to the real number instead of jumping - the five workers finish
     // files in clusters and the pre-1.87 text only repainted every 200 files, so the
@@ -821,7 +826,7 @@ const list = preloadUrlList();
         let href = u; try { href = new URL(u).href; } catch (e) {}
         if (sz >= 0) { const prevSz = packSizes.get(href) || 0; const dSz = sz - prevSz; if (dSz > 0 && packBytes + dSz > OFFLINE_PACK_CAP_BYTES) capHit = true; else { if (dSz > 0) packBytes += dSz; try { await packCache.put(u, res.clone()); packSizes.set(href, sz); if (dSz < 0) packBytes += dSz; } catch (e) { if (dSz > 0) packBytes -= dSz; /* a failed pack write releases the reservation it took (growth only - a shrink reserves nothing and frees its bytes only on success, above) and simply never confirms in the count below */ } } }
         else { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
-    const preWorker = async () => { while (nextU < list.length && !capHit) { const u = list[nextU++]; await preFetch(u); done++; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below. Beta 1.183: a cap stop ends the workers too - no further files are even fetched
+    const preWorker = async () => { while (nextU < targets.length && !capHit) { const u = targets[nextU++]; await preFetch(u); done++; } }; // Beta 1.50 (audit P07): 894 files strictly one at a time was the slowest single wait in the app - five at a time (bounded, never unlimited); same list, same honest confirmed count below. Beta 1.183: a cap stop ends the workers too - no further files are even fetched
     await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
     clearInterval(sweep); shown = done; paint();
     let saved = 0; const confirmed = [];
@@ -834,7 +839,7 @@ const list = preloadUrlList();
     if (activeRoute) { const sub = packTileUrls(activeRoute); const confSet = new Set(confirmed); routeTotal = sub.size; routeSaved = 0; for (const u of sub) if (confSet.has(u)) routeSaved++; }
     lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length, routeSaved, routeTotal }));
     st.textContent = capHit ? 'Offline maps: saved ' + saved + ' of ' + list.length + ' files. Stopped at the ' + fmtStoreSize(OFFLINE_PACK_CAP_BYTES) + ' storage limit' : 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)'; // Beta 1.183 (storage audit §3 item 4): a cap stop is reported in the completion line's own idiom - the confirmed saved-so-far count plus the reason; what is already stored stays stored (a partial pack is a supported, disclosed state - Status renders it 'Partial')
-  } catch (e) { st.textContent = 'Preload failed. Check connection and retry.'; } finally { preloadRunning = false; releasePack(); if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
+  } catch (e) { st.textContent = 'Preload failed. Check connection and retry.'; } finally { preloadRunning = false; syncWake(); releasePack(); if ($('setStatusPane').classList.contains('on')) renderStatus(false); } // Beta 1.111: the download lives in Status now - when it ends with Status on screen, the maps line, buttons and health row re-read the pack state it just wrote (the stat line itself is the download's own report and is left alone)
 });
 
 // ===== UPDATE CHECK =====
