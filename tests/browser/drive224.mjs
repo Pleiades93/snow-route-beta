@@ -1,4 +1,4 @@
-import { launchDrive, finish, bootThrough } from './harness.mjs';
+import { launchDrive, finish, bootThrough, loadRoutePolled } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 
@@ -15,10 +15,6 @@ await bootThrough(ev, poll);
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
-const loadRoutePolled = async () => {
-  for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); const rl = await ev(`typeof routeLoaded !== 'undefined' && routeLoaded === true`); if (rl === true) break; await sleep(300); }
-  await sleep(600);
-};
 const RK = { done: 'snowroute.5w.v2', times: 'snowroute.5w.v2.times', hist: 'snowroute.5w.v2.history', notes: 'snowroute.5w.v4.notes', cov: 'snowroute.5w.v4.cov', trail: 'snowroute.5w.v4.trail', sess: 'snowroute.5w.v5.sess', start: 'snowroute.5w.v5.start', snap: 'snowroute.5w.v5.snap', settings: 'snowroute.v2.settings' };
 const snap5w = async () => JSON.parse(await ev(`(() => { const o = {}; for (const k of Object.values(${JSON.stringify(RK)})) o[k] = localStorage.getItem(k); return JSON.stringify(o); })()`));
 const T1 = '2026-01-05T12:00:00.000Z', T2 = '2026-01-05T12:20:00.000Z', T3 = '2026-01-06T09:00:00.000Z', T4 = '2026-01-07T09:00:00.000Z';
@@ -42,7 +38,7 @@ try {
   await sleep(2500);
   const gone1 = await ev(`typeof window.__d224probe === 'undefined'`);
   ok('M1 a writing merge reloads', gone1 === true);
-  await loadRoutePolled();
+  await loadRoutePolled(ev, sleep);
   const m1 = await snap5w();
   ok('M1 done is the union, resident first | ' + m1[RK.done], m1[RK.done] === '["Astona","Mellings"]');
   ok('M1 times is the union with the resident payload intact | ' + m1[RK.times], m1[RK.times] === JSON.stringify({ Astona: T1, Mellings: T3 }));
@@ -65,7 +61,7 @@ try {
   await ev(`(() => { localStorage.setItem(routeKeys('5w').hist, ${JSON.stringify(JSON.stringify([legA]))}); return true; })()`);
   const bk3 = { app: 'snowroute-backup', v: 2, at: T4, routes: { '5w': { hist: JSON.stringify([legA, legB]) } } };
   await ev(`(() => { restoreBackup(${JSON.stringify(bk3)}); return true; })()`);
-  await sleep(2500); await loadRoutePolled();
+  await sleep(2500); await loadRoutePolled(ev, sleep);
   const m3raw = await J(`localStorage.getItem(routeKeys('5w').hist)`);
   const m3 = JSON.parse(m3raw || '[]');
   ok('M3 a pre-ID entry imports into a populated history by fingerprint; its exact duplicate is skipped | n=' + m3.length,
@@ -83,7 +79,7 @@ try {
     start: '1767740300000', snap: snapF, trail: '[[43.9,-79.6,1767740400]]', sess: '[1767740300]',
     notes: JSON.stringify({ Galloway: [{ k: 'note', at: T4, text: 'cluster-era note' }] }) } } };
   await ev(`(() => { restoreBackup(${JSON.stringify(bk4)}); return true; })()`);
-  await sleep(2500); await loadRoutePolled();
+  await sleep(2500); await loadRoutePolled(ev, sleep);
   const m4 = await snap5w();
   ok('M4 the resident cluster (start, snapshot, trail, markers) is byte-identical after a foreign cluster backup',
     m4[RK.start] === clusterBefore[RK.start] && m4[RK.snap] === clusterBefore[RK.snap] && m4[RK.trail] === clusterBefore[RK.trail] && m4[RK.sess] === clusterBefore[RK.sess]);
@@ -103,7 +99,7 @@ try {
   await ev(`(() => { localStorage.setItem('${RK.settings}', '{"vib":true}'); return true; })()`);
   const bk6 = { app: 'snowroute-backup', v: 2, at: T4, routes: {}, settings: '{"vib":false,"chime":true}' };
   await ev(`(() => { restoreBackup(${JSON.stringify(bk6)}); return true; })()`);
-  await sleep(2500); await loadRoutePolled();
+  await sleep(2500); await loadRoutePolled(ev, sleep);
   const m6raw = await J(`localStorage.getItem('${RK.settings}')`);
   const m6 = JSON.parse(m6raw || '{}');
   ok('M6 settings merge by field: the absent chime fills, the resident vib stands | ' + JSON.stringify(m6), m6.vib === true && m6.chime === true);
@@ -116,6 +112,33 @@ try {
   const m7 = await snap5w();
   ok('M7 a trail-only backup adds nothing beside resident markers (markers stand, no trail lands) | ' + toast7,
     toast7.includes('Backup added nothing') && m7[RK.sess] === '[1762000000]' && m7[RK.trail] === null);
+  // ---- M13: an imported run's Cancel baseline keeps resident marks ----
+  // Build a genuine running backup in-page: Velmar marked before Start,
+  // unmarked mid-run (its snapshot holds the mark, its board does not).
+  await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(1500);
+  await loadRoutePolled(ev, sleep);
+  await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(250);
+  await ev(`startClean(); true`); await sleep(250);
+  await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(250);
+  const bkRun = JSON.parse(JSON.parse(JSON.stringify(await ev(`buildBackup()`))));
+  await ev(`cancelStart(); true`); await sleep(300);
+  // Resident phone: a Mellings mark, no run records at all.
+  await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(1500);
+  await loadRoutePolled(ev, sleep);
+  await ev(`togglePiece('Mellings', 0, 0); true`); await sleep(250);
+  const residentStart = await ev(`localStorage.getItem(routeKeys('5w').start)`);
+  await ev(`(() => { restoreBackup(${JSON.stringify(bkRun)}); return true; })()`);
+  await sleep(2500); await loadRoutePolled(ev, sleep);
+  await poll(`typeof cancelStart === 'function' && runStart > 0`, 30000);
+  const pre13 = JSON.parse(await ev(`(() => JSON.stringify({ run: runStart, mellings: pieces.Mellings[0], velmar: pieces.Velmar[0] }))()`));
+  ok('M13 setup: resident had no run; the imported run is active and the resident mark survived the merge | ' + JSON.stringify(pre13),
+    residentStart === null && pre13.run > 0 && (pre13.mellings & 1) === 1 && (pre13.velmar & 1) === 0);
+  await ev(`cancelStart(); true`); await sleep(300);
+  const post13 = JSON.parse(await ev(`(() => JSON.stringify({ run: runStart, mellings: pieces.Mellings[0], velmar: pieces.Velmar[0] }))()`));
+  ok('M13 Cancel of the imported run keeps the resident mark (the baseline is the union, not the foreign snapshot alone) | ' + JSON.stringify(post13),
+    post13.run === 0 && (post13.mellings & 1) === 1);
+  ok('M13 Cancel still restores the snapshot own pre-Start mark | ' + JSON.stringify(post13),
+    post13.run === 0 && (post13.velmar & 1) === 1);
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

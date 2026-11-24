@@ -1,4 +1,4 @@
-import { launchDrive, finish } from './harness.mjs';
+import { launchDrive, finish, loadRoutePolled } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // drive145: Beta 1.76 route menu + multi-route storage.
@@ -18,15 +18,6 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 // the 5W slot (and the C06 rule clears its session markers).
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
-// Beta 1.287 harness repair (the drive145 flake, investigated in-round):
-// __bootAt is set before the app parts finish parsing, so a bare loadRoute
-// call after the boot poll races the parse and throws 'loadRoute is not
-// defined' on a throttled runner. Poll-with-load (the drive83 idiom) waits
-// for the terminal state instead.
-const loadRoutePolled = async () => {
-  for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); const rl = await ev(`typeof routeLoaded !== 'undefined' && routeLoaded === true`); if (rl === true) break; await sleep(300); }
-  await sleep(600);
-};
 const SIDES_5W = JSON.stringify({ Velmar: Array(14).fill(3) });
 const DONE_5W = JSON.stringify(['Velmar']);
 const RESTORED_5W = JSON.stringify({ p: { Velmar: [0] }, t: {} }); // a NEWER slot record, as a backup restore would leave it - the SR-193-03 migration must never overwrite it with the legacy copy
@@ -116,7 +107,7 @@ await ev(`localStorage.clear(); true`);
 await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N11 first load moves legacy data into the 5W slot (copy verified, legacy kept as fallback)', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === ${JSON.stringify(SIDES_5W)} && localStorage.getItem('snowroute.v5.sides') === ${JSON.stringify(SIDES_5W)} && doneSet.has('Velmar'); })()`));
 
 // --- migration abort: a failed copy leaves legacy authoritative -------------
@@ -125,7 +116,7 @@ await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`(function(){ var orig = lsSet; window.__origLsSet = orig; lsSet = function(k, v){ if (k === 'snowroute.5w.v5.sides') return false; return orig(k, v); }; return true; })()`);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N12 a failed copy aborts the move: no marker written, legacy state loads instead (Beta 1.94, SR-193-03: a verified fill may stay - done landed - but without the marker it is never treated as a completed move)', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === null && localStorage.getItem('snowroute.5w.v2') === ${JSON.stringify(DONE_5W)} && localStorage.getItem('snowroute.5w.v2.migrated') === null && doneSet.has('Velmar'); })()`));
 await ev(`(function(){ if (window.__origLsSet) lsSet = window.__origLsSet; return true; })()`);
 ok('N12b a backup taken on the legacy fallback exports the LEGACY data, not the wiped slot (Beta 1.92, deep audit F02; compared semantically since 1.94 - SR-193-01 reconciles the save first, which stores the same marks in the current sides format)', await ev(`(function(){ try { var b = JSON.parse(buildBackup()); if (!b.routes || !b.routes['5w'] || b.routes['5w'].done !== ${JSON.stringify(DONE_5W)}) return false; var sd = JSON.parse(b.routes['5w'].sides); var arr = sd && sd.p ? sd.p.Velmar : sd && sd.Velmar; return Array.isArray(arr) && arr.length === 14 && arr.every(v => v === 3); } catch (e) { return false; } })()`));
@@ -135,7 +126,7 @@ await ev(`localStorage.clear(); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); localStorage.setItem('snowroute.v5.sess', '[1762000000]'); localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); true`); // seeded AFTER the reload, on the fresh unloaded page: seeding before it raced the old page's pagehide flush, which could write its own session record back over the seeded one (CI caught this; the app was never wrong)
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N12c a partial slot is NOT adopted as migrated - the missing fields are copied (Beta 1.93, audit R04)', await ev(`localStorage.getItem('snowroute.5w.v5.sess') === '[1762000000]' && doneSet.has('Velmar')`));
 
 // --- SR-193-03 (Beta 1.94): the marker is the commit record - a partial
@@ -147,12 +138,12 @@ await ev(`localStorage.clear(); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.v2', ${JSON.stringify(DONE_5W)}); localStorage.setItem('snowroute.v5.sess', '[1762000000]'); localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(RESTORED_5W)}); true`); // seeded AFTER the reload, on the fresh unloaded page (the N12c lesson)
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N12d a partial slot keeps its NEWER sides: the migration fills only the gaps and writes the marker (Beta 1.94, deep audit SR-193-03)', await ev(`(function(){ return localStorage.getItem('snowroute.5w.v5.sides') === ${JSON.stringify(RESTORED_5W)} && localStorage.getItem('snowroute.5w.v5.sess') === '[1762000000]' && localStorage.getItem('snowroute.5w.v2.migrated') === '1'; })()`));
 await ev(`localStorage.setItem('snowroute.v5.sides', ${JSON.stringify(SIDES_5W)}); true`); // legacy changes its mind afterwards - with the marker written, it no longer matters
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N12e with the marker written, later legacy changes never re-enter the slot', await ev(`localStorage.getItem('snowroute.5w.v5.sides') === ${JSON.stringify(RESTORED_5W)}`));
 
 // --- v1 backup restores into the slot (merge form of the C06 marker rule) ---
@@ -161,12 +152,12 @@ const v1 = JSON.stringify({ app: 'snowroute-backup', v: 1, at: '2026-11-02T00:00
 await ev(`localStorage.clear(); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 const bootMark13 = await ev(`window.__bootAt`);
 await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1)}; doRestore(); return true; })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13)}`, 30000); // the restore's reload is app-triggered and async - a bare __bootAt poll can return on the OLD page (its marker is still set), and the loadRoute below would then no-op on already-loaded state
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13 a v1 backup restores into the empty 5W slot; no markers stand beside the landed trail (C06 in merge form: none are carried, none invented); the trail itself restores WINDOWED to empty (Beta 1.193: the pack carries no live run, so its points have no consumer)', await ev(`(function(){ const sess = localStorage.getItem('snowroute.5w.v5.sess'); return doneSet.has('Velmar') && (sess === null || sess === '[]') && JSON.parse(localStorage.getItem('snowroute.5w.v4.trail') || '[]').length === 0; })()`));
 
 // --- F06 (Beta 1.92, Andrew's pick (a)): a done-only backup derives its sides
@@ -175,13 +166,13 @@ await ev(`localStorage.clear(); true`);
 await ev(`localStorage.setItem('snowroute.5w.v5.sides', JSON.stringify({ p: { Astona: [0] }, t: {} })); localStorage.setItem('snowroute.5w.v4.trail', JSON.stringify([[43.8, -79.5, 1762000000]])); true`); // the trail seed keeps N14's v2-shape precondition (a stored trail) true after this section's clear. Beta 1.287: the seeded sides entry names Astona, not Velmar - under merge a resident entry for Velmar (even all-zero) lawfully blocks the backup's completion for that street, so F06's derivation is asserted for a street with NO resident entry
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13a baseline: the seeded side-marks say Velmar is NOT done', await ev(`!doneSet.has('Velmar')`));
 const bootMark13b = await ev(`window.__bootAt`);
 await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1doneOnly)}; doRestore(); return true; })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13b)}`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13b a done-only backup restores for real: the side-marks are derived from the list', await ev(`(function(){ try { return doneSet.has('Velmar') && pieces.Velmar.every(v => v === 3); } catch (e) { return false; } })()`));
 
 // --- R03 (Beta 1.93): an explicitly EMPTY done list is applied, not skipped --
@@ -194,7 +185,7 @@ await ev(`localStorage.clear(); true`);
 await ev(`localStorage.setItem('snowroute.5w.v5.sides', ${JSON.stringify(SIDES_5W)}); localStorage.setItem('snowroute.5w.v4.trail', JSON.stringify([[43.8, -79.5, 1762000000]])); true`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13c-a baseline: Velmar starts out done', await ev(`doneSet.has('Velmar')`));
 await poll(`typeof doRestore === 'function'`, 30000); // the toast read below calls doRestore in the same evaluation - wait for the full app parse, not just the boot marker
 const piecesBefore13c = await ev(`JSON.stringify(pieces.Velmar)`);
@@ -203,7 +194,7 @@ const toast13c = await ev(`(function(){ document.getElementById('xText').value =
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13c)}`, 30000); // the one write (the empty done record, the key was absent) still reloads
 await poll(`typeof loadRoute === 'function'`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13c-b restoring an EMPTY completion list never clears the board under merge (the R03 replace-era clearing is superseded): it writes only the empty record for the absent key, and the side-derived board stands | ' + toast13c, await ev(`(function(){ try { return doneSet.has('Velmar') && JSON.stringify(pieces.Velmar) === ${JSON.stringify(piecesBefore13c)}; } catch (e) { return false; } })()`) && toast13c.includes('Backup added data to 1 data field'));
 
 // --- F-05 (Beta 1.94): street names the route does not know are counted and
@@ -213,7 +204,7 @@ const bootMark13d = await ev(`window.__bootAt`);
 const toast13d = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2badNames)}; doRestore(); return document.getElementById('toast').textContent; })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13d)}`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13d a restore carrying unknown street names reports how many UNIQUE names were ignored - Nosuch Avenue appears twice, counts once (Beta 1.94 F-05; unique counting Beta 1.95, SR-194-08) | ' + toast13d, /2 unknown street names/.test(toast13d) && (await ev(`doneSet.has('Velmar')`)) === true);
 
 // --- SR-194-08 (Beta 1.95): the unknown-name count reads the RAW backup,
@@ -226,14 +217,14 @@ const bootMark13e = await ev(`window.__bootAt`);
 const toast13e = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1badNames)}; doRestore(); return document.getElementById('toast').textContent; })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13e)}`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13e a v1 restore counts unknown names from the raw backup, each name once - object-form done included (Beta 1.95, SR-194-08) | ' + toast13e, /2 unknown street names/.test(toast13e) && (await ev(`doneSet.has('Velmar')`)) === true);
 const v2arrHist = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar']), sides: JSON.stringify({ p: { Velmar: Array(14).fill(3) }, t: {} }), hist: JSON.stringify([{ at: '2026-11-02T00:00:00.000Z', startedAt: '2026-11-02T00:00:00.000Z', items: ['Velmar', 'Phantom Crescent'] }]) } } });
 const bootMark13f = await ev(`window.__bootAt`);
 const toast13f = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2arrHist)}; doRestore(); return document.getElementById('toast').textContent; })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13f)}`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13f unknown names inside ARRAY-form history items are counted too (Beta 1.95, SR-194-08) | ' + toast13f, /1 unknown street name/.test(toast13f));
 
 // N13g (Beta 1.96, deep audit SR-195-05): OBJECT-form notes ({street: [entries]})
@@ -244,7 +235,7 @@ const bootMark13g = await ev(`window.__bootAt`);
 const toast13g = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2objNotes)}; doRestore(); return document.getElementById('toast').textContent; })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13g)}`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N13g unknown names inside OBJECT-form notes are counted too (Beta 1.96, SR-195-05) | ' + toast13g, /1 unknown street name/.test(toast13g) && (await ev(`doneSet.has('Velmar')`)) === true);
 
 // --- backups are v2 now ------------------------------------------------------
@@ -263,7 +254,7 @@ await ev(`finishRun(); true`); await sleep(400);
 ok('N25b with the delete working again the finish completes and the start key is gone', await ev(`runStart === 0 && localStorage.getItem('snowroute.5w.v5.start') === null`));
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 ok('N25c no phantom run after the reload', await ev(`runStart === 0`));
 
 // --- Beta 1.110: Finish is FINAL (the Finish -> Undo -> Cancel chain went
@@ -281,7 +272,7 @@ await ev(`finishRun(); true`); await sleep(300);
 ok('N35a finish retires the cancel snapshot - board cleared, run over, no LS.snap lingers (Beta 1.110)', await ev(`(function(){ try { return runStart === 0 && doneSet.size === 0 && localStorage.getItem(LS.snap) === null && localStorage.getItem(LS.start) === null; } catch (e) { return false; } })()`));
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await loadRoutePolled();
+await loadRoutePolled(ev, sleep);
 const n35b = JSON.parse(await ev(`(() => JSON.stringify({ run: runStart, done: doneSet.size, h: history.length }))()`));
 ok('N35b after a reload the finish stands - board still clear, no run, the archive kept (Beta 1.110) | ' + JSON.stringify(n35b), n35b.run === 0 && n35b.done === 0 && n35b.h === h145before + 1);
 

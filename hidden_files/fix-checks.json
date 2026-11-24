@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "27b80147f8bb057ce23a5023447b0d1da6a6e61ba01c4b95fb35396cbaf2e01a",
+  "canonical_registry_sha256": "0078ef8304b2032c1145139eb9b6d5c90caed4a0527908087b6f2524576ea050",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -13106,10 +13106,10 @@
   {
    "added": "2026-11-24",
    "file": "tests/browser/drive145.mjs",
-   "fix": "Restore #172 round (Beta 1.287): the restore-family drives wait for the app instead of sleeping a fixed span - drive118 and drive145 poll-with-load via their loadRoutePolled helper, drive163's reboot and drive184's navigate and post-restore reads await window.__userPacksReady. The bare-call-after-sleep form throws 'loadRoute is not defined' on a throttled runner (__bootAt is set before the parts finish parsing), and a backup built before the pack drain settles misses the created routes.",
+   "fix": "Restore #172 round (Beta 1.287): the restore-family drives wait for the app instead of sleeping a fixed span - drive118 and drive145 poll-with-load via their loadRoutePolled helper, drive163's reboot and drive184's navigate and post-restore reads await window.__userPacksReady. The bare-call-after-sleep form throws 'loadRoute is not defined' on a throttled runner (__bootAt is set before the parts finish parsing), and a backup built before the pack drain settles misses the created routes. Gate fix (PR #202, Codex finding): the helper now lives once in tests/browser/harness.mjs and the drives call it in the shared (ev, sleep) form; this probe pins drive145 call form.",
    "fix_id": "restore-172-harness-poll-with-load",
    "id": "restore-172-harness-poll-with-load",
-   "pattern": "const loadRoutePolled",
+   "pattern": "loadRoutePolled(ev, sleep)",
    "type": "grep_present"
   }
  ]

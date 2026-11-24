@@ -9482,6 +9482,95 @@
    "red": "drive184 7/10, observed twice identical against the round's repaired drive: R1 fails first (settings=undefined, both created-route definitions present), R2b and R3 follow",
    "green": "drive184 10/10 checks, 0 exceptions - PASS on the restored tree; the round's completed harness repair (navigate and the post-restore reads await window.__userPacksReady) took the drive from 2 failures in 4 local runs to 4 consecutive passes",
    "issued": "2026-11-24 restore-172"
+  },
+  {
+   "id": "restore-172-proof-1225-dash-join-r2",
+   "check": "tests/proof/proof-1225.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1225.mjs": "454078fc973282cc3a223c996aedfa829e23678c057fb1fda8a59641dde90d51",
+    "parts/app4.js": "e6430048e226f0b813e75050eaf415278691e809b9d9312435e98e7b157eb6a9"
+   },
+   "mutation": "parts/app4.js: the merge report's dash join ' - reloading' mutated to '.. reloading'",
+   "red": "proof-1225 16/17, observed twice identical: check 2g (the merge report wording) fails",
+   "green": "proof-1225 17/17 checks passed on the final Beta 1.287 tree (post gate-fix re-issue)",
+   "issued": "2026-11-24 restore-172 gate-fix"
+  },
+  {
+   "id": "restore-172-proof-1271-finclean-r2",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "9d658de1b4c2c2ebd5b8a74456b4f0f1d6c7e53c897e93e10a8c352db151f57e",
+    "parts/app4.js": "e6430048e226f0b813e75050eaf415278691e809b9d9312435e98e7b157eb6a9"
+   },
+   "mutation": "parts/app4.js: the merge plan's finclean discharge merged.set(rk.finclean, null) mutated to merged.set(rk.finclean, undefined)",
+   "red": "proof-1271 14 pass 1 fail, observed twice identical: check 2d (the discharge writes the delete) fails",
+   "green": "proof-1271 15 pass 0 fail on the final Beta 1.287 tree (post gate-fix re-issue)",
+   "issued": "2026-11-24 restore-172 gate-fix"
+  },
+  {
+   "id": "restore-172-proof-1272-sess-cap-r2",
+   "check": "tests/proof/proof-1272.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1272.mjs": "52e8e0fc6ebfb0b39cd7367a4b73c342f8306a6b212ff51c9635ba29e5032fdc",
+    "parts/app4.js": "e6430048e226f0b813e75050eaf415278691e809b9d9312435e98e7b157eb6a9"
+   },
+   "mutation": "parts/app4.js: the session-marker cap cs.slice(Math.max(0, cs.length - TRAIL_MAX)) mutated to cs.slice(0, TRAIL_MAX)",
+   "red": "proof-1272 43 passed 1 failed, observed twice identical: the C11 control (cap keeps the newest markers) fails",
+   "green": "proof-1272 44 passed 0 failed on the final Beta 1.287 tree (post gate-fix re-issue)",
+   "issued": "2026-11-24 restore-172 gate-fix"
+  },
+  {
+   "id": "restore-172-drive224-legacy-fingerprint-r2",
+   "check": "tests/browser/drive224.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive224.mjs": "f8b55c4d7ba5d398da2a1312a854200297264e75226fece2acf92470ff5f25b4",
+    "parts/app4.js": "e6430048e226f0b813e75050eaf415278691e809b9d9312435e98e7b157eb6a9"
+   },
+   "mutation": "parts/app4.js: the legacy history identity 'legacy:' + upCanon(entry) mutated to 'legacy:' (every pre-ID entry shares one identity)",
+   "red": "drive224 15/16, observed twice identical: M3 fails, the second pre-ID entry reads as a duplicate of the first (n=1)",
+   "green": "drive224 16/16 checks, 0 exceptions - PASS on the final Beta 1.287 tree (post gate-fix re-issue; M13 included)",
+   "issued": "2026-11-24 restore-172 gate-fix"
+  },
+  {
+   "id": "restore-172-drive184-settings-carry-r2",
+   "check": "tests/browser/drive184.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive184.mjs": "e45d493a5cfce4428462dd322acf5539ae0d14aca502c0f6a9c9b705ec16caa3",
+    "parts/app4.js": "e6430048e226f0b813e75050eaf415278691e809b9d9312435e98e7b157eb6a9"
+   },
+   "mutation": "parts/app4.js backupObj: the settings carry if (stg != null) o.settings = stg mutated to if (stg === null) o.settings = stg (a present settings record is dropped from the backup)",
+   "red": "drive184 7/10, observed twice identical: R1 (settings=undefined in the backup), R2b and R3 fail",
+   "green": "drive184 10/10 checks, 0 exceptions - PASS on the final Beta 1.287 tree (post gate-fix re-issue)",
+   "issued": "2026-11-24 restore-172 gate-fix"
+  },
+  {
+   "id": "restore-172-drive118-historical-r2",
+   "check": "tests/browser/drive118.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive118.mjs": "6b52eae7d42ecdfecf508c299336ba99bd88eca1f0319cbd5ec5efa3dd94c1e4"
+   },
+   "mutation": "the historical Beta 1.286 tree (6ea4837e, replace restore) carrying this round's updated drive118 (shared harness loadRoutePolled form)",
+   "red": "drive118 exits on a page evaluation error (ReferenceError: $ is not defined) with no result block, observed twice identical: the appended restore suite's toast read throws because the replace restore reloads under it",
+   "green": "drive118 28/28 checks, 0 exceptions - PASS on the final Beta 1.287 tree (post gate-fix re-issue)",
+   "issued": "2026-11-24 restore-172 gate-fix"
+  },
+  {
+   "id": "restore-172-drive145-historical-r2",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive145.mjs": "32c7f1d852a4ec7e5b2473c538b890664bbf39e1b7db516318a40f7406480930"
+   },
+   "mutation": "the historical Beta 1.286 tree (6ea4837e, replace restore) carrying this round's updated drive145 (shared harness loadRoutePolled form)",
+   "red": "drive145 62/63, observed twice identical: exactly N13c-b fails - the replace restore clears the board on an empty completion list where the merge writes only the absent key's empty record (the sheet flick family passed both historical runs)",
+   "green": "drive145 63/63 checks, 0 exceptions - PASS on the final Beta 1.287 tree (post gate-fix re-issue, flick family included)",
+   "issued": "2026-11-24 restore-172 gate-fix"
   }
  ]
 }

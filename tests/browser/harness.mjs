@@ -258,6 +258,11 @@ export async function resetRoute(ev, routeId, extraKeys = []) {
 // Beta 1.76: every cold boot now ends at the route menu - drives that need a
 // loaded route click through it (Choose -> first route row) and wait for the
 // splash to be removed, exactly the state pre-1.76 boots ended in.
+// Poll-with-load: keep asking the page to load the route until it reports loaded, instead of racing the parse.
+export async function loadRoutePolled(ev, sleep) {
+  for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); const rl = await ev(`typeof routeLoaded !== 'undefined' && routeLoaded === true`); if (rl === true) break; await sleep(300); }
+  await sleep(600);
+}
 export async function bootThrough(ev, poll, opts = {}) {
   // Tranche 1 (2026-11-07) asserted readiness: these polls ARE the boot
   // contract, and their booleans used to be ignored - an expired window

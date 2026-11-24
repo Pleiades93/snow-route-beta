@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-oFd9bDVf9vEiydKD/mpb0ngYkqU+wiYzyG4L848MHLeic2/WFwOLuAqplTg2jz1n' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-YFvLoXuDfirOCzufiPObzE3NF8Nz5Y4oifi/JaLssm/ECCuuIuLXF1F+1uXL7+ek' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-i+TOOM2ISNnybc+k36Dpv1Ag7xAv4Trb0T8WqbMwx+vJyxN4pWoi1RlXTZmMHCYo' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-YFvLoXuDfirOCzufiPObzE3NF8Nz5Y4oifi/JaLssm/ECCuuIuLXF1F+1uXL7+ek' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -7004,6 +7004,38 @@ function mergeRestoreEntries(entries, allPacks) {
         incoming.set(rk.trail, JSON.stringify(trailWindow(cleanTrail(trailRaw), start)));
         if (!incoming.has(rk.sess)) incoming.set(rk.sess, '[]');
       } else incoming.delete(rk.sess);
+      // The imported snapshot is the run's Cancel baseline: fold the resident board in, so Cancel cannot erase resident marks.
+      if (incoming.has(rk.snap)) {
+        const snapObj = parseJ(incoming.get(rk.snap), null);
+        const resSides = parseJ(read(rk.sides), null);
+        const resP = resSides && typeof resSides === 'object' ? (resSides.p || resSides) : null;
+        const resDoneRaw = parseJ(read(rk.done), []);
+        const marked = v => v === 1 || v === 2 || v === 3;
+        const hasProgress = (Array.isArray(resDoneRaw) && resDoneRaw.length > 0)
+          || (resP && Object.values(resP).some(a => Array.isArray(a) && a.some(marked)));
+        if (snapObj && snapObj.pieces && hasProgress) {
+          const G = packGeometry(pack);
+          const resT = (resSides && resSides.t) || {};
+          const pieces = {}, pieceTimes = {};
+          for (const n of G.names) {
+            const sp = snapObj.pieces[n] || [], st = snapObj.pieceTimes[n] || [];
+            const rp = (resP && resP[n]) || [], rt = sanitizePieceTimes(resT[n], G.stretch[n].parts.length);
+            pieces[n] = sp.map((v, i) => (marked(rp[i]) ? rp[i] : v));
+            pieceTimes[n] = sp.map((v, i) => (marked(rp[i]) ? rt[i] : (st[i] || [null, null])));
+          }
+          const times = { ...snapObj.times };
+          for (const [n, v] of Object.entries(parseJ(read(rk.times), {}))) if (G.set.has(n) && typeof v === 'string' && !isNaN(Date.parse(v))) times[n] = v;
+          const via = { ...snapObj.via };
+          for (const [n, v] of Object.entries(parseJ(read(rk.via), {}))) if (G.set.has(n) && typeof v === 'string') via[n] = v;
+          const cov = { ...snapObj.cov };
+          for (const [n, arr] of Object.entries(parseJ(read(rk.cov), {}))) {
+            if (!G.set.has(n) || !Array.isArray(arr)) continue;
+            cov[n] = [...new Set([...(cov[n] || []), ...arr.filter(i => Number.isInteger(i) && i >= 0 && i < G.samples[n].length)])];
+          }
+          const done = [...new Set([...snapObj.done, ...(Array.isArray(resDoneRaw) ? resDoneRaw.filter(n => G.set.has(n)) : [])])];
+          incoming.set(rk.snap, BOARD.serialiseSnap({ pieces, pieceTimes, done, times, via, cov }, start));
+        }
+      }
       const current = cluster.map(f => read(rk[f]));
       // A finished archive with this run stamp makes boot reconciliation
       // interpret the imported start as an interrupted finish.
@@ -7080,14 +7112,16 @@ function mergeRestoreEntries(entries, allPacks) {
       const currentDone = rawDone === null ? [] : decode(rk.done, rawDone, Array.isArray);
       const done = new Set(currentDone);
 
+      // An entry with no marks and no stamps is saver filler, not a record.
+      const entryMarked = (side, name) => {
+        const bp = side.p[name], bt = side.t[name];
+        return (Array.isArray(bp) && bp.some(v => v))
+          || (bt && Object.values(bt).some(s => Array.isArray(s) && s.some(x => x)));
+      };
       // A legacy completion is a resident board value; a backup side entry cannot un-complete it.
       for (const name of new Set([...Object.keys(backup.p), ...Object.keys(backup.t)])) {
-        if (hasSide(current, name) || done.has(name)) continue;
-        // An entry with no marks and no stamps is saver filler, not a record: it adds nothing.
-        const bp = backup.p[name], bt = backup.t[name];
-        const marked = (Array.isArray(bp) && bp.some(v => v))
-          || (bt && Object.values(bt).some(s => Array.isArray(s) && s.some(x => x)));
-        if (!marked) continue;
+        if (entryMarked(current, name) || done.has(name)) continue;
+        if (!entryMarked(backup, name)) continue;
         if (own(backup.p, name)) p[name] = backup.p[name];
         if (own(backup.t, name)) t[name] = backup.t[name];
         sidesAdded = true;
@@ -7098,11 +7132,11 @@ function mergeRestoreEntries(entries, allPacks) {
         const added = [];
         const backupDone = JSON.parse(incoming.get(rk.done));
         for (const name of backupDone) {
-          if (done.has(name) || hasSide(current, name) || !set.has(name)) continue;
+          if (done.has(name) || entryMarked(current, name) || !set.has(name)) continue;
           done.add(name);
           added.push(name);
           // F06: derive sides only for a newly added street without incoming sides, from the merged stamp.
-          if (!hasSide(backup, name)) {
+          if (!entryMarked(backup, name)) {
             if (!times) times = parseJ(merged.get(rk.times) ?? read(rk.times), {});
             p[name] = stretch[name].parts.map(() => 3);
             t[name] = stretch[name].parts.map(() => [times[name] || null, times[name] || null]);
