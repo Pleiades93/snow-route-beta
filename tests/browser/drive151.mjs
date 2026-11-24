@@ -80,12 +80,19 @@ const rig = await startCreateRig({ profile: '/tmp/d151profile-' + Date.now(), fu
 const { proc, send, PAGE_S, ev2, poll, consoleLog, J, bootRoute } = rig;
 // Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city results
 // from .rmBtn boxes to .routeRow rows; the selectors in this helper follow.
+// Issue #180 TEST-PREMISE UPDATE (Beta 1.286): typing now answers from the
+// on-device gazetteer and the public search fires only from the Search online
+// row - this drive grades the WIRE path (its N2 claim names the intercepted
+// Nominatim answer), so the helper taps that row and picks from the merged
+// results, exactly the door a user without a gazetteer hit would take.
 const pickVaughan = async () => {
   await ev2(`openRouteMenu()`);
   await ev2(`document.getElementById('rmCreate').click()`);
   await ev2(`document.getElementById('crDoorManual').click()`);
   await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
   await ev2(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughan'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+  await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 15000);
+  await ev2(`document.querySelector('#crCityResults .crOnlineRow').click()`);
   await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 15000);
   await ev2(`document.querySelector('#crCityResults .routeRow').click()`);
   return await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);

@@ -81,7 +81,7 @@ const CLEAN = {
       if (!isNaN(t)) prev = t;
       streets.push({ name: n, at: items[n], tMs: t, gapMs, stamps, spanMs, via: (h.via || {})[n], noteLines: this.noteLines((h.notes || {})[n]) });
     }
-    const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (h.notes[n] || []).length).map(n => ({ name: n, primary: PRIMARIES.has(n), noteLines: this.noteLines(h.notes[n]) }));
+    const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (Array.isArray(h.notes[n]) ? h.notes[n] : []).length).map(n => ({ name: n, primary: PRIMARIES.has(n), noteLines: this.noteLines(h.notes[n]) })); // issue #180: the Array.isArray guard - an inherited member ('constructor') is not a notes array
     return { count: this.count(h), dur, workM, paceKm: this.paceKm(h), elapsedMs, paceRate, streets, notedOnly };
   },
   /** @param {Array} entries @returns {string[]} */ noteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); },
@@ -154,7 +154,7 @@ function renderPace() { // Beta 1.184 (Andrew): the approved redesign - This run
     else banner = '<div class="verd"><span class="vd-g">On pace with the reference clean</span>. Verdict at today\'s pace' + etaBit + '</div>';
   } else if (ref) {
     const rs = CLEAN.summary(ref);
-    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rs.dur && rs.paceKm ? ', ' + fmtHM(rs.dur.durMs) + ' total · ' + rs.paceKm + ' /km pace' : '') + '</div>';
+    banner = '<div class="verd ref">Reference clean (' + fmtDate3(ref.at) + ')' + (rs.dur && rs.paceKm ? ', streets done in ' + fmtHM(rs.dur.durMs) + ' · ' + rs.paceKm + ' /km pace' : '') + '</div>'; // issue #180: the span is named for what it measures (start to the last street done) - "total" names the OTHER interval (start to the Finish tap) in the clean detail, and one word for two spans is how the two figures read as one
   } else {
     banner = '<div class="verd ref">No reference clean yet. Finish a clean to set your pace</div>';
   }
@@ -224,10 +224,10 @@ function openClean(i) {
   head.querySelector('.cvSub').textContent = pd.count + ' streets · finished ' + fmtClock(new Date(h.at));
   head.querySelector('.cvBack').onclick = backToCleans;
   cv.appendChild(head);
-  const stats = document.createElement('div'); stats.className = 'statgrid d2'; // Beta 1.184: the design 2x2 cells - TOTAL TIME is histDur span (the same interval the Saved-cleans row shows); ROAD CLEARED is work, GPS TRAIL is travel: different measures, distinct labels, never merged
+  const stats = document.createElement('div'); stats.className = 'statgrid d2'; // Beta 1.184: the design 2x2 cells - the first cell is the histDur span (start to the last street done; the same interval the Saved-cleans row shows, and the meta line below names it "Streets done in" - issue #180: the cell label says the same, since "total" there collided with the meta's "Total elapsed", the start-to-Finish span); ROAD CLEARED is work, GPS TRAIL is travel: different measures, distinct labels, never merged
   const cpk = pd.paceKm;
   stats.innerHTML =
-    statCell('clock', d ? fmtHM(d.durMs) : '–', 'TOTAL TIME') +
+    statCell('clock', d ? fmtHM(d.durMs) : '–', 'STREETS DONE IN') +
     statCell('road', (pd.workM / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
     statCell('gauge', cpk ? cpk + ' /km' : '–', 'PACE') +
     statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '–', 'GPS TRAIL');
@@ -439,7 +439,7 @@ $('resetBtn').addEventListener('click', ev => {
   if (!tapGuard('resetBtn', ev)) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
-    ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : ''))
+    ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 && nDone < STREETNAMES.length ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // issue #180: the warning matches finishRun's rule - a FULL clean of a short route (every street done) IS saved, so it is never warned as unsaved
     : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
   $('finModal').classList.remove('hidden');
 });
@@ -599,7 +599,7 @@ function finishRun() {
   northUp();
   const snap = buildSnap();
   const finishAt = Date.now(); if (snap) snap.runId = runStart || finishAt; // Beta 1.104 (round 103, CG-103-02): the archive carries the active run's identity, so an interrupted finish can be reconciled at boot even when startedAt predates Start; startedAt itself is NOT touched (km/path measure from the real work start, audit A05). Beta 1.146 (census C1): a NO-RUN finish (snap exists, no Start was ever pressed) stamps the SAME finishAt the finclean step below writes as its at - the marker's at is this finish's identity, so reconcileInterruptedFinish's no-run branch can match entry to marker exactly; the marker's shape ({run, at}) is unchanged, values only
-  const archiving = !!(snap && doneSet.size >= 3); // production rule: under 3 streets clears WITHOUT being saved
+  const archiving = !!(snap && (doneSet.size >= 3 || (doneSet.size > 0 && STREETNAMES.every(n => doneSet.has(n))))); // production rule: under 3 streets clears WITHOUT being saved - issue #180: unless the clean is FULL (every street of the route done): a one- or two-street route's complete clean is a real clean, not a stray tap, and qualifies for history at any size
   const prevHist = history;
   // Beta 1.57: the finish is a small TRANSACTION (Phase 2 storage integrity) -
   // both gated writes land BEFORE any state changes, so a storage failure
@@ -1509,7 +1509,7 @@ function coverFix(ll) {
   let changed = false;
   for (const n of STREETNAMES) {
     if (streetComplete(n)) continue;
-    const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(coveredIdx[n] || []));
+    const pts = SAMPLES[n]; const set = covSets[n] || (covSets[n] = new Set(Array.isArray(coveredIdx[n]) ? coveredIdx[n] : [])); // issue #180: Array.isArray - for a street named 'constructor' the plain coveredIdx object reads the inherited function here, and new Set() on it throws
     const box = covBoxes[n]; const outOfBox = box && (ll[0] < box[0] || ll[0] > box[1] || ll[1] < box[2] || ll[1] > box[3]);
     if (!outOfBox) for (let i = 0; i < pts.length; i++) { if (!set.has(i) && distM(ll, pts[i]) <= COV_RADIUS_M) { set.add(i); changed = true; } }
     if (set.size) coveredIdx[n] = [...set];

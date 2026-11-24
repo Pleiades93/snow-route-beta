@@ -502,7 +502,8 @@ through Node fetch, so a run needs network access for those fetches; the
 assertions themselves are all local app logic. In the file:// drives the
 service worker file is deliberately 404'd to keep runs hermetic — worker
 behaviour is covered by `tests/sw.test.mjs` and, end to end on a real
-origin, by `drive117` and `drive119`.
+origin, by `drive117` and the offline end-to-end suite
+(`e2e-offline`, whose E24 carries the retired `drive119`'s claim).
 
 ## Local-only tests (not in CI)
 

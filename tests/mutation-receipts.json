@@ -8587,6 +8587,534 @@
    "red": "Gate fixtures 78 pass, 1 FAIL - exactly the registry-sync refusal case: a vendored registry diverging from the canonical registry pushes (exit 0) instead of refusing (want 1).",
    "green": "Gate fixtures 79 pass, 0 fail on the real tree, including both registry-sync cases.",
    "issued": "machinery-issues-173-178"
+  },
+  {
+   "id": "proof-1271-179-scope-repin",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "e0a28fd2bef7e73d5bd6947d9c9c7d96cb6f9abf147b6f496d00c59ebb8821d5",
+    "parts/app5.js": "c76a2e97703abc115e832bd66157ce08b01540533b3e27545f002c29454e150d"
+   },
+   "mutation": "delete the pack-lookup line inside askDeleteRoute only, loadRoute copy intact (the old whole-file pin stayed satisfiable by the sibling)",
+   "red": "proof-1271 exit 1, check 2d FAIL, all other checks pass",
+   "green": "proof-1271 exit 0, 15 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1229-179-scope-repin",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "40e313cf58436cf0b6b3c9f4c29afae8dee6ec42d4e142307887e76d4260aee5",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c"
+   },
+   "mutation": "delete the progress stamp inside crGridResume only, pump and city-prepare copies intact",
+   "red": "proof-1229 exit 1, check 4b FAIL only",
+   "green": "proof-1229 exit 0, 33 passed 0 failed on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1232-179-scope-repin",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "e1171f20a096be48cc95ab27ef2146ada3cd97c61f71f6ba4722a5acd449225f",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "flip _isect: true to false inside crIntersectionItem only, crossing-rows copy intact",
+   "red": "proof-1232 exit 1, check 1i FAIL only",
+   "green": "proof-1232 exit 0, 27 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1233-179-scope-repin",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "ada3ed1516d9547d896b695df3c72ad5cfed405cf851ca2f84604993c773398b",
+    "parts/app2.js": "89f14cbd1a555ee7fc26a2658fb72a15ffffc571726b818fc29f084a903c4757",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d"
+   },
+   "mutation": "delete the window resize listener line only, the pane-show fade pair intact",
+   "red": "proof-1233 exit 1, check B4c FAIL only",
+   "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1234-179-scope-repin",
+   "check": "tests/proof/proof-1234.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1234.mjs": "53150a7834a6830eedbef6be335be872556b693a4e36fd82de114ba753f995f1",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "replace the reduced-motion read inside crRenderRows only, the pulse-start copy intact",
+   "red": "proof-1234 exit 1, check N4 FAIL only",
+   "green": "proof-1234 exit 0, 33 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1263-179-scope-repin",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "594290a30884dafa6bc8970f3b0b932d67ca011a06badc60a08f56794d5f36d8",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73"
+   },
+   "mutation": "delete the labelpts addSource line inside rePlaceTitles only, the stack-build copy intact",
+   "red": "proof-1263 exit 1, check 1 FAIL only",
+   "green": "proof-1263 exit 0, 13 passed 0 failed on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-glow-179-scope-repin",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "18f552675df012521121bc298296ff05cd9df8727bf06289d586e7447a4f3df7",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "replace the street-record read inside syncCrGlow only, the four other reader copies intact",
+   "red": "proof-create-glow-casing-fix exit 1, the syncCrGlow G check FAIL only",
+   "green": "proof-create-glow-casing-fix exit 0, 19 pass 0 fail on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-ghr-179-scope-repin",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "79759f37662cfa05c062be983db0f400c6267ba54276fb81bf5dac30d1f2ee30",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73",
+    "parts/app2.js": "89f14cbd1a555ee7fc26a2658fb72a15ffffc571726b818fc29f084a903c4757"
+   },
+   "mutation": "delete the labelpts addSource inside addStack only, the rebuild copy intact",
+   "red": "proof-green-half-road exit 1, the R4 engine-builds check FAIL only",
+   "green": "proof-green-half-road exit 0, ALL CHECKS PASS on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-paint-179-def-repin",
+   "check": "tests/proof/proof-paint-model.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-paint-model.mjs": "87cf1b7fecd9391e1bc6589bda65c64d96ef3273af1378b4e5684b4f7963d8e6",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73"
+   },
+   "mutation": "reformat the PAINT classify definition with an extra space before its brace, every PAINT.classify call site intact (the old bare pin stayed satisfiable by the calls)",
+   "red": "proof-paint-model exit 1, check 2a FAIL only",
+   "green": "proof-paint-model exit 0, 17 passed 0 failed on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-trim-179-scope-repin",
+   "check": "tests/proof/proof-trim-glow-path-pills.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-trim-glow-path-pills.mjs": "8ab347462d06e4d689c3eb9422e28f20ea6740061b951332c672a0e4c08105f1",
+    "parts/create-pick.js": "cace96469252c243856ed4cb04d7cf4a54ac62dbed1f10b0e6b883c769f76998"
+   },
+   "mutation": "lowercase the caps ternary inside crRowEl only, the panel-row factory copy intact",
+   "red": "proof-trim-glow-path-pills exit 1, the pill-labels check FAIL only",
+   "green": "proof-trim-glow-path-pills exit 0 on the restored tree",
+   "issued": "2026-11-23 sweep-179"
+  },
+  {
+   "id": "proof-1235-180-scoped-repin",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "9995a6014819bad007b368b1d06e685da6f2f1c20fcf9426aba7a201fced64b3",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "parts/create-pick.js: the online search's render call (inside crRunCitySearch) renamed to a private builder crCityRowInline. The first re-point of B10 in this round was a whole-file pin and stayed GREEN under this mutation (the type-ahead's identical call satisfied it) - the issue #179 class recurring in the round's own edit; B10 is now scoped to crRunCitySearch's body (slice from its start, the proof-1271 idiom)",
+   "red": "proof-1235 17 passed, 1 failed with the scoped pin: exactly B10 red",
+   "green": "proof-1235 18 passed, 0 failed on the Beta 1.286 tree",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "proof-icon-180-safezone",
+   "check": "tests/proof/proof-icon-swap-1213.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-icon-swap-1213.mjs": "b27fdd3b7d4f8671a4f4d3016b25ab2f69e5e3e670a84aac6a0b54434cb102c5",
+    "icon-maskable-512.png": "a15c58d8cfec4bf0fb3d972e05cab6f14bc32dd581ec31aef9e3054ec0d08518"
+   },
+   "mutation": "the pre-fix icon-maskable-512.png (artwork max radius 270.8, outside the maskable safe zone) swapped back in",
+   "red": "proof-icon-swap-1213: M sha FAIL and M safe-zone radius FAIL (maxR 270.8 > 204.8)",
+   "green": "24 pass, 0 fail with the rescaled icon (artwork max radius 199.4)",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "gate-fixtures-180-instrument-closure",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "be6e90ccb5270d492b1dea765fd1fade6482b71e09ceafb417f17b9cfd4e2a42",
+    "scripts/push.py": "b41ff114c59e21557019e6d4ebad3f0eda8e875eae613dc526d8369cc86060de",
+    ".github/workflows/checks.yml": "67242aaad18ddb34f56ddf26f2f515d29ff17cbc286180383f1a7db391986d49"
+   },
+   "mutation": "scripts/push.py neutered: the prospective preflight's instrument set reduced from the build checker's import closure (build-pages, csp_stamp, assemble, release, source_query) to build-pages.py alone - the pre-issue-#180 shape",
+   "red": "gate fixtures 78 pass, 1 fail: exactly the new instrument-closure case - the branch-poisoned csp_stamp helper executed locally (marker present) while the push still succeeded",
+   "green": "gate fixtures 79 pass, 0 fail on the Beta 1.286 tree",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "drive164-180-typeahead-repoint",
+   "check": "tests/browser/drive164.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive164.mjs": "fbdae75e9787998a375ac2ad547aea2448f77fcb730191dc28f7fff0ec8a2f02",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (page rebuilt) - the re-pointed Case 3 reaches the online search only through that row",
+   "red": "drive164 15/16: exactly E1b red - abortedAtClear false, no fetch ever in flight for the clear to abort",
+   "green": "drive164 16/16 on the Beta 1.286 tree (observed locally)",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "drive188-180-banner-repoint",
+   "check": "tests/browser/drive188.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive188.mjs": "0bd7a00ff0282a7de211125fbb09d5906d629abf863e625d91ce828180f47c22",
+    "parts/app3.js": "11a34c61a1779d7e3ab5c04b1109489b0137b74e9bae6726c743b8e9e88c42e0"
+   },
+   "mutation": "parts/app3.js: the reference banner reverted to the pre-issue-#180 shape (', ' + fmtHM + ' total \u00b7 ') (page rebuilt)",
+   "red": "drive188 14/15: exactly A3 red - the banner reads '0:34 total \u00b7'",
+   "green": "drive188 15/15 on the Beta 1.286 tree (observed locally)",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "drive192-180-labels-repoint",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "d0df680079ba101340817450a5c76e1c8338dfc91f03ae0bbbf3b8990b2d5a16",
+    "parts/app3.js": "11a34c61a1779d7e3ab5c04b1109489b0137b74e9bae6726c743b8e9e88c42e0"
+   },
+   "mutation": "parts/app3.js: the reference banner reverted to ' total \u00b7 ' and the clean-detail stat cell label reverted to TOTAL TIME (page rebuilt)",
+   "red": "drive192: P3 red (banner '1:42 total \u00b7') and P8 red (the detail stats map carries TOTAL TIME and no STREETS DONE IN key)",
+   "green": "drive192 47/51 locally on the Beta 1.286 tree: every functional check green incl. P3 and P8; the 4 failures are the D detents at 360x740, the recorded pristine-identical fixed-window sampler env family (known-env-failures) - CI is the credible read for detents",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "proof-1271-179-scope-repin-r2",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "e0a28fd2bef7e73d5bd6947d9c9c7d96cb6f9abf147b6f496d00c59ebb8821d5",
+    "parts/app5.js": "6876039faa426911b0f91b7e9c23b547442f488d8da0ffc5d3c2e49313069a14"
+   },
+   "mutation": "delete the pack-lookup line inside askDeleteRoute only, loadRoute copy intact (the old whole-file pin stayed satisfiable by the sibling)",
+   "red": "proof-1271 exit 1, check 2d FAIL, all other checks pass Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-1271 exit 0, 15 pass 0 fail on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "proof-1232-179-scope-repin-r2",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "e1171f20a096be48cc95ab27ef2146ada3cd97c61f71f6ba4722a5acd449225f",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "flip _isect: true to false inside crIntersectionItem only, crossing-rows copy intact",
+   "red": "proof-1232 exit 1, check 1i FAIL only Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-1232 exit 0, 27 pass 0 fail on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "proof-1233-179-scope-repin-r2",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "ada3ed1516d9547d896b695df3c72ad5cfed405cf851ca2f84604993c773398b",
+    "parts/app2.js": "1ad04ff086f5da620f6aaff5b323c7931dccecd6ef48730653c5be37318c8f32",
+    "parts/head.html": "bff57252f945388445965c770902c06145d3501ceb21cb6f5507fd542eca066d"
+   },
+   "mutation": "delete the window resize listener line only, the pane-show fade pair intact",
+   "red": "proof-1233 exit 1, check B4c FAIL only Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "proof-1234-179-scope-repin-r2",
+   "check": "tests/proof/proof-1234.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1234.mjs": "53150a7834a6830eedbef6be335be872556b693a4e36fd82de114ba753f995f1",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "replace the reduced-motion read inside crRenderRows only, the pulse-start copy intact",
+   "red": "proof-1234 exit 1, check N4 FAIL only Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-1234 exit 0, 33 pass 0 fail on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "proof-glow-179-scope-repin-r2",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "18f552675df012521121bc298296ff05cd9df8727bf06289d586e7447a4f3df7",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "replace the street-record read inside syncCrGlow only, the four other reader copies intact",
+   "red": "proof-create-glow-casing-fix exit 1, the syncCrGlow G check FAIL only Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-create-glow-casing-fix exit 0, 19 pass 0 fail on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "proof-ghr-179-scope-repin-r2",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "79759f37662cfa05c062be983db0f400c6267ba54276fb81bf5dac30d1f2ee30",
+    "parts/engine.js": "a0d921600e511d2c295d88942d82d2316c2433b004ac9ea9552809b12f079c73",
+    "parts/app2.js": "1ad04ff086f5da620f6aaff5b323c7931dccecd6ef48730653c5be37318c8f32"
+   },
+   "mutation": "delete the labelpts addSource inside addStack only, the rebuild copy intact",
+   "red": "proof-green-half-road exit 1, the R4 engine-builds check FAIL only Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-green-half-road exit 0, ALL CHECKS PASS on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "proof-trim-179-scope-repin-r2",
+   "check": "tests/proof/proof-trim-glow-path-pills.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-trim-glow-path-pills.mjs": "8ab347462d06e4d689c3eb9422e28f20ea6740061b951332c672a0e4c08105f1",
+    "parts/create-pick.js": "5e31f3a93c1beffc3797a4f0b37e8ce593078a74ae4fc5aef452b067ce0fde4e"
+   },
+   "mutation": "lowercase the caps ternary inside crRowEl only, the panel-row factory copy intact",
+   "red": "proof-trim-glow-path-pills exit 1, the pill-labels check FAIL only Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-trim-glow-path-pills exit 0 on the restored tree Re-observed on the Beta 1.286 tree in the sweep round (the #180 parts motion staled the original pin): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "correct-phase3d-census-exclusions-r4",
+   "check": "tests/browser/selftest-foreign-writes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-foreign-writes.mjs": "e9bd15f4e17ffcb54bd362bb7711a7584406cb1d0d106599f5c893ef134132f9",
+    "tests/browser/fixtures/foreign-writes-census.json": "b0df61f47a610c252dc961ce467ff7170ad05e6725cf4d5af349bda2744018b7",
+    "scripts/check-mirrors.py": "ba31bf8045d2e3ddf1b93423858f091e8ad691f796a7dd6a80e1f34631947c90"
+   },
+   "mutation": "the Beta 1.286 tree itself is the mutation: issue #180's Locate fix makes parts/app5.js loadRoute write gpsFromRun (owned by parts/app3.js) to clear the recording face on a switch to an idle route - one new foreign-write site against the pre-#180 pinned census",
+   "red": "selftest-foreign-writes FAIL on the 1.286 tree with the old pin: 'EXTRA/CHANGED in recomputed: app5.js|loadRoute|gpsFromRun#1->app3.js x1 (pinned x0)', totals 21 pinned vs 22 recomputed (registry probe tranche2-foreign-writes-passes red in CI)",
+   "green": "FOREIGN-WRITE CENSUS: PASS after the site is adjudicated (loadRoute is the route-switch seam; it already carries the adjudicated activeRoute/routeLoaded writes) and the pinned census is regenerated through the selftest's own --write; the regeneration differs from a hand edit only in scan order",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "drive164-180-typeahead-repoint-r2",
+   "check": "tests/browser/drive164.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive164.mjs": "fbdae75e9787998a375ac2ad547aea2448f77fcb730191dc28f7fff0ec8a2f02",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (page rebuilt) - re-observed on the final Beta 1.286 shape (the r1 pin staled when the online row's class split and the armSeq stand-down landed in the gate-fix commits)",
+   "red": "drive164 15/16: exactly E1b red - abortedAtClear false, no fetch ever in flight for the clear to abort",
+   "green": "drive164 16/16 on the final Beta 1.286 tree (observed locally)",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "proof-1235-180-scoped-repin-r2",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "9995a6014819bad007b368b1d06e685da6f2f1c20fcf9426aba7a201fced64b3",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: the online search's render call (inside crRunCitySearch) renamed to a private builder crCityRowInline - re-observed on the final Beta 1.286 shape (the r1 pin staled on the gate-fix commits' create-pick motion)",
+   "red": "proof-1235 17 passed, 1 failed: exactly B10 red",
+   "green": "proof-1235 18 passed, 0 failed on the final Beta 1.286 tree",
+   "issued": "2026-11-23 sweep-180-r2"
+  },
+  {
+   "id": "drive151-180-wire-door",
+   "check": "tests/browser/drive151.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive151.mjs": "b17affecb0a042a5e27684844454ffb8bfaad14dd035edf25b7985292cabd3f0",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js reverted to the pre-issue-#180 city-search shape (the debounce fires crRunCitySearch directly; the Search online row is never appended) - the premise-updated helper's door does not exist in that shape",
+   "red": "drive151 dies in pickVaughan: the .crOnlineRow tap throws on the missing row, no result block",
+   "green": "drive151 10/10 on the Beta 1.286 tree (observed locally): the helper taps Search online and picks Vaughan from the merged wire results, as its N2 claim states",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "drive153-180-service-door",
+   "check": "tests/browser/drive153.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive153.mjs": "604ee8deb3e96f52b713227dd7225fba560e3a64169f6b2885a2e19779fd5d9e",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "two mutations, each observed: (a) parts/create-pick.js reverted to the pre-issue-#180 shape (debounce fires the search; no Search online row) - the premise-updated phase D taps a row that does not exist; (b) the armSeq stand-down removed from the debounce timer alone, so the type-ahead re-renders over a superseding search",
+   "red": "(a) drive153 dies at phase D's Search online tap, no result block; (b) drive153 14/15: exactly D5 red - the type-ahead's 'No city matched' note re-fills the box a failed search honestly left empty",
+   "green": "drive153 15/15 on the Beta 1.286 tree (observed locally)",
+   "issued": "2026-11-23 sweep-180"
+  },
+  {
+   "id": "proof-1232-179-scope-repin-r3",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "e1171f20a096be48cc95ab27ef2146ada3cd97c61f71f6ba4722a5acd449225f",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "flip _isect: true to false inside crIntersectionItem only, crossing-rows copy intact",
+   "red": "proof-1232 exit 1, check 1i FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-1232 exit 0, 27 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "proof-1233-179-scope-repin-r3",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "ada3ed1516d9547d896b695df3c72ad5cfed405cf851ca2f84604993c773398b",
+    "parts/app2.js": "1ad04ff086f5da620f6aaff5b323c7931dccecd6ef48730653c5be37318c8f32",
+    "parts/head.html": "d73713b36ed406d1751e2ea4ce04d2aae67a3ab3ba57d4c4c2e967ed5c3e952b"
+   },
+   "mutation": "delete the window resize listener line only, the pane-show fade pair intact",
+   "red": "proof-1233 exit 1, check B4c FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "proof-1234-179-scope-repin-r3",
+   "check": "tests/proof/proof-1234.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1234.mjs": "53150a7834a6830eedbef6be335be872556b693a4e36fd82de114ba753f995f1",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "replace the reduced-motion read inside crRenderRows only, the pulse-start copy intact",
+   "red": "proof-1234 exit 1, check N4 FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-1234 exit 0, 33 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "proof-glow-179-scope-repin-r3",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "18f552675df012521121bc298296ff05cd9df8727bf06289d586e7447a4f3df7",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "replace the street-record read inside syncCrGlow only, the four other reader copies intact",
+   "red": "proof-create-glow-casing-fix exit 1, the syncCrGlow G check FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-create-glow-casing-fix exit 0, 19 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "proof-trim-179-scope-repin-r3",
+   "check": "tests/proof/proof-trim-glow-path-pills.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-trim-glow-path-pills.mjs": "8ab347462d06e4d689c3eb9422e28f20ea6740061b951332c672a0e4c08105f1",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "lowercase the caps ternary inside crRowEl only, the panel-row factory copy intact",
+   "red": "proof-trim-glow-path-pills exit 1, the pill-labels check FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "green": "proof-trim-glow-path-pills exit 0 on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "drive152-180-wire-door",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive152.mjs": "0cf6c3b43c9d47784c3d18a4516b8d0e7399a725c3a8d60e378951b3be862753",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (the wire door does not exist) - each premise-updated helper's pick falls back to the on-device gazetteer row, whose city carries the REAL bounding box instead of the fixture's",
+   "red": "drive152 5/8: exactly K2a/K2b/K2c red with the CI-identical read {failed:0, done:30, hint:''} - the gazetteer Vaughan's real grid settles whole, so the fixture's one-failed-cell DEGRADED case never exists (the same failure CI run 45316034622 recorded at head dde611ed)",
+   "green": "drive152 8/8 on the Beta 1.286 tree (observed locally): the helper taps Search online and picks the fixture's Vaughan from the merged wire results",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "drive154-180-wire-door",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive154.mjs": "5c1e2d3da1712fc580d5aada850917e10dc056c422fb26730aeaf3e773efd68d",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (the wire door does not exist) - each premise-updated helper's pick falls back to the on-device gazetteer row, whose city carries the REAL bounding box instead of the fixture's",
+   "red": "drive154 dies in phase C: the Search online tap throws on the missing row, no result block (CI run 45316034622 recorded the same premise failure one step later as C1 ready:false off the gazetteer King City pick)",
+   "green": "drive154 22/22 on the Beta 1.286 tree (observed locally): phase C taps Search online and readies the fixture's King through the grid, C1 parity green",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "drive166-180-wire-door",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive166.mjs": "f5e054d3ada9b7fc04b73e489b01dabe63d0401134a45b5ed407bf216d1fddee",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (the wire door does not exist) - each premise-updated helper's pick falls back to the on-device gazetteer row, whose city carries the REAL bounding box instead of the fixture's",
+   "red": "drive166 dies at the S2 seed (line 613): TypeError setting 'startedAt' on null - the gazetteer Vaughan's coverage includes S2's fallback anchor (43.9, -79.56), so crStartPrep takes the coverage-reuse early return and crPrep is never created (the same crash CI run 45316034622 recorded at line 604 pre-note)",
+   "green": "drive166 58/58 on the Beta 1.286 tree (observed locally; one earlier local run read H1/H3 red on basemap engine readiness and the rerun read 58/58 - a local tile-load flake, not the change)",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "drive181-180-wire-door",
+   "check": "tests/browser/drive181.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive181.mjs": "7504c04040e0efba071a55a010fb9da5061f6273ab7c90d9e8ee37628f18ca74",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (the wire door does not exist) - the premise-updated helper's pick falls back to the on-device gazetteer row, whose city carries the REAL bounding box instead of the fixture's",
+   "red": "drive181 11/19 on CI run 45320268172 (head c18a382e, the pre-update tree): S1, S2a, S2b, S3, S4a, S4b, S5a, S5b red - the gazetteer Vaughan's real grid (30 cells) settles whole, so the fixture grid's wholly-failed and one-failed-cell cases never exist and the prep-state edges land wrong (S5b read done=30 viol=4). The local re-observation under the same mutation was started but exceeded the local runner window; the CI record is the observation of record",
+   "green": "drive181 19/19 on the Beta 1.286 tree (observed locally): the helper taps Search online and picks the fixture's Vaughan from the merged wire results",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "proof-1226-180-grouped-repin",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1226.mjs": "ec9deb104960054d4f19e096def15738c5ad667c5e0665bb939b3577cc7bdbdc",
+    "parts/head.html": "c2c2d66255707b1b7142fb0ca558dfa5c0cae120a1560edccd46f31b0bf74703"
+   },
+   "mutation": "parts/head.html: the grouped :active rule split back into two twin rules (the pre-composition shape)",
+   "red": "proof-1226 15/16: exactly 1h red - the re-pointed literal names the grouped selector the composition created",
+   "green": "proof-1226 16/16 on the composed tree (observed locally)",
+   "issued": "2026-11-23 sweep-180-r4"
+  },
+  {
+   "id": "proof-soft1222-180-grouped-repin",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "9867c83c071b48b7fc11f94ef63f5f54e7783dcc8e052c464f3f74978d1d072c",
+    "parts/head.html": "c2c2d66255707b1b7142fb0ca558dfa5c0cae120a1560edccd46f31b0bf74703"
+   },
+   "mutation": "parts/head.html: the grouped menu-pill rule's selector cut back to .routeRow alone (the online row un-grouped)",
+   "red": "proof-soft-1222 14 pass 1 fail: exactly A red - its rule() extraction names the grouped selector the composition created",
+   "green": "proof-soft-1222 15/15 on the composed tree (observed locally)",
+   "issued": "2026-11-23 sweep-180-r4"
+  },
+  {
+   "id": "proof-1233-179-scope-repin-r4",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "ada3ed1516d9547d896b695df3c72ad5cfed405cf851ca2f84604993c773398b",
+    "parts/app2.js": "1ad04ff086f5da620f6aaff5b323c7931dccecd6ef48730653c5be37318c8f32",
+    "parts/head.html": "c2c2d66255707b1b7142fb0ca558dfa5c0cae120a1560edccd46f31b0bf74703"
+   },
+   "mutation": "delete the window resize listener line only, the pane-show fade pair intact",
+   "red": "proof-1233 exit 1, check B4c FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
+   "green": "proof-1233 exit 0, 39 pass 0 fail on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore. Re-issued after the head.html CSS composition moved one pinned file: the same mutation re-observed on the composed tree - exactly its target check red, green on restore.",
+   "issued": "2026-11-23 sweep-180-r4"
   }
  ]
 }

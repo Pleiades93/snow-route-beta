@@ -14,7 +14,7 @@ function buildReport() {
   [...doneSet].sort(byTime(doneTimes)).forEach(n => L.push(n + ', ' + (doneTimes[n] ? fmtStamp(doneTimes[n]) : '(no time)') + (doneVia[n] === 'gps' ? ' (GPS-verified)' : '')));
   const todo = STREETNAMES.filter(n => !doneSet.has(n));
   if (todo.length) L.push('', 'Not done: ' + todo.join(', '));
-  const fl = STREETNAMES.filter(n => notes[n] && notes[n].length);
+  const fl = STREETNAMES.filter(n => Array.isArray(notes[n]) && notes[n].length); // issue #180: Array.isArray - a street named 'constructor' reads the inherited member on the plain notes object, whose .length is the function's arity, not a note count
   if (fl.length) { L.push('', 'Notes & flags:'); fl.forEach(n => L.push(n + ': ' + flagText(n))); }
   history.slice().reverse().forEach(h => {
     const items = h.items || {}, ks = Object.keys(items).sort(byTime(items));

@@ -52,7 +52,10 @@ const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log
 
 // ---------- (1) the title system as it was ----------
 check('1: the labelpts source is built and rebuilt from LABELPTS, and the tier layers ride it at the original tier minzooms',
-  engine.includes("GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
+  // issue #179: the claim is conjunctive (built AND rebuilt) - the addSource
+  // pin is scoped to each site in turn; either copy alone must not carry it.
+  engine.slice(engine.indexOf('function addStack()'), engine.indexOf('function rePlaceTitles()')).includes("GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
+  engine.slice(engine.indexOf('function rePlaceTitles()'), engine.indexOf('function rebuildRoute()')).includes("GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
   engine.includes('const PT_MIN = [13.7, 13.35, 13.0, 12.6];') &&
   engine.includes("const id = 'streetnamespt' + t;") &&
   engine.includes('function nudgeFifth()') && engine.includes('function assignTiers()'));
