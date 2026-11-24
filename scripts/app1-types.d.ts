@@ -160,6 +160,9 @@ declare function glUnifyLabels(m: any): void;
 
 // ---- 3. Browser surface actually used by the checked parts ----
 
+/** flags.js (repo root, not a part): `var ROUTE_TITLES_ON = false` - the source-only route-title switch (Beta 1.293); assemble.py inlines flags.js first in the bundle, ahead of every part, so the checked parts read it as a page-provided global. */
+declare var ROUTE_TITLES_ON: boolean;
+
 /** The classList surface app1 uses. */
 interface AppClassList {
   add(...classes: string[]): void;
