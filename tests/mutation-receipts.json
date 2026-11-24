@@ -9994,6 +9994,32 @@
    "red": "drive219: 20/23 checks on the final drive bytes, failures exactly A3/B1/C1, all on the teardown count (teardowns: 1 in the load-in, swap and second-pick windows), observed 2026-11-24 in the scratch copy (assemble-verified byte-identical); the same mutation observed twice more on the pre-regrade drive bytes at 19/23",
    "green": "drive219: 23/23 checks, 0 exceptions on the restored tree (156 s, standard 300 s cap), 2026-11-24",
    "issued": "2026-11-24 label-round commit-2"
+  },
+  {
+   "id": "proof-1270-hold-deleted-1290-r2",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "bbebeb20ab0ca5eeb7496371b9a88347d7f7d578b065be11e15e2e066f89840b",
+    "parts/app5.js": "99c6114ae682585c58d0700bb7f17f0107084848c9f72bddfe75622039e068a0"
+   },
+   "mutation": "a fetch('packs/warm.json') call planted inside loadRoute in parts/app5.js (route warming on the load path - the exact shape check 8 bans)",
+   "red": "proof-1270: 12 pass, 1 fail (check 8: no route preloading; loadRoute contains no fetch, the ruled tile prefetch is the only exception), observed twice 2026-11-24 in the scratch copy on the surroundings tree",
+   "green": "proof-1270: 13 pass, 0 fail on the restored tree",
+   "issued": "2026-11-24 label-round commit-3"
+  },
+  {
+   "id": "sw-waituntil-threading-1290",
+   "check": "tests/sw.test.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/sw.test.mjs": "5d1722ee6f8da3088dbf69abb5dc2e7d118ee897137ac9a5d65664d147778408",
+    "src/sw.js": "054aa842ec0d2050dc36432f5a8d297f3975785d98e110c56be23d305803068d"
+   },
+   "mutation": "mapFetch in src/sw.js drops the fetch event when calling cacheFirst (cacheFirst(r, TILES) instead of cacheFirst(r, TILES, e)) - the background cache write loses its waitUntil binding",
+   "red": "sw suite: the 1.290 mapFetch threading check fails (waitUntil receives nothing), the other 58 pass, observed twice 2026-11-24 in the scratch copy",
+   "green": "sw suite: 59 passed, 0 failed on the restored tree",
+   "issued": "2026-11-24 label-round commit-3"
   }
  ]
 }

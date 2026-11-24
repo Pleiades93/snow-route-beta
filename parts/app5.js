@@ -362,6 +362,23 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 // Beta 1.78: the splash plays once per cold load and can never replay - but
 // the route menu is NOT removed with it: finish() parks it below the screen
 // and the Routes tab slides it back up (app2's openRouteMenu).
+function prefetchIntroTiles(b, zoom) { // the ruled destination prefetch (Andrew, 2026-11-23): the seat's basemap tiles get the dwell and the flight to reach the cache - a user-initiated flight to a known destination, not route preloading
+  try {
+    const style = map.getStyle();
+    for (const src of Object.values((style && style.sources) || {})) {
+      if (src.type !== 'vector' || !src.tiles || !src.tiles.length) continue;
+      const z = Math.min(Math.round(zoom), src.maxzoom ?? Infinity);
+      const [west, north] = tileNums(b[0][0], b[1][1], z);
+      const [east, south] = tileNums(b[1][0], b[0][1], z);
+      const last = 2 ** z - 1;
+      for (let x = Math.max(0, west - 1); x <= Math.min(last, east + 1); x++) { // one-tile ring: the 45-degree seat sees past the flat fit
+        for (let y = Math.max(0, north - 1); y <= Math.min(last, south + 1); y++) {
+          for (const tpl of src.tiles) fetch(tpl.replace('{z}', z).replace('{x}', x).replace('{y}', y)).catch(() => {});
+        }
+      }
+    }
+  } catch (e) {}
+}
 function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in. Beta 1.81 (Andrew): the wide view dwells longer on the Route 5W point of interest and the flight in is slower and gentler - the old one was over before he could take the map in
   if (!routeBox) { return; } // Beta 1.117: an empty pack has no area to fly to - the map simply stays where it is
   const liGen = loadInGen; // the pick generation this intro belongs to - a newer pick landing during the dwell below retires this flight whole (its timeout checks the generation before it flies)
@@ -371,6 +388,7 @@ function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route'
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above
+  prefetchIntroTiles(b, fit.zoom); // after the wide jump lands, before the dwell: the destination's tiles stream while the wide view sits
   setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
 let loadInGen = 0;

@@ -101,10 +101,14 @@ check('6b: the basemap label pass re-applies no hold at its tail (the seat the h
 check('7: the engine exports no re-place: rePlaceTitles occurs nowhere in the engine - no teardown door exists for any caller to reach',
   !engine.includes('rePlaceTitles'));
 
-// ---------- (8) no preloading: the load path fetches and warms nothing ----------
-check('8: no preloading of any kind rides the load path (Andrew, 2026-11-21: the app must never warm a route before the user picks it) - introToRoute and loadRoute contain no preload and no fetch: the names arrive only with the picked route\'s own map load (the label round\'s ruled basemap-tile prefetch is graded separately when it lands; it is not in these bodies)',
+// ---------- (8) no ROUTE preloading: the one ruled exception is the destination-tile prefetch ----------
+const prefetchBody = app5.slice(app5.indexOf('function prefetchIntroTiles'), app5.indexOf('function introToRoute'));
+check('8: no route preloading rides the load path (Andrew, 2026-11-21: the app must never warm a route before the user picks it) - loadRoute contains no preload and no fetch, and introToRoute\'s only fetch-ward call is the single ruled exception (Andrew, 2026-11-23): prefetchIntroTiles, fired once after the wide jump lands, fetching only basemap tile URLs built from the live style\'s vector sources over the fit bounds plus a one-tile ring - no pack, no route data, nothing warmed before the pick',
+  !loadBody.includes('preload') && !loadBody.includes('fetch(') &&
   !introBody.includes('preload') && !introBody.includes('fetch(') &&
-  !loadBody.includes('preload') && !loadBody.includes('fetch('));
+  (introBody.match(/prefetchIntroTiles\(b, fit\.zoom\)/g) || []).length === 1 &&
+  prefetchBody.includes('src.tiles') && prefetchBody.includes('tileNums(') &&
+  !prefetchBody.includes('packs/') && !prefetchBody.includes('loadRoute') && !prefetchBody.includes('.json'));
 
 // ---------- (9) the backdrop reads live visibility (Beta 1.290 re-point) ----------
 const createPick = read('parts/create-pick.js');
