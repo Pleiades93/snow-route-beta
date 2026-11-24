@@ -9023,6 +9023,45 @@
    "red": "proof-trim-glow-path-pills exit 1, the pill-labels check FAIL only Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
    "green": "proof-trim-glow-path-pills exit 0 on the restored tree Re-observed on the final Beta 1.286 tree (the gate-fix commits moved create-pick/head again): the same mutation again hit exactly its target check and re-greened on restore.",
    "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "drive152-180-wire-door",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive152.mjs": "0cf6c3b43c9d47784c3d18a4516b8d0e7399a725c3a8d60e378951b3be862753",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (the wire door does not exist) - each premise-updated helper's pick falls back to the on-device gazetteer row, whose city carries the REAL bounding box instead of the fixture's",
+   "red": "drive152 5/8: exactly K2a/K2b/K2c red with the CI-identical read {failed:0, done:30, hint:''} - the gazetteer Vaughan's real grid settles whole, so the fixture's one-failed-cell DEGRADED case never exists (the same failure CI run 45316034622 recorded at head dde611ed)",
+   "green": "drive152 8/8 on the Beta 1.286 tree (observed locally): the helper taps Search online and picks the fixture's Vaughan from the merged wire results",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "drive154-180-wire-door",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive154.mjs": "5c1e2d3da1712fc580d5aada850917e10dc056c422fb26730aeaf3e773efd68d",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (the wire door does not exist) - each premise-updated helper's pick falls back to the on-device gazetteer row, whose city carries the REAL bounding box instead of the fixture's",
+   "red": "drive154 dies in phase C: the Search online tap throws on the missing row, no result block (CI run 45316034622 recorded the same premise failure one step later as C1 ready:false off the gazetteer King City pick)",
+   "green": "drive154 22/22 on the Beta 1.286 tree (observed locally): phase C taps Search online and readies the fixture's King through the grid, C1 parity green",
+   "issued": "2026-11-23 sweep-180-r3"
+  },
+  {
+   "id": "drive166-180-wire-door",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive166.mjs": "f5e054d3ada9b7fc04b73e489b01dabe63d0401134a45b5ed407bf216d1fddee",
+    "parts/create-pick.js": "101bed2c73e78edaebc3d190671f076698d9bf7d024c1ee767912133cfa8e9d8"
+   },
+   "mutation": "parts/create-pick.js: crRunCityTypeahead never appends the Search online row (the wire door does not exist) - each premise-updated helper's pick falls back to the on-device gazetteer row, whose city carries the REAL bounding box instead of the fixture's",
+   "red": "drive166 dies at the S2 seed (line 613): TypeError setting 'startedAt' on null - the gazetteer Vaughan's coverage includes S2's fallback anchor (43.9, -79.56), so crStartPrep takes the coverage-reuse early return and crPrep is never created (the same crash CI run 45316034622 recorded at line 604 pre-note)",
+   "green": "drive166 58/58 on the Beta 1.286 tree (observed locally; one earlier local run read H1/H3 red on basemap engine readiness and the rerun read 58/58 - a local tile-load flake, not the change)",
+   "issued": "2026-11-23 sweep-180-r3"
   }
  ]
 }
