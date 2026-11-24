@@ -18,7 +18,9 @@
 // pre-1.258 filter in glUnifyLabels, blanket 13-24 zoom range), and the
 // 1.261 '-pre15' band split deleted whole - no '-pre15' anywhere in parts;
 // (3) armTitleHeal/titleCamSig deleted; app5's one-flight hook
-// (armTitleRePlace, Beta 1.248) restored verbatim;
+// (armTitleRePlace, Beta 1.248) restored verbatim [Beta 1.290 premise
+// update: the label round deletes that hook and its cure whole -
+// check 8 now pins the deletion; the titles' sides are geometry data];
 // (4) labelFeatures/LABELS restored as data, exactly as 1.257 carried
 // them (the 'labels' source is still not added, as in 1.257);
 // (5) the 1.259 priority lane stays deleted (it never existed pre-1.258).
@@ -51,11 +53,14 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
 // ---------- (1) the title system as it was ----------
-check('1: the labelpts source is built and rebuilt from LABELPTS, and the tier layers ride it at the original tier minzooms',
-  // issue #179: the claim is conjunctive (built AND rebuilt) - the addSource
-  // pin is scoped to each site in turn; either copy alone must not carry it.
-  engine.slice(engine.indexOf('function addStack()'), engine.indexOf('function rePlaceTitles()')).includes("GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
-  engine.slice(engine.indexOf('function rePlaceTitles()'), engine.indexOf('function rebuildRoute()')).includes("GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
+// Beta 1.290 (label round) re-point, claim strengthened: the source is
+// created ONCE - the re-place that used to rebuild it mid-session is
+// deleted, and rebuildRoute's setData is the only rewrite door.
+check('1: the labelpts source is created once from LABELPTS in addStack (never removed, never re-added), rebuildRoute rewrites it by setData alone, and the tier layers ride it at the original tier minzooms',
+  (engine.split("addSource('labelpts'").length - 1) === 1 &&
+  engine.slice(engine.indexOf('function addStack()'), engine.indexOf('function rebuildRoute()')).includes("GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
+  !engine.includes("removeSource('labelpts')") &&
+  (engine.split("getSource('labelpts').setData(LABELPTS)").length - 1) === 1 &&
   engine.includes('const PT_MIN = [13.7, 13.35, 13.0, 12.6];') &&
   engine.includes("const id = 'streetnamespt' + t;") &&
   engine.includes('function nudgeFifth()') && engine.includes('function assignTiers()'));
@@ -92,12 +97,10 @@ check("6: R1 symbol-spacing 500 is owned in glUnifyLabels, inside the restored e
 check('7: the standing heal is gone - no armTitleHeal, no titleCamSig, no init call in the engine',
   !engine.includes('armTitleHeal') && !engine.includes('titleCamSig'));
 
-// ---------- (8) the one-flight hook restored ----------
-check("8: app5's one-flight hook (armTitleRePlace, restored as in b494fb51) is armed by the pick flight and rePlaceTitles is exported for it - Beta 1.270 re-pins the trigger: the hook is now the conditional title guard (moveend -> placed-title count -> the cure at idle with its 2.5 s backstop only when a title placed mid-flight), per Andrew's synchronised-streaming decision; the unconditional shape this check pinned through 1.269 is retired with the 1.266 cycle (proof-1270 pins the guard)",
-  app5.includes('let titleGuardArmed = false;') && app5.includes('function armTitleRePlace()') &&
-  app5.includes('essential: false }); armTitleRePlace();') &&
-  app5.includes('setTimeout(cure, 2500);') &&
-  engine.includes('mute, rePlaceTitles }') && engine.includes("Beta 1.248: rePlaceTitles exported for app5's post-flight hook"));
+// ---------- (8) the one-flight hook is deleted (Beta 1.290 re-point) ----------
+check("8: the one-flight hook and its cure are DELETED whole (label round, Beta 1.290): no armTitleRePlace, no titleGuardArmed, no rePlaceTitles in app5 or the engine - a title's side is geometry data decided before the flight begins, so no mid-flight placement can need curing (proof-1270 pins the deletion's full shape)",
+  !app5.includes('armTitleRePlace') && !app5.includes('titleGuardArmed') &&
+  !app5.includes('rePlaceTitles') && !engine.includes('rePlaceTitles'));
 
 // ---------- (9) labelFeatures / LABELS restored as data ----------
 check('9: labelFeatures/LABELS are restored as in 1.257 (declared, reset per build, pushed per street, collected in LABELS) - data only, the labels source is not re-added',

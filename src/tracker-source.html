@@ -3823,9 +3823,9 @@ function tunePlaceLabels() {
 // ---- Beta 1.282 (architecture programme #13): the engine's LAYER CATALOGUE.
 // Through 1.281 the engine's layer ids were re-listed by hand at every
 // consumer: the zoom-range line in addStack spelled the twenty paint ids
-// and rebuilt the ten glow ids, rePlaceTitles rebuilt the four title ids,
-// setFont and syncTheme each spelled the five text ids, app2's
-// nameLayerIds and app5's title guard each spelled the four titles again,
+// and rebuilt the ten glow ids, the retired title cure rebuilt the four title ids,
+// setFont and syncTheme each spelled the five text ids, the old
+// name hold and title guard each spelled the four titles again,
 // and create mode's CR_ROUTE_LAYERS re-listed all thirty-seven. LAYERS is
 // the one catalogue: the groups are written once, here, in stack order,
 // and the two derived lists (text = the layers that carry text; stack =
@@ -3856,6 +3856,7 @@ function addStack() {
     GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
+    // Created once, here; rebuildRoute alone rewrites it (setData on a switch). Title visibility and opacity are spec-fixed (DEVELOPMENT_RULES).
     GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
@@ -3927,11 +3928,9 @@ function addStack() {
   // Round 35/39 (Andrew): the point labels sit at the TOP of the
   // stack (appended last, like streetnames) so basemap symbols can no
   // longer knock them out - in Light, housenumber/POI symbols were
-  // silently killing Velmar's name. When a centred name collides,
-  // text-variable-anchor lets the renderer try above / below / beside
-  // the point instead of dropping the name outright - that is what
-  // rescues Bloomingdale, whose neighbours sit ~23 px away at
-  // Overview no matter where along its segment it anchors.
+  // silently killing Velmar's name. Each name's side is data:
+  // text-anchor reads the feature's stored anchor, decided once by
+  // assignAnchors from the geometry.
   // Round 39: FOUR tier layers (see assignTiers) with staggered
   // minzooms - 13.7 / 13.35 / 13.0 / 12.6 - so the names depopulate
   // shortest-first as he zooms out through 13.7 to 12.6, while every
@@ -3957,7 +3956,7 @@ function addStack() {
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-anchor': ['get', 'anchor'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
@@ -4053,21 +4052,6 @@ function managePulse() {
     }, 50);
   } else if (!want && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
 }
-  function rePlaceTitles() { // Beta 1.248: the street titles' anchors are re-decided from scratch - the labelpts source is rebuilt in place (the same LABELPTS data; the four tier layers re-added with their live specs at their stack seats). MapLibre's placement PREFERS the anchor a symbol used in the previous placement pass and keeps it while it still places (placement.ts: prevPlacement.variableOffsets, keyed by crossTileID, which lives with the source's cross-tile index), so an anchor first chosen mid-flight - while the fit view's streets sat closer together on screen and the tile scene was still arriving - can stick for the whole session with the name beside its street (Andrew's cold-open report, 2026-11-18: names off their streets, zooming no cure, a day/night swap - a fresh style and placement chain - the only cure; measured in the round's harness: anchors are always on their streets, the rendered text is what sits off). A rebuilt source gets a fresh cross-tile index, so the next placement pass holds no preference and decides against the settled scene. Nothing about what renders changes - same data, same specs, same seats; only when the decision is (re)made. The host calls this once the pick flight settles (app5's introToRoute hook); a no-op without a map or the source.
-    if (!GLM || !GLM.getSource || !GLM.getSource('labelpts')) return;
-    const ids = LAYERS.titles.filter(id => GLM.getLayer(id)); // Beta 1.282 (#13): the title group is the catalogue's
-    if (!ids.length) return;
-    const style = GLM.getStyle(); if (!style || !style.layers) return;
-    const specs = ids.map(id => style.layers.find(l => l.id === id));
-    if (specs.some(s => !s)) return;
-    const order = style.layers.map(l => l.id);
-    let succ = null;
-    for (let i = order.indexOf(ids[ids.length - 1]) + 1; i < order.length; i++) { if (ids.indexOf(order[i]) < 0) { succ = order[i]; break; } }
-    for (const id of ids) GLM.removeLayer(id);
-    GLM.removeSource('labelpts');
-    GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
-    for (const s of specs) { if (succ) GLM.addLayer(s, succ); else GLM.addLayer(s); }
-  }
   // ---- public API (the app's only handles on the engine) ----
   function stateSig() { return JSON.stringify(H.pieces); }
   function init(gl, host) {
@@ -4130,7 +4114,7 @@ function managePulse() {
     return prev[1];
   }
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~24.1 px at z18, ~44.3 px at z19 (the z18/z19 values re-measured at Beta 1.268's WIDTH_K 1.3; they were ~27.5 / ~50.8 at 1.5).
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, layers: LAYERS, mute, rePlaceTitles }; // layers exported for the catalogue's cross-part readers (Beta 1.282, #13: app2's nameLayerIds, app5's title guard, create-pick's CR_ROUTE_LAYERS). mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, layers: LAYERS, mute }; // layers exported for the catalogue's cross-part readers (Beta 1.282, #13: create-pick's CR_ROUTE_LAYERS). mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98).
 })();
 window.GLP = GLP;// GENERATED by scripts/genstyles.mjs (@protomaps/basemaps 5.7.2 (pinned exactly by scripts/package.json + package-lock.json - install with npm ci), tiles 20261026-01 from the vendored CARTO dark-matter style scripts/carto-dark-matter-style.json sha256 66afc8eb8287, road line-width/line-gap-width x1.5 on roads* layers (Beta 1.181)) - do not hand-edit; regenerate instead.
 // Beta 1.33 (Andrew): BOTH basemaps are Protomaps - one map, two flavours - embedded in the page so a day/night switch is a local setStyle with nothing to fetch and nothing to break.
@@ -4166,160 +4150,6 @@ setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000)
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
 const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label exclusion in glUnifyLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
-// ===== NAME HOLD (Beta 1.266, scoped by Beta 1.270 to the title guard's cure) =====
-// Beta 1.266 held EVERY name on the map - the basemap's text layers and the
-// route's own street titles - invisible for the whole load-in window, ran
-// the one anchor re-place inside the hold where its teardown could not be
-// seen, and faded all names in together over one 350 ms ramp at the settled
-// idle. Beta 1.270 (Andrew's synchronised-streaming design, 2026-11-21)
-// retires that cycle: the names stream in with the map, nothing is held on
-// a normal pick, and this machinery survives in ONE scope - the title
-// guard's cure (app5's armTitleRePlace), which engages it TITLES-ONLY on
-// the rare pick where a title demonstrably placed mid-flight, so the cure's
-// teardown cannot be seen either. The basemap half of the hold is retired
-// with the cycle: no path engages it now, and nameHoldHideOnly stands only
-// as the record of why a basemap paint/visibility write is banned. The
-// diagnosis (cold-start-flicker-2026-11-21) proved the blink the original
-// hold killed: the titles placed during the pick flight, the hook's
-// rebuild then tore the labelpts source down at the idle, and all 33 titles
-// vanished for the worker's re-parse (~1-2 s; ~4.9 s under 6x CPU throttle)
-// in the same moment the surrounding basemap names finished fading in.
-// The hold comes in two kinds, because the two name families answer to
-// different placement machinery. The route's TITLE layers (a GeoJSON
-// source) are held by a multiplier over their own text-opacity - the
-// paint transformed to the multiplier's value while the window stands,
-// ramped back to natural over the one fade at the reveal - and, like
-// every held layer, by visibility 'none' while the window stands. The
-// BASEMAP's name layers are held by VISIBILITY ALONE: their paint is
-// never written, not once, because a single text-opacity write on a
-// basemap symbol layer resets its tiles' placement state, and a
-// marginal title that competes in those tiles blanks for one placement
-// pass at the next zoom boundary (measured three ways in the round's
-// harness: a two-write manual hold on the pre-1.266 tree reproduces
-// it, Bell Harbour in drive216's P3; an untouched tree is clean; heavy
-// paint churn on a title layer alone does not reproduce it). A hidden
-// basemap layer leaves placement for the window and, when its
-// visibility returns at the reveal, re-places at the settled view and
-// fades in by the engine's own symbol fade, together with the titles'
-// ramp. The visibility half is not decoration either: name layers that
-// spend the window at opacity 0 (visible to the placement engine,
-// painting nothing) leave a placement-history residue of the same
-// family, so every held layer leaves placement entirely, and its
-// anchors are first decided at the settled view when the fade begins -
-// which is also the re-place's own purpose. A layer's natural paint (the titles' zoom ramp included) and
-// its natural visibility are captured verbatim on first touch and
-// restored verbatim when the ramp completes, so outside a load-in the
-// style is byte-for-byte the pre-1.266 one. The multiplier is applied
-// by TRANSFORMING the paint, never by wrapping it: this MapLibre's
-// paint validator silently refuses any value that embeds the layer's
-// own expression as a sub-expression (a ['*', natural, mult] wrap reads
-// back unchanged - measured in the round's harness, drive219's first
-// runs), while a zoom interpolate rebuilt with its stop outputs scaled
-// is accepted. A layer whose set does not take is recorded in
-// nameFade.unheld and falls back to the flat multiplier, so a refusal
-// can never again pass as a held layer. The state machine that engages
-// and releases the hold lives in app5 (the title guard's cure path);
-// this block owns only the paint and the visibility. Beta 1.270: the
-// engage carries a scope - 'titles' (the cure: the four title tiers only,
-// the basemap untouched) or 'all' (the retired 1.266 scope, kept so the
-// apply/restore paths stay symmetric with the naturals they captured).
-const NAME_FADE_MS = 350; // the fade-in's length (Andrew's ~300-400 ms)
-let nameFade = { held: false, mult: 1, scope: 'all', orig: {}, trans: {}, vis: {}, raf: 0, t0: 0, unheld: {} };
-function scaleNameStops(expr, mult) { // a zoom interpolate or step whose stop outputs are plain numbers, rebuilt with every output scaled by mult - the same expression shape, so the validator takes it and the layer's own zoom behaviour is preserved proportionally. Any other shape returns null (the caller falls back).
-  if (!Array.isArray(expr)) return null;
-  if (expr[0] === 'interpolate') { // ['interpolate', interpolation, input, stopIn, stopOut, ...]
-    const out = expr.slice();
-    for (let i = 4; i < out.length; i += 2) { if (typeof out[i] !== 'number') return null; out[i] = out[i] * mult; }
-    return out;
-  }
-  if (expr[0] === 'step') { // ['step', input, out0, stopIn, out1, ...]
-    const out = expr.slice();
-    if (typeof out[2] !== 'number') return null;
-    out[2] = out[2] * mult;
-    for (let i = 4; i < out.length; i += 2) { if (typeof out[i] !== 'number') return null; out[i] = out[i] * mult; }
-    return out;
-  }
-  return null;
-}
-function nameLayerIds(m) { // every layer that prints a NAME, in two kinds: the basemap's text layers (glUnifyLabels' own discriminator - a symbol layer carrying a text-field over a tile source-layer) and the route's four title tiers. The route POI text is NOT a street name and the intro choreography sits the POI on screen during the dwell (Beta 1.203), so it is never held.
-  const base = [], titles = [];
-  try { for (const L of m.getStyle().layers) { if (L.type === 'symbol' && L.layout && L.layout['text-field'] && L['source-layer']) base.push(L.id); } } catch (e) {}
-  for (const id of window.GLP.layers.titles) { try { if (m.getLayer(id)) titles.push(id); } catch (e) {} } // Beta 1.282 (#13): the title group is the engine catalogue's (GLP.layers), not a hand-kept copy
-  return { base, titles };
-}
-function nameHoldHideOnly(m, id) { // a BASEMAP name layer's hold: VISIBILITY ONLY - its paint is never written, not once. A single text-opacity write on a basemap symbol layer resets its tiles' placement state, and a marginal title that competes in those tiles blanks for one placement pass at the next zoom boundary (measured on the pre-1.266 tree with a two-write manual hold: Bell Harbour, drive216's P3; an untouched tree is clean). Hidden, the layer leaves placement for the window; when its visibility returns at the reveal it re-places at the settled view and fades in by the engine's own symbol fade - no paint write is needed, or forgiven.
-  try {
-    if (!(id in nameFade.vis)) nameFade.vis[id] = m.getLayoutProperty(id, 'visibility');
-    if (nameFade.held && m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none');
-  } catch (e) {}
-}
-function nameHoldApply(m) { // (re)apply the current multiplier to every name layer in the hold's scope. glUnifyLabels calls this at the end of its pass, so a restack during a standing cure (a theme swap, a stack rebuild) lands in the held state; the engine's stack build calls that pass after the title layers are added, and the re-place re-adds the titles from their live specs (which carry the held paint), so no engine code needs to know the hold exists. The release ramp calls it per frame.
-  if (!m || (!nameFade.held && nameFade.mult === 1)) return;
-  const kinds = nameLayerIds(m);
-  if (nameFade.scope !== 'titles') for (const id of kinds.base) nameHoldHideOnly(m, id); // Beta 1.270: a titles-scoped hold never touches a basemap layer - not its paint, not its visibility
-  for (const id of kinds.titles) {
-    try {
-      if (!(id in nameFade.orig)) { nameFade.orig[id] = m.getPaintProperty(id, 'text-opacity'); nameFade.trans[id] = m.getPaintProperty(id, 'text-opacity-transition'); nameFade.vis[id] = m.getLayoutProperty(id, 'visibility'); }
-      if (nameFade.held && m.getLayoutProperty(id, 'visibility') !== 'none') m.setLayoutProperty(id, 'visibility', 'none'); // while the window stands the layer leaves placement entirely (the block comment above: an opacity-only hold leaves a placement-history residue)
-      const o = nameFade.orig[id];
-      let v;
-      if (nameFade.mult === 1) v = o;
-      else if (o === undefined) v = nameFade.mult;
-      else if (typeof o === 'number') v = o * nameFade.mult;
-      else { const s = scaleNameStops(o, nameFade.mult); v = s === null ? nameFade.mult : s; } // an expression shape the scaler does not know degrades to the flat multiplier - held flat beats not held at all
-      if (JSON.stringify(m.getPaintProperty(id, 'text-opacity')) !== JSON.stringify(v)) {
-        m.setPaintProperty(id, 'text-opacity', v);
-        if (JSON.stringify(m.getPaintProperty(id, 'text-opacity')) !== JSON.stringify(v)) { // the set did not take (a validator refusal is silent in this MapLibre): fall back to the flat multiplier and leave the layer named in unheld, where the load-in's evidence can see it
-          nameFade.unheld[id] = true;
-          m.setPaintProperty(id, 'text-opacity', nameFade.mult);
-        }
-      }
-      const t = m.getPaintProperty(id, 'text-opacity-transition');
-      if (!t || t.duration !== 0) m.setPaintProperty(id, 'text-opacity-transition', { duration: 0, delay: 0 }); // the ramp drives the fade itself; a style transition would double-animate every step
-    } catch (e) {}
-  }
-}
-function nameHoldNaturalVis(id) { // the UNDERLYING visibility of a held layer - its captured natural, never the hold's transient 'none'. The create backdrop (create-pick's crSetBackdrop) snapshots layer visibility when it hides the route stack; entered during a load-in it would otherwise record the transient 'none' as the state to restore, and the titles would stand hidden after creation exits (Codex review, PR #162). The backdrop consults this so its snapshot names the underlying state. A captured ABSENCE is itself the natural (the layer carries no visibility key), and reads 'visible' here; only a never-captured layer returns undefined, and the backdrop falls back to the live value for those.
-  if (!(id in nameFade.vis)) return undefined;
-  return nameFade.vis[id] === undefined ? 'visible' : nameFade.vis[id];
-}
-function nameBackdropHolds(id) { // whether the create backdrop currently has this layer hidden: while it does, the load-in's own visibility restore defers - the backdrop's exit restores the underlying natural (the snapshot above), and resurrecting the layer mid-creation would break the backdrop's hide
-  try { return typeof crHiddenLayers !== 'undefined' && !!crHiddenLayers && crHiddenLayers.some((pr) => pr[0] === id); } catch (e) { return false; }
-}
-function nameHoldSet(on, titlesOnly) { // engage (instant - the cure's hold must be shut before the re-place's teardown can paint) or release (the 350 ms ramp back to natural). Beta 1.270: the only engage left is the guard cure's, and it is titles-only; the second argument names that scope at the call site.
-  if (on) {
-    if (nameFade.raf) { cancelAnimationFrame(nameFade.raf); nameFade.raf = 0; }
-    nameFade.held = true; nameFade.mult = 0; nameFade.scope = titlesOnly ? 'titles' : 'all'; nameFade.unheld = {};
-    if (typeof map !== 'undefined' && map) nameHoldApply(map);
-    return;
-  }
-  if (!nameFade.held && nameFade.mult === 1) return;
-  nameFade.held = false;
-  // the layers come back into placement BEFORE the ramp's first frame, with their paint still at the ramp's zero - they place for the first time at the settled view and fade in there
-  if (typeof map !== 'undefined' && map) {
-    for (const id of Object.keys(nameFade.vis)) {
-      try { if (map.getLayer(id) && !nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } catch (e) {}
-    }
-  }
-  nameFade.t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-  const step = () => {
-    nameFade.raf = 0;
-    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-    const k = Math.min(1, (now - nameFade.t0) / NAME_FADE_MS);
-    nameFade.mult = k;
-    if (typeof map !== 'undefined' && map) nameHoldApply(map);
-    if (k < 1) { nameFade.raf = requestAnimationFrame(step); return; }
-    // the ramp is done: restore every touched layer's natural paint and visibility verbatim and forget them - from here the style is the pre-1.266 one again
-    if (typeof map !== 'undefined' && map) {
-      for (const id of Object.keys(nameFade.orig)) {
-        try { if (map.getLayer(id)) { map.setPaintProperty(id, 'text-opacity', nameFade.orig[id] === undefined ? null : nameFade.orig[id]); map.setPaintProperty(id, 'text-opacity-transition', nameFade.trans[id] === undefined ? null : nameFade.trans[id]); if (!nameBackdropHolds(id)) map.setLayoutProperty(id, 'visibility', nameFade.vis[id] === undefined ? null : nameFade.vis[id]); } } catch (e) {}
-      }
-    }
-    nameFade.orig = {}; nameFade.trans = {}; nameFade.vis = {}; nameFade.mult = 1; nameFade.scope = 'all';
-  };
-  nameFade.raf = requestAnimationFrame(step);
-  setTimeout(() => { if (!nameFade.held && nameFade.mult < 1 && !nameFade.raf) step(); }, NAME_FADE_MS + 150); // a starved rAF (a hidden tab) must not strand the fade mid-ramp
-}
 function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
   // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
   // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
@@ -4428,7 +4258,6 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
       }
     }
   } catch (e) { /* a style without label layers has nothing to normalize */ }
-  nameHoldApply(m); // Beta 1.266: this pass runs at the end of every stack build, so it is the one seat that re-lands the name load-in hold on every layer a restack just (re)built - the basemap's text layers above and the route titles the engine added before calling this pass
 }
 function addReferenceLayers() {
   const feats = [];
@@ -8328,66 +8157,17 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 // the route menu is NOT removed with it: finish() parks it below the screen
 // and the Routes tab slides it back up (app2's openRouteMenu).
 function introToRoute() { // Beta 1.77 (Andrew): a pick opens WIDE on the route's area and flies in to the fitted view as the splash leaves, instead of the map simply appearing already zoomed in. Beta 1.81 (Andrew): the wide view dwells longer on the Route 5W point of interest and the flight in is slower and gentler - the old one was over before he could take the map in
-  if (!routeBox) { return; } // Beta 1.117: an empty pack has no area to fly to - the map simply stays where it is. Beta 1.270: and no flight means no title placed mid-flight, so no guard check is owed either
+  if (!routeBox) { return; } // Beta 1.117: an empty pack has no area to fly to - the map simply stays where it is
   const liGen = loadInGen; // the pick generation this intro belongs to - a newer pick landing during the dwell below retires this flight whole (its timeout checks the generation before it flies)
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
   const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); map.jumpTo({ pitch: 45 }); } catch (e) {} }; // Beta 1.203: the no-flight fallback (reduced motion, no cameraForBounds) lands on the same tilted default, instantly - the flat fit first, the tilt applied at its centre/zoom
-  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit decides the anchors at the settled camera in one pass - no flight, no mid-flight placement, no guard check owed
+  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit settles the camera in one pass - no flight, no mid-flight placement
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above
-  setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); armTitleRePlace(); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
+  setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500); // 1500ms: the splash's exit (780ms) has finished and the wide view - the Route 5W point of interest - has had a moment to sit, before the slow flight in. Beta 1.203 (Andrew): the flight tilts into the 45-degree default as it comes in - centre and zoom are the flat fit's own, unchanged
 }
-// ===== TITLE PLACEMENT GUARD (Beta 1.270, Andrew's synchronised-streaming design, 2026-11-21) =====
-// The names stream in with the map now - no hold, no unconditional rebuild
-// (the 1.266 hold-then-reveal cycle is retired: Andrew's lived verdict was a
-// nameless wait, then a pop; the investigation in loadin-warm-2026-11-21
-// measured the two tile pipelines finishing 23 ms apart when nothing
-// interferes). What survives of the 1.248 hook is its CURE, made
-// conditional: the defect it answered is real but phone-only (a title that
-// places DURING the flight's final approach can keep a mid-flight side
-// anchor for the session - names beside their streets until a theme swap).
-// So at moveend the guard counts the titles placed so far: ZERO placed
-// means every title's first placement happens against the settled scene,
-// the precondition the rebuild exists to defeat is absent, and the
-// teardown is skipped (the investigation's pixel audit: the rebuild in
-// that case is a complete visual no-op, 0 differing pixels of 1,512,000).
-// Any title placed means the cure runs once, at idle, wrapped in app2's
-// TITLES-ONLY hold so the cure cannot blink either - the basemap names are
-// never held in any path (a paint or visibility write on a basemap layer
-// is banned outright by the drive216 P3 finding). Worst case on a fired
-// pick is the 1.266 behaviour scoped to the route titles alone.
 let loadInGen = 0;
-let titleGuardArmed = false;
-let titleCureRelease = null; // the standing cure's one-shot release, or null - loadRoute and unloadRouteToBoot call it so a pick or a delete never leaves a previous pick's cure holding the new scene's titles
-function releaseTitleCure() { const f = titleCureRelease; if (f) f(); } // Beta 1.270 (PR #166, Codex P1): invoke the release WHILE IT IS STILL REGISTERED - the closure opens with an identity check (titleCureRelease !== release -> stand down) that retires stale invocations, so clearing the registration first makes the callback refuse itself and the hold never releases (titles invisible indefinitely, the incoming route's included). The closure clears the registration as its own first act, so invoke-first loses no safety; proof-1270 check 5b pins this order
-function armTitleRePlace() {
-  if (!map || titleGuardArmed) return; titleGuardArmed = true;
-  const liGen = loadInGen; // the generation this guard belongs to - a newer pick retires it whole: its check stands down, because the newer pick's own flight arms its own guard
-  let done = false;
-  const finish = () => { if (done) return; done = true; titleGuardArmed = false; };
-  const check = () => { // at moveend (or the arm-time backstop below): count the titles placed so far - the guard's whole decision is this one number
-    if (done) return;
-    if (liGen !== loadInGen) { finish(); return; }
-    let placed = 0;
-    try { const ids = window.GLP.layers.titles.filter((id) => map.getLayer(id)); if (ids.length) placed = map.queryRenderedFeatures({ layers: ids }).length; } catch (e) {} // Beta 1.282 (#13): the title group is the engine catalogue's (GLP.layers)
-    if (!placed) { finish(); return; } // the streaming path: nothing placed mid-flight, nothing owed
-    const cure = () => { // at idle (the settled scene - a re-decision against a half-arrived scene could stick the same way the original defect did)
-      if (done) return; finish();
-      if (liGen !== loadInGen) return;
-      nameHoldSet(true, true); // titles only - the basemap is never held
-      try { if (window.GLP && window.GLP.rePlaceTitles) window.GLP.rePlaceTitles(); } catch (e) {}
-      const release = () => { if (titleCureRelease !== release) return; titleCureRelease = null; nameHoldSet(false); };
-      titleCureRelease = release;
-      try { map.once('idle', release); } catch (e) { release(); }
-      setTimeout(release, 6000); // backstop: a stalled rebuild must not hold the titles forever - the diagnosis measured the rebuilt source's re-parse at ~4.9 s under 6x CPU throttle, so a healthy rebuild always lands inside it
-    };
-    try { map.once('idle', cure); } catch (e) { cure(); }
-    setTimeout(cure, 2500); // the idle backstop, as the 1.248 hook had: a tile source that never settles must not strand the cure
-  };
-  try { map.once('moveend', check); } catch (e) { titleGuardArmed = false; }
-  setTimeout(check, 6500); // arm-time backstop: an interrupted animation can swallow moveend itself; armed at the flight's launch it lands strictly after the moveend path's own latest fire, and the done flag keeps the check single
-}
 
 function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a route switch runs - everything that names the OUTGOING route's session dies here, before the new pack's geometry or state exists. Runs after the F2 flush (loadRoute calls collapseNoteEditor first, so an open note draft has already finalized against the outgoing street).
   // Beta 1.148 (Tranche 5, A4(ii)): the reset knowledge now lives with the state
@@ -8404,7 +8184,7 @@ function resetSwitchSession() { // Beta 1.117 (F3/F4): the ONE reset block a rou
 function loadRoute(id) {
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
   if (routeLoaded && activeRoute && activeRoute.id === id) return; // picking the route already loaded changes nothing (the Routes tab handler guards this too)
-  loadInGen++; titleGuardArmed = false; releaseTitleCure(); // Beta 1.270: every effective pick starts a new generation - a guard or cure an earlier pick left pending is stale from this line on (the guard's check reads the generation and stands down, and a standing cure hold is released here rather than left over the incoming route's titles; loadRoute owns both resets for the same reason)
+  loadInGen++; // every effective pick starts a new generation - a pending intro flight from an earlier pick retires on it (its dwell timeout checks the generation)
   hideConfirm(); // Beta 1.255 (gate round 2, Codex P1): a route switch clears any pending confirmation - the scrim-free pill permits navigation while it is up, and its question belongs to the route and run it was asked over, never to the one switched to
   // Beta 1.117: loadRoute is BOTH the boot pick and the live switch (pre-1.117 a
   // `if (routeLoaded) return;` guard made it boot-only, and the Routes tab's pick
@@ -8432,8 +8212,8 @@ function loadRoute(id) {
     if (typeof glOk !== 'undefined' && glOk && window.GLP) {
       if (!map.getSource('centres')) window.GLP.init(map, GL_HOST); else if (!switching) window.GLP.sync();
     }
-    if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) goHomeView(); } // a switch frames the new route at once, on the same tilted default Home lands on (Beta 1.203) - the wide dwell + slow flight (introToRoute) is boot choreography only. Beta 1.270: a switch arms no guard - it frames at once on the settled view, so no title places mid-flight
-    else { introToRoute(); } // Beta 1.270: nothing is held back - the names stream in with the map from the pick itself; the flight's guard (armTitleRePlace, inside introToRoute) checks at moveend whether any title placed mid-flight and only then runs its cure
+    if (switching) { try { addReferenceLayers(); } catch (e) {} if (routeBox) goHomeView(); } // a switch frames the new route at once, on the same tilted default Home lands on (Beta 1.203) - the wide dwell + slow flight (introToRoute) is boot choreography only
+    else { introToRoute(); } // nothing is held back - the names stream in with the map from the pick itself
   }
   refreshAll(); checkStale(); syncWake();
   // Beta 1.221: the resumed-clean pill is cut (Andrew's toast rule - the resumed board and the Finish button are the mechanism). The 1.95 snapshot-honesty note that rode it lives on in the cancel path's own warning, which fires if he actually cancels.e snow), but a run whose cancel snapshot is missing or damaged is resumed with its reduced Cancel guarantee stated, not silent
@@ -8441,7 +8221,7 @@ function loadRoute(id) {
   else if (watchId != null) { gpsFromRun = false; $('gpsBtn').classList.toggle('rec', false); renderIcons(); } // issue #180: switching to a route with NO live clean retires the recording face - the watch itself is device state and keeps running, but as view-only for this route; through this fix the outgoing clean's red rec face (and gpsFromRun) stood over an idle route while nothing recorded
 }
 function unloadRouteToBoot() { // Beta 1.124: the ACTIVE route was deleted - return the app to the boot-picker state, mirroring a cold boot before any pick (no geometry at eval, no state loaded, LS at its eval default, the menu in boot mode over rmMain). The mirror is of the RESTING picker, whose html carries NO boot class (Beta 1.126 - see the remove() below). Unlike a route SWITCH there is no flush: the outgoing slot's keys are wiped by deleteRoute right after, so nothing may write into them here - resetSwitchSession's clearing (note timer, dirty flags) is exactly the teardown needed, and its flush steps are deliberately NOT run.
-  loadInGen++; titleGuardArmed = false; releaseTitleCure(); // Beta 1.270: the route a guard or cure was watching is gone - retire both here rather than leaving a cure hold standing over the boot view
+  loadInGen++; // the route is gone - a pending intro flight retires on the generation bump
   const hadRun = !!runStart;
   resetSwitchSession();
   if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
@@ -10840,7 +10620,7 @@ function ensureCrPoiLayers() {
 function crSetBackdrop(on) {
   if (!map || typeof map.setLayoutProperty !== 'function') return;
   if (on) {
-    const crVisPair = (id) => { const nat = (typeof nameHoldNaturalVis === 'function') ? nameHoldNaturalVis(id) : undefined; return [id, nat === undefined ? (map.getLayoutProperty(id, 'visibility') || 'visible') : (nat || 'visible')]; }; // Beta 1.266: a snapshot pair records the UNDERLYING visibility - entered during a name load-in, a title layer's live 'none' is the hold's transient, and restoring it on exit would leave the titles hidden after the load-in completed (Codex review, PR #162); nameHoldNaturalVis (app2) names the captured natural
+    const crVisPair = (id) => [id, map.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot pair records the layer's live visibility - with the name hold retired there is no transient state to see through, so the live value IS the natural
     if (!crHiddenLayers) {
       crHiddenLayers = [];
       for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }

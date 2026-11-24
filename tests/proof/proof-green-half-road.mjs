@@ -370,11 +370,10 @@ check('R4: the owned R1 symbol-spacing write appears exactly once in app2.js (Be
   app2.split("setL(L.id, 'symbol-spacing', 500);").length - 1 === 1);
 check('R4: no label clone is sanctioned - the tile-fed clones stay retired (their removal loop is back), the 1.259 lane stays deleted, and the 1.261 -pre15 band is deleted whole (Beta 1.263 premise update)',
   app2.includes("const cloneId = baseId + '-route';") && !app2.includes('roads_labels_minor-priority') && !app2.includes("'route-labels'") && !app2.includes('-pre15'));
-check('R4: the engine builds the title layers and the labelpts source again, uncapped (Beta 1.263 premise update: the 1.258 retirement is reversed at every zoom)',
-  // issue #179: both build pins are scoped to the stack build - the rebuild
-  // (rePlaceTitles) repeats them and must not carry this check.
-  eng.slice(eng.indexOf('function addStack()'), eng.indexOf('function rePlaceTitles()')).includes("addSource('labelpts'") &&
-  eng.slice(eng.indexOf('function addStack()'), eng.indexOf('function rePlaceTitles()')).includes("'streetnamespt' + t") && !eng.includes('maxzoom: 15'));
+check('R4: the engine builds the title layers and the labelpts source again, uncapped (Beta 1.263 premise update: the 1.258 retirement is reversed at every zoom; Beta 1.290 premise update: the source is created exactly once in the whole engine - the re-place that repeated the build pins is deleted, so the count itself is the scoped pin)',
+  (eng.split("addSource('labelpts'").length - 1) === 1 &&
+  eng.slice(eng.indexOf('function addStack()'), eng.indexOf('function rebuildRoute()')).includes("addSource('labelpts'") &&
+  eng.slice(eng.indexOf('function addStack()'), eng.indexOf('function rebuildRoute()')).includes("'streetnamespt' + t") && !eng.includes('maxzoom: 15'));
 check('R4: app2 carries the route-name exclusion again, on the two originals at every zoom (Beta 1.263 premise update; Beta 1.265 premise update: the literal is built once as exclF and applied under the create-mode condition - outside create mode the computed filter is unchanged)',
   // issue #179: the exclusion pin is sharpened to the definition - the bare
   // name also matches its read inside the label pass.

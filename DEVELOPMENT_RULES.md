@@ -64,6 +64,16 @@ Refreshing the vendored copy is deliberate: `node genstyles.mjs
 --refresh-carto`, and the banner-hash change in the diff is the review
 signal.
 
+**Route title layers (Beta 1.290, the label round).** A title's side is
+feature data (`anchor`, assigned once by the engine's assignAnchors from
+the street geometry); the title layers read it through a data-driven
+`text-anchor` and are otherwise spec-fixed. Once the stack is built, no
+code writes a title layer's visibility or text-opacity, and nothing
+removes or rebuilds the labelpts source: it is created once in addStack
+and rewritten only by rebuildRoute's setData on a route switch. The one
+exception is the create-route backdrop, which may hide and restore the
+whole route stack's visibility while creation is open.
+
 **Test harness contract (Beta 1.95, audit SR-194-07).** A page-side
 evaluation error THROWS in the harness (`harness.mjs` /
 `harness-http.mjs`) and fails the drive — it never returns a truthy

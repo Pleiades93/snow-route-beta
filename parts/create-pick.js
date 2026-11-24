@@ -1324,7 +1324,7 @@ function ensureCrPoiLayers() {
 function crSetBackdrop(on) {
   if (!map || typeof map.setLayoutProperty !== 'function') return;
   if (on) {
-    const crVisPair = (id) => { const nat = (typeof nameHoldNaturalVis === 'function') ? nameHoldNaturalVis(id) : undefined; return [id, nat === undefined ? (map.getLayoutProperty(id, 'visibility') || 'visible') : (nat || 'visible')]; }; // Beta 1.266: a snapshot pair records the UNDERLYING visibility - entered during a name load-in, a title layer's live 'none' is the hold's transient, and restoring it on exit would leave the titles hidden after the load-in completed (Codex review, PR #162); nameHoldNaturalVis (app2) names the captured natural
+    const crVisPair = (id) => [id, map.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot pair records the layer's live visibility - with the name hold retired there is no transient state to see through, so the live value IS the natural
     if (!crHiddenLayers) {
       crHiddenLayers = [];
       for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }

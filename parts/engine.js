@@ -2031,9 +2031,9 @@ function tunePlaceLabels() {
 // ---- Beta 1.282 (architecture programme #13): the engine's LAYER CATALOGUE.
 // Through 1.281 the engine's layer ids were re-listed by hand at every
 // consumer: the zoom-range line in addStack spelled the twenty paint ids
-// and rebuilt the ten glow ids, rePlaceTitles rebuilt the four title ids,
-// setFont and syncTheme each spelled the five text ids, app2's
-// nameLayerIds and app5's title guard each spelled the four titles again,
+// and rebuilt the ten glow ids, the retired title cure rebuilt the four title ids,
+// setFont and syncTheme each spelled the five text ids, the old
+// name hold and title guard each spelled the four titles again,
 // and create mode's CR_ROUTE_LAYERS re-listed all thirty-seven. LAYERS is
 // the one catalogue: the groups are written once, here, in stack order,
 // and the two derived lists (text = the layers that carry text; stack =
@@ -2064,6 +2064,7 @@ function addStack() {
     GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
+    // Created once, here; rebuildRoute alone rewrites it (setData on a switch). Title visibility and opacity are spec-fixed (DEVELOPMENT_RULES).
     GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
@@ -2135,11 +2136,9 @@ function addStack() {
   // Round 35/39 (Andrew): the point labels sit at the TOP of the
   // stack (appended last, like streetnames) so basemap symbols can no
   // longer knock them out - in Light, housenumber/POI symbols were
-  // silently killing Velmar's name. When a centred name collides,
-  // text-variable-anchor lets the renderer try above / below / beside
-  // the point instead of dropping the name outright - that is what
-  // rescues Bloomingdale, whose neighbours sit ~23 px away at
-  // Overview no matter where along its segment it anchors.
+  // silently killing Velmar's name. Each name's side is data:
+  // text-anchor reads the feature's stored anchor, decided once by
+  // assignAnchors from the geometry.
   // Round 39: FOUR tier layers (see assignTiers) with staggered
   // minzooms - 13.7 / 13.35 / 13.0 / 12.6 - so the names depopulate
   // shortest-first as he zooms out through 13.7 to 12.6, while every
@@ -2165,7 +2164,7 @@ function addStack() {
   for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-anchor': ['get', 'anchor'], 'text-radial-offset': 0.8, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15.4, 1], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // Round 35/37 (Andrew): zoomed far out, the route cluster blurs
@@ -2261,21 +2260,6 @@ function managePulse() {
     }, 50);
   } else if (!want && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
 }
-  function rePlaceTitles() { // Beta 1.248: the street titles' anchors are re-decided from scratch - the labelpts source is rebuilt in place (the same LABELPTS data; the four tier layers re-added with their live specs at their stack seats). MapLibre's placement PREFERS the anchor a symbol used in the previous placement pass and keeps it while it still places (placement.ts: prevPlacement.variableOffsets, keyed by crossTileID, which lives with the source's cross-tile index), so an anchor first chosen mid-flight - while the fit view's streets sat closer together on screen and the tile scene was still arriving - can stick for the whole session with the name beside its street (Andrew's cold-open report, 2026-11-18: names off their streets, zooming no cure, a day/night swap - a fresh style and placement chain - the only cure; measured in the round's harness: anchors are always on their streets, the rendered text is what sits off). A rebuilt source gets a fresh cross-tile index, so the next placement pass holds no preference and decides against the settled scene. Nothing about what renders changes - same data, same specs, same seats; only when the decision is (re)made. The host calls this once the pick flight settles (app5's introToRoute hook); a no-op without a map or the source.
-    if (!GLM || !GLM.getSource || !GLM.getSource('labelpts')) return;
-    const ids = LAYERS.titles.filter(id => GLM.getLayer(id)); // Beta 1.282 (#13): the title group is the catalogue's
-    if (!ids.length) return;
-    const style = GLM.getStyle(); if (!style || !style.layers) return;
-    const specs = ids.map(id => style.layers.find(l => l.id === id));
-    if (specs.some(s => !s)) return;
-    const order = style.layers.map(l => l.id);
-    let succ = null;
-    for (let i = order.indexOf(ids[ids.length - 1]) + 1; i < order.length; i++) { if (ids.indexOf(order[i]) < 0) { succ = order[i]; break; } }
-    for (const id of ids) GLM.removeLayer(id);
-    GLM.removeSource('labelpts');
-    GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
-    for (const s of specs) { if (succ) GLM.addLayer(s, succ); else GLM.addLayer(s); }
-  }
   // ---- public API (the app's only handles on the engine) ----
   function stateSig() { return JSON.stringify(H.pieces); }
   function init(gl, host) {
@@ -2338,6 +2322,6 @@ function managePulse() {
     return prev[1];
   }
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // The map-tap tolerance follows the WIDEST paint at the tap's zoom, floored at 24 px — the Beta 1.181 rule ("a tap anywhere on the paint still selects instead of deselecting"). Beta 1.206 introduced this formula against BANDCASE, then the widest paint; Beta 1.208 retires the wide band, so the widest paint is now the surface casing (surfCASE): 24 px at z17 and below (the floor - shipped behaviour unchanged), ~24.1 px at z18, ~44.3 px at z19 (the z18/z19 values re-measured at Beta 1.268's WIDTH_K 1.3; they were ~27.5 / ~50.8 at 1.5).
-  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, layers: LAYERS, mute, rePlaceTitles }; // layers exported for the catalogue's cross-part readers (Beta 1.282, #13: app2's nameLayerIds, app5's title guard, create-pick's CR_ROUTE_LAYERS). mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98). Beta 1.248: rePlaceTitles exported for app5's post-flight hook
+  return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, layers: LAYERS, mute }; // layers exported for the catalogue's cross-part readers (Beta 1.282, #13: create-pick's CR_ROUTE_LAYERS). mute exported for the create flow's draft renderer (Beta 1.221 gate fix: create-pick's crDraftLineDim calls GLP.mute - the helper is private to this IIFE, and the bare call threw at draft-layer init, silently aborting every layer after the casing; Codex review P1 on PR #98).
 })();
 window.GLP = GLP;

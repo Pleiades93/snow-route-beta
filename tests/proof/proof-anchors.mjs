@@ -12,7 +12,7 @@
 // clearance side, and synthetic packs pin the tie and factor edges.
 // The mutation receipt for this file lives in tests/mutation-receipts.json.
 // Run from the repo root:  node tests/proof/proof-anchors.mjs
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import vm from 'node:vm';
 
 const root = new URL('../../', import.meta.url);
@@ -218,6 +218,33 @@ function synth(defs) {
   // short stubs only, so no street's continuation votes into another side
   const nsCase = synth({ MainNS: seg(0, 0, 0, 400), WestP: seg(-8, 180, -8, 220), EastP: seg(30, 180, 30, 220), NorthB: seg(-10, 225, 10, 225), SouthB: seg(-10, -200, 10, -200) });
   check('4e: a north-south street\'s along-axis south (400 m) displaces alongside east (30 m)', nsCase['MainNS'] === 'top');
+}
+
+// ---------- 5: the structural ban (the label round's deletion contract) ----------
+// After the title layers are added, no code writes a title layer's
+// visibility or opacity, and the labelpts source is never torn down:
+// the cure that used to do both is deleted, and these pins keep the
+// deletion structural rather than conventional. The live behaviour is
+// graded by drive219 (source identity, visibility, presence lanes).
+// KNOWN LIMIT, flagged not fixed: a theme swap calls setStyle, which
+// recreates the whole style - labelpts included - so literal source
+// identity does not survive a swap. The anchors survive it as feature
+// data (the rebuilt stack reads the same LABELPTS), which is the half
+// Andrew's invariant needs; drive219's phase B grades that boundary.
+{
+  const partFiles = readdirSync(new URL('parts/', root)).filter(f => f.endsWith('.js'));
+  const parts = Object.fromEntries(partFiles.map(f => [f, read('parts/' + f)]));
+  const allParts = Object.values(parts).join('\n');
+  check('5a: the title spec reads the stored anchor (data-driven text-anchor) and no variable-anchor survives in the engine',
+    engine.includes("'text-anchor': ['get', 'anchor']") && !engine.includes('text-variable-anchor'));
+  check('5b: the deleted cure/hold machinery occurs in NO part (armTitleRePlace, rePlaceTitles, titleCureRelease, titleGuardArmed, nameHoldSet, nameHoldApply, nameFade)',
+    !allParts.includes('armTitleRePlace') && !allParts.includes('rePlaceTitles') &&
+    !allParts.includes('titleCureRelease') && !allParts.includes('titleGuardArmed') &&
+    !allParts.includes('nameHoldSet') && !allParts.includes('nameHoldApply') && !allParts.includes('nameFade'));
+  check('5c: labelpts is created exactly once and never removed in any part',
+    (engine.split("addSource('labelpts'").length - 1) === 1 && !allParts.includes("removeSource('labelpts')"));
+  check('5d: no part writes a title layer\'s properties by literal id (the specs in addStack are the only seat; the create backdrop\'s recorded-pair restore is the one sanctioned visibility writer and it names no title id literally)',
+    !/set(?:Layout|Paint)Property\('streetnamespt/.test(allParts));
 }
 
 console.log(`proof-anchors: ${pass} passed, ${fail} failed`);
