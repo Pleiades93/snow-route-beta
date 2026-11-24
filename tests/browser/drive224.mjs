@@ -2,16 +2,7 @@ import { launchDrive, finish, bootThrough, loadRoutePolled } from './harness.mjs
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 
-// drive224: Beta 1.287 (issue #172) - the merge restore's own claims, in one
-// place: a backup adds the records the resident lacks and nothing else;
-// shared records keep the resident payload byte-for-byte; keys the backup
-// does not carry keep their complete raw strings; a second import of the
-// same backup writes nothing and reloads nothing; pre-ID history entries
-// import by their full-stamp fingerprint (Andrew's ruling) while exact
-// duplicates are skipped; a resident live run's cluster is held whole
-// against a foreign cluster; a malformed carried value refuses the whole
-// restore rather than losing a resident record; settings fill field by
-// field; a trail carried alone does not land beside resident markers.
+// drive224: the merge restore's claims - a backup adds what the resident lacks and nothing else.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };

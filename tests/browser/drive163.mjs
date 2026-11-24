@@ -1,4 +1,4 @@
-import { launchDrive, finish, PATTERNS_GITHUB_IO, bootThrough } from './harness.mjs';
+import { launchDrive, finish, PATTERNS_GITHUB_IO, bootThrough, loadRoutePolled } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll: poll120, url, poll } = await launchDrive({ patterns: PATTERNS_GITHUB_IO });
 await bootThrough(ev, poll); // boots end at the route menu - click through to a loaded route
 
@@ -40,8 +40,7 @@ ok('S0 app boots for the created-route data-safety tests', await poll120(`!!wind
 
 const UPKEY = 'snowroute.v2.userpacks';
 const PACK = (name, street) => ({ name, area: 'Vaughan', primaries: [], roads: { [street]: [[[43.8, -79.57], [43.801, -79.571]]] }, reference: {} });
-const reboot5w = async () => { await send('Page.navigate', { url }, S); await sleep(3500); await ev(`window.__userPacksReady`); // Beta 1.287 harness repair: poll-with-load - the bare call races the fresh page's parse on a throttled runner
-  for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); const rl = await ev(`typeof routeLoaded !== 'undefined' && routeLoaded === true`); if (rl === true) break; await sleep(300); } await sleep(500); };
+const reboot5w = async () => { await send('Page.navigate', { url }, S); await sleep(3500); await ev(`window.__userPacksReady`); await loadRoutePolled(ev, sleep, 500); }; // reboot: navigate, drain the packs, then poll-with-load
 const seedLegacyAB = () => ev(`(() => { localStorage.setItem('${UPKEY}', JSON.stringify({ 'route-a': ${JSON.stringify(PACK('Route A', 'Alpha Street'))}, 'route-b': ${JSON.stringify(PACK('Route B', 'Beta Street'))} })); return true; })()`);
 const armDraft = async (nm) => ev(`(() => { draft = newDraft(); draft.roads['Test Street'] = [[[43.8, -79.57], [43.801, -79.571]]]; $('crNameInput').value = '${nm}'; $('crAreaInput').value = 'Vaughan'; return true; })()`);
 const storeKeys = async () => JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify(m ? Object.keys(m).sort() : null); })()`));

@@ -259,9 +259,9 @@ export async function resetRoute(ev, routeId, extraKeys = []) {
 // loaded route click through it (Choose -> first route row) and wait for the
 // splash to be removed, exactly the state pre-1.76 boots ended in.
 // Poll-with-load: keep asking the page to load the route until it reports loaded, instead of racing the parse.
-export async function loadRoutePolled(ev, sleep) {
+export async function loadRoutePolled(ev, sleep, settleMs = 600) {
   for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); const rl = await ev(`typeof routeLoaded !== 'undefined' && routeLoaded === true`); if (rl === true) break; await sleep(300); }
-  await sleep(600);
+  await sleep(settleMs);
 }
 export async function bootThrough(ev, poll, opts = {}) {
   // Tranche 1 (2026-11-07) asserted readiness: these polls ARE the boot
