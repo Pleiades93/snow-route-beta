@@ -21,12 +21,15 @@
 // sampler records one sample every 50 ms). Returns the phase report
 // drive216 grades: { samples, before, after, dropped }.
 //
-// Samples may be { t: [names], ok: bool }: unloaded samples leave
-// the judged stream - a style blackout is not title evidence.
+// Samples may be { t: [names], ok: bool }. Only a phase that opts
+// in (the theme swap) streams loaded samples only: its setStyle
+// blackout is not title evidence, but a source reload elsewhere
+// still is - the flag dips for both.
 export const DROP_RUN = 3;
 
-export function judgeTitleDrops(win) {
-  const stream = win.filter(s => Array.isArray(s) || s.ok === true).map(s => Array.isArray(s) ? s : s.t);
+export function judgeTitleDrops(win, opts = {}) {
+  const names = s => Array.isArray(s) ? s : s.t;
+  const stream = (opts.loadedOnly ? win.filter(s => Array.isArray(s) || s.ok === true) : win).map(names);
   const before = new Set(stream[0] || []), after = new Set(stream[stream.length - 1] || []);
   const both = [...before].filter(n => after.has(n));
   const dropped = both.filter(n => { let run = 0; for (const sm of stream) { run = sm.includes(n) ? 0 : run + 1; if (run >= DROP_RUN) return true; } return false; });

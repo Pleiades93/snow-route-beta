@@ -52,13 +52,13 @@ const settle = async () => { await poll(`!!(window.map && map.loaded() && !map.i
 // dropped = absent from 3+ consecutive samples) - extracted under
 // docs/TESTING.md rule 1 and proven by selftest-title-drop.mjs; this
 // drive only fetches the phase's sample window and hands it to the judge.
-const phaseReport = async (fromMark, toMark) => {
+const phaseReport = async (fromMark, toMark, opts) => {
   const win = await J(`(() => {
     const P = window.__pres;
     const a = P.marks.find(m => m.name === '${fromMark}').at, b = P.marks.find(m => m.name === '${toMark}').at;
     return P.samples.slice(a, b + 1);
   })()`);
-  return judgeTitleDrops(Array.isArray(win) ? win : []);
+  return judgeTitleDrops(Array.isArray(win) ? win : [], opts);
 };
 
 // ---------- baseline: the boot placement, stable ----------
@@ -106,7 +106,7 @@ await settle();
 await mark('theme0');
 await ev(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return true; })()`);
 await settle(); await sleep(1200); await mark('theme1');
-const theme = await phaseReport('theme0', 'theme1');
+const theme = await phaseReport('theme0', 'theme1', { loadedOnly: true }); // only the theme swap opts in: its setStyle blackout is not title evidence (7c)
 ok('P6 theme swap to night: no title drops (a theme swap rebuilds the style, not the title source) | samples ' + theme.samples + ', loaded ' + theme.loaded + ', dropped: ' + JSON.stringify(theme.dropped),
   theme.samples > 5 && theme.loaded >= 3 && theme.dropped.length === 0);
 await ev(`(() => { setThemeOverride(false); applyNight(); setBasemap(); return true; })()`);
