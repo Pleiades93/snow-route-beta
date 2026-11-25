@@ -11295,6 +11295,109 @@
    "red": "gate fixtures 92 pass / 1 fail, twice",
    "green": "gate fixtures 93/93 on the restored tree",
    "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r7",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9573c5c1c085e45989fdc2518c9a03fa767737000755e9bd6487c6eaba8c4042",
+    "scripts/check-receipts.py": "4f551b88ede17c3ade7caaffef1c5fe5a77f44f3d39a4ba72d993d082b42942a"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths, replayed on the final 96-case suite (7c round)",
+   "red": "gate fixtures 82 pass / 11 fail, twice: every receipts-gate case got exit 0, want 1 - the 9 historical cases plus the 2 new span refusal cases",
+   "green": "gate fixtures 93/93 on the restored tree (96 cases after the span fixtures joined)",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "machinery-gate-receipts-span-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9573c5c1c085e45989fdc2518c9a03fa767737000755e9bd6487c6eaba8c4042",
+    "scripts/check-receipts.py": "4f551b88ede17c3ade7caaffef1c5fe5a77f44f3d39a4ba72d993d082b42942a"
+   },
+   "mutation": "two claim-span neuters in check-receipts.py pin_state: (1) the span region replaced by the whole file; (2) the span state forced CURRENT",
+   "red": "(1) 92 pass / 1 fail: the edit-outside-the-span case got exit 1, want 0. (2) 92 pass / 1 fail: the edit-inside-the-span case got exit 0, want 1. The duplicated-marker case still refused under (2) - the marker path is independent of the hash path",
+   "green": "gate fixtures 93/93 on the restored tree; a scratch-tree span receipt verified all five ways (clean pass, outside edit pass, inside edit refused, duplicated marker refused, deleted marker refused)",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r8",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9573c5c1c085e45989fdc2518c9a03fa767737000755e9bd6487c6eaba8c4042",
+    ".github/workflows/checks.yml": "b862f9896014093bf02be6e2a298a4c6414421069a42faa99392c6db1c90f405"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), replayed on the final suite",
+   "red": "gate fixtures 92 pass / 1 fail, twice: the ci-wiring Receipts-step case got exit 0, want 1",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r8",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "9573c5c1c085e45989fdc2518c9a03fa767737000755e9bd6487c6eaba8c4042",
+    "scripts/check-receipts.py": "4f551b88ede17c3ade7caaffef1c5fe5a77f44f3d39a4ba72d993d082b42942a"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths, replayed on the final 93-case suite (7c round). Corrects r7's suite count, issued minutes earlier in this round",
+   "red": "gate fixtures 82 pass / 11 fail, twice: every receipts-gate case got exit 0, want 1 - the 9 historical cases plus the 2 new span refusal cases",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "title-drop-loaded-stream-r1",
+   "check": "tests/browser/selftest-title-drop.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-title-drop.mjs": "c27ecdcafdd19ffcc487ea995261d66602e5eb93962e842f805766db15b6b43f",
+    "tests/browser/title-drop.mjs": "a83e418ff8508d7b0c68020bf47d9c112ea33163c414f82a4f477a83e55b4f4d"
+   },
+   "mutation": "title-drop.mjs judgeTitleDrops neutered: unloaded (style-blackout) samples counted as title evidence - the loaded-stream filter removed",
+   "red": "selftest-title-drop 2 FAIL: 'a style blackout alone does not convict (the 1.293 P6 shape)' dropped [A], expected []; the loaded-stream shape read loaded 4 of 4",
+   "green": "selftest-title-drop: all fixtures hold (19 cases) on the restored judge",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive216-blackout-sampler-r1",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive216.mjs": "13e9ca287fe92dc4a5c6ae35a1be4204d58f3f58e96a3dd15a2e632e3513057f",
+    "tests/browser/title-drop.mjs": "a83e418ff8508d7b0c68020bf47d9c112ea33163c414f82a4f477a83e55b4f4d",
+    "tests/browser/selftest-title-drop.mjs": "c27ecdcafdd19ffcc487ea995261d66602e5eb93962e842f805766db15b6b43f"
+   },
+   "mutation": "the pre-7c sampler recorded title names only, so a setStyle theme-swap blackout (whole map blank while the style rebuilds) read as title absence and convicted the title system",
+   "red": "Beta 1.293/1.294 gates: drive216 P6 theme-swap flaked on the blackout (flake-log.md, 1.293 investigation - sampler fix prescribed there); the 7c census ranks the 216 sampler family #2 by gate attempts burned",
+   "green": "drive216 9/9 locally on the fixed tree (sampler records the style-loaded flag per sample; judge streams loaded samples only); selftest blackout fixtures hold both ways",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive152-k2-live-cell-r1",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive152.mjs": "6c18e67492162f61a0495400562efd39c77044a1311893351b70cb228a585599"
+   },
+   "mutation": "the K2 stub aimed at a nonexistent cell key ('r9c9' for 'r1c1'), so the injected refusal never lands - the same observable shape as the historical hard-coded-box miss",
+   "red": "drive152 5/8: K2a failed:0 done:4 with the grid proven uncached (uncached true) - the refusal never landed; the historical shape also reproduced locally via cache resurrection (crGrid.fromCache true at K2a) before the wipe fix",
+   "green": "drive152 8/8 on the final tree, three consecutive runs (plus one earlier pass); K2 enters through jEnterUncached and asserts the grid is not cache-restored",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive125-p2-ladder-settle-r1",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive125.mjs": "066a694f0c8879a5638613066884b3b5cd95a583acdeeea6019a71b72d75c1c5"
+   },
+   "mutation": "the pre-7c P2 read map.getStyle().layers immediately after the night setStyle rebuild: the layers are seated before their zoom ranges are applied, so the ladder read back empty",
+   "red": "flake-log.md: P2 {\"sub\":{},\"loc\":{}} signature, documented count 4 burns (latest PR #209 era); the 7c census ranks it #5",
+   "green": "drive125 28/28 locally on the fixed tree; P2 now polls the terminal layer shape (numeric minzoom and maxzoom seated) before reading, and still asserts 9 / 15.5",
+   "issued": "2026-11-25 test-reliability-7c"
   }
  ]
 }
