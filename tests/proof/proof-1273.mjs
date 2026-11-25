@@ -1,14 +1,5 @@
 // proof-1273.mjs - Beta 1.295 (spin-out 6d-2): GPS gap surfacing.
-// A silent GPS watch mid-clean is a gap on that clean: the stale-watch
-// watchdog records it against the run, buildSnap stamps gpsGap onto the
-// archived record, and the finYes handler advises with the shared
-// notification banner (showBanner, app1) ONLY after finishRun returns -
-// the finish flow (save, teardown, feedback) completes first, so the
-// advisory can never sit between Finish and the save. The banner is the
-// one advisory surface (Andrew, 2026-11-25: all notifications are the
-// banner now); the draft's confirm-pill surface stays absent. The
-// boundary behaviour is graded by drive225. On the Beta 1.294 tree the
-// seams below do not exist and this proof fails.
+// Pins the gap seams: watchdog stamp, buildSnap gpsGap, banner strictly after finishRun.
 // Run from the repo root:  node tests/proof/proof-1273.mjs
 import { readFileSync } from 'node:fs';
 

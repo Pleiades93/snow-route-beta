@@ -2,17 +2,15 @@ import { launchDrive, finish, bootThrough } from './harness.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // boots end at the route menu - click through to a loaded route
 
-// drive225: Beta 1.295 (spin-out 6d-2) GPS gap surfacing. A run-owned
-// GPS watch that goes silent past GPS_STALE_MS is restarted by the
-// watchdog; that restart is a gap on the clean. The gap is stamped
-// onto the archived record (gpsGap: true) and advised with the shared
-// notification banner - only AFTER the finish flow fully completes
-// (the record is already in history when the banner is observed), with
-// the decided wording, seated level with the app title, in both theme
-// faces with measured contrast, leaving on its own. Control: a clean
-// with no gap archives with no stamp and no banner. The GPS stub is
-// drive207's pattern (a watchdog restart is a new watchPosition call);
-// the silence is staged by ageing the watch's stamps, as in drive207.
+// drive225: Beta 1.295 (spin-out 6d-2) GPS gap surfacing.
+// Grades the gap clean end to end: record stamp, banner after finish, both faces.
+// The GPS stub is drive207's pattern; the silence is staged by ageing the stamps.
+const BANNER_FACE = `window.__bannerFace = () => { const cs = getComputedStyle($('banner'));
+const lum = (rgb) => { const c = rgb.match(/\\d+(\\.\\d+)?/g).slice(0, 3).map(v => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+const lb = lum(cs.backgroundColor), lt = lum(cs.color);
+return { bg: cs.backgroundColor, ratio: (Math.max(lb, lt) + 0.05) / (Math.min(lb, lt) + 0.05) }; };`;
+await ev(`(() => { ${BANNER_FACE} return true; })()`);
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); 
@@ -45,12 +43,10 @@ const tFinish = Date.now();
 await ev(`(() => { $('resetBtn').click(); return true; })()`); await sleep(300);
 await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(1000);
 const A = await J(`(() => { const b = $('banner'), t = document.querySelector('#hud .title'); const br = b.getBoundingClientRect(), tr = t.getBoundingClientRect(); 
-const cs = getComputedStyle(b); const lum = (rgb) => { const c = rgb.match(/\\d+(\\.\\d+)?/g).slice(0, 3).map(v => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); 
-return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }; 
-const lb = lum(cs.backgroundColor), lt = lum(cs.color); 
-return { h: history.length, gap: history.length && history[history.length - 1].gpsGap === true, show: b.classList.contains('show'), head: $('bannerHead').textContent, line: $('bannerLine').textContent, 
-top: br.top, titleTop: tr.top, left: br.left, titleLeft: tr.left, right: br.right, vw: window.innerWidth, 
-bg: cs.backgroundColor, ratio: (Math.max(lb, lt) + 0.05) / (Math.min(lb, lt) + 0.05) }; })()`);
+const face = window.__bannerFace();
+return { h: history.length, gap: history.length && history[history.length - 1].gpsGap === true, show: b.classList.contains('show'), head: $('bannerHead').textContent, line: $('bannerLine').textContent,
+top: br.top, titleTop: tr.top, left: br.left, titleLeft: tr.left, right: br.right, vw: window.innerWidth,
+bg: face.bg, ratio: face.ratio }; })()`);
 ok('G4 the clean archived with gpsGap stamped on its record', A.h === hist0 + 1 && A.gap === true);
 ok('G5 the banner shows the decided wording', A.show === true && A.head === 'GPS gap in this clean' && A.line === 'Part of this clean was not tracked');
 ok('G6 the banner rests level with the title (top and left aligned, title span)', Math.abs(A.top - A.titleTop) <= 2 && Math.abs(A.left - A.titleLeft) <= 2 && Math.abs(A.right - (A.vw - 12)) <= 2);
@@ -62,10 +58,7 @@ ok('G8 the banner leaves on its own | gone after ' + (Date.now() - tFinish) + ' 
 await ev(`(() => { setThemeOverride(true); return true; })()`);
 await poll120(`document.body.classList.contains('night')`, 10000);
 await ev(`(() => { showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); return true; })()`); await sleep(900);
-const N = await J(`(() => { const cs = getComputedStyle($('banner')); const lum = (rgb) => { 
-const c = rgb.match(/\\d+(\\.\\d+)?/g).slice(0, 3).map(v => { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); 
-return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }; 
-const lb = lum(cs.backgroundColor), lt = lum(cs.color); return { bg: cs.backgroundColor, ratio: (Math.max(lb, lt) + 0.05) / (Math.min(lb, lt) + 0.05) }; })()`);
+const N = await J(`(() => window.__bannerFace())()`);
 ok('G9 night face: dark card, headline contrast >= 4.5 | bg ' + N.bg + ', ratio ' + (N.ratio || 0).toFixed(2), N.bg === 'rgb(32, 33, 37)' && N.ratio >= 4.5);
 await poll120(`getComputedStyle($('banner')).visibility === 'hidden'`, 9000);
 await ev(`(() => { clearThemeOverride(); return true; })()`);
