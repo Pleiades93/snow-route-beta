@@ -12673,6 +12673,21 @@
    "red": "scanner at da2da9a1 run on a scratch root whose proof-neg.mjs checks a regex character class holding a closing parenthesis before pinning an absent anchor: the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixtures F39 (regex literal) and F40 (division is not a regex) pin both sides in-suite; full suite 132/132 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r19",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "e14e15e1ec142708284430973b4be129962da8b9a4fd638c8df88def8e973297",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "constant resolution does not skip regex literals, so declaration-shaped text inside a regex registers a phantom top-level const that certifies a pin",
+   "red": "scanner at 7d1893d8 run on a scratch root whose proof-neg.mjs hides a const declaration inside a regex literal and pins an identifier declared with var: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 5); fixture F41 pins the shape in-suite; full suite 133/133 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

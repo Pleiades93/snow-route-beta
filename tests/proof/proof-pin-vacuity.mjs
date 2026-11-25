@@ -88,6 +88,7 @@ function constLiterals(text) {
     const c = clean[k];
     if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; continue; }
     if (c === "'" || c === '"' || c === '`') { instr = c; continue; }
+    if (c === '/') { const rxEnd = regexAt(clean, k); if (rxEnd > 0) { k = rxEnd - 1; continue; } }
     if (c === '{') { depth++; continue; }
     if (c === '}') { depth--; continue; }
     if (depth === 0 && c === 'c') {
@@ -281,6 +282,7 @@ const FIXTURES = [
   ['F37 a template-literal needle is an operand', "check('x', a.indexOf('write();') > a.indexOf(`anchor`));", 1],
   ['F38 an interpolated const template stays unresolved', "const suffix = 'chor';\nconst needle = `an${suffix}`;\ncheck('x', a.includes('an${suffix}') && a.indexOf('write();') > a.indexOf(needle));", 1],
   ['F39 a regex literal does not break the statement', `check('x', /[)]/.test(')') && a.indexOf('write();') > a.indexOf('anchor'));`, 1],
+  ['F41 a regex holding declaration text declares nothing', "const rx = /const needle = 'present';/;\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
   ['F40 division is not read as a regex', `check('x', a.length / 2 > 0 && a.indexOf('write();') > a.indexOf('anchor'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
