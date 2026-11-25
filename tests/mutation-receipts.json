@@ -11398,6 +11398,44 @@
    "red": "flake-log.md: P2 {\"sub\":{},\"loc\":{}} signature, documented count 4 burns (latest PR #209 era); the 7c census ranks it #5",
    "green": "drive125 28/28 locally on the fixed tree; P2 now polls the terminal layer shape (numeric minzoom and maxzoom seated) before reading, and still asserts 9 / 15.5",
    "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive216-blackout-sampler-r2",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive216.mjs": "cfad787bc4f870f86e5c8cd46d23a6e60e159d87bf32fb50d15e572104a70240",
+    "tests/browser/title-drop.mjs": "a83e418ff8508d7b0c68020bf47d9c112ea33163c414f82a4f477a83e55b4f4d",
+    "tests/browser/selftest-title-drop.mjs": "c27ecdcafdd19ffcc487ea995261d66602e5eb93962e842f805766db15b6b43f"
+   },
+   "mutation": "the pre-7c sampler recorded title names only, so a setStyle theme-swap blackout read as title absence and convicted the title system",
+   "red": "Beta 1.293/1.294 gates: drive216 P6 theme-swap flaked on the blackout (flake-log.md, 1.293 investigation); the 7c census ranks the 216 sampler family #2",
+   "green": "drive216 9/9 locally on the final tree (twice; one unclassified 8/9 sighting between the two passes, detail not captured, immediate re-run 9/9)",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive152-k2-live-cell-r2",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive152.mjs": "ad0b3cd884e57111c57ff866a7a084bf48257dbb63102241ac9d59c39860dfda"
+   },
+   "mutation": "the K2 stub aimed at a nonexistent cell key ('r9c9' for 'r1c1'), so the injected refusal never lands - the same observable shape as the historical hard-coded-box miss",
+   "red": "drive152 5/8: K2a failed:0 done:4 with the grid proven uncached (uncached true); the historical shape also reproduced locally via cache resurrection (fromCache true at K2a) before the wipe fix",
+   "green": "drive152 8/8 on the final tree (three consecutive passes on the prior byte shape, one more on the final bytes after the line-length splits)",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive125-p2-ladder-settle-r2",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive125.mjs": "c3afd70f0215b1a298e7f94754332e62f49651437e8cd00c09402e3c00ab2a1c"
+   },
+   "mutation": "the pre-7c P2 read map.getStyle().layers immediately after the night setStyle rebuild: layers seated before their zoom ranges are applied, so the ladder read back empty",
+   "red": "flake-log.md: P2 {\"sub\":{},\"loc\":{}} signature, documented count 4 burns (latest PR #209 era); the 7c census ranks it #5",
+   "green": "drive125 28/28 locally on the final tree (twice, before and after the line-length split of the P2 poll)",
+   "issued": "2026-11-25 test-reliability-7c"
   }
  ]
 }
