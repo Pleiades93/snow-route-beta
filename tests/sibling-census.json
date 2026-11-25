@@ -12302,6 +12302,95 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-24 label-handover-1294 gatefix"
+  },
+  {
+   "id": "partial-pack-census",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "migratePack"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app5.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:migratePack:parts/create-packs.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - migratePack() is called from top-level in parts/create-packs.js",
+     "status": "covered",
+     "note": "the boot chain is migratePack's only parts/ caller and it ignores the return value, so the new return fields (partial) and the new census key change nothing for it; the recognition, gate and persistence behaviour is graded live by e2e-offline E26 (and the pre-existing E19-E23 sections) on this tree"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44",
+    "parts/app5.js": "72465ffdcbbe74a946fb5508cabb8d353913fa3d1a761d7f2e562bf237198ca9",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "51b05ebfbb2cd6d45d52c79aac226c73862f1d17b8aca1fd7561c8892f1abbe7",
+    "parts/create-pick.js": "59a0d853703b11d0e4d3035fad2c07da6b260d1e10d0633417bcd497bf3e555f",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "9987db49e2556790a7c38061b7ac5bf1d3759ab6f635804b4ec3d017fb23b0a4",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-24 spinout-partial-pack"
+  },
+  {
+   "id": "partial-pack-census-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "migratePack"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app5.js",
+    "parts/create-packs.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:migratePack:parts/create-packs.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - migratePack() is called from top-level in parts/create-packs.js",
+     "status": "covered",
+     "note": "the boot chain is migratePack's only parts/ caller; the review fix removed its anyPreloadRecord guard so the recordless gate inside migratePack is reachable at boot (migratePack self-gates and skips when nothing was downloaded), and e2e-offline E26d now grades that production path by reload (recordless pack heals at boot, flag earned), with E26a-c grading the recognition paths on the same tree"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44",
+    "parts/app5.js": "72465ffdcbbe74a946fb5508cabb8d353913fa3d1a761d7f2e562bf237198ca9",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "885979dfc65276f4000147b5c049761611e8d28b0700da99f0fc260432887b41",
+    "parts/create-pick.js": "59a0d853703b11d0e4d3035fad2c07da6b260d1e10d0633417bcd497bf3e555f",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "9987db49e2556790a7c38061b7ac5bf1d3759ab6f635804b4ec3d017fb23b0a4",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-24 spinout-partial-pack-r2"
   }
  ]
 }
