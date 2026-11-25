@@ -1,20 +1,17 @@
-// ---- name it + save (Beta 1.128: the step STAYS its own - a draft of
-// this build folded naming into the preview and Andrew vetoed it the
-// same evening; the preview's button is labelled "Save route" and
-// advances here, and this pane's "Save route" remains the only save) ----
+// ---- name it + save ---- naming stays its own step; this pane's Save route is the only save
 $('pvSaveBtn').addEventListener('click', openNameIt);
 function openNameIt() {
   if (!draft || !draftStreets().length) return;
   $('crNameInput').value = draft.name || nextRouteNameGuess();
   $('crAreaInput').value = draft.area || crAreaGuess || lsGet(LS_GLOBAL.lastArea) || '';
-  const g = crDraftGeom(); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // Beta 1.127: the summary bills what will actually save. Beta 1.135 (N3): the geometry comes through the shared cache like every other consumer
+  const g = crDraftGeom(); let tot = 0; for (const n of draftStreets()) tot += crStreetChosenM(n, g); // the summary bills what will actually save; the geometry comes through the shared cache like every other consumer
   $('crNameSummary').textContent = draftStreets().length + ' streets · ' + draft.primaries.size + ' primaries · ' + fmtLenM(tot) + ' of road';
   if (!routeLoaded) restoreBootChrome(); else openRouteMenu();
   showRmPane('rmNamePane');
 }
 $('crNameBack').addEventListener('click', () => { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('preview'); });
 $('crSaveBtn').addEventListener('click', saveDraftRoute);
-let crSaveInFlight = false; // Beta 1.170 (Carbon fix round Phase 2, D-03): single-flight for the save - the function is async (the store write awaits) and had no re-entrancy guard through 1.169, and the button carries no tap guard, so a double-tap ran it twice: both calls computed the same uniqueRouteId before either registered the pack, the second overwrote the first's store record, and the pack was pushed twice under one id; a late tap landing after a completed save's exitCreate had nulled the draft threw on draft.primaries instead
+let crSaveInFlight = false; // single-flight, or a double-tap runs the save twice under one id: the write awaits, the button is unguarded
 async function saveDraftRoute() {
   if (crSaveInFlight) return;
   crSaveInFlight = true;
@@ -23,24 +20,26 @@ async function saveDraftRoute() {
   if (!name) { toast('Give the route a name first', 2600); return; }
   const area = $('crAreaInput').value.trim();
   const roads = crFilteredRoads();
-  const ends = (() => { // Beta 1.259: the saved pack carries its boundary ends, computed from the SAME extract the sectors were cut from (computeBoundaryEnds, create-packs.js - the one computation; the shipped pack's field is derived the same way). No prepared coverage (a save path that never prepared an extract) stores no records and the route paints exactly as before - the feather is a property of the data, earned where the data exists
+  const ends = (() => { // the pack carries boundary ends computed from the same extract as the sectors; no prepared coverage, no records
     try {
       if (!crCov || !crCov.byName) return {};
       const all = {};
       for (const nm of Object.keys(crCov.byName)) { const ways = crCov.byName[nm].map(w => w && w.pts).filter(p => Array.isArray(p) && p.length > 1); if (ways.length) all[nm] = ways; }
       const be = computeBoundaryEnds(roads, all);
-      const de = computeDeadEnds(roads, all); // Beta 1.267: dead ends join the same field, computed by the sibling computation from the same extract
+      const de = computeDeadEnds(roads, all); // dead ends join the same field, computed by the sibling computation from the same extract
       for (const k of Object.keys(de)) be[k] = (be[k] || []).concat(de[k]);
       return be;
     } catch (e) { return {}; }
   })();
-  const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] }); // Beta 1.127: the SAVE stores chosen sectors only - the draft keeps the whole streets, the pack never sees the unchosen ends
+  // the save stores chosen sectors only: the draft keeps whole streets, the pack never sees unchosen ends
+  const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] });
   if (!v.ok) { toast('Could not save: ' + v.error, 4000); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
-  if (!(await upPut(pack.id, pack))) { toast('Storage problem - the route could not be saved', 4000); return; } // Beta 1.166: the save is ONE route's own verified store write (create-packs.js) - the DA-05 hazard class is gone by construction: there is no whole-record read-modify-write left to erase another route, a corrupt legacy record cannot block a save it is no longer part of, and a failed write refuses THIS route only, before it is registered anywhere
+  if (!(await upPut(pack.id, pack))) { toast('Storage problem - the route could not be saved', 4000); return; } // one route's verified write: no whole-record rewrite remains to erase another route; a failure refuses this route only
   userPackCache[pack.id] = pack; // the backup picture joins the commit (create-packs.js: the cache moves only at verified commit points)
   ROUTE_PACKS.push(pack); // live in the runtime list at once - listed and switchable without a reload
-  try { lsSet(routeKeys(pack.id).pre, JSON.stringify({ at: 0, saved: 0, total: preloadUrlList().length, routeSaved: 0, routeTotal: packTileUrls(pack).size })); } catch (e) {} // F5: the new route starts with an honest preload record - none of its area is downloaded yet; Status offers the (grown) union download
+  // a new route's preload record is honest: nothing downloaded yet; Status offers the (grown) union download
+  try { lsSet(routeKeys(pack.id).pre, JSON.stringify({ at: 0, saved: 0, total: preloadUrlList().length, routeSaved: 0, routeTotal: packTileUrls(pack).size })); } catch (e) {}
   if (area) lsSet(LS_GLOBAL.lastArea, area);
   const wasBoot = !routeLoaded, newId = pack.id;
   exitCreate();

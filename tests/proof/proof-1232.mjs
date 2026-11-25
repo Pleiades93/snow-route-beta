@@ -97,7 +97,7 @@ check('1p (fix round 4, PR #112 Codex P2): the crossing CANDIDATES are bounded t
   // issue #179: the cityBox read is scoped to crIntersectionItem - the
   // crossing-rows path reads the same line and must not carry this pin.
   pick.slice(pick.indexOf('function crIntersectionItem('), pick.indexOf('function shortStreetName(')).includes('const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null;') && pick.includes('if (x.other === B && (!cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))) pts.push(x.pt);'));
-check('1q (fix round 5, PR #112 Codex P2; Beta 1.243, Arch-3): dismissing the results ENDS the search - the outside-pointer dismissal calls crResetSearch as it hides the box (the owner clears the pending debounce and bumps the sequence), so no landing can reopen the box over the tap-away', pick.includes("crResetSearch(); // Beta 1.232 fix round 5"));
+check('1q (fix round 5, PR #112 Codex P2; Beta 1.243, Arch-3): dismissing the results ENDS the search - the outside-pointer dismissal calls crResetSearch as it hides the box (the owner clears the pending debounce and bumps the sequence), so no landing can reopen the box over the tap-away', pick.includes("crResetSearch(); // dismissing ends the search too"));
 
 // ---------- Piece 2: collapse + cross-street labels (RETIRED Beta 1.234 - absence pins) ----------
 // The collapse and the ' · near X' label served the NETWORK rows; the network

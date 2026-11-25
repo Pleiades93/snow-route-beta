@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "24c463226713fa5d394904e50908c4d6ca6408b4fbc5ded276e3e9d04498da40",
+  "canonical_registry_sha256": "1715b53bb8b79db45bbd844f792a3c9a016a30de4d4d9c72ccf1863aac3bb4de",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -2578,7 +2578,7 @@
    "file": "parts/create-fetch.js",
    "fix": "There is ONE query builder (Beta 1.121): batch and top-up share its grammar \u2014 two builders producing two dialects of Overpass QL is how malformed queries shipped.",
    "id": "create-prep-query-builder",
-   "pattern": "// THE one query builder - batch and top-up share its grammar",
+   "pattern": "the one query builder: batch and top-up share its grammar",
    "type": "grep_present"
   },
   {
@@ -2594,7 +2594,7 @@
    "file": "parts/create-pick.js",
    "fix": "The pick-stage hint has ONE writer (crRenderHint, Beta 1.121): competing writers left the hint describing a state two operations ago.",
    "id": "create-prep-hint",
-   "pattern": "function crRenderHint() { // the ONE writer of the pick-stage hint",
+   "pattern": "function crRenderHint() { // the one writer of the hint, its button and the city chip",
    "type": "grep_present"
   },
   {
@@ -2626,7 +2626,7 @@
    "file": "parts/create-citydata.js",
    "fix": "NO junction-proof shortcut (Beta 1.121): an end touched by any other returned way was accepted as connected \u2014 unsound, and removed. Ends are proven by committed coverage only.",
    "id": "create-prep-no-junction-proof",
-   "pattern": "an earlier form also accepted an end touched by ANY other returned way ('junction proof') - unsound, and removed",
+   "pattern": "a run end is closed only inside verified coverage (a continuation would have been returned)",
    "type": "grep_present"
   },
   {
@@ -2706,7 +2706,7 @@
    "file": "parts/create-pick.js",
    "fix": "An end is OPEN only when no COMMITTED coverage holds it (Beta 1.121, the sweep's union rule): pending coverage claiming an end would strand the street mid-prepare.",
    "id": "create-pend-open-end-union",
-   "pattern": "an end is OPEN only when no COMMITTED coverage holds it (the sweep's union rule)",
+   "pattern": "an end is open only when no committed coverage holds it",
    "type": "grep_present"
   },
   {
@@ -2714,7 +2714,7 @@
    "file": "parts/create-pick.js",
    "fix": "The hint BOX outranks grid text (Beta 1.121): a settled or loading grid must not label a box wait with stale part counts \u2014 the hint priority order is written in the code and stays.",
    "id": "create-hint-box-outranks-grid",
-   "pattern": "it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts",
+   "pattern": "the fallback box, when in flight, outranks the grid text",
    "type": "grep_present"
   },
   {
@@ -2722,7 +2722,7 @@
    "file": "parts/create-citydata.js",
    "fix": "A fallback STOPS a live grid first (CG-PF-13): starting a pack/service fallback over a still-running grid leaves two producers writing one coverage state.",
    "id": "create-fallback-stops-grid",
-   "pattern": "if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first",
+   "pattern": "if (crGrid) crGridStop('superseded'); // a fallback over a live grid stops the grid first",
    "type": "grep_present"
   },
   {
@@ -2738,7 +2738,7 @@
    "file": "parts/create-citydata.js",
    "fix": "A city with a FAILED cell is never promoted on the pending count alone: settled means settled \u2014 a failed cell labelled ready ships a city with a hole in it.",
    "id": "create-fallback-settled-no-pending-only",
-   "pattern": "the pending count alone promoted a city with a FAILED cell",
+   "pattern": "the pending count alone once hid a failed cell behind 'ready'",
    "type": "grep_present"
   },
   {
@@ -2898,7 +2898,7 @@
    "file": "parts/create-pick.js",
    "fix": "NO tap-again removal (Beta 1.128): removal happens ONLY via the panel \u2715 and Clear all (Andrew's decided fork) \u2014 a map tap on a picked street opens its sectors instead.",
    "id": "create-1128-no-tap-again-removal",
-   "pattern": "Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead",
+   "pattern": "the one removal path (panel x, preview x, Clear)",
    "type": "grep_present"
   },
   {
@@ -2906,7 +2906,7 @@
    "file": "parts/create-pick.js",
    "fix": "The face change is ONE surface springing between shapes (Beta 1.129): no face-swap \u2014 the surface's geometry morphs, so the object is never absent mid-transition.",
    "id": "create-1129-no-face-swap-engine",
-   "pattern": "// THE face change: one surface, its geometry springing between the two faces' resting shapes",
+   "pattern": "function crMorphTo(to, opts) { // the face change: one surface springing between resting shapes",
    "type": "grep_present"
   },
   {
@@ -2969,7 +2969,7 @@
    "file": "parts/create-packs.js",
    "fix": "create.js opens with its banner (Beta 1.118/1.134 split): the part is a separate file with its own header \u2014 the banner proves the split file, not an app4 fragment, is what's on disk.",
    "id": "split-1134-create-file-opens-with-banner",
-   "pattern": "// ===== Beta 1.118: CREATE A ROUTE",
+   "pattern": "// ===== CREATE A ROUTE =====",
    "type": "grep_present"
   },
   {
@@ -3095,7 +3095,7 @@
    "file": "parts/create-cache.js",
    "fix": "City-cache refusals are SESSION-BOUND per city (Beta 1.143, DA-06): a cache refused for THIS city in THIS session is not re-offered every tap, and a new session judges fresh.",
    "id": "beta-1143-da06-owned-suppression",
-   "pattern": "// already refused/failed for THIS city in THIS session",
+   "pattern": "already refused or failed for this city in this session: stop writing",
    "type": "grep_present"
   },
   {
@@ -3143,7 +3143,7 @@
    "file": "parts/create-pick.js",
    "fix": "Draft keys use the FULL street name (Beta 1.144, DA-04): the draft's sector keys are the complete OSM name \u2014 truncated keys collided two different streets into one draft entry.",
    "id": "beta-1144-fullname-draft-keys",
-   "pattern": "const name = osmName; // Beta 1.144 (DA-04)",
+   "pattern": "const name = osmName; // the draft key IS the full map name",
    "type": "grep_present"
   },
   {
@@ -4149,7 +4149,7 @@
    "fix": "Beta 1.154 (B3 build, G3): crGeomGen is documented in code as a cache key, not a currency counter - no async landing checks it and it stands outside the cr<Family>Current convention.",
    "fix_id": "b3-g3-naming",
    "id": "b3-g3-geomgen-cache-key",
-   "pattern": "crGeomGen is a CACHE KEY, not a currency counter",
+   "pattern": "crGeomGen is a cache key, not a currency counter",
    "type": "grep_present"
   },
   {
@@ -4167,7 +4167,7 @@
    "fix": "Beta 1.154 (B3 build): crCityPrepare (S6) clears crFailFromGrid at entry, as S1/S8 always did - through 1.153 the flag survived a city change (the lifecycle trace's latch finding).",
    "fix_id": "b3-failfromgrid-latch",
    "id": "b3-failfromgrid-clears-at-cityprepare",
-   "pattern": "crPrepBegin(); // Beta 1.154 (B3 build): crFailFromGrid clears at THIS entry too",
+   "pattern": "crPrepBegin(); // crFailFromGrid clears here too",
    "type": "grep_present"
   },
   {
@@ -4221,7 +4221,7 @@
    "fix": "Beta 1.157: crMapTap (road picking) searches its query boxes from CR_TAP_BOXES - the narrowed [12, 20], not a private copy of the widths.",
    "fix_id": "tap-width-narrow",
    "id": "tap-boxes-pick-loop",
-   "pattern": "for (const half of CR_TAP_BOXES) { // a finger's real tolerance first; one wider retry before giving up (the widths live at CR_TAP_BOXES",
+   "pattern": "for (const half of CR_TAP_BOXES) { // a finger's real tolerance first, one wider retry before giving up",
    "type": "grep_present"
   },
   {
@@ -4565,7 +4565,7 @@
    "fix": "D-01: exitCreate's sector-session reset stands on its own line and runs (through 1.168 it sat inside the 1.153 comment, dead code fenced by enterCreate's reset).",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-d01-exitcreate-reset",
-   "pattern": "crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation.",
+   "pattern": "crSectorReset(); crSectorSession.collapsed = false; // panel + session state dies with the creation",
    "type": "grep_present"
   },
   {
@@ -4775,7 +4775,7 @@
    "fix": "D-04: Clear all bumps the geometry generation and clears the pending rows - the two duties every other roads mutation obeys (a cleared street could be re-added by the pending sweep).",
    "fix_id": "carbon-phase2",
    "id": "carbon-b170-d04-clearall-duties",
-   "pattern": "crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04)",
+   "pattern": "crGeomGen++; crPending = {}; // the wholesale replacement keeps both mutation duties",
    "type": "grep_present"
   },
   {
@@ -7191,7 +7191,7 @@
    "fix": "Re-run candidate D-04 fix (PR #77, merge d7c261403c651eef9386087fd1571ea3ce7e5a03; supersedes PR #75, closed unmerged after main moved via PR #76 while #75 sat fully green in its gate; rollback: revert the merge -> ec82d62e). From the 2026-11-15 Carbon sweep re-run candidates assessment (human assessment: rerun-candidates-assessment; graded REAL at LOW). Defect: crStreetParts in parts/create-pick.js computed a street's cut pieces against whatever city extract (crCov) existed at first view and cached the record in draft.parts permanently - coverage grows cell-by-cell inside one draft (grid cells, fallback box, top-up merges, cache fold) and nothing invalidated the cache, so opening a street's trim view before its area's extract landed froze it as one whole uncut piece for the rest of the draft; saved geometry was never wrong, the street just could not be trimmed finer than the stale record allowed. Fix: every record is stamped via crCovStamp() (extract generation + verified-box count + indexed-way count; every landing grows a count, a replacement extract bumps crCovGen) and an unreferenced record recomputes when the stamp has moved. Two Codex P2s in the PR #75 gate, both adjudicated REAL and cured in this tree, set the pin boundary: a record may be replaced only when nothing live references its pieces - a stored trim (draft.sectors indexes) or an open sector session for the street (its Cancel snapshot, sector bar, and the rendered draft features whose sector indexes crSectorTap reads; coverage landings verified not to redraw the draft) pins it, and the recompute lands at the next read after the reference clears (crOpenSectors settles the record before a session's first render). Proof: tests/proof/proof-rerun-d04-streetparts-covstamp.mjs, 15 checks - fails on unmodified main (5), on the PR #75 first head at S5 (snapshot), on the remedy-1 head at S6 (session stability), passes 15/15 shipped. Sibling caches audited and left: crDraftGeom/crGeomCache (draft-geometry inputs only), crPending (re-resolved by crSweepPending on landing), draft.roads (user state). Foreign-write census re-pinned on line count alone (create-pick.js followPaused 660 -> 683; totals unchanged, 57 expressions / 24 lines). Maintenance, no Beta bump (page still reads Beta 1.205, live-verified byte-identical to the merged build).",
    "fix_id": "rerun-d04",
    "id": "rerun-d04-covstamp-helper",
-   "pattern": "function crCovStamp() { // the coverage fingerprint a sector record is cut against",
+   "pattern": "function crCovStamp() { // the fingerprint a record is cut against",
    "type": "grep_present"
   },
   {
@@ -9557,7 +9557,7 @@
    "fix": "Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a search result ends the search - the shared row handler clears the pending debounce and bumps/aborts the in-flight search in the standing form, so the pending fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) can no longer reopen the results box over the destination the user just picked. (Rolled in place by Beta 1.243, PR #125: Beta 1.243 (Arch-3): the seat now ends the search through the one owner crResetSearch; literal followed.)",
    "fix_id": "search-1232-fix3",
    "id": "search1232fix3-selection-ends-search",
-   "pattern": "crResetSearch(); // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search",
+   "pattern": "crResetSearch(); // a result pick ends the search",
    "type": "grep_present"
   },
   {
@@ -9575,7 +9575,7 @@
    "fix": "Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the search results ends the search - the outside-pointer dismissal (the 1.120 tap-away) clears the pending debounce and bumps/aborts the in-flight search in the standing form as it hides the box, so the pending fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) can no longer reopen the box over the tap-away that dismissed it; the tap-away itself (hide on the outside tap, the map pick still runs) is untouched. (Rolled in place by Beta 1.243, PR #125: Beta 1.243 (Arch-3): the seat now ends the search through the one owner crResetSearch; literal followed.)",
    "fix_id": "search-1232-fix5",
    "id": "search1232fix5-dismissal-ends-search",
-   "pattern": "crResetSearch(); // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search",
+   "pattern": "crResetSearch(); // dismissing ends the search too",
    "type": "grep_present"
   },
   {

@@ -1,18 +1,10 @@
-// Beta 1.223 (Andrew): the loaded-city confirmation is REMOVED - silence means the
-// city loaded. The 1.153/1.176 confirmation pill and its 4 s self-dismissal clock
-// (crPillT/crPillKey/crPillGone) retire with it: the hint now speaks only for the
-// not-loaded and failed states (preparing, degraded, failed, offers, disclosures).
-// Beta 1.176 (Andrew): the slow-load gate. A load's progress readout (and its
-// Cancel) renders only once the load has been running this long - a faster
-// load never shows it at all (on his phone the sub-second flash of the
-// readout read as a glitch). The terminal states - the load confirmation,
-// failure, degraded - are never gated: they are outcomes, not progress.
+// silence means the city loaded (no success text); a load's readout renders only past the gate; terminal states never gated
 const CR_LOAD_GATE_MS = 5000;
-function crHintAction() { // Beta 1.253 (cross-audit fix round 4, #20): the ONE decision for the hint button - crRenderHint takes the LABEL from here and the button's click handler takes the ACTION from here, so the two can never diverge. Through 1.252 each side interpreted the state on its own: the renderer keyed the failed state on crGrid (a grid object existing) while the handler keyed it on crFailFromGrid (the failure's SOURCE, create-fetch.js's stated rule), so a fallback-BOX failure landing while a grid existed read 'Retry' - the renderer's dense remedy ('Prepare this area') was unreachable whenever a grid existed - while the click prepared a new area at the map centre. The precedence is the click handler's long-standing order, now stated once: an in-flight load's Cancel outranks everything; an outstanding offer (crWanted) outranks the state remedies; the failed state keys on crFailFromGrid, never on crGrid's existence.
+function crHintAction() { // the one decision for the hint button: label and click action both read it, so they can never diverge
   if (crPrepState === 'preparing') return { label: 'Cancel', act: 'cancel' };
   if (crWanted) return { label: crWanted.label, act: 'wanted' };
   if (crPrepState === 'degraded') {
-    if (!crGrid) return { label: '', act: '' }; // degraded is a grid state - with no grid there is no remedy to offer, and no button may promise one
+    if (!crGrid) return { label: '', act: '' }; // degraded is a grid state: with no grid there is no remedy to offer, and no button may promise one
     return crGrid.stopped === 'cancelled' ? { label: 'Resume', act: 'resume' } : { label: 'Retry missing parts', act: 'resume' };
   }
   if (crPrepState === 'failed') {
@@ -20,87 +12,62 @@ function crHintAction() { // Beta 1.253 (cross-audit fix round 4, #20): the ONE 
     if (crPrepFail && crPrepFail.kind === 'dense') return { label: 'Prepare this area', act: 'prepare-centre' }; // a dense BOX failure: retrying the same anchor cannot help (fixed footprint) - prepare wherever the map now sits (CG-PF-09)
     return { label: 'Retry', act: 'retry-anchor' }; // a failed BOX re-runs at its own anchor
   }
-  if (crPrepState === 'ready') return { label: '', act: '' }; // an offer in the ready state is the crWanted case above; a healthy city offers no button of its own (Beta 1.153)
+  if (crPrepState === 'ready') return { label: '', act: '' }; // an offer in the ready state is the crWanted case above; a healthy city offers no button of its own
   if (map && map.getZoom() >= 14) return { label: 'Prepare this area', act: 'prepare-centre' };
   return { label: '', act: '' };
 }
-function crRenderHint() { // the ONE writer of the pick-stage hint + its action button + the sheet's city chip: state-driven, so no stale text survives a state change
+function crRenderHint() { // the one writer of the hint, its button and the city chip: state-driven, so no stale text survives
   if (!creating || crStage !== 'pick') return;
   const hint = $('createHint'), btn = $('crHintBtn');
-  if (crSectorSession.street) { hint.textContent = ''; hint.classList.remove('on'); btn.style.display = 'none'; return; } // Beta 1.242 (Andrew): the 'Tap sectors to add or remove them' pill (Beta 1.127) is CUT under his toast rule - the sector bar's own line already says 'Tap sectors to trim it', so a visible mechanism tells him and the pill is redundant. The early return stands (the state branches below must not paint load/search text over the trim flow); while trimming the hint pill now stays silent and offers no button - the same end state the tail below produces for an empty render (Beta 1.175: no text, no pill)
+  if (crSectorSession.street) { hint.textContent = ''; hint.classList.remove('on'); btn.style.display = 'none'; return; } // while trimming, the hint stays silent and offers no button: the sector bar's own line already tells him
   let text = '', btnLabel = '';
-  let gated = false; // Beta 1.176: true while the in-flight load is inside its 5 s gate - the render then paints NOTHING (no readout, no Cancel, and no disclosure note leaking the pill open early: the notes are state, not events, so they simply ride the first render past the gate, or the terminal state)
-  const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS; // the gate reads the load's OWN start, so a readout that appears carries the load's true progress at that moment; the loads' own 1 s tickers re-render through this writer as the gate opens - no second clock exists to go stale
-  if (crPrepState === 'preparing' && crPrep) { // the fallback box, when IT is the in-flight operation: it outranks the grid text - a settled (or still-loading) city grid must not label a box wait with stale part counts
+  let gated = false; // true inside the gate: the render paints nothing (notes are state, riding the first render past it)
+  const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS; // the gate reads the load's own start (an appearing readout carries true progress); the tickers re-render through this writer
+  if (crPrepState === 'preparing' && crPrep) { // the fallback box, when in flight, outranks the grid text: a settled grid must not label its wait
     gated = !pastGate(crPrep.startedAt);
-    if (!gated) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '…'; } // Beta 1.176: gated like every load readout; past the gate it keeps its truthful wording minus the elapsed-seconds suffix - the box is ONE fetch with no countable parts, so no percentage exists for it (an invented one would be a fabrication, not a format)
+    if (!gated) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '…'; } // gated like every readout; past the gate, no elapsed-seconds suffix: the box is one fetch, no honest percentage exists
   }
-  else if (crPrepState === 'preparing' && crGrid) { // the city grid - the live service or the app's own library behind the one extract seam, and ONE readout for both since 1.176
+  else if (crPrepState === 'preparing' && crGrid) { // the grid: the live service or the app's own library behind the one seam, one readout for both
     gated = !pastGate(crGrid.startedAt);
-    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ', ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; } // Beta 1.176 (Andrew's amendment): name + percentage ONLY - no part counts ('part 0 of 30'), no elapsed seconds, no failed-so-far tally (failures surface in the degraded/failed states, which are never gated). The percentage is the honest count in the form he asked for - cells done of cells total, the same counters the retired part readout used - so the 1.123 pack wording ('from the app's own library…') retires with it: one readout format for a city load, and the pack's cells are the same counters
+    // name + percentage only: no part counts, no elapsed seconds, no failed tally (failures surface in terminal states)
+    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ', ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; }
   }
   else if (crPrepState === 'degraded' && crGrid) {
-    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped - ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; } // Beta 1.176 (Andrew's standing rule): a loading readout speaks in percentages - the stopped state names how much of the city landed as a percentage of its cells, not a part count; the Resume remedy is unchanged
+    // readouts speak in percentages: the stopped state names how much landed as a percentage of cells, not parts
+    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped - ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; }
     else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' - streets there may be missing'; }
   }
-  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); } // the failed state's BUTTON is crHintAction's now (Beta 1.253, #20): through 1.252 this branch labelled from crGrid's existence - 'Retry' whenever a grid object existed, the dense 'Prepare this area' only when none did - while the click branched on crFailFromGrid, so a dense box failure landing over a settled grid read 'Retry' and prepared a new area at the map centre. The label history (CG-PF-09's dense rule; Beta 1.154's wanted override, which closed the through-1.153 wart where an offer's button read 'Retry' while the click prepared at the offer's anchor) is preserved inside the one decision
+  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); } // the failed state's button is crHintAction's (above): the label and the click can never diverge
   else if (crPrepState === 'ready') {
-    // Beta 1.223 (Andrew): NO success text in the ready state - the loaded-city
-    // confirmation ('<City> — loaded ...', cached and fresh forms, Beta 1.153/1.176)
-    // is removed whole; silence means it loaded. What still speaks in the ready
-    // state: a disclosure note riding below (cache/pack), standing alone per the
-    // 1.175 rule, and an outstanding offer's button.
-    // (an outstanding offer's button in this state is crHintAction's crWanted case, as it is in every state - CG-PF-09: the first build's ready state hid it)
+    // NO success text in the ready state: silence means it loaded; a disclosure note or an outstanding offer's button speaks
   }
   else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; }
-  if (!gated) btnLabel = crHintAction().label; // Beta 1.253 (#20): the button's label is the ONE decision's (crHintAction, above) - the branches above now compute text and the gate only. Inside the 5 s gate the label stays empty, exactly as the branches' own gated assignments kept it empty through 1.252
-  if (!gated) { // Beta 1.176: inside the gate the pill renders nothing at all - a disclosure note does not leak it open early (the note is still state, and rides the first ungated render or the terminal state, so nothing is ever swallowed)
-    if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the disclosed cache state rides the hint (amendment C: degradation is said, never silent) - Beta 1.143 (DA-06): only when the note belongs to the city on screen. Beta 1.175: since the ready-state hints were removed, a note can ride an otherwise EMPTY hint - it then stands alone, with no dangling separator
-    if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // Beta 1.123: the disclosed pack state rides the hint the same way - a fallen-back load says the library didn't load, in every state the hint shows. Beta 1.175: the same stand-alone rule as the cache note above
+  if (!gated) btnLabel = crHintAction().label; // the button's label is the one decision's (crHintAction); inside the gate the label stays empty
+  if (!gated) { // inside the gate the pill renders nothing: notes ride the first ungated render or the terminal state, never swallowed
+    if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the cache note rides the hint only for the city on screen; alone, it stands alone
+    if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // the disclosed pack state rides the hint the same way: a fallen-back load says the library didn't load
   }
-  hint.textContent = text; hint.classList.toggle('on', !!text); // Beta 1.175: no text, no pill - an empty render (a fresh ready city, nothing to disclose, no offer) never paints an empty pill. Beta 1.223: the 1.153 dismissed-confirmation condition retires with the confirmation itself
+  hint.textContent = text; hint.classList.toggle('on', !!text); // no text, no pill: an empty render never paints an empty pill
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
-  btn.classList.toggle('danger', btnLabel === 'Cancel'); // Beta 1.229 (Andrew's universal rule): anything Cancel is red - while the readout's button reads Cancel it wears the app's destructive red (the #crHintBtn.danger rule, head.html); the same button's Resume/Retry/Prepare labels keep the blue
-  // Beta 1.176 (Andrew): the button hangs from the pill's RENDERED bottom edge,
-  // not from a fixed offset. Through 1.175 the button's CSS top sat a fixed
-  // 48 px below the pill's top - tuned to a one-line pill - so a pill that
-  // wrapped to two lines (a long progress line in his screenshot, the failure
-  // wording) grew down OVER the button: Cancel sat on the pill's bottom edge.
-  // Measured placement instead, recomputed at every render: pill shown ->
-  // button top = the pill's rendered bottom + 8 px; pill hidden -> the inline
-  // top clears and the CSS offset stands (the button's pill-less perch is
-  // unchanged).
+  btn.classList.toggle('danger', btnLabel === 'Cancel'); // anything Cancel is red: while the button reads Cancel it wears the destructive red; Resume/Retry/Prepare keep the blue
+  // the button hangs from pill bottom +8 px, recomputed each render: a fixed offset let wrapped pills cover it
   if (btnLabel && hint.classList.contains('on')) { const hb = hint.getBoundingClientRect(); btn.style.top = Math.round(hb.bottom + 8) + 'px'; } else btn.style.top = '';
-  const cc = $('crCityChange'); if (cc) { if (crCity) { // Beta 1.223 (Andrew, option E): the city control is the slim bar above Done - 'Working in <City> · change', the city bold, 'change' in the app's link blue (var(--link) via .crCityGo). Built from text nodes: the city name is typed text and never becomes markup
+  const cc = $('crCityChange'); if (cc) { if (crCity) { // the city bar above Done, built from text nodes: the typed city name never becomes markup
       cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
-  crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): every coverage landing renders this hint as it lands (the prepare completions, the grid pump, the saved-city fold's rebuild), so the open street search refreshes with it - see crRefreshSearch at crRunSearch for the guards that keep a dismissed search dismissed
+  crRefreshSearch(); // every coverage landing renders this hint as it lands, so the open street search refreshes with it (guards at crRunSearch)
 }
-// ---- the DRAFT owner (Architecture #14): every mutation of the draft's
-// roads / primaries / names / pending set, and the render that follows a
-// mutation, live here. Through 1.280 each entry point coordinated those
-// pieces itself: the post-mutation render ritual (the draft overlay, both
-// lists, the hint, in that order) was spelled out at four sites, and the
-// category toggle was duplicated at the two row chips. The mutation ORDER
-// inside each method is the order its entry point always ran - this round
-// moves the bodies, it does not re-derive them. The crAddStreet /
-// crAddRun / crRemoveStreet names survive as doorways below (the battery
-// calls the first by name; the pending sweep in create-citydata calls
-// both add doors). Sector state joined the same owner in Architecture
-// #15: the trimOf / hasTrim / snapshotTrim / chosenSet / setChosen /
-// dropTrim / restoreTrim methods below are the only reads and writes of
-// draft.sectors outside this owner's own wholesale reset and newDraft's
-// creation.
+// ---- the DRAFT owner ---- every draft mutation and its following render live here; sector state is the same owner's
 const DRAFT = {
   render() { renderDraft(); renderCrLists(); crRenderHint(); }, // the ONE post-mutation render, in the order every mutation site already used
   renderLists() { renderDraft(); renderCrLists(); }, // the category toggle's tail: the hint does not read the primaries, so it is not re-rendered
-  addStreet(name, segs) { // Beta 1.144 (Package C, DA-04): the draft keys on the FULL map name - through 1.143 the key was shortStreetName(osmName), so two distinct streets sharing a shortened name (Addington Avenue / Addington Place) collided: only the first could ever enter a draft, and tapping the second opened the first's sectors. shortStreetName survives ONLY as the display form (toasts, rows, the sector bar's title); every key in the draft - roads, primaries, sectors, parts, pending - is the full name, and the saved pack inherits the full names, so both streets can live in one route.
-    draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a SECONDARY (fork 3) - flip it to PRIMARY in the list if it is one. Beta 1.135 (N3): the generation bump is the draft-geometry cache's invalidation for this in-place join (see crDraftGeom)
+  addStreet(name, segs) { // the draft keys on the full map name (streets sharing a short name would collide); shortStreetName is display-only now
+    draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a secondary (flip it in the list); the bump invalidates the draft-geometry cache
     delete crPending[name];
-    crIsectClear(); // Beta 1.262: the first road selection ends the POI surface - the picked crossing's name and marker clear as if they were never there
+    crIsectClear(); // the first road selection ends the POI surface: the crossing's name and marker clear
     DRAFT.render();
-    // Beta 1.153 (Andrew): no 'Added' popup - the road's own picked state on the map and in the panel is the feedback.
+    // no 'Added' popup: the road's picked state on the map and in the panel is the feedback
   },
-  addRun(name, segs) { // Beta 1.144 (OPT-L1): a further DISCONNECTED run of an already-picked street joins the SAME street entry - the segment list grows (the run's parts append after the existing runs' parts: runs form in segment order, so existing sector indexes keep their meaning), the geometry cache invalidates, and the cached sector record dies so boundaries recompute over the fuller street. A trimmed street keeps its trim AND gains the new run's parts as chosen - the tap that added the run was a pick, so its parts join the chosen set explicitly rather than falling out of the save by omission; an untrimmed street simply stays whole.
+  addRun(name, segs) { // a run joins the same entry (parts append in order); a trim stands, gaining the run's parts as chosen
     const before = DRAFT.hasTrim(name) ? crStreetParts(name) : null;
     draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
     if (draft.parts) delete draft.parts[name];
@@ -108,13 +75,13 @@ const DRAFT = {
       const rec = crStreetParts(name);
       if (rec) { const set = crChosenSet(name, before); for (let i = before.parts.length; i < rec.parts.length; i++) set.add(i); crSetChosen(name, rec, set); }
     }
-    crIsectClear(); // Beta 1.262: a road selection like any other - the POI surface ends here too (see the add-street method above)
+    crIsectClear(); // a road selection like any other: the POI surface ends here too
     DRAFT.render();
-    // Beta 1.153 (Andrew): no 'Added the other part' popup either - same rule as the add-street method.
+    // no 'Added the other part' popup either: same rule as the add-street method
   },
-  removeStreet(name) { // Beta 1.127: the ONE removal path - the panel's x, the preview's x and Clear all land here (Beta 1.128: those are the ONLY doors; a map tap on a picked street opens its sectors instead), so a street leaves with ALL of its draft state (geometry, primary flag, names, sector pick, cached parts) and every face re-renders from the same state
+  removeStreet(name) { // the one removal path (panel x, preview x, Clear): a street leaves with all its draft state
     if (!draft || !draft.roads[name]) return;
-    delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // Beta 1.135 (N3): the removal invalidates the shared draft geometry (see crDraftGeom)
+    delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // the removal invalidates the shared draft geometry (see crDraftGeom)
     DRAFT.dropTrim(name);
     if (draft.parts) delete draft.parts[name];
     delete crPending[name];
@@ -122,71 +89,42 @@ const DRAFT = {
     DRAFT.render();
   },
   togglePrimary(name) { if (draft.primaries.has(name)) draft.primaries.delete(name); else draft.primaries.add(name); DRAFT.renderLists(); }, // the category flip both row chips spelled out identically through 1.280 - one body now
-  // ---- sector state (Architecture #15). The stored form is unchanged
-  // since Beta 1.127: an ABSENT entry means the whole road; a present
-  // entry is the sorted array of chosen part indexes.
+  // ---- sector state: an absent entry means the whole road; a present one is the sorted chosen part indexes
   trimOf(name) { return draft && draft.sectors ? draft.sectors[name] : null; }, // the street's trim exactly as the pre-owner sites read it (an absent key reads undefined; no draft reads null)
-  hasTrim(name) { return !!(draft && draft.sectors && draft.sectors[name]); }, // the presence test the parts-record pin (crStreetParts) and the add-run dance used to spell out inline
-  snapshotTrim(name) { const t = DRAFT.trimOf(name); return t ? t.slice() : null; }, // the sector session's entry snapshot (Beta 1.129): a COPY of the trim in force, or null when the whole road stands
+  hasTrim(name) { return !!(draft && draft.sectors && draft.sectors[name]); }, // the presence test the parts-record pin and the add-run dance once spelled out inline
+  snapshotTrim(name) { const t = DRAFT.trimOf(name); return t ? t.slice() : null; }, // the session's entry snapshot: a copy of the trim in force, or null when the whole road stands
   chosenSet(name, rec) { const sel = DRAFT.trimOf(name); return new Set(sel || rec.parts.map((_, i) => i)); }, // no entry = every sector chosen (the whole road)
-  setChosen(name, rec, set) { // a FULL set stores as NO entry - "whole road" stays the draft's default state, so an untrimmed street carries no sector baggage into counts or the save
+  setChosen(name, rec, set) { // a full set stores as no entry: whole road stays the default, an untrimmed street carries no sector baggage
     draft.sectors = draft.sectors || {};
     if (set.size >= rec.parts.length) delete draft.sectors[name];
     else draft.sectors[name] = [...set].sort((a, b) => a - b);
   },
   dropTrim(name) { if (draft.sectors) delete draft.sectors[name]; }, // a trim leaves with its street (the removal) or with an abandoned restore point (the sector session's cancel, no-snapshot arm)
-  restoreTrim(name, snap) { draft.sectors = draft.sectors || {}; draft.sectors[name] = snap.slice(); }, // the sector session's Cancel restore (Beta 1.129): the entry snapshot returns as a copy, exactly as it was taken
-  clearAll() { // the Clear-all door's wholesale reset (through 1.280 it was spelled out in the crClearAll confirm callback): every draft map replaced - null-prototype, like every creation site (the clearall proofs extract the reset statement below verbatim) - the geometry generation bumped, pending cleared, the sector session reset, then the one render
+  restoreTrim(name, snap) { draft.sectors = draft.sectors || {}; draft.sectors[name] = snap.slice(); }, // the session's Cancel restore: the entry snapshot returns as a copy, exactly as it was taken
+  clearAll() { // Clear-all's wholesale reset: maps replaced (null-prototype), generation bumped, pending cleared, session reset, then the one render
     draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
-    crGeomGen++; crPending = {}; // Beta 1.170 (Carbon fix round Phase 2, D-04): the wholesale roads replacement obeys the same two duties as every other roads mutation - through 1.169 it was the one mutation that did not bump the geometry generation (the crDraftGeom cache's roads-identity key happens to catch this particular replacement, but the bump is the contract every other mutation keeps, and the cache's gen key exists to be moved by exactly this class of change) and it left the pending rows standing, so crSweepPending could re-add a street the user had just cleared
+    crGeomGen++; crPending = {}; // the wholesale replacement keeps both mutation duties: bump the generation, clear pending (else the sweep re-adds cleared streets)
     crSectorReset();
     DRAFT.render();
   }
 };
-function crAddStreet(name, segs) { DRAFT.addStreet(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
-function crRunHeld(name, segs) { // Beta 1.144 (OPT-L1): is this resolved run ALREADY part of the draft street? Segment identity is exact - a run's stored segments are the extract's way point arrays (or its stitched line when the run was bridged), and resolving the same run again reproduces them deterministically, so set membership on the serialized segments is the identity test
+function crAddStreet(name, segs) { DRAFT.addStreet(name, segs); } // doorway: the body lives on the DRAFT owner above
+function crRunHeld(name, segs) { // is this run already in the draft? Segment identity is exact: re-resolving reproduces the same segments deterministically
   const held = new Set((draft.roads[name] || []).map(sg => JSON.stringify(sg)));
   return segs.length > 0 && segs.every(sg => held.has(JSON.stringify(sg)));
 }
-function crAddRun(name, segs) { DRAFT.addRun(name, segs); } // Architecture #14: doorway - the body lives on the DRAFT owner above
-function crRemoveStreet(name) { DRAFT.removeStreet(name); } // Architecture #14: doorway - the body lives on the DRAFT owner above
-// ---- sectors (Beta 1.127, Andrew's approved mockups in beta1/work/create-sectors-mockups/):
-// a picked street can be trimmed to the junction-to-junction pieces he
-// actually cleans - a long road that runs past his subdivision enters
-// the route only as far as he cleans it. Sector state lives ONLY in
-// the draft (draft.sectors[name] = chosen part indexes; absent = the
-// whole road); at Save the stored pack's roads[name] holds only the
-// chosen sectors' polylines, so the pack format is unchanged and
-// everything downstream derives from the stored geometry as always.
-// Beta 1.144 (DA-02/C1): a street's sectors span ALL its disconnected
-// runs - the parts list is the runs' pieces concatenated in run order,
-// so non-adjacent picks (sectors 0 and 2, a middle skipped) save as
-// disconnected segments and the saved route tracks every chosen metre.
-function crCovStamp() { // the coverage fingerprint a sector record is cut against: the extract's birth generation plus its live size (verified boxes + indexed ways). Every landing that could add a cut for any street - a grid cell, the fallback box, a top-up merge, the cache fold - grows at least one of the two counts, and a replacement extract is born under a bumped crCovGen, so a changed stamp always means the extract has moved since the record was cut. No extract reads as the empty stamp.
+function crAddRun(name, segs) { DRAFT.addRun(name, segs); } // doorway: the body lives on the DRAFT owner above
+function crRemoveStreet(name) { DRAFT.removeStreet(name); } // doorway: the body lives on the DRAFT owner above
+// ---- sectors: a street trims to the junction-to-junction pieces actually cleaned; the pack stores only the chosen polylines
+function crCovStamp() { // the fingerprint a record is cut against (generation + size): a landing grows a count, a changed stamp means movement
   return crCov ? crCov.gen + ':' + crCov.boxes.length + ':' + Object.keys(crCov.byId).length : '';
 }
-function crStreetParts(name) { // the street's sectors: its stitched runs cut where OTHER streets of the prepared extract meet them - computeStretches' own cut rule (4 m join tolerance, cuts merged under 15 m, no cut within 12 m of an end) with the EXTRACT as the junction set. The extract, not the draft, is the context on purpose: the pieces are the real junction-to-junction pieces, and a street's sector boundaries never move as other streets join or leave the draft. Cached on draft.parts, stamped against the extract it was cut from (crCovStamp): an untrimmed street's record recomputes when the extract has grown since it was cut, so a record computed before the extract covered the street never outlives that coverage; vertices are bbox-prefiltered to the run's neighbourhood, so a whole city's extract costs one bounded pass per run, paid only when sector mode first opens for the street. Beta 1.144: the cutting runs PER RUN (stitchRuns) and the record carries runs alongside the principal line - a single-run street's record is exactly the pre-1.144 one.
+function crStreetParts(name) { // sectors are cut against the EXTRACT, not the draft: boundaries never move as streets join or leave the draft
   if (!draft || !draft.roads[name]) return null;
   draft.parts = draft.parts || {};
   if (draft.parts[name]) {
     const rec = draft.parts[name];
-    // A record may be replaced only when nothing live references its
-    // pieces. Two references do: a street WITH a trim (draft.sectors
-    // indexes mean pieces of THIS record, and recomputing would
-    // silently reinterpret the user's picks against different pieces -
-    // the same priority crAddRun's before/after dance gives a trim),
-    // and an OPEN sector session for the street - its Cancel snapshot,
-    // its sector bar, and the rendered draft features whose sector
-    // indexes a map tap reads (crSectorTap) all index this record, and
-    // coverage landings do not redraw the draft, so a mid-session
-    // recompute would desync every one of them (the snapshot case is
-    // the sharp end: clear the live trim mid-session - Entire road
-    // stores as no entry - and Cancel would restore the snapshot's
-    // indexes against different pieces). While either reference stands
-    // the record is pinned; the recompute lands at the next read after
-    // they clear - for a session, the next entry, which settles the
-    // record before the session's first render. Unreferenced, the
-    // record is a pure cache and falls through to the recompute below.
+    // a record is pinned while anything live indexes it (a trim, an open session's snapshot/bar/taps); unreferenced, it recomputes
     if (DRAFT.hasTrim(name) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
   }
   const one = {}; one[name] = draft.roads[name];
@@ -210,7 +148,7 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
         }
       }
     }
-    const rParts = finishJunctionCuts(line, cum, rTotal, cuts); // Beta 1.131 (programme N2): the finishing policy is shared with computeStretches - see finishJunctionCuts (app1). Only the junction SOURCE differs (the prepared extract, collected above); the policy exists exactly once.
+    const rParts = finishJunctionCuts(line, cum, rTotal, cuts); // the finishing policy is shared with computeStretches (finishJunctionCuts, app1); only the junction SOURCE differs (the prepared extract)
     runs.push({ line, cum, total: rTotal, parts: rParts });
     for (const rp of rParts) parts.push(rp);
     total += rTotal;
@@ -219,17 +157,17 @@ function crStreetParts(name) { // the street's sectors: its stitched runs cut wh
   draft.parts[name] = rec;
   return rec;
 }
-function crChosenSet(name, rec) { return DRAFT.chosenSet(name, rec); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
-function crSetChosen(name, rec, set) { DRAFT.setChosen(name, rec, set); } // Architecture #15 doorway - the body lives on the DRAFT owner (sector state)
+function crChosenSet(name, rec) { return DRAFT.chosenSet(name, rec); } // doorway: the body lives on the DRAFT owner (sector state)
+function crSetChosen(name, rec, set) { DRAFT.setChosen(name, rec, set); } // doorway: the body lives on the DRAFT owner (sector state)
 function crChosenLenM(name, rec) { const set = crChosenSet(name, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
-function crStreetChosenM(name, g) { // a street's length AS PICKED - the whole street, or only its chosen sectors when trimmed. Every length the create flow states (panel header + rows, preview count, name-it summary) reads through here, so a trimmed street never bills its unchosen ends
+function crStreetChosenM(name, g) { // a street's length as picked (whole or trimmed): every stated length reads here, so unchosen ends never bill
   const sel = DRAFT.trimOf(name);
   if (!sel) return g && g[name] ? g[name].total : 0;
   const rec = crStreetParts(name); if (!rec) return 0;
   let s = 0; for (const i of sel) if (rec.parts[i]) s += crLineLen(rec.parts[i]);
   return s;
 }
-function crFilteredRoads() { // the roads object the SAVE stores: a trimmed street contributes ONLY its chosen sectors' polylines (each sector as one segment). The pack format is untouched (roads = segment lists); the unchosen ends simply never enter the pack
+function crFilteredRoads() { // what the save stores: a trimmed street contributes only its chosen sectors' polylines; the pack format is untouched
   const out = {};
   for (const n of draftStreets()) {
     const sel = DRAFT.trimOf(n);
@@ -240,24 +178,16 @@ function crFilteredRoads() { // the roads object the SAVE stores: a trimmed stre
 }
 function crToggleSector(name, idx) {
   const rec = crStreetParts(name); if (!rec || idx < 0 || idx >= rec.parts.length) return;
-  if (rec.parts.length === 1) { return; } // Beta 1.128: a one-piece street's only sector IS the whole road - tapping it in 1.127 un-picked the street entirely, the exact trap behind Andrew's report; the bar says it plainly and the tap changes nothing
+  if (rec.parts.length === 1) { return; } // a one-piece street's sector is the whole road: the bar says so plainly and the tap changes nothing
   const set = crChosenSet(name, rec);
   if (set.has(idx)) set.delete(idx); else set.add(idx);
   if (!set.size) { crRemoveStreet(name); return; } // un-picking every sector removes the street (crRemoveStreet also closes its sector mode)
   crSetChosen(name, rec, set);
   renderDraft(); renderCrLists(); renderSectorBar();
 }
-// Beta 1.156 (Andrew, device feedback 2026-11-09): the create flow's tap
-// discipline - the two query-box half-widths (px) BOTH tap handlers search
-// around a tap, first reach then one wider retry, and the reach
-// crSectorTap's geometry fallback honours. Through 1.155 the boxes were
-// [16, 28] (Beta 1.119, set after point queries hit nothing); Andrew on
-// device: he could tap pretty far left or right of a road and still select
-// it. Narrowed to [12, 20] - still a fingertip's tolerance plus a retry,
-// but a tap must be honestly near the line. One literal for the whole
-// discipline: both loops and the fallback cap read it here.
+// both tap handlers search CR_TAP_BOXES (reach, then one wider retry): one literal for the whole discipline
 const CR_TAP_BOXES = [12, 20];
-function crSectorTap(lngLat) { // a map tap while trimming: the sector under the tap toggles. The rendered draft features answer first (the wide invisible crDraftHit layer, the street pick's own CR_TAP_BOXES box discipline); the geometry fallback - the nearest part of THIS street - covers what the renderer cannot answer, and never reaches for another street. Beta 1.210: returns TRUE when a sector toggled, FALSE when the tap resolved to no sector of this street - crMapTap reads that as a tap-away (the trim's Cancel). The broken-session early returns are FALSE too: a session whose street or record is gone has no honest tap answer, and cancelling out of it is the only safe exit
+function crSectorTap(lngLat) { // a tap toggles the sector under it (features first, geometry fallback); TRUE only when one toggled
   const name = crSectorSession.street; if (!name || !draft || !draft.roads[name]) return false;
   const rec = crStreetParts(name); if (!rec) return false;
   let idx = -1;
@@ -274,15 +204,7 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
     } catch (e) {}
   }
   if (idx < 0) {
-    // Beta 1.156: the fallback is judged in the boxes' own unit - projected
-    // pixels - not only in metres. Through 1.155 its only cap was 75 m
-    // (~87 px at zoom 17, ~44 px at zoom 16), far looser than any box, so a
-    // far tap could still toggle a sector whenever the renderer answered
-    // nothing. The nearest part now answers only inside the retry box's
-    // reach (CR_TAP_BOXES[1]); the 75 m rule stays on top as an absolute
-    // guard (it binds first when zoomed far out, where 20 px spans more
-    // than 75 m). Without a projection there are no pixels to judge by and
-    // the metre rule stands alone, exactly as before.
+    // the fallback answers in pixels only inside the retry box's reach; the 75 m rule stays an absolute guard
     let bd = Infinity;
     const canPx = !!(map && typeof map.project === 'function');
     for (let i = 0; i < rec.parts.length; i++) { const d = canPx ? crFeatDistPx(lngLat, rec.parts[i]) : crFeatDistM(lngLat, { type: 'LineString', coordinates: rec.parts[i].map(p => [p[1], p[0]]) }); if (d < bd) { bd = d; idx = i; } }
@@ -292,8 +214,8 @@ function crSectorTap(lngLat) { // a map tap while trimming: the sector under the
   if (idx >= 0) { crToggleSector(name, idx); return true; }
   return false;
 }
-function crOpenSectors(name) { // opens a picked street's trimming - TWO doors since Beta 1.128 (Andrew's fork, decided from his 1.127 device session): the panel row (1.127) AND a map tap on the already-picked street (pickStreet routes here), which is where his finger went on device. Beta 1.129: entry SNAPSHOTS the street's pick as it stands (whole road, or the trim in force) - the tap-away's cancel restores that snapshot exactly (through 1.268 the restorer was the sector bar's Cancel button; Beta 1.269 replaced that button with Deselect and the restore's only door is the tap-away)
-  if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // Beta 1.150: own-property at this door too - a prototype member must not read as a held run and carry the call into the parts work below
+function crOpenSectors(name) { // opens trimming (panel row or map tap on the picked street); entry snapshots the pick as it stands
+  if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // own-property at this door too: a prototype member must not read as a held run
   if (!crStreetParts(name)) return;
   if (crSectorSession.street !== name) crSectorSession.snapshot = DRAFT.snapshotTrim(name); // a fresh entry only - re-entering the same street's open session must not move Cancel's restore point
   crSectorSession.street = name;
@@ -304,14 +226,14 @@ function crOpenSectors(name) { // opens a picked street's trimming - TWO doors s
   renderDraft(); crRenderHint();
 }
 function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); renderDraft(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render. Beta 1.223: Done's path DOES re-render now (renderDraft above) - the draft's active flags live in the source features, so without a rebuild the closed street would stay vibrant on crDraftLineActive instead of returning to its gentle mute; every other session-closing path (Cancel, stage change, street removal, Clear all) already re-rendered, and this was the one that did not (Codex P2, PR #100)
-function crCancelSectors() { // Beta 1.129 (Andrew: "I still need a way to cancel selections while I'm selecting something"): the deliberate back-out of a sector session - the street's pick returns EXACTLY as it was when sector mode was entered (the whole road, or the trim then in force), every face repaints from the restored state, and sector mode closes back to the panel. Distinct from un-picking every sector by toggles, which still removes the street - that is a selection, this is an abandonment of the session's edits. Beta 1.269: the bar's Cancel BUTTON is gone (Deselect stands in its slot) - this path's only door is now the tap-away (crMapTap), which is where Andrew's finger already cancelled; the restore behaviour itself is unchanged
+function crCancelSectors() { // the back-out restores the pick exactly as at entry; un-picking every sector by toggles instead removes the street
   const s = crSectorSession.street; if (!s || !draft) return;
   if (crSectorSession.snapshot) DRAFT.restoreTrim(s, crSectorSession.snapshot);
   else DRAFT.dropTrim(s);
   crCloseSectors();
   renderDraft(); renderCrLists();
 }
-function crDeselectSectors() { // Beta 1.269 (Andrew, sample C of the trim-sheet sample): the bar's third door - the street leaves the draft ENTIRELY and the bar closes back to the panel. The removal is crRemoveStreet, the ONE removal path (the Review list's row x lands there too) - never a second implementation: the street leaves with all of its draft state, and the session pair resets inside that call, as for every removal. crRemoveStreet re-renders every face but does not move the sheet surface, so the landing is crCloseSectors' own (morph to the wanted face, or the rest-state sync when the sheet is away)
+function crDeselectSectors() { // the third door: the street leaves via crRemoveStreet (the one removal path); the landing is crCloseSectors' own
   const s = crSectorSession.street; if (!s || !draft) return;
   crRemoveStreet(s);
   const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel();
@@ -320,40 +242,26 @@ function renderSectorBar() {
   const s = crSectorSession.street; if (!s || !draft || !draft.roads[s]) return;
   const rec = crStreetParts(s); if (!rec) return;
   const chosen = crChosenSet(s, rec);
-  $('crSbName').textContent = shortStreetName(s); // Beta 1.144 (DA-04): the bar's title is a display surface - the short name, while the draft keys on the full one
-  if (rec.parts.length === 1) { $('crSbSub').textContent = 'One piece · ' + fmtLenM(rec.total) + ', no cross-streets to split it at, so it goes into your route whole'; return; } // Beta 1.128: honest about the streets the cut rules cannot split (measured on the shipped Vaughan pack: 221 of 1,299 streets ≥ 500 m compute to exactly one part) - 1.127's "tap sectors to trim it" promised a trim whose only outcome was deleting the road
+  $('crSbName').textContent = shortStreetName(s); // the bar's title is a display surface: the short name, while the draft keys on the full one
+  // honest about unsplittable streets (many compute to one part): never promise a trim whose outcome is deleting the road
+  if (rec.parts.length === 1) { $('crSbSub').textContent = 'One piece · ' + fmtLenM(rec.total) + ', no cross-streets to split it at, so it goes into your route whole'; return; }
   $('crSbSub').textContent = chosen.size >= rec.parts.length
     ? 'Entire road picked · ' + fmtLenM(rec.total) + '. Tap sectors to trim it'
     : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + '. The grey ends stay out of your route';
 }
-// ---- the pick sheet's ONE surface (Beta 1.129): the panel, the
-// tucked-away strip and the sector bar are three CONTENTS of a single
-// card - #createSheet itself, which carries the card's background,
-// radius and shadow in every state (the .crG-* classes in head.html
-// hold the three resting geometries; the contents carry none). A face
-// change morphs the surface's OWN geometry - height, side insets,
-// bottom inset and all four corner radii travel together on the
-// sheets' closed-form spring, so the box contracts toward the bar's
-// footprint on ALL sides at once (Andrew: "retracts into the pill
-// form like it's being absorbed from all angles") while the two
-// contents cross-fade INSIDE it. 1.127 hard-swapped three elements
-// mid-spring; 1.128 sprang the sheet's height and slid the faces but
-// the faces were still three separate boxes with their own margins
-// and radii, landing in a rest state the eye had not been watching -
-// on device it still read as: slides down, disappears, a pill
-// appears. Now the thing on screen at the start of the motion IS the
-// thing on screen at the end of it, at every frame between: one box,
-// never display:none, never teleported.
+// ---- the pick sheet's surface ---- panel, strip and bar are contents of one card; face changes morph its geometry
 let crMorph = null; // { from, to } while the surface morphs between faces, else null
-const CR_FACES = { panel: { el: 'crPanel', cls: null }, strip: { el: 'crStrip', cls: 'crG-strip' }, bar: { el: 'crSectorBar', cls: 'crG-bar' } }; // Beta 1.136 (programme F): the sheet's faces in ONE table - element id + geometry class per face. Through 1.135 the face list was written out at five sites (the element lookup, the rest-state toggles + display lines, the morph cleanup loop, the morph's two class flips); every one reads this table now, so a fourth face joins in exactly one place
+// the faces in one table (element id + geometry class per face): a fourth face joins in exactly one place
+const CR_FACES = { panel: { el: 'crPanel', cls: null }, strip: { el: 'crStrip', cls: 'crG-strip' }, bar: { el: 'crSectorBar', cls: 'crG-bar' } };
 function crFaceEl(face) { return $(CR_FACES[face].el); }
-function crFaceClasses(sheet, face) { for (const f of Object.keys(CR_FACES)) { const cls = CR_FACES[f].cls; if (cls) sheet.classList.toggle(cls, f === face); } } // the sheet wears the named face's geometry: its class on, every other face's class off (the panel's geometry is the absence of both classes)
-function crWantedFace() { // the face the current state asks for: the sector bar while trimming; the strip whenever the panel is tucked away (Beta 1.128: at ANY pick count, zero included - an empty draft retracts too, where 1.127's strip demanded a non-empty draft and collapse at zero sprang down and bounced back); else the panel
+// the sheet wears the face's geometry: its class on, the others off (the panel's geometry is both off)
+function crFaceClasses(sheet, face) { for (const f of Object.keys(CR_FACES)) { const cls = CR_FACES[f].cls; if (cls) sheet.classList.toggle(cls, f === face); } }
+function crWantedFace() { // the face asked for: bar while trimming, strip whenever tucked (any pick count), else the panel
   if (crSectorSession.street && draft && draft.roads[crSectorSession.street]) return 'bar';
   if (crSectorSession.collapsed) return 'strip';
   return 'panel';
 }
-function syncCrPanel() { // the REST state: the surface wears the wanted face's geometry class and exactly that face's content shows. Animated switches run through crMorphTo and land here; renders and stage changes call this directly. While a morph is in flight this no-ops - the morph's finish lands the rest state, so a mid-flight re-render can never tear the surface
+function syncCrPanel() { // the rest state: the wanted face's geometry and content; no-op while a morph flies (its finish lands this)
   const sheet = $('createSheet'); if (!sheet) return;
   const els = {}; for (const f of Object.keys(CR_FACES)) { els[f] = crFaceEl(f); if (!els[f]) return; }
   if (crMorph) return;
@@ -363,19 +271,19 @@ function syncCrPanel() { // the REST state: the surface wears the wanted face's 
   for (const f of Object.keys(CR_FACES)) els[f].style.display = f === want ? '' : 'none';
   if (want === 'bar') renderSectorBar();
 }
-function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers - content height, the three insets, the four corner radii - read from computed style, so calc()/env() are already resolved to px by the engine
+function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers, read from computed style so calc()/env() are already resolved to px
   const cs = getComputedStyle(sheet);
   const rad = (cs.borderRadius || '0px').trim().split(/\s+/).map(v => parseFloat(v) || 0);
   const R = rad.length === 1 ? [rad[0], rad[0], rad[0], rad[0]] : rad.length === 2 ? [rad[0], rad[1], rad[0], rad[1]] : rad.length === 3 ? [rad[0], rad[1], rad[2], rad[1]] : rad.slice(0, 4);
   return { h: sheet.offsetHeight, ml: parseFloat(cs.marginLeft) || 0, mr: parseFloat(cs.marginRight) || 0, mb: parseFloat(cs.marginBottom) || 0, r: R };
 }
-function crMorphCleanup() { // the surface returns to class-driven rest: every inline geometry/position the morph set is cleared, so the rest state the eye lands on is exactly the CSS geometry of the destination face
+function crMorphCleanup() { // back to class-driven rest: every geometry the morph set clears, so the landing is exactly the CSS geometry
   const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
   for (const f of Object.keys(CR_FACES)) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
   crMorph = null;
 }
 function crSettleMorph() { if (!crMorph) return; cancelSheetSpring($('createSheet')); crMorphCleanup(); syncCrPanel(); } // land an in-flight morph NOW (a grab on the panel head, or a new face decision superseding it)
-function crMorphTo(to, opts) { // THE face change: one surface, its geometry springing between the two faces' resting shapes while the contents cross-fade inside. opts: { dy, v0 } from the head-drag release - the surface is already displaced dy px by the finger's transform, so the morph starts from that displaced bottom edge at the finger's own speed
+function crMorphTo(to, opts) { // the face change: one surface springing between resting shapes, contents cross-fading inside; opts carry a drag release's displacement/speed
   const sheet = $('createSheet'); if (!sheet) { syncCrPanel(); return; }
   opts = opts || {};
   crSettleMorph(); // a new decision supersedes an in-flight one - land it first
@@ -388,7 +296,7 @@ function crMorphTo(to, opts) { // THE face change: one surface, its geometry spr
   crFaceClasses(sheet, to);
   const G1 = crGeoOf(sheet);
   crFaceClasses(sheet, from);
-  const mb0 = opts.dy ? -opts.dy : G0.mb; // the finger left the surface dy px below its rest - the morph's bottom edge starts there, not at the rest position
+  const mb0 = opts.dy ? -opts.dy : G0.mb; // the finger left the surface dy px below rest: morph bottom starts there, not at rest
   if (!G0.h || !G1.h || (Math.abs(G1.h - G0.h) < 2 && Math.abs(G1.ml - G0.ml) < 1 && Math.abs(G1.mb - mb0) < 1)) { syncCrPanel(); return; } // nothing to travel (or nothing measurable): land the rest state directly
   for (const el of [fromEl, toEl]) { el.style.display = ''; el.style.position = 'absolute'; el.style.top = '0px'; el.style.left = '0px'; el.style.right = '0px'; el.style.bottom = '0px'; } // both contents live inside the one surface for the motion
   fromEl.style.opacity = '1'; toEl.style.opacity = '0';
@@ -398,7 +306,7 @@ function crMorphTo(to, opts) { // THE face change: one surface, its geometry spr
   sheet.style.borderRadius = G0.r[0] + 'px ' + G0.r[1] + 'px ' + G0.r[2] + 'px ' + G0.r[3] + 'px';
   crMorph = { from, to };
   const L = (a, b, p) => a + (b - a) * p;
-  springSheet(sheet, G0.h, G1.h, opts.v0 || 0, h => { // the closed-form spring drives the HEIGHT (px, the quantity its settle thresholds are calibrated for); every other property follows the same progress
+  springSheet(sheet, G0.h, G1.h, opts.v0 || 0, h => { // the spring drives the height (its settle thresholds are calibrated for px); every other property follows the same progress
     const p = Math.min(1, Math.max(0, (h - G0.h) / (G1.h - G0.h)));
     sheet.style.height = h + 'px';
     sheet.style.marginLeft = L(G0.ml, G1.ml, p) + 'px'; sheet.style.marginRight = L(G0.mr, G1.mr, p) + 'px';
@@ -408,7 +316,7 @@ function crMorphTo(to, opts) { // THE face change: one surface, its geometry spr
     toEl.style.opacity = String(Math.min(1, Math.max(0, (p - 0.3) / 0.7)));
   }, () => { crMorphCleanup(); syncCrPanel(); });
 }
-function crCollapsePanel(fromY, v0) { // tuck the surface away to the bottom bar: the one box contracts (Beta 1.129) - at any pick count, zero included
+function crCollapsePanel(fromY, v0) { // tuck the surface away to the bottom bar: the one box contracts, at any pick count, zero included
   if (crSectorSession.collapsed) { syncCrPanel(); return; }
   crSectorSession.collapsed = true;
   const sheet = $('createSheet');
@@ -420,25 +328,26 @@ function crExpandPanel() { // Review: the bar hands back to the panel in the sam
   crSectorSession.collapsed = false;
   crMorphTo('panel');
 }
-function crPendStreet(name, lngLat, run, boundary) { // fail-closed (Codex (c)): the shape reaches past verified coverage even after its one top-up - listed as PENDING, never added half-known; a wider preparation can still complete it (crSweepPending). Beta 1.144 (DA-04): keyed by the full map name, like every other draft structure
+function crPendStreet(name, lngLat, run, boundary) { // fail-closed: a shape past coverage after its top-up is pending, never half-known; a wider preparation can complete it
   let openEnd = null;
-  if (run && run.line) { for (const end of [run.line[0], run.line[run.line.length - 1]]) { const inside = crCov && crInAnyBox(crCov.boxes, end[0], end[1]); if (!inside) { openEnd = { lat: end[0], lng: end[1] }; break; } } } // an end is OPEN only when no COMMITTED coverage holds it (the sweep's union rule): the top-up's box (the boundary argument) was fetched for this name only and never becomes coverage, so an end inside it but outside every committed box is still open; an end inside a loaded city cell needs no preparation - anchoring the wider preparation on either wrong end could never complete the street
+  // an end is open only when no committed coverage holds it (the top-up's box never becomes coverage)
+  if (run && run.line) { for (const end of [run.line[0], run.line[run.line.length - 1]]) { const inside = crCov && crInAnyBox(crCov.boxes, end[0], end[1]); if (!inside) { openEnd = { lat: end[0], lng: end[1] }; break; } } }
   crPending[name] = { osmName: name, lngLat, openEnd };
-  if (openEnd) crWanted = { anchor: openEnd, label: 'Prepare wider area' }; // verify round (CG-PF-09): the promised wider preparation is a REAL button - it prepares around the street's own open end, the point coverage must grow from
+  if (openEnd) crWanted = { anchor: openEnd, label: 'Prepare wider area' }; // the wider preparation is a real button: it prepares around the street's own open end
   renderCrLists(); crRenderHint();
   toast(shortStreetName(name) + ' runs past the prepared area, it is pending, not added - prepare a wider area to complete it', 4200);
 }
 // ---- the city step (Andrew's amendment) STARTS here ----
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
-function crIsPlace(it) { // populated places only: a city/town/village place, or an administrative boundary (a city's own boundary relation) - never a street, a POI or a postcode area
+function crIsPlace(it) { // places only: a city/town/village or an administrative boundary - never a street, POI or postcode area
   if (!it) return false;
-  const cls = it.category || it.class; // the app requests format=jsonv2, and jsonv2 names this field `category` - `class` was the older format's name and does not exist in a jsonv2 payload. 1.121 read only `class`, so EVERY real result was rejected here and the suggestion list silently emptied on Andrew's phone (the typed city search dead end, 2026-11-06). The battery's fixture cities carried the old field name, which is why the rig never saw it; drive153 stubs the real jsonv2 shape.
+  const cls = it.category || it.class; // jsonv2 names this field 'category'; 'class' does not exist in its payloads (reading it silently emptied every result)
   if (cls === 'place') return ['city', 'town', 'village', 'hamlet', 'suburb'].includes(it.type);
   if (cls === 'boundary') return it.type === 'administrative';
   return false;
 }
-const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 }; // Beta 1.229 (Andrew's standing rule): the CITY search returns Ontario, Canada results only. This rectangle is the query bound, and the client filter's bound for results that name no province or state (crInOntario below). (Beta 1.234: the STREET search asks no service at all - it answers from the loaded extract - so this bound's remaining consumer is the city search.)
-function crInOntario(it) { // a search result survives only as an Ontario result - the service's bounding parameters are a request, this filter is the guarantee (the Beta 1.153 city-bound lesson, applied province-wide). A result that NAMES its province or state is judged by its own word, and only Ontario survives: the rectangle alone leaks the border strip (Aurora, Illinois stands at 41.76 degrees north, inside the rectangle's 41.6 south edge - the exact wrong-Aurora trap this round exists to close), and Gatineau's own word (Quebec) keeps it out the same way. A result naming neither is judged by the rectangle.
+const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 }; // the city search is Ontario-only: this rectangle bounds the query and the filter's judgement of province-less results
+function crInOntario(it) { // the filter is the guarantee: a named province is judged by its word; the rectangle alone leaks border cities
   if (!it) return false;
   const st = it.address && it.address.state;
   if (st) return st === 'Ontario';
@@ -457,68 +366,59 @@ function crPickCity(it) {
     try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
     crEnterPickFromCity();
   };
-  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // D-08: the replacement reset is guarded here - crPickCity is the one landing both city doors share; a first pick keeps its draft.
+  if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // the reset is guarded: crPickCity is the one landing both doors share; a first pick keeps its draft
   apply();
 }
-function crEnterPickFromCity() { // the city is chosen: land in the pick stage, the map flown to the city, and its whole-city preparation started (from the on-device cache when saved - crCityPrepare)
+function crEnterPickFromCity() { // land in the pick stage, fly to the city, start its whole-city preparation (from the cache when saved)
   if (!creating) enterCreate('pick'); else { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('pick'); }
   if (map && crCity && crCity.lat != null) { try { map.flyTo({ center: [crCity.lon, crCity.lat], zoom: 12, duration: 900 }); } catch (e) {} }
   crCityPrepare();
   crRenderHint();
 }
-// ---- the create gate: TWO DOORS, then the list (Beta 1.124, Andrew's
-// redesign, approved from the rendered mockup 2026-11-06) ----
-// The first screen of Create is "Create new route" with two doors:
-// Select from list and Manual search. (Beta 1.243: the third door -
-// Upload photo, below its divider - is removed whole.) The list opens
-// its own pane of clean city rows - no typing required to proceed.
-// The list IS packs/index.json (the same catalogue the seam reads): a
-// city appears the day its pack is published, and the app carries no
-// hardcoded city names. Both entries into Create - the cold-start
-// picker and the Routes menu - show the SAME routeMenu and the SAME
-// panes, so this one surface is the gate for both.
+// ---- the create gate: two doors, then the list ---- the list IS the catalogue; no hardcoded city names
 function crRenderCityChoices() {
   const boxEl = $('crCityList'); if (!boxEl) return;
   boxEl.innerHTML = '';
-  boxEl.appendChild(routeRowShell('div', 'Loading cities…', 'Getting the city library', { cls: 'crLoadingRow' })); // Beta 1.130: while the catalogue is genuinely in flight, the pane shows a ROW in the city rows' own styling (the shape the list itself takes) - the wait reads as the list arriving, not a bare note floating on an empty pane (the second, cosmetic half of Andrew's "loading screen" stutter; the wait itself is attacked by crWarmCityLibrary)
+  boxEl.appendChild(routeRowShell('div', 'Loading cities…', 'Getting the city library', { cls: 'crLoadingRow' })); // in flight, the pane shows a stand-in row in the rows' styling: the wait reads as the list arriving
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
     if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now. Go back and use Manual search.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
     const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
-    const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0)); // the last-used city rides first when the library holds it (a convenience, never a requirement - the full list is always there)
+    // the last-used city rides first when held (a convenience, never a requirement; the full list is always there)
+    const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0));
     for (const e of sorted) {
       if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
-      const b = routeRowShell('button', e.name, null, { chevron: true }); // Beta 1.207 (Andrew): city rows carry the NAME ONLY - the street-count sub-line is gone (sub null = no .routeArea element at all, so no leftover row height)
-      if (String(e.name).toLowerCase() === last) { const lu = document.createElement('span'); lu.className = 'crLastUsed'; lu.textContent = ' · last used'; const nmEl = b.querySelector('.routeName'); if (nmEl) nmEl.appendChild(lu); } // Beta 1.139 (Andrew): the last-used tag is its own gold span so it stands out. Beta 1.207: it trailed the sub-line until the sub-line was removed; it now trails the city NAME on the same row - same span, same words, same gold
+      const b = routeRowShell('button', e.name, null, { chevron: true }); // rows carry the name only: no sub-line (sub null = no .routeArea element, no leftover row height)
+      // the last-used tag is its own gold span, trailing the city name on the same row so it stands out
+      if (String(e.name).toLowerCase() === last) { const lu = document.createElement('span'); lu.className = 'crLastUsed'; lu.textContent = ' · last used'; const nmEl = b.querySelector('.routeName'); if (nmEl) nmEl.appendChild(lu); }
       b.addEventListener('click', () => crPackPickCity(e));
       boxEl.appendChild(b);
     }
-    menuListFade(boxEl); // Beta 1.233: the feather settles on what the landed list covers
+    menuListFade(boxEl); // the feather settles on what the landed list covers
   });
 }
-function crPackPickCity(e) { // a chooser tap IS a city pick: it lands in the same crPickCity the typed search uses, with the catalogue's own bounds - so preparation, caching, the discard guard on city replacement, and first-pick draft preservation behave identically whichever door named the city.
+function crPackPickCity(e) { // a chooser tap is a city pick through the same crPickCity: every door behaves identically (guard, caching, draft)
   const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
   crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
 }
 function crOpenCityPane(ret) {
-  crResetCitySearch(); // Beta 1.143 (DA-12): reopening the pane supersedes a held city SEARCH too - its late answer must not repopulate the pane it was asked from. Architecture #19: the close runs through crResetCitySearch, the one owner
+  crResetCitySearch(); // reopening supersedes a held city search too: its late answer must not repopulate the pane (close via crResetCitySearch)
   crCityReturn = ret;
-  $('crCityInput').value = ''; const rb = $('crCityResults'); rb.innerHTML = ''; rb.style.height = ''; crCityBoxTok++; // Beta 1.229: the pane reopens empty at natural height, and any swap release still pending from the last visit is invalidated with it
+  $('crCityInput').value = ''; const rb = $('crCityResults'); rb.innerHTML = ''; rb.style.height = ''; crCityBoxTok++; // the pane reopens empty at natural height; any swap release pending from the last visit is invalidated with it
   if (creating) { if (!routeLoaded) restoreBootChrome(); else openRouteMenu(); }
   showRmPane('rmCityPane');
 }
 let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
-let crCityOnlineAt = 0; // issue #180: the last PUBLIC city-search request's moment - the public service's policy caps requests at one per second, and crRunCitySearch (the explicit online search) waits out the remainder of the second rather than fire early
-function crResetCitySearch() { // Architecture #19: THE city-search close owner - the mirror of crResetSearch (the street search's owner, Beta 1.243). Ending a held city search was spelled out at four seats (the pane open in crOpenCityPane, the input event, the city pane's Back, and the short-query return inside crRunCitySearch): the same moves - bump the sequence (the family's invalidation: crCitySearchCurrent and crCitySearchSeqCurrent answer to it), abort the in-flight request and drop its handle, clear the pending debounce. The ritual lives here now; the seats keep only their own extras (the input event re-arms its debounce after the close, the short-query return clears the results box, the pane open resets the pane itself). The short-query seat never held a timer to clear - its only caller is the debounce, which spends the timer before running the search - so the owner's timer clear is a no-op at that seat, exactly as the seat's omission was. What the owner deliberately does NOT do: bump the sequence at exitCreate - the catch's seq-only asymmetry (crCitySearchSeqCurrent) is documented there and is not this ritual's to change.
+let crCityOnlineAt = 0; // the last request's moment: the service caps one per second; the online search waits out the remainder
+function crResetCitySearch() { // the close owner: bump the sequence, abort the request, clear the debounce; seats keep only their own extras
   crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
   if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
 }
-// Beta 1.229: the last-city lookup's generation + abort handle (crCityLookupSeq / crCityLastCtl, CG-PF-11) retire WITH the shortcut they served - see the removal note at the handler's old seat below.
-function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // Beta 1.154 (B3 build, G3 option (i)): the city-search LANDING's current-check - sequence AND session (the convention is stated at crSearchCurrent above)
-function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // Beta 1.154: the city-search CATCH's current-check - sequence ONLY, deliberately weaker than the landing's: exitCreate does not bump crCitySeq (lifecycle trace T7: +0 across four exits), so a late failure from a closed session whose sequence still matches stays silent here exactly as it did inline through 1.153; the name carries the asymmetry so it is never "fixed" by accident
+function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // the city-search LANDING's current-check: sequence AND session (the convention is stated at crSearchCurrent)
+function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // the catch's current-check: sequence ONLY, deliberately weaker (exitCreate never bumps crCitySeq); the name carries the asymmetry
 let crCityBoxTok = 0;
-function crCityBoxSwap(build) { // Beta 1.229 (Andrew, from the approved motion sample): the results area ANIMATES between contents - freeze the height it stands at, swap the content, then let the CSS transition (420ms on var(--ease-open), the #crCityResults rule in head.html) carry the box to its new height, so the Back button below glides instead of jumping. The target is measured on the UNFROZEN box: with the height frozen and overflow hidden, scrollHeight never reports less than the frozen height, so a shrinking swap (results down to the no-results note, a clear) would animate to the old height and snap at the release - the unfreeze/measure/refreeze happens inside one synchronous turn, so no paint ever sees the unfrozen box. The release back to natural height binds to the swap's own token: a newer swap is never released by an older swap's timer.
+function crCityBoxSwap(build) { // results animate between contents: freeze, swap, transition; measure the target unfrozen, release on the swap's token
   const box = $('crCityResults'); if (!box) return;
   const tok = ++crCityBoxTok;
   const from = box.offsetHeight;
@@ -531,27 +431,9 @@ function crCityBoxSwap(build) { // Beta 1.229 (Andrew, from the approved motion 
   box.style.height = target + 'px';
   setTimeout(() => { if (tok === crCityBoxTok) box.style.height = ''; }, 480);
 }
-function crCityShowSkeletons() { crCityBoxSwap(b => { b.innerHTML = ''; for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'crSkel'; b.appendChild(d); } }); } // Beta 1.229: three soft rows at the result rows' own height, pulsing while the search is in flight (the .crSkel rule, head.html) - the wait is shown, never a blank pane that suddenly fills
-// Beta 1.235 (Andrew): PARTIAL NAMES SUGGEST. Through 1.234 the typed city search asked the
-// service for the query as-is, and the service answers whole names only - 'Vaug' came back
-// empty and the pane said no city matched, though Vaughan was four letters away. The fix is
-// a GAZETTEER shipped in the app: Ontario's municipalities (Wikipedia's list), each
-// geocoded ONCE at build time through this search's own query shape and kept only if
-// it passed this file's own crIsPlace + crInOntario - so every entry is an Ontario place by
-// the app's standing discipline, frozen on-device. 401 entries stand below: of the 434
-// listed names, the table's own summary rows were dropped, twelve remote townships
-// would not resolve to themselves through any query shape and were left out rather
-// than guessed (their full names still answer through the live search, as before),
-// and duplicates by resolved name were folded. This is NOT the retired 1.229 name
-// resolution: nothing here asks a live service to guess a place from a name at search time
-// (the Aurora, Illinois trap); the table can only offer what was verified Ontario when it
-// was built. The live search still runs exactly as before, and its rows stand FIRST in the
-// merged render - gazetteer rows only fill the places the service did not name, deduped by
-// name, under the same 6-row cap. A fragment matches an entry when it is a prefix of the
-// entry's name or of any word of it (the street search's fragment rule, on names normalized
-// the same way); name-prefix matches stand before word matches, each group by population.
-// Misspellings that are not prefixes ('Vaughn') stay unmatched, as before. Entry shape:
-// [name, lat, lon, bboxS, bboxN, bboxW, bboxE, population2021].
+// skeleton rows pulse while the search flies: the wait is shown, never a blank pane
+function crCityShowSkeletons() { crCityBoxSwap(b => { b.innerHTML = ''; for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'crSkel'; b.appendChild(d); } }); }
+// partial names suggest from a shipped Ontario gazetteer, every entry verified at build time through this search's own discipline
 const CR_CITY_GAZETTEER = [
   ["Addington Highlands", 44.90167, -77.31209, 44.5664, 45.2355, -77.5425, -77.033, 2534],
   ["Adelaide Metcalfe", 42.92624, -81.72602, 42.7856, 43.0659, -81.7956, -81.5551, 3011],
@@ -969,14 +851,15 @@ function crCityLocalMatches(q) {
   head.sort(byPop); word.sort(byPop);
   return head.concat(word).slice(0, 6).map(i => { const e = CR_CITY_GAZETTEER[i]; return { display_name: e[0] + ', Ontario, Canada', category: 'boundary', type: 'administrative', lat: String(e[1]), lon: String(e[2]), boundingbox: [String(e[3]), String(e[4]), String(e[5]), String(e[6])], address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' } }; }); // the service's own item shape, so the row renderer and crPickCity consume a suggestion exactly like a service row
 }
-function crCityResultRow(it, i) { // one city result row, shared by the type-ahead and the online search (extracted in the issue #180 round - the two renders must never drift apart)
+function crCityResultRow(it, i) { // one city result row, shared by the type-ahead and the online search: the two renders must never drift apart
   const dn = it.display_name || '', cut = dn.indexOf(',');
-  const row = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null); // Beta 1.125 (Andrew): manual-search results wear the SAME neat row as the city list - name on its own line, the rest of the address small and dim under it; full .rmBtn boxes stacked with no gap read as one bunched wall
-  row.classList.add('crRowIn'); row.style.animationDelay = (i * 55) + 'ms'; // Beta 1.229: the approved stagger - each row settles in a beat after the one above it (fade + a small rise, the .crRowIn keyframes in head.html)
+  // search results wear the city list's row: name on its own line, the rest small and dim under it
+  const row = routeRowShell('button', cut > 0 ? dn.slice(0, cut).trim() : dn, (cut > 0 && dn.slice(cut + 1).trim()) ? dn.slice(cut + 1).trim() : null);
+  row.classList.add('crRowIn'); row.style.animationDelay = (i * 55) + 'ms'; // the approved stagger: each row settles in a beat after the one above it (the .crRowIn keyframes, head.html)
   row.addEventListener('click', () => crPickCity(it));
   return row;
 }
-function crRunCityTypeahead() { // issue #180: typing answers from the ON-DEVICE gazetteer ONLY. Through this fix the 500 ms debounce fired the public Nominatim service on every typing pause - client-side autocomplete, which the service's usage policy prohibits (and it caps requests at one per second besides). The street search went on-device in Beta 1.234 for its own reasons; the city search now follows: local matches as you type, and the public service is asked only when the search-online row below is tapped (crRunCitySearch, rate-limited to one request per second). The gazetteer is Ontario-only, so a place it cannot name stays reachable through that row and through the city list.
+function crRunCityTypeahead() { // typing answers from the on-device gazetteer only: the service prohibits autocomplete and caps one request per second
   const q = $('crCityInput').value.trim();
   if (q.length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the input event already invalidated through the owner; this seat only clears
   const places = crCityLocalMatches(q);
@@ -985,20 +868,20 @@ function crRunCityTypeahead() { // issue #180: typing answers from the ON-DEVICE
     places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
     if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
     const on = routeRowShell('button', 'Search online', 'Ask the live service about \u201c' + q + '\u201d');
-    on.classList.remove('routeRow'); on.classList.add('crOnlineRow'); // the search-online row is an ACTION, not a result: it deliberately does not wear .routeRow (the .crSkel precedent - the box's non-result occupants never wear the result class), so result-row counts in the box count results only; its look rides the same rules under its own class in head.html
+    on.classList.remove('routeRow'); on.classList.add('crOnlineRow'); // this row is an action, not a result: it never wears .routeRow, so row counts count results only
     on.addEventListener('click', () => crRunCitySearch());
     b.appendChild(on);
   });
 }
 async function crRunCitySearch() {
   const q = $('crCityInput').value.trim(), box = $('crCityResults');
-  if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.143 (DA-12): a short/cleared query invalidates like every other input change - through 1.142 this branch returned before the sequence bump + abort below, so the in-flight answer still held the current sequence when it landed and repopulated the cleared field. Beta 1.229: the clear leaves through the same height animation as every other results change. Architecture #19: the invalidation runs through crResetCitySearch, the one owner
+  if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // a cleared query invalidates like every change (bump + abort via crResetCitySearch); the clear leaves through animation
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
   crCityShowSkeletons();
   try {
-    const waitMs = 1000 - (Date.now() - crCityOnlineAt); // issue #180: the public service's one-request-per-second cap, honoured at the only seat that fires it - a tap inside the second waits out the remainder (the sequence check after the wait drops a wait the user has already moved past)
+    const waitMs = 1000 - (Date.now() - crCityOnlineAt); // the one-per-second cap, honoured at the seat firing it: a tap inside the second waits out the remainder
     if (waitMs > 0) { await new Promise(r => setTimeout(r, waitMs)); if (!crCitySearchCurrent(seq, session)) return; }
     crCityOnlineAt = Date.now();
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined }); // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
@@ -1006,30 +889,20 @@ async function crRunCitySearch() {
     const list = await r.json();
     if (!crCitySearchCurrent(seq, session)) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
     const places = (Array.isArray(list) ? list : []).filter(crIsPlace).filter(crInOntario);
-    const seen = new Set(places.map(it => crCityGazKey(crCityNameOf(it)))); // Beta 1.235: the gazetteer fills only the names the service did not return - a city the service named is never suggested twice (drive164's one-row guard stands on this)
+    const seen = new Set(places.map(it => crCityGazKey(crCityNameOf(it)))); // the gazetteer fills only names the service did not return: a city the service named is never suggested twice
     for (const loc of crCityLocalMatches(q)) { if (places.length >= 6) break; const lk = crCityGazKey(loc.address.city); if (!seen.has(lk)) { seen.add(lk); places.push(loc); } }
     crCityBoxSwap(b => {
       b.innerHTML = '';
       places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
-      if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); } // Beta 1.123: an empty answer SAYS so in the pane - 1.121 rendered nothing at all, which reads as a dead app (the same silence as the class/category defect, and just as unhelpful)
+      // an empty answer SAYS so in the pane: rendering nothing reads as a dead app
+      if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
     });
-  } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } } // Beta 1.229: a failed search resolves through the same animation - the skeletons leave by the glide, never a pop and never a stuck skeleton
+  // a failed search resolves through the animation: the skeletons leave by the glide, never a pop, never stuck
+  } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }
 }
 
-// ---- draft geometry cache (Beta 1.135, maintainability programme N3): through 1.134 a
-// single sector toggle recomputed computeStretches(draft.roads) TWICE - once in
-// renderDraft, once in renderCrLists - ~87k segment tests per toggle on a six-street
-// draft and ~1M on a full-size one, for geometry the toggle never touched. crDraftGeom
-// computes it ONCE per draft-geometry change and every consumer shares the result.
-// Invalidation is exact, keyed on identity + generation: the draft object and its roads
-// object are replaced wholesale by every structural change except two (new draft,
-// Clear all, exit), which the identity keys catch; the only in-place
-// geometry mutations are crAddStreet joining a street and crRemoveStreet removing one,
-// and both bump crGeomGen. Selection-only changes - sector picks, PRIMARY/SECONDARY flips - touch
-// neither key and never recompute. Identity-proven in the 1.135 fixture harness (the
-// cached geometry deep-equals a fresh computeStretches at every step); drives 156-158
-// judge the flows.
-let crGeomCache = null, crGeomGen = 0; // Beta 1.154 (B3 build, G3): crGeomGen is a CACHE KEY, not a currency counter - it is part of this cache's identity, no async landing ever checks it, and the 2026-11-09 lifecycle trace observed it unmoved (+0) across every preparation transition; it deliberately stands outside the cr<Family>Current convention stated at crSearchCurrent
+// ---- geometry cache ---- stretches compute once per geometry change, shared by every consumer; invalidation keys on identity + generation
+let crGeomCache = null, crGeomGen = 0; // crGeomGen is a cache key, not a currency counter: no landing checks it; it stands outside the Current convention
 function crDraftGeom() {
   if (crGeomCache && crGeomCache.draft === draft && crGeomCache.roads === draft.roads && crGeomCache.gen === crGeomGen) return crGeomCache.g;
   const g = computeStretches(draft.roads);
@@ -1037,10 +910,10 @@ function crDraftGeom() {
   return g;
 }
 const DRAFT_SRC = 'crDraft';
-function crZoomW(w) { // Beta 1.210 (Andrew, from his Beta 1.209 phone session): the create selection paint's zoom curve. Through 1.209 the draft widths were CONSTANT px (tuned at z17, Beta 1.182), so the drawn width in metres doubled with every zoom level down - at z13 the casing drew ~88 m wide and nearby picks melted into one blob on his zoomed-out screen. The curve keeps w itself at z15 and above (the picking zooms look exactly as they did) and halves the px width per level below z15, so the drawn width holds its z15 metre value all the way down - the same constant-metres principle the main map's surfW/surfCASE curves follow. ONE helper for the whole selection family (draft casing, draft line) so the layers can never drift apart again. (The trim glow rode this curve too until Beta 1.211, when it became a metric shader mesh and stopped needing a px curve.)
+function crZoomW(w) { // widths hold at z15+, halve per level below (metres hold the z15 value): one helper for the family
   return ['interpolate', ['linear'], ['zoom'], 8, w / 128, 9, w / 64, 10, w / 32, 11, w / 16, 12, w / 8, 13, w / 4, 14, w / 2, 15, w, 19, w];
 }
-function crFirstLabelLayerId() { // Beta 1.267 (Andrew): the create paint stacks BELOW the first label layer, so street names always draw ON TOP of a selection - through 1.266 the draft layers were added with no beforeId and landed above the basemap labels, so a tapped street's name sat under its own highlight, peeking out at the edges. The finder is the crIsectEnsure one (the first symbol layer carrying a text-field), shared so the two create surfaces can never disagree about where the labels start.
+function crFirstLabelLayerId() { // create paint stacks below the label layer (names draw on top); the finder is shared with crIsectEnsure
   try { const lab = ((map.getStyle() && map.getStyle().layers) || []).find(l => l.type === 'symbol' && l.layout && l.layout['text-field']); if (lab) return lab.id; } catch (e) {}
   return undefined;
 }
@@ -1048,7 +921,7 @@ function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
   try {
     if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    const before = crFirstLabelLayerId(); // Beta 1.267: every draft layer seats below the labels (their relative order among themselves is the add order, unchanged)
+    const before = crFirstLabelLayerId(); // every draft layer seats below the labels (their relative order among themselves is the add order, unchanged)
     if (!map.getLayer('crDraftCase')) map.addLayer({ id: 'crDraftCase', type: 'line', source: DRAFT_SRC, filter: ['==', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': 'rgba(10,14,34,.55)', 'line-width': crZoomW(9.75) } }, before); // Beta 1.127: the casing underlines CHOSEN geometry only - an unchosen sector wears no casing, like the mockup's plain grey ends. Beta 1.182: 12.75 = the 1.127 casing x 1.5 - the draft's DRAWN widths carry the same factor Beta 1.181 gave every road (ROAD_WIDTH_K in the generator, WIDTH_K in the engine; both live outside this part's scope, so the coupled values are literals here), and a chosen street's selection again spans the widened road it sits on (measured on the live 1.181 build: casing 8.5 and line 4.5 against a 12 px minor road at z17 - the selection sat INSIDE the road with white showing both sides). Beta 1.210: the literal is now the crZoomW curve's anchor (its value at z15 and above) - below z15 the casing thins with the zoom instead of blobbing over zoomed-out streets. Beta 1.216 (Andrew, from the casing samples): the anchor drops 12.75 -> 9.75 - the casing's EXTRA width over the line is halved (the dark reveal per side 3.0 -> 1.5 px at the anchor, the drawn band 8.25 -> 6.75 m at z16.5), same near-black, same round caps; at the old reveal the near-black outline around the thin 4.1 m core read thick and bulgy (outline-to-core 0.89 against the finished rim's 0.24). crGlowCasingHalfM below follows this anchor (4.875 px)
     if (!map.getLayer('crDraftLineDim')) map.addLayer({ id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#b9c1cb', 'line-width': crZoomW(4.5) } }, before); // Beta 1.223 (Andrew's corrected model): a REMOVED sector is flat GREY - the #b9c1cb this layer wore through 1.220, restored. The 1.221 muted-category-colour paint is reverted: muted colour now belongs to the SELECTED-but-not-active road (crDraftLine below), never to a removed sector. Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two
     if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['!=', ['get', 'active'], 1]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#dbb457', '#d2647e'], 'line-width': crZoomW(6.75) } }, before); // Beta 1.223 (Andrew's corrected model): a chosen street that is NOT the one being trimmed paints GENTLE-MUTED - its category colour at saturation x0.65, lightness unchanged (gold #ffc233 -> #dbb457, red #ef476f -> #d2647e; the strength Andrew approved from the create-route-states sample: just enough to notice the step up when the road goes active). The ACTIVE street (the sector session's, features carry active=1) paints full colour on crDraftLineActive below, with the session glow - the muted->vibrant step is at ROAD level, on the click that opens the trim, not per sector tap (the 1.221 model tied the raise to sector picking; reverted). Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both widths x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156). Beta 1.210: both widths ride crZoomW like the casing - the literals are the z15-and-above anchors; below z15 the line thins with the zoom (crDraftHit still does NOT scale: it is a tap target, not paint, so picking keeps its generous reach at every zoom). The widths ride the curve in TWO layers (this one filtered to chosen, crDraftLineDim above it to unchosen) because MapLibre silently drops a layer whose line-width nests a zoom curve inside the chosen switch (['case', ..., interpolate, interpolate] never enters the style - measured in the 1.210 round's rendered QA: addLayer does not throw, getLayer stays false); a bare curve as the whole width is fine
@@ -1056,57 +929,10 @@ function ensureDraftLayers() {
     if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }, before); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
-// Beta 1.211 (Andrew, approved from the real shader sample on 2026-11-15): the
-// create trim glow is a SHADER now - the 1.208 five-layer blur stack (the five crGlow line layers
-// over their GeoJSON source, retired here) is replaced by ONE custom WebGL layer,
-// crGlowShader, porting the sample's proven construction
-// (work/glow-shader-sample/RECORD.md): a ribbon mesh built in METRES around
-// the glow's lines, the falloff computed per pixel in the fragment shader -
-// full strength inside the road's kerb (4.95 m - the glow's own kerb, frozen
-// from its 1.211 sample: it was the engine's SURF_HALF then, and is NOT since
-// Beta 1.268 narrowed the paint to SURF_HALF 4.29 m; the glow surrounds the
-// road-keyed draft, which did not narrow, so its sample form is unchanged), then
-// a smooth (1-t)^2 decay across a breathing reach, 4.0 s cycle, reach 5<->9 m
-// and peak alpha 0.50<->0.80 in phase. SEVEN cross-section rings carry the
-// distance attribute (a two-row ribbon interpolates it to the outer value
-// everywhere and shades to nothing - measured in the sample round); miter
-// joins clamp at cos 0.45 with a segment-normal fallback on hairpins; round
-// end-cap fans close the ends; premultiplied "over" blending (ONE /
-// ONE_MINUS_SRC_ALPHA) makes crossings saturate at the class colour and
-// never blow out; depth test and depth write are OFF and the GL state is
-// snapshotted and restored around the draw - the GPS puck layer's discipline
-// (app2). Because the mesh is metric, the glow scales with the map like real
-// paint at every zoom - the property 1.210's crZoomW curve gave the old stack
-// by hand. syncCrGlow below stays the glow's ONE writer (chosen sectors only,
-// 1.209); only its sink changed: features feed crGlowSetFeatures, which
-// rebuilds this mesh. The main map's clean-time selection glow is a different
-// stack in the engine and is untouched.
-// Beta 1.216 (Andrew, from his Davos trim-view screenshots): the 1.211 mesh
-// construction had a defect the shader sample could not show - the sample
-// was built on clean geometry. The sector parts the trim session feeds in
-// carry REPEATED consecutive points where the sector cuts and way-stitches
-// inserted a point equal to its neighbour (Velmar: 13 across its 14 parts,
-// sitting at the junctions). A repeated point makes a zero-length segment
-// whose normal comes out (0,0); the miter at the station beside it dots
-// against that zero normal, the cos clamp takes its floor (0.45), and the
-// whole cross-section stretches x2.22 along the surviving normal while its
-// distance attribute still claims the ring distance - a spear of
-// full-strength glow thrown sideways at every joint. Measured on the
-// shipped construction (the sample round's mesh census): 336 of 5,268
-// vertices sit more than 4 m farther from the line than claimed, the worst
-// claiming 20 m and sitting at 44.8 m; on screen the glow ran ~4.3x
-// stronger near joints than mid-part - Andrew's blotches. The fix lives in
-// the mesh path only: crGlowBuildMesh stitches the fed parts into
-// continuous runs first (crGlowStitchFeats - interior joints also lose
-// their stacked end-cap fans) and drops repeated consecutive points, so no
-// zero-length segment can poison a normal. Measured on the same Velmar
-// feed after the fix: 0 vertices beyond their claimed distance +0.9 m.
-// syncCrGlow's chosen-sectors computation (1.209) is untouched - WHICH
-// sectors glow is unchanged; only how the ribbon is built from them.
-// proof-create-glow-casing-fix.mjs pins the no-spear property permanently.
-const CR_GLOW_RINGS = [-20, -13, -9.9, -4.95, 0, 4.95, 9.9, 13, 20]; // signed distances from the centreline: the kerb (4.95), the sample's falloff rings (9.9), and outer rings (13, 20) that carry the low-zoom reach floor's tail (below) - at the picking zooms the falloff is done by 13.95 m and the outer rings just carry alpha 0
+// the glow is a shader (one WebGL layer): a metre-built ribbon mesh, per-pixel falloff, scaling like real paint
+const CR_GLOW_RINGS = [-20, -13, -9.9, -4.95, 0, 4.95, 9.9, 13, 20]; // signed distances: the kerb (4.95), falloff rings (9.9), outer rings (13, 20) carrying the low-zoom floor's tail
 function crGlowRgb(hex) { const n = parseInt(hex.slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; }
-function crGlowStitchFeats(feats) { // Beta 1.216: chain same-colour features whose endpoints coincide into continuous lines, so the mesh is built per continuous run and interior joints get NO end-cap fans (at a joint two fans plus the ribbons composite there and bump the glow - the sample round's secondary contributor). Chaining is by exact endpoint coincidence (1e-9): the sector parts are cut from one line, so true neighbours share their endpoint values
+function crGlowStitchFeats(feats) { // chain coincident same-colour features into lines: interior joints get no end-cap fans (fans composite and bump the glow)
   const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9;
   const lines = [];
   for (const f of feats) {
@@ -1121,7 +947,7 @@ function crGlowStitchFeats(feats) { // Beta 1.216: chain same-colour features wh
   }
   return lines.map(L => ({ type: 'Feature', properties: { col: L.col }, geometry: { type: 'LineString', coordinates: L.coords } }));
 }
-function crGlowBuildMesh(feats) { // features -> one expanded triangle vertex array, 6 floats per vertex: mercator x, y, |distance from the centreline| in metres, r, g, b
+function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 floats per vertex: mercator x, y, |distance| in metres, r, g, b
   feats = crGlowStitchFeats(feats).map(f => ({ type: 'Feature', properties: f.properties, geometry: { type: 'LineString', coordinates: f.geometry.coordinates.filter((c, i, a) => i === 0 || Math.abs(c[0] - a[i - 1][0]) > 1e-12 || Math.abs(c[1] - a[i - 1][1]) > 1e-12) } })); // Beta 1.216: stitch the fed parts into continuous runs and drop repeated consecutive points BEFORE any normal is computed - a repeated point is a zero-length segment with a (0,0) normal, and the miter clamp turns that into a x2.22 spear (the 1.216 note above). The feed itself (syncCrGlow's chosen sectors, 1.209) is unchanged
   const verts = [];
   const push = (x, y, d, rgb) => { verts.push(x, y, d, rgb[0], rgb[1], rgb[2]); };
@@ -1147,7 +973,7 @@ function crGlowBuildMesh(feats) { // features -> one expanded triangle vertex ar
       push(a[0], a[1], da, rgb); push(c[0], c[1], da, rgb); push(b[0], b[1], db, rgb);
       push(b[0], b[1], db, rgb); push(c[0], c[1], da, rgb); push(d2[0], d2[1], db, rgb);
     }
-    for (const endCap of [0, N - 1]) { // round end-cap fans: centre vertex at distance 0, rim at the mesh's 20 m outer edge, five steps sweeping the outward half-circle
+    for (const endCap of [0, N - 1]) { // end-cap fans: centre at distance 0, rim at the 20 m outer edge, five steps sweeping the half-circle
       const i = endCap, sgn = i === 0 ? -1 : 1;
       const dirx = sgn * (i === 0 ? (P[1][0] - P[0][0]) : (P[N - 1][0] - P[N - 2][0])), diry = sgn * (i === 0 ? (P[1][1] - P[0][1]) : (P[N - 1][1] - P[N - 2][1]));
       const dl = Math.hypot(dirx, diry) || 1, dx = dirx / dl, dy = diry / dl;
@@ -1193,7 +1019,7 @@ function crGlowLayerObj() {
       if (this._data) this._dirty = true;
     },
     render(gl, matrix) {
-      if (!this._prog || !this._data || !this._data.length) return; // no glow features: draw nothing AND do not ask for another frame - the breathing repaint runs only while the glow is live
+      if (!this._prog || !this._data || !this._data.length) return; // no features: draw nothing and request no frame - the repaint runs only while the glow is live
       if (this._dirty && this._buf) { gl.bindBuffer(gl.ARRAY_BUFFER, this._buf); gl.bufferData(gl.ARRAY_BUFFER, this._data, gl.DYNAMIC_DRAW); this._dirty = false; }
       const t = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
       const s = 0.5 + 0.5 * Math.sin(2 * Math.PI * ((t % 4) / 4) - Math.PI / 2); // the 4.0 s breath, trough at t=0 (the sample's measured phase form)
@@ -1216,7 +1042,7 @@ function crGlowLayerObj() {
       gl.enableVertexAttribArray(this._aCol); gl.vertexAttribPointer(this._aCol, 3, gl.FLOAT, false, 24, 12);
       gl.uniformMatrix4fv(this._u.matrix, false, matrix);
       gl.uniform1f(this._u.half, 4.95);
-      gl.uniform1f(this._u.reach, Math.max(5 + 4 * s, (crGlowCasingHalfM() - 4.95) * 2.21)); // the breath's reach, with a visibility floor: the create casing balloons in metres toward the z15 anchor (16.8 m wide there since Beta 1.216 narrowed the anchor to 9.75 px - 22 m before - holding those metres below z15, the 1.210 curve), which would swallow a purely metric halo whole at z15 and below (measured in the 1.211 round's QA: at z15 the visible fringe ended inside the casing; at z13 there was none). The floor sizes the reach so the falloff still holds 30% of peak alpha at the casing's edge - (casingHalf - kerb) / (1 - sqrt(0.30)), the 2.21 factor - giving a real fringe past the paint plus a warm tint through the 55%-opaque casing. Beta 1.216 re-verified the floor against the narrowed casing (crGlowCasingHalfM now reads the 9.75 px anchor): at the picking zooms (z16+) the casing half is ~4.2 m - under the 4.95 m kerb itself - so the floor term is <= 0 and the approved sample form runs untouched; at z15 the floor is ~7.6 m and governs only the breath's trough half (the old casing's ~13.4 m floor governed the whole cycle), and the floor's widest falloff (4.95 + ~7.6 = ~12.6 m) stays inside the mesh's 20 m outer rings
+      gl.uniform1f(this._u.reach, Math.max(5 + 4 * s, (crGlowCasingHalfM() - 4.95) * 2.21)); // the reach floor: sized so the falloff holds 30% of peak alpha at the casing's edge when zoomed out
       gl.uniform1f(this._u.peak, 0.50 + 0.30 * s);
       gl.drawArrays(gl.TRIANGLES, 0, this._data.length / 6);
       gl.disableVertexAttribArray(this._aPos); gl.disableVertexAttribArray(this._aDist); gl.disableVertexAttribArray(this._aCol);
@@ -1235,7 +1061,7 @@ function crGlowLayerObj() {
   return crGlowShaderLayer;
 }
 function crGlowSetFeatures(feats) { const layer = crGlowLayerObj(); layer._data = crGlowBuildMesh(feats); layer._dirty = true; if (map && typeof map.triggerRepaint === 'function') map.triggerRepaint(); }
-function crGlowCasingHalfM() { // the draft casing's half-width in metres at the current zoom: its crZoomW anchor (9.75 px since Beta 1.216; 12.75 px through 1.215) holds from z15 up and holds its z15 metres below that (the 1.210 curve), so the metre half-width is 4.875 px x the metres-per-px at max(z, 15) - the repo's own ruler (proof-street-end-width-fix: Web-Mercator, 512 px tiles)
+function crGlowCasingHalfM() { // the casing's half-width in metres here: the crZoomW anchor holds z15 up, and its z15 metres below
   if (!map) return 0;
   const c = map.getCenter(); const lat = c ? c.lat * Math.PI / 180 : 0.765;
   return 4.875 * (40075016.686 * Math.cos(lat)) / (512 * Math.pow(2, Math.max(map.getZoom(), 15)));
@@ -1244,7 +1070,7 @@ function ensureCrGlowLayers() {
   if (!map || typeof map.addLayer !== 'function') return;
   try { if (!map.getLayer('crGlowShader')) map.addLayer(crGlowLayerObj(), 'crDraftCase'); } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
-function syncCrGlow() { // the glow's ONE writer: it carries the sector session's street (in its category colour) exactly while that street's trim view is open, and nothing otherwise - so opening the trim lights the street and every close path (Done, Cancel, stage change, street removal, creation exit) puts it out, because every one of them re-renders the draft or the backdrop, and both call here. Beta 1.209 (Andrew, from his Beta 1.208 phone session): the glow covers the street's CHOSEN sectors only - through 1.208 it carried the whole stitched line, so a sector he tapped OFF turned grey (its draft paint) but kept glowing. The glow is now built from the same sector record renderDraft paints from (crStreetParts + crChosenSet): a removed sector carries no glow, re-adding it restores the glow, and every toggle re-renders the draft, which lands here - so the glow tracks each tap. The sector record is the trim session's own (crOpenSectors opens no session without one); the whole-run line below is only the fallback if that record is ever unavailable mid-session.
+function syncCrGlow() { // the glow's one writer: the session street's chosen sectors, only while trimming; a removed sector never glows
   ensureCrGlowLayers();
   if (!map) return;
   const feats = [];
@@ -1257,13 +1083,13 @@ function syncCrGlow() { // the glow's ONE writer: it carries the sector session'
   }
   crGlowSetFeatures(feats);
 }
-function renderDraft() { // the DRAFT renders through its own GeoJSON source, computed from the draft's own roads - the active route's geometry, engine sources and storage are never touched by the create flow. Beta 1.127: a street carrying a sector pick (or open in sector mode) renders PER SECTOR - chosen sectors in its category colour, unchosen thin grey (the approved mockup's language); every other street renders as its whole line, exactly as before.
+function renderDraft() { // the draft renders from its own roads through its own source: the active route's geometry/storage are never touched
   ensureDraftLayers();
   if (!map || typeof map.getSource !== 'function') return;
   const src = map.getSource(DRAFT_SRC); if (!src) return;
   const feats = [];
   if (draft) {
-    const g = crDraftGeom(); // Beta 1.135 (N3): the shared draft geometry - computed once per geometry change, not once per render
+    const g = crDraftGeom(); // the shared draft geometry: computed once per geometry change, not once per render
     for (const n of draftStreets()) {
       const primary = draft.primaries.has(n) ? 1 : 0;
       const sel = DRAFT.trimOf(n);
@@ -1277,25 +1103,17 @@ function renderDraft() { // the DRAFT renders through its own GeoJSON source, co
     }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
-  syncCrGlow(); // Beta 1.208: the trim glow tracks the draft's own render - the street's normal draft paint is untouched above and below it
+  syncCrGlow(); // the trim glow tracks the draft's own render: the street's normal draft paint is untouched above and below it
 }
-onMapReady(() => map.on('styledata', () => { if (creating) { if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) { // gate fix (Codex P2, PR #158): styledata also fires for paint-only updates - the POI pulse's own frame writes among them - and the restoration below is for basemap swaps only: when the custom layers all still stand, nothing was wiped, so a standing pulse must not rebuild the draft and POI sources frame after frame. A swap wipes the layers atomically, so a missing sentinel IS the swap signal. The ONE order-sensitive piece still runs here: the backdrop hides the loaded route's layers BY ID, and GLP.init re-creates them (visible) after this listener's restoration turn on a swap - if any recorded layer stands visible again, re-apply the backdrop, or the restored route stack shows over the creation map (Codex P2, PR #158 gate round 2)
+// restoration is for swaps only: a missing sentinel is the swap signal; standing layers mean nothing was wiped
+onMapReady(() => map.on('styledata', () => { if (creating) { if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {
     if (crHiddenLayers && (crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }) || CR_ROUTE_LAYERS.some(id => { try { return map.getLayer(id) && !crHiddenLayers.some(pr => pr[0] === id) && (map.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }))) crSetBackdrop(true); // Beta 1.266: an UNRECORDED route layer standing visible fires it too - a layer that lands after the enter snapshot (the stack still building when creation opens, mid-load-in) is not in the record yet, and the recorded-only check would never see it
     return; }
-  renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a basemap swap mid-create wipes custom layers - redraw the draft and re-hide the backdrop. Beta 1.262: the POI surface's layers are custom too - crIsectEnsure re-seats them and re-points the source at the standing POI, so a picked crossing's marker survives a theme swap mid-create
+  renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a swap mid-create wipes custom layers: redraw the draft, re-hide the backdrop, re-seat the POI surface
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
 
-// ---- creation backdrop (Beta 1.120, Andrew's design): while creating, the
-// loaded route's painted streets and selection would cover the very map he
-// is picking from. They hide entirely, and in their place the map shows a
-// POINT OF INTEREST for every route in the database - the same marker the
-// map itself shows when zoomed out (white ring, raspberry dot, the route's
-// name) at each pack's centre (the engine's ROUTEPOI is exactly that
-// centre for the active pack; a pack's `spot` is its per-STREET label
-// anchors, not the route POI). Orientation with zero clutter. The draft's
-// own overlay (crDraft) is untouched, and exitCreate restores the exact
-// visibility every hidden layer had before. ----
-const CR_ROUTE_LAYERS = GLP.layers.stack;   // Beta 1.207: t1-edge/t1-sele retired with the kerb-line paint - the fill layers (t1-fill/t1-selfill) take their place in the hide list. Beta 1.264: the Beta 1.259 feather layers join the list in the engine's stack order (the board fades after t1-fill, the selection fades after t1-selfill) - through 1.263 they were missing, so the loaded route's feather tips rendered over the creation map. Beta 1.282 (#13): the list itself is no longer spelled here at all - it IS the engine catalogue's stack (paint + poi + titles + glow, in stack order), read through GLP.layers; the title layers hide in the create backdrop again (the pre-1.258 shape). Membership is not hand-kept on trust: proof-1264 derives the route stack from engine.js's addStack and fails if a stack layer is missing from the catalogue
+// ---- creation backdrop ---- the loaded route's paint hides while creating; a POI marks each route's centre; exit restores visibility
+const CR_ROUTE_LAYERS = GLP.layers.stack;   // the hide list is the engine's stack via GLP.layers, never hand-kept: proof-1264 fails on any gap
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
 function crPoiFeatures() {
@@ -1324,12 +1142,13 @@ function ensureCrPoiLayers() {
 function crSetBackdrop(on) {
   if (!map || typeof map.setLayoutProperty !== 'function') return;
   if (on) {
-    const crVisPair = (id) => [id, map.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot pair records the layer's live visibility - with the name hold retired there is no transient state to see through, so the live value IS the natural
+    const crVisPair = (id) => [id, map.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot records the layer's live visibility (the live value is the natural one now)
     if (!crHiddenLayers) {
       crHiddenLayers = [];
       for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }
     } else {
-      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id) && !crHiddenLayers.some((pr) => pr[0] === id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} } // Beta 1.266: the top-up - a route layer that lands after the enter snapshot (the stack still building when creation opens) joins the record here, so the hide below covers it from its first frame under creation
+      // a route layer landing after the snapshot joins the record here, so the hide covers its first frame
+      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id) && !crHiddenLayers.some((pr) => pr[0] === id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }
     }
     for (const pair of crHiddenLayers) { try { map.setLayoutProperty(pair[0], 'visibility', 'none'); } catch (e) {} }
     ensureCrPoiLayers();
@@ -1338,45 +1157,41 @@ function crSetBackdrop(on) {
     for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
     try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
   }
-  // Beta 1.265 (Andrew): the backdrop flip is also the naming flip - while
-  // creating, the basemap names every street (glUnifyLabels lifts its
-  // route-name exclusion under the create-mode state); on exit the exclusion
-  // returns. Re-running the label pass here lands the change at enter/exit
-  // themselves instead of at the next restack; enterCreate sets `creating`
-  // before crSetBackdrop(true) and exitCreate clears it before
-  // crSetBackdrop(false), so the pass computes the right side both ways.
+  // the backdrop flip is the naming flip: creating lifts the route-name exclusion; exit returns it
   try { if (typeof glUnifyLabels === 'function') glUnifyLabels(map); } catch (e) {}
-  syncCrGlow(); // Beta 1.208: the backdrop flip is the creation exit's reliable beat - if a trim session somehow outlived its render, the glow still dies here
+  syncCrGlow(); // the exit's reliable beat: if a trim session outlived its render, the glow still dies here
 }
 function crRowEl(n, g) {
   const row = document.createElement('div'); row.className = 'crRow';
   const primary = draft.primaries.has(n);
   const dot = document.createElement('span'); dot.className = 'crDot ' + (primary ? 'primary' : 'sec'); row.appendChild(dot);
-  const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // Beta 1.144 (DA-04): rows display the short name; the draft key behind them is the full map name
-  const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln); // Beta 1.130 (maintainability re-scan N1): the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total - through 1.129 this read g[n].total, so a sector-trimmed street showed its WHOLE length on the check screen while the panel billed the trim and the preview's own total (renderCrLists sums crStreetChosenM) disagreed with its rows
+  const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(n); row.appendChild(nm); // rows display the short name; the draft key behind them is the full map name
+  // the preview's rows bill the CHOSEN length through the same helper as the panel's rows and every total
+  const ln = document.createElement('span'); ln.className = 'crLen'; ln.textContent = fmtLenM(crStreetChosenM(n, g)); row.appendChild(ln);
   const chip = document.createElement('button'); chip.className = 'crChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', () => DRAFT.togglePrimary(n)); // Architecture #14: the toggle lives on the DRAFT owner
+  chip.addEventListener('click', () => DRAFT.togglePrimary(n)); // the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
-  del.addEventListener('click', () => crRemoveStreet(n)); // Beta 1.127: the shared removal path (sector state leaves with the street)
+  del.addEventListener('click', () => crRemoveStreet(n)); // the shared removal path (sector state leaves with the street)
   row.appendChild(del);
   return row;
 }
-function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2): one short row per picked road - category dot, name, "Entire road · X m" or "N of M sectors · X m", the PRIMARY/SECONDARY chip IN the row (one tap flips the road's type), x to remove; tapping the row itself opens the street's sector trimming
+function crPanelRowEl(n, g) { // one row per road: dot, name, length, in-row type chip, x to remove; row tap opens trimming
   const primary = draft.primaries.has(n);
   const row = document.createElement('div'); row.className = 'crPRow';
   const dot = document.createElement('span'); dot.className = 'crDot ' + (primary ? 'primary' : 'sec'); row.appendChild(dot);
   const meta = document.createElement('span'); meta.className = 'crPMeta';
-  const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // Beta 1.144 (DA-04): display form, as in the preview rows
+  const nm = document.createElement('span'); nm.className = 'crPName'; nm.textContent = shortStreetName(n); meta.appendChild(nm); // display form, as in the preview rows
   const sub = document.createElement('span'); sub.className = 'crPSub';
   const sel = DRAFT.trimOf(n);
   if (sel) { const rec = crStreetParts(n); sub.textContent = sel.length + ' of ' + (rec ? rec.parts.length : sel.length) + ' sectors · ' + fmtLenM(crStreetChosenM(n, g)); }
-  else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // Beta 1.128: the adjust affordance is stated BEFORE any trim exists - in 1.127 it appeared only after one, so an untrimmed row gave no hint it could be tapped at all
+  else sub.textContent = 'Entire road · ' + fmtLenM(g[n] ? g[n].total : 0); // the adjust affordance is stated BEFORE a trim exists: an untrimmed row must hint it can be tapped at all
   meta.appendChild(sub);
-  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap a road to adjust sectors'; meta.appendChild(hint); // Beta 1.208 (Andrew): the instruction gets its OWN line under the length line - through 1.207 it rode the same line after an em dash. Beta 1.242 (Andrew): the words are his exact words - through 1.241 the line read 'Tap row to adjust'. WORDING ONLY: he sampled restyles (bolder, app blue, pill, footnote, extra air) and rejected them all - the styling stays the original .crPSub
+  // the instruction gets its own line under the length line, in Andrew's words; the styling stays .crPSub
+  const hint = document.createElement('span'); hint.className = 'crPSub'; hint.textContent = 'Tap a road to adjust sectors'; meta.appendChild(hint);
   row.appendChild(meta);
   const chip = document.createElement('button'); chip.className = 'crPChip ' + (primary ? 'primary' : 'sec'); chip.textContent = primary ? 'PRIMARY' : 'SECONDARY';
-  chip.addEventListener('click', e => { e.stopPropagation(); DRAFT.togglePrimary(n); }); // Architecture #14: the toggle lives on the DRAFT owner
+  chip.addEventListener('click', e => { e.stopPropagation(); DRAFT.togglePrimary(n); }); // the toggle lives on the DRAFT owner
   row.appendChild(chip);
   const del = document.createElement('button'); del.className = 'crPDel'; del.textContent = '✕'; del.title = 'Remove ' + shortStreetName(n);
   del.addEventListener('click', e => { e.stopPropagation(); crRemoveStreet(n); });
@@ -1386,104 +1201,91 @@ function crPanelRowEl(n, g) { // Beta 1.127 (Andrew's approved mockup, screen 2)
 }
 function renderCrLists() {
   if (!draft) return;
-  const g = crDraftGeom(); // Beta 1.135 (N3): shares renderDraft's computation through the draft geometry cache
+  const g = crDraftGeom(); // shares renderDraft's computation through the draft geometry cache
   const names = draftStreets().sort((a, b) => a.localeCompare(b));
-  let tot = 0; for (const n of names) tot += crStreetChosenM(n, g); // Beta 1.127: totals bill CHOSEN lengths - a trimmed street's unchosen ends never count
-  $('crCount').textContent = names.length + ' roads · ' + fmtLenM(tot); // Beta 1.127: the panel header's count in the mockup's shape ("3 roads · 2,410 m")
+  let tot = 0; for (const n of names) tot += crStreetChosenM(n, g); // totals bill CHOSEN lengths: a trimmed street's unchosen ends never count
+  $('crCount').textContent = names.length + ' roads · ' + fmtLenM(tot); // the panel header's count in the mockup's shape ("3 roads · 2,410 m")
   $('pvCount').textContent = names.length + ' streets · ' + draft.primaries.size + ' primaries · ' + fmtLenM(tot); // the preview keeps its fuller count line
   { const el = $('crPickList'); el.innerHTML = ''; for (const n of names) el.appendChild(crPanelRowEl(n, g)); }
   { const el = $('pvList'); el.innerHTML = ''; for (const n of names) el.appendChild(crRowEl(n, g)); }
-  for (const pk of Object.keys(crPending).sort()) { // Beta 1.121: pending streets (shape reaches past verified coverage) list in the PICK sheet only - never in the preview, never in the count, never saved
-    if (Object.prototype.hasOwnProperty.call(draft.roads, pk)) continue; // Beta 1.169 (Carbon fix round, D-05): an OWN-key test, not a truthiness read - on a plain draft map 'constructor' / 'toString' read truthy through the prototype, so a pending street carrying one of those names was hidden from this list: its row never rendered, so it could neither be seen nor dropped
+  for (const pk of Object.keys(crPending).sort()) { // pending streets list in the PICK sheet only: never in the preview, never in the count, never saved
+    if (Object.prototype.hasOwnProperty.call(draft.roads, pk)) continue; // an own-key test, not truthiness: 'constructor'/'toString' read truthy via the prototype and hid the pending row
     const row = document.createElement('div'); row.className = 'crRow pending';
     const dot = document.createElement('span'); dot.className = 'crDot sec'; row.appendChild(dot);
-    const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(pk); row.appendChild(nm); // Beta 1.144 (DA-04): display form
+    const nm = document.createElement('span'); nm.className = 'crName'; nm.textContent = shortStreetName(pk); row.appendChild(nm); // display form
     const chip = document.createElement('span'); chip.className = 'crChip pend'; chip.textContent = 'PENDING'; row.appendChild(chip);
     const del = document.createElement('button'); del.className = 'crDel'; del.textContent = '✕'; del.title = 'Drop ' + shortStreetName(pk);
     del.addEventListener('click', () => { delete crPending[pk]; renderCrLists(); });
     row.appendChild(del);
     $('crPickList').appendChild(row);
   }
-  $('crStripTitle').textContent = names.length ? names.length + (names.length === 1 ? ' road' : ' roads') + ' picked' : 'No roads picked yet'; // the tucked-away bar always carries the state (mockup screen 4) - Beta 1.128: at zero picks it says so, because the bar now exists at zero too
+  $('crStripTitle').textContent = names.length ? names.length + (names.length === 1 ? ' road' : ' roads') + ' picked' : 'No roads picked yet'; // the bar always carries the state: at zero picks it says so (the bar exists at zero too)
   $('crStripSub').textContent = names.length ? fmtLenM(tot) + ' · tap Review to see them' : 'Tap roads on the map to add them';
   $('crDoneBtn').disabled = !names.length;
-  $('crDoneBtn').textContent = 'Done'; // Beta 1.128 (Andrew): one word, ALWAYS - the 1.127 "Looks right" / "Done - back to check" rewrite is gone with the confusion it caused; Done goes to the check screen from the fresh state and the return-from-preview state alike
+  $('crDoneBtn').textContent = 'Done'; // one word, ALWAYS: Done goes to the check screen from the fresh state and the return state alike
   $('pvSaveBtn').disabled = !names.length;
   syncCrPanel();
 }
 let crConfirmCb = null;
-let crConfirmOneBtn = false; // Beta 1.132: true while the current confirm wears the one-button shape (the discard ask)
+let crConfirmOneBtn = false; // true while the current confirm wears the one-button shape (the discard ask)
 function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModalNo').classList.toggle('cancelRed', !!labels && labels.no === 'Cancel'); $('crModalNo').style.display = crConfirmOneBtn ? 'none' : ''; $('crModalX').style.display = crConfirmOneBtn ? '' : 'none'; $('crModal').classList.remove('hidden'); } // Beta 1.229 (Andrew's universal rule): when the No button reads 'Cancel' it wears the red too (the #crModalNo.cancelRed rule, head.html) - the toggle rides the label, so the plain ✕ form is untouched // Beta 1.124: labels are optional; route deletion passes {yes:'Delete', no:'Cancel', danger:true}. Beta 1.132 (Andrew): the DISCARD ask (askDiscard) passes {oneBtn:true} and changes shape - ONE red Discard button, nothing else in the row; dismissal lives on the card's plain red corner X (crModalX, styled by the shared corner-X rule in head.html) and on a tap of the backdrop, and dismissing always means keep editing. Every other confirm keeps its two-button row exactly as before. The card itself is the --card token surface in BOTH themes - the confirm never hardcodes a light background.
 function crConfirmDismiss() { $('crModal').classList.add('hidden'); crConfirmCb = null; }
 $('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
 $('crModalX').addEventListener('click', crConfirmDismiss);
-$('crModal').addEventListener('click', (e) => { if (crConfirmOneBtn && e.target === $('crModal')) crConfirmDismiss(); }); // Beta 1.132: a backdrop tap dismisses ONLY in the one-button shape
+$('crModal').addEventListener('click', (e) => { if (crConfirmOneBtn && e.target === $('crModal')) crConfirmDismiss(); }); // a backdrop tap dismisses ONLY in the one-button shape
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); const bl = $('brandLayer'); if (bl) bl.classList.add('parked'); /* Beta 1.155: the title lives in its own layer now, not inside the menu - the park hides it explicitly (through 1.154 it hid as the menu's child) */ crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('parked'); /* Beta 1.155: revive the title layer with the picker */ }
 function setCreateStage(stage) {
-  if (stage !== 'pick') crSectorReset(); // Beta 1.127: sector mode belongs to the pick stage - the preview never inherits a half-trimmed street's bar (Beta 1.129: its Cancel snapshot dies with it)
+  if (stage !== 'pick') crSectorReset(); // sector mode is pick-stage only: the preview never inherits its bar (the Cancel snapshot dies with it)
   crStage = stage;
   $('createBar').classList.toggle('on', stage === 'pick');
-  if (stage === 'pick') crSyncClear(); // Beta 1.227: a search text that outlives a stage change shows its clear disc again with the bar
+  if (stage === 'pick') crSyncClear(); // a search text that outlives a stage change shows its clear disc again with the bar
   $('createSheet').classList.toggle('on', stage === 'pick');
   $('previewSheet').classList.toggle('on', stage === 'preview');
   $('createResults').classList.remove('on');
   $('createHint').classList.toggle('on', stage === 'pick');
-  if (stage === 'pick') crRenderHint(); else $('crHintBtn').style.display = 'none'; // Beta 1.121: the hint is state-driven now (crRenderHint owns it) - the preparation state must survive stage changes, not be overwritten by a static line
+  if (stage === 'pick') crRenderHint(); else $('crHintBtn').style.display = 'none'; // the hint is state-driven (crRenderHint owns it): the preparation state must survive stage changes, not be overwritten
   renderCrLists(); renderDraft();
   if (stage === 'preview') fitDraft();
 }
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
-  // Beta 1.223: the 1.153 confirmation-pill reset that stood here retires with the pill clock itself (see the crRenderHint note)
-  crSectorReset(); crSectorSession.collapsed = false; crSettleMorph(); // Beta 1.127: every creation starts un-trimmed with the panel up (Beta 1.129: any surface morph a previous creation left in flight lands first)
+  crSectorReset(); crSectorSession.collapsed = false; crSettleMorph(); // every creation starts un-trimmed with the panel up (any morph an earlier creation left in flight lands first)
   crSession++; // a fresh creation session: async completions born in any earlier session are obsolete from here (CG-PF-05)
   document.body.classList.add('creating');
-  followPaused = true; // the camera belongs to the picking now; GPS is device state and is not stopped - follow resumes from the Locate tab afterwards
+  followPaused = true; // the camera belongs to the picking; GPS is device state, not stopped: follow resumes from Locate afterwards
   try { deselect(); } catch (e) {} closeSheets();
   if (routeLoaded) closeRouteMenu(); else parkBootChrome();
-  crSetBackdrop(true); // Beta 1.120: the loaded route's paint steps aside for the picking (POIs only) - see crSetBackdrop
+  crSetBackdrop(true); // the loaded route's paint steps aside for the picking (POIs only) - see crSetBackdrop
   setCreateStage(stage);
 }
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crAreaGuess = '';
-  // Beta 1.223: the 1.153 pill-clock teardown that stood here retires with the clock itself
-  crSectorReset(); crSectorSession.collapsed = false; // Beta 1.127: the panel + sector session state dies with the creation. Beta 1.169 (Carbon fix round, D-01): through 1.168 these two calls sat AFTER the 1.153 comment's slashes on the line above - inside the comment, dead since the line was written. enterCreate's own reset on the next entry fenced the consequence (the state merely outlived the exit instead of dying with it); the calls stand on their own line now and run.
-  crSession++; crCovGen++; // every async completion born in this session is obsolete the moment the flow closes - it must not land in a later draft, hint or busy state (CG-PF-05)
+  crSectorReset(); crSectorSession.collapsed = false; // panel + session state dies with the creation; these calls stand on their own line and run
+  crSession++; crCovGen++; // completions born in this session are obsolete at close: they must not land in a later draft
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } // and the downloads themselves stop (CG-PF-10)
   if (crGrid) { crGridStop('exit'); crGrid = null; } // the grid's downloads stop too; its committed cells live on in the on-device city cache, by design
-  crCacheNote = ''; crCacheNoteCity = ''; // Beta 1.143 (DA-06): the owner binding resets with the note - no failure state outlives the session
-  crPackCtx = null; crPackNote = ''; // Beta 1.123: the pack context belongs to the closed session's city - the next creation re-decides its source
+  crCacheNote = ''; crCacheNoteCity = ''; // the owner binding resets with the note: no failure state outlives the session
+  crPackCtx = null; crPackNote = ''; // the pack context belongs to the closed session's city: the next creation re-decides its source
   crAbortOp(crTopOp); crTopOp = null;
-  crCov = null; crCity = null; crSetPrepState('none'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null; // Beta 1.154 (B3 build): the state write routes through the prep record's setter, and crFailFromGrid clears with the session (the 2026-11-09 lifecycle trace's latch finding) - it must not survive into a new session
+  // state routes through the setter; crFailFromGrid clears with the session, never surviving into a new one
+  crCov = null; crCity = null; crSetPrepState('none'); crPrepFail = null; crFailFromGrid = false; crPrepAnchor = null; crPending = {}; crToppedUp = {}; crWanted = null;
   $('crHintBtn').style.display = 'none';
-  crResetSearch(); // Beta 1.243 (Arch-3): the flow close ends the search through the owner, like every closing seat - no in-flight suggestion may land after the flow has closed
-  crIsectClear(); // Beta 1.236 (Andrew): the typed street dies with the session too - through 1.235 this teardown closed the results and killed the in-flight search but never cleared the field itself, so the last typed street (his report: 'Weston') sat in the bar when a later creation opened, in any city; the clear disc's path was the only seat that ever emptied it. The disc's own state follows the field through crSyncClear, the same call that path makes. Beta 1.262: the emptying runs through the POI surface's teardown (crIsectClear), so a live crossing marker dies with the session here too, not just its name.
+  crResetSearch(); // the close ends the search through the owner: no in-flight suggestion lands after the flow closes
+  crIsectClear(); // the street text dies with the session: emptying runs through crIsectClear, so a crossing's marker dies too
   document.body.classList.remove('creating');
   for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults', 'createHint']) $(id).classList.remove('on');
-  crSetBackdrop(false); // Beta 1.120: the loaded route's paint returns exactly as it was
+  crSetBackdrop(false); // the loaded route's paint returns exactly as it was
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
-function openDoors() { crWarmCityLibrary(); if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); } // Beta 1.124: the doors pane needs no render on entry - the city list renders when ITS door is tapped. Beta 1.130: the doors ARE the create gate - opening them starts the catalogue download (crWarmCityLibrary), so it is in hand by the list tap
+function openDoors() { crWarmCityLibrary(); if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); } // opening the doors starts the catalogue download, so it is in hand by the list tap
 function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then, { oneBtn: true }); else then(); }
 function fitDraft() {
   if (!draft || !map) return;
-  const bb = computeRouteBox(crFilteredRoads()); if (!bb) return; // Beta 1.127: the preview frames what will save (chosen sectors), not the whole streets. Beta 1.267: an empty draft computes no box, so no flight fires - the guard above is the no-flight rule.
-  // Beta 1.269 (Andrew, from his live 1.267 session): the flight is FLAT
-  // overhead (pitch 0) and fits the draft into the map area the Review
-  // sheet leaves VISIBLE - the sheet covers the screen's bottom, so the
-  // fit's bottom padding is the sheet's own MEASURED height plus a 24 px
-  // comfort margin: the whole draft lands above the sheet, zoomed in just
-  // enough to fill that space, nothing hidden behind the sheet. The sheet
-  // is measured at flight time, never a guessed constant - its height
-  // varies with the draft's street count. The fit itself is still
-  // cameraForBounds (goHomeView's recipe, no pitch folded in) and the
-  // motion family is still the load-in flight's (flyTo, curve 1.2).
-  // Beta 1.267 flew this same fit tilted to pitch 45 over the FULL
-  // screen; on device the draft's lower half slid under the sheet and
-  // the tilt read wrong against it, which is the report this replaces.
+  const bb = computeRouteBox(crFilteredRoads()); if (!bb) return; // the preview frames what will save (chosen sectors); an empty draft computes no box and fires no flight
+  // flight is flat overhead, fitting the draft above the sheet: bottom padding is measured height + 24 px
   const sheet = $('previewSheet');
   const pad = { top: 56, left: 56, right: 56, bottom: (sheet ? sheet.offsetHeight : 0) + 24 };
   const b = [[bb.w, bb.s], [bb.e, bb.n]];
@@ -1491,97 +1293,66 @@ function fitDraft() {
   if (fit && fit.center && typeof fit.zoom === 'number') { try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 0, bearing: 0, duration: 2000, curve: 1.2, essential: false }); return; } catch (e) {} }
   try { map.fitBounds(b, { padding: pad, pitch: 0, duration: 800 }); } catch (e) {}
 }
-$('crExit').addEventListener('click', () => { // Beta 1.227 (Andrew): the back pill ONLY goes back - it runs the exit the old ✕ ran once the search was empty (discard confirm, exit creating, the doors if boot). Clearing the search is the bar's own clear disc now: through 1.226 this one button carried both jobs (Beta 1.120: clear first, exit second), the two-meanings-one-button confusion the redesign removes
+$('crExit').addEventListener('click', () => { // the back pill only goes back; clearing the search is the clear disc's job - one button, one job
   askDiscard(() => { const wasBoot = !routeLoaded; exitCreate(); if (wasBoot) openDoors(); });
 });
 $('pvStartOverBtn').addEventListener('click', () => askDiscard(() => { exitCreate(); openDoors(); }));
 
 // ---- The doors: city first (Andrew's amendment) -> prepare the area's street shapes once -> tap roads, resolved locally ----
-$('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Beta 1.124: Select from list - the city rows render fresh on every entry to the list pane
+$('crDoorList').addEventListener('click', () => { showRmPane('rmCityListPane'); crRenderCityChoices(); }); // Select from list: the city rows render fresh on every entry to the list pane
 $('rmCityListBack').addEventListener('click', () => showRmPane('rmCreatePane')); // the list pane backs to the doors pane (the mockup's pane-to-pane Back chain)
-$('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // Beta 1.147: opening the city pane starts a fresh draft, so a live draft asks first; askDiscard no-ops on an empty draft.
-$('crCityInput').addEventListener('input', () => { // Beta 1.143 (DA-12, verify cycle 1): EVERY input change invalidates the in-flight search AT THE EVENT - bump + abort here, not when the debounce next runs the search (a response landing inside the 500 ms window otherwise renders into a field the user has already moved past). The street search's handler below has always had this shape; crRunCitySearch's own bump remains the backstop for programmatic calls
-  crResetCitySearch(); // Architecture #19: the invalidation runs through crResetCitySearch, the one owner - the seat's own remaining work is the re-arm below
-  if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // Beta 1.229: the clear animates like every other results change
-  const armSeq = crCitySeq; // the invalidation above settled the sequence for THIS input; a public search starting before the timer fires bumps it again, and the type-ahead then stands down - its render would land on top of the search's own answer, or re-fill the honest empty box a failed search leaves (drive153 D5's masquerade, in local form)
-  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // issue #180: the debounce runs the on-device type-ahead - the public search fires only from its own row
+$('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = newDraft(); crOpenCityPane('doors'); }); }); // opening the pane starts a fresh draft, so a live draft asks first (askDiscard no-ops on an empty draft)
+$('crCityInput').addEventListener('input', () => { // every input change invalidates at the event (bump + abort): no late answer renders into a moved-past field
+  crResetCitySearch(); // the invalidation runs through crResetCitySearch, the one owner; the seat's own remaining work is the re-arm below
+  if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the clear animates like every other results change
+  const armSeq = crCitySeq; // the invalidation settled the sequence; a search starting first bumps it again and the type-ahead stands down
+  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // the debounce runs the on-device type-ahead: the public search fires only from its own row
 });
-// Beta 1.229 (Andrew): the 'Use <city>' last-city shortcut is REMOVED whole - the button (head.html), this handler, and its Nominatim name re-resolution. The shortcut re-resolved the remembered NAME and silently took the first place hit: Aurora, Ontario's name landed on Aurora, Illinois, whose grid load then sat at 0% (Andrew's live repro, 2026-11-17). Andrew ruled the button makes no sense to him; the bug is now impossible rather than patched - NO path resolves a typed or remembered city NAME to a place at search time. Typed searches answer from the on-device gazetteer (crRunCityTypeahead; issue #180 - the public service is asked only on the explicit search-online tap, through the Ontario-scoped crRunCitySearch), list picks through the catalogue, and the remembered area's remaining reader is the city list itself (its sort + 'last used' tag in crRenderCityChoices), which is why crPickCity's lsSet(LS_GLOBAL.lastArea) write stays.
+// no path resolves a name to a place at search time: names answer from gazetteer or catalogue
 $('crCityBack').addEventListener('click', () => {
-  crResetCitySearch(); // Beta 1.143 (DA-12): leaving the pane kills a held city search too - request AND pending debounce, as reopening does. Architecture #19: the close runs through crResetCitySearch, the one owner
+  crResetCitySearch(); // leaving the pane kills a held city search too (request AND pending debounce), through crResetCitySearch, the one owner
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
   else { showRmPane('rmCreatePane'); }
 });
 $('crCityChange').addEventListener('click', () => crOpenCityPane('pick'));
-$('crHintBtn').addEventListener('click', () => { // Beta 1.253 (#20): the action is the SAME decision that labelled the button (crHintAction, above crRenderHint) - this handler dispatches, it no longer re-interprets the state, so a label can never promise one remedy while the click delivers another
+$('crHintBtn').addEventListener('click', () => { // the action is the same decision that labelled the button (crHintAction): the handler dispatches, never re-interprets
   const act = crHintAction().act;
   if (act === 'cancel') { crCancelPrep(); return; }
   if (act === 'wanted') { crStartPrep(crWanted.anchor); return; } // an outstanding offer (outside-coverage tap / pending street) prepares exactly where it points - it outranks the state remedies
   if (act === 'resume') { crGridResume(); return; } // Resume / Retry missing parts / a failed grid's Retry: only the missing cells fetch (amendments A+B)
   if (act === 'retry-anchor') { if (crPrepAnchor) crStartPrep(crPrepAnchor); return; } // a failed box's Retry: the same anchor again
-  if (act === 'prepare-centre') { if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } return; } // Prepare this area (the dense remedy, CG-PF-09, and the zoomed-in none state): the anchor is the map centre he is looking at. (Beta 1.153: the ready state's Refresh dispatch is GONE with the button - a healthy cached city offers no reload, so no decision routes there to crGridRefresh any more.)
+  if (act === 'prepare-centre') { if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } return; } // Prepare this area: the anchor is the map centre he is looking at
 });
 onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); })); // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
-// Beta 1.120 (Andrew): search AS YOU TYPE. 1.118/1.119 searched only on
-// the Search button - his call then; on the phone he asked for
-// suggestions while typing, and this supersedes it. The volume stays
-// honest: a keystroke burst becomes ONE query (300 ms debounce since
-// Beta 1.227, 3+ characters), and Enter still runs the typed query
-// immediately. Beta 1.227: the Search button is GONE - the bar is one
-// blue pill now - so typing and Enter are the only triggers, both onto
-// this same crRunSearch path. Beta 1.234: the answers are computed
-// on-device and land synchronously (see crRunSearch), so there is no
-// in-flight answer left to abort or supersede - the sequence token
-// below remains the family's invalidation seat (the clear disc, the
-// short-query return, the row pick, the outside tap and the flow close
-// all bump it, and a pending debounce is cleared at the same seats, so
-// a dismissed search can never reopen the box).
+// search as you type (300 ms debounce, 3+ characters, one query per burst); Enter runs it immediately
 let crSearchTimer = null, crSearchSeq = 0;
-function crResetSearch() { // Beta 1.243 (Arch-3, architecture scan candidate 3): THE search-close owner. Ending the street search was spelled out at five seats (the flow close in exitCreate, the clear disc, the short-input return, the outside-tap dismissal, the result-row pick) - every one of them the same three moves: clear the pending debounce, bump the sequence (the family's invalidation - crSearchCurrent answers to it), hide the results box. The ritual lives here now; the seats keep only their own extras (the flow close still empties the field, the disc still refocuses it). crSearchCtl is REMOVED with it: the fetch it aborted retired in Beta 1.234 when the search went on-device, it was never assigned again, and its abort clause no-opped on null at every seat - dead machinery, out cleanly rather than carried by the owner.
+function crResetSearch() { // the search-close owner: clear the debounce, bump the sequence, hide the box; seats keep only their own extras
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSearchSeq++;
   $('createResults').classList.remove('on');
 }
-function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); } // Beta 1.227: the clear disc exists only while the input holds text
-// ---- Beta 1.262 (Andrew, 2026-11-20): the intersection POI - ONE
-// temporary surface for a picked crossing. Through 1.261 a search pick
-// flew the map and left the bar holding the typed fragment: the
-// crossing he had chosen was named nowhere and marked nowhere. The
-// surface is a pair with ONE lifecycle - the full intersection name in
-// the search bar and a marker on the crossing - set together by
-// crIsectSet at the pick and cleared together by crIsectClear, "as if
-// it was never there", at the first road selection (crAddStreet /
-// crAddRun), at the clear disc, when the search text is emptied, and
-// when the flow closes (exitCreate). The marker is a NATIVE map layer
-// of the GPS stack's own family - a GeoJSON source with two circle
-// layers, drawn by the engine, never a DOM overlay: a solid dot in the
-// app link blue (#2C4AD2), radius 7, NO white ring, and a halo of the
-// same blue swelling to 3x the core while it fades - the motion Andrew
-// confirmed on the recorded sample (cycle 1800 ms, easeOutQuad, halo
-// alpha 0.38 -> 0; intersection-sample-2026-11-20/RECORD3). MOTION
-// CONTRACT: the pulse runs only while the surface stands, and under
-// reduced motion it does not run at all - the halo rests invisible and
-// the steady core alone marks the crossing.
+function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); } // the clear disc exists only while the input holds text
+// ---- intersection POI ---- a picked crossing's name in the bar and marker on the map, set and cleared together
 const CR_ISECT_SRC = 'crIsect';
 let crIsectPoi = null; // { lat, lon, name } while the surface stands, else null
 let crIsectRaf = 0; // the pulse's frame handle; 0 = the pulse is not running
-let crIsectPushed = null; // the point key the source currently holds ('lat,lon', '' for empty, null = unknown - a fresh source always takes a push)
-function crIsectEnsure() { // the surface's layers, (re)seated in the CURRENT style - a basemap swap wipes them, so the styledata hook re-runs this and re-points the source at the standing POI
+let crIsectPushed = null; // the key the source holds ('lat,lon', '' for empty, null = unknown: a fresh source always takes a push)
+function crIsectEnsure() { // the layers, (re)seated in the current style: a swap wipes them, so the styledata hook re-runs this
   if (!map || typeof map.addSource !== 'function') return;
   try {
     if (!map.getSource(CR_ISECT_SRC)) { map.addSource(CR_ISECT_SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }); crIsectPushed = null; }
-    const before = crFirstLabelLayerId(); // the pair stacks BELOW the first label layer, as in the approved sample - the street names draw over the marker, never under it (Beta 1.267: the finder is the shared crFirstLabelLayerId)
+    const before = crFirstLabelLayerId(); // the pair stacks below the first label layer: street names draw over the marker, never under it
     if (!map.getLayer('crIsectHalo')) map.addLayer({ id: 'crIsectHalo', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2', 'circle-opacity': 0, 'circle-radius-transition': { duration: 0, delay: 0 }, 'circle-opacity-transition': { duration: 0, delay: 0 } } }, before); // gate fix (Codex P2, PR #158): the frame loop drives the halo's paint - zero-duration transitions, or MapLibre's default 300 ms paint transition would chase each frame's target, smearing the pulse law and gliding across its cycle reset instead of restarting
     if (!map.getLayer('crIsectDot')) map.addLayer({ id: 'crIsectDot', type: 'circle', source: CR_ISECT_SRC, paint: { 'circle-radius': 7, 'circle-color': '#2C4AD2' } }, before);
     const want = crIsectPoi ? crIsectPoi.lat + ',' + crIsectPoi.lon : '';
-    if (want !== crIsectPushed) { // push only on change - a re-seat that re-pushes the same point every call would feed the styledata cycle the gate fix below guards against
+    if (want !== crIsectPushed) { // push only on change: re-pushing the same point every call feeds the styledata cycle guarded against below
       if (crIsectPoi) map.getSource(CR_ISECT_SRC).setData({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [crIsectPoi.lon, crIsectPoi.lat] } });
       crIsectPushed = want;
     }
   } catch (e) { /* the style may still be loading - the styledata hook retries while creating */ }
 }
-function crIsectHaloRest() { // the halo's rest frame: core-sized and invisible - set explicitly at every stop, so the layer never carries a stale mid-pulse frame into its next standing (a re-set under reduced motion would otherwise show the frozen disc)
+function crIsectHaloRest() { // the halo's rest frame (core-sized, invisible), set at every stop: no stale mid-pulse frame carries forward
   try { if (map && map.getLayer('crIsectHalo')) { map.setPaintProperty('crIsectHalo', 'circle-radius', 7); map.setPaintProperty('crIsectHalo', 'circle-opacity', 0); } } catch (e) {}
 }
 function crIsectPulseStart() {
@@ -1610,20 +1381,20 @@ function crIsectSet(lat, lon, name) { // the surface's ONE writer: state, bar te
   crIsectEnsure();
   crIsectPulseStart();
 }
-function crIsectClear() { // the surface's ONE teardown: state, pulse, marker and bar text die together - each closing seat calls this and keeps only its own extras
+function crIsectClear() { // the one teardown: state, pulse, marker and bar text die together; seats keep only their own extras
   crIsectPoi = null; crIsectPulseStop(); crIsectHaloRest();
   try { if (map && map.getSource(CR_ISECT_SRC)) { map.getSource(CR_ISECT_SRC).setData({ type: 'FeatureCollection', features: [] }); crIsectPushed = ''; } } catch (e) {}
   $('crSearchInput').value = ''; crSyncClear();
 }
-$('crClear').addEventListener('click', () => { // Beta 1.227 (Andrew): the clear disc empties the text and the results and keeps the focus in the input - it never exits anything. The body is the old ✕'s first-press job (Beta 1.120), moved whole onto its own control
-  crResetSearch(); // Beta 1.243 (Arch-3): the close is the owner's - the disc's own remaining work is the field itself (empty it, sync the disc, keep the focus)
-  crIsectClear(); // Beta 1.262: the field emptying runs through the POI surface's teardown - with a picked crossing standing, its marker dies with its name here; with none, this is exactly the disc's old job (the field emptied, the disc synced through crSyncClear)
+$('crClear').addEventListener('click', () => { // the clear disc empties text and results, keeps focus in the input: it never exits anything
+  crResetSearch(); // the close is the owner's; the disc's remaining work is the field (empty it, sync it, keep the focus)
+  crIsectClear(); // the field emptying runs through the POI teardown: a standing crossing's marker dies with its name here
   $('crSearchInput').focus();
 });
 $('crSearchInput').addEventListener('input', () => {
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSyncClear();
-  if (!$('crSearchInput').value) crIsectClear(); // Beta 1.262: backspacing the bar empty ends the POI surface too - the picked name and the marker are one surface, so neither half outlives the other
+  if (!$('crSearchInput').value) crIsectClear(); // emptying the bar ends the POI surface too: name and marker are one surface, neither outlives the other
   const q = $('crSearchInput').value.trim();
   if (q.length < 3) { crResetSearch(); return; }
   crSearchTimer = setTimeout(() => { crSearchTimer = null; crRunSearch(true); }, 300);
@@ -1632,64 +1403,33 @@ function crSearch() { // Enter: cancel any pending debounce and run the typed qu
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crRunSearch(false);
 }
-// Beta 1.154 (B3 build, G3 option (i) - Andrew's decision): THE CURRENT-CHECK
-// CONVENTION. Every counter family's landing guard is a predicate named
-// cr<Family>Current(<that family's own invalidation inputs>), answering one
-// question: "may this landing still write?" The families' shapes DELIBERATELY
-// differ - the 2026-11-09 lifecycle trace proved no unified (gen, session)
-// shape exists: the street-search family below is session-free (its
-// invalidation rides on exitCreate's bump), the city-search family's catch
-// is seq-only while its landing is seq+session (S10 does not bump crCitySeq,
-// so the asymmetry is semantic), and crGeomGen is not a currency counter at all (a
-// cache key - see its declaration). The members: crPrepCurrent(gen,
-// session) + crGridCurrent(g) (create-citydata.js / create-cache.js),
-// crSearchCurrent(seq), crCitySearchCurrent(seq, session) +
-// crCitySearchSeqCurrent(seq). (Beta 1.229: the last-city lookup family -
-// crCityLookupCurrent and its generation - retired with the shortcut.)
+// the current-check convention: each family's guard is cr<Family>Current(its own inputs) - 'may this landing still write?'
 function crSearchCurrent(seq) { return seq === crSearchSeq; } // the street-search family's current-check: the sequence ALONE - no session, by design
 function crRunSearch(fromTyping, cont) {
   const q = $('crSearchInput').value.trim(); if (!q) return;
   const seq = ++crSearchSeq;
   const res = crSearchResolve(q);
-  if (!crSearchCurrent(seq)) return; // the search is synchronous now, so nothing can supersede it mid-run - the check stands because the family's convention (stated above) is that every landing answers to its sequence, and the seats that bump it remain the box's only closers
+  if (!crSearchCurrent(seq)) return; // synchronous now, so nothing supersedes mid-run: the check stands because every landing answers to its sequence
   crRenderRows(res, cont);
 }
-function crRefreshSearch() { // Beta 1.234 fix round 3 (PR #114, Codex P2): coverage landing under an OPEN search re-runs it. A search run before its city's extract finished landing answered against the empty or partial coverage - 'No crossing found', or a crossings list missing the streets still in flight - and through this fix nothing recomputed it: only typing and Enter invoked crRunSearch, so the stale answer stood until the query was edited (in 1.232 the network fallback masked this; with the network gone the stale state is sticky). The refresh triggers are the coverage paths themselves: crCovMerge calls this as it folds each extract in, and crRenderHint's tail calls it too, because every prepare completion path renders the hint as it lands coverage (and the saved-city fold in crCityPrepare rebuilds the index directly, then renders the hint). The guards keep a dismissed search dismissed: every closing seat (the row pick, the clear disc, the outside tap, the short-input return, the flow close) removes the box's 'on' as it bumps the sequence, so a closed box never reopens from here - and the re-run itself routes through crRunSearch, whose own sequence bump and current-check are the family's operative guard, never around them. An empty query has no box and nothing to refresh. The render is a CONTINUATION (cont), not a fresh populate: the same search, its answer arriving - entering rows take the 30ms re-populate stagger. No loop exists: the search reads coverage and merges none, so a refresh can never trigger itself.
+function crRefreshSearch() { // coverage landing under an open search re-runs it; a dismissed search stays dismissed (its box never reopens)
   if (!creating) return;
   const box = $('createResults');
   if (!box.classList.contains('on')) return; // dismissed stays dismissed (see above)
   if (!$('crSearchInput').value.trim()) return; // nothing typed, nothing to refresh
   crRunSearch(false, true);
 }
-// Beta 1.234 (Andrew): THE STREET SEARCH IS INTERSECTIONS ONLY, ANSWERED
-// ENTIRELY ON-DEVICE. Through 1.233 this search asked Nominatim and merged
-// its points with the on-device crossing - and a road name alone names no
-// place: a bare 'Weston' returned four bus stops named Weston and no Weston
-// Road at all, and 'Weston Road' returned the same road at four points
-// 0.7-1.5 km apart, which no merge can honestly collapse. Andrew's design:
-// the search speaks only in intersections, because a crossing IS a place.
-// The network fetch is GONE from this search (the CITY search in this same
-// file is a different search and is untouched) - which also retires the
-// recorded debt that this path's fetch carried no timeout and could hang a
-// render. Every answer below is computed from the loaded extract by the
-// 1.232 machinery (crIntersectionItem / crCrossingsOf), so the search works
-// offline and never invents a crossing the device does not hold.
-// The fetch's controller (crSearchCtl) stood retired with the fetch: it
-// was never created again, and the five closing seats kept an abort clause
-// that no-opped on null exactly as it did whenever no fetch was in flight,
-// their sequence bump being the operative guard. Beta 1.243 (Arch-3)
-// retires the idiom everywhere: crResetSearch owns the close (debounce,
-// sequence, box) and the controller is gone from the declaration and
-// every seat.
+// the search is intersections only, answered entirely on-device: a road name names no place, a crossing is one
 function crSearchResolve(q) { // -> { items, streets } for a render, or { hint } when the live filter yields nothing
   const pair = crIntersectionItem(q); // a fully resolving pair narrows to exactly its crossing (the 1.232 path, unchanged)
   if (pair) return { items: [pair], streets: new Set([pair.display_name.split(' & ')[0]]) };
   const parts = crParseTwoStreets(q);
   const got = parts ? crFragmentPairItems(parts[0], parts[1]) : crFragmentStreetItems(q);
   if (got.items.length) return got;
-  return { hint: crCity ? 'No crossing found - try two streets, like Weston & Rutherford' : 'Choose a city first, then search an intersection' }; // Beta 1.234 (Andrew): the hint is the whole answer when nothing matches - with no city loaded it names the missing step; with one loaded it teaches the intersection form. A street that resolves never sees a hint: it shows its crossings.
+  // the hint is the whole answer on no match: it names the missing step, or teaches the intersection form
+  return { hint: crCity ? 'No crossing found - try two streets, like Weston & Rutherford' : 'Choose a city first, then search an intersection' };
 }
-function crMatchFragment(frag) { // the pack names a typed fragment can mean, best first. A fragment matches when it is a prefix of the street's full name, of the app's short form of it, or of any word of the full name - all on the pair path's normalized keys (crNameKey: lower-case, abbreviations spelled out), so 'Wes' finds Weston Road, 'Ruther' finds Rutherford Road and 'Lang' finds Langstaff Road, live, on incomplete words. Order is closeness: an exact name (or short form) first, then full/short prefixes, then word hits; shorter names before longer within a class, alphabetical on a tie - the grouped list renders in this order and the 40-row cap keeps the closest when it cuts.
+function crMatchFragment(frag) { // names a fragment can mean, best first: a prefix of the name, its short form, or any word
   if (!crCov || !crCov.byName) return [];
   const key = crNameKey(frag); if (!key) return [];
   const scored = [];
@@ -1704,7 +1444,7 @@ function crMatchFragment(frag) { // the pack names a typed fragment can mean, be
   scored.sort((a, b) => a.s - b.s || a.len - b.len || (a.nm < b.nm ? -1 : a.nm > b.nm ? 1 : 0));
   return scored.map(x => x.nm);
 }
-function crAlongSorter(name) { // a crossing's position ALONG one street, as a sort key: the street's own points (every way the extract holds for it) are centred, their dominant direction is taken (the first principal axis of the point cloud, in scaled metres), and a point's key is its projection on that axis. Two plainer ideas failed on the real packs first, in this round's rendered QA: ordering the stitched runs in discovery order scrambles a fragmented road (Weston Road is 20 runs in the Vaughan pack), and chaining the runs end to end is defeated by the road's parallel pieces - divided carriageways and service runs carrying the same name - whose ends chain backwards and interleave the order. A through road never doubles back against its own dominant direction, so the axis orders its crossings in drive order; on a short or looping street the order is approximate and harmless - the list is a finding aid, and every row still names a true crossing.
+function crAlongSorter(name) { // a crossing's sort key: projection on the street's main axis - a through road never doubles back against it
   const ways = (crCov && crCov.byName && crCov.byName[name]) || [];
   let n = 0, mx = 0, my = 0;
   for (const w of ways) for (const p of w.pts) { mx += p[1]; my += p[0]; n++; }
@@ -1717,16 +1457,16 @@ function crAlongSorter(name) { // a crossing's position ALONG one street, as a s
   const ax = Math.cos(th), ay = Math.sin(th);
   return pt => (pt[1] - mx) * kx * ax + (pt[0] - my) * ky * ay;
 }
-function crCrossingRows(name) { // [{ it, other }] - every crossing of ONE street as intersection rows, ordered along the road, one row per cross street (a winding pair can cross twice; the first along the road stands)
+function crCrossingRows(name) { // every crossing of one street, ordered along the road, one row per cross street (the first stands)
   const xs = crCrossingsOf(name); if (!xs.length) return [];
-  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // the pair path's bound (Beta 1.232 fix round 4): the extract's ways run past the boundary, so a crossing outside the picked city is not offered - the same rule, applied to the list
+  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // the pair bound: a crossing outside the city is not offered (the extract's ways run past the boundary)
   const along = crAlongSorter(name);
   const sorted = xs.filter(x => !cityBox || crInBox(cityBox, x.pt[0], x.pt[1])).map(x => ({ other: x.other, pt: x.pt, a: along(x.pt) })).sort((p, r) => p.a - r.a);
   const seen = new Set(), rows = [];
   for (const x of sorted) { if (seen.has(x.other)) continue; seen.add(x.other); rows.push({ it: { lat: String(x.pt[0]), lon: String(x.pt[1]), display_name: name + ' & ' + x.other, address: {}, _isect: true }, other: x.other }); }
   return rows;
 }
-function crFragmentStreetItems(frag) { // one fragment: the crossings of EVERY street it matches, grouped by street in the matcher's closeness order, along the road within a street. The rendered list caps at 40 rows - the closest matches stand when the cap cuts.
+function crFragmentStreetItems(frag) { // one fragment: crossings of every street it matches, grouped in closeness order; the list caps at 40
   const items = [], streets = new Set();
   for (const nm of crMatchFragment(frag)) {
     const rows = crCrossingRows(nm); if (!rows.length) continue;
@@ -1735,7 +1475,7 @@ function crFragmentStreetItems(frag) { // one fragment: the crossings of EVERY s
   }
   return { items, streets };
 }
-function crFragmentPairItems(fa, fb) { // two fragments: crossings whose one side matches the left fragment and whose other side matches the right - the filter applies to BOTH sides (either orientation, as the pair path allows: if the left streets' crossings name no right street, the mirrored scan answers)
+function crFragmentPairItems(fa, fb) { // two fragments: crossings matching both sides, either orientation (the mirrored scan answers when the first names none)
   const A = crMatchFragment(fa), B = crMatchFragment(fb);
   if (!A.length || !B.length) return { items: [], streets: new Set() };
   const streets = new Set();
@@ -1752,79 +1492,77 @@ function crFragmentPairItems(fa, fb) { // two fragments: crossings whose one sid
   if (!items.length) items = scan(B, new Set(A));
   return { items, streets };
 }
-document.addEventListener('pointerdown', (e) => { // Beta 1.120 (Andrew): tapping anywhere outside the results dropdown dismisses it - map taps included (the pick still runs: this only closes the list, in the capture phase, before the map's own click)
+document.addEventListener('pointerdown', (e) => { // tapping outside dismisses it (the pick still runs: this only closes the list, in the capture phase)
   if (!creating) return;
   const box = $('createResults');
   if (!box.classList.contains('on')) return;
   if (e.target && (box.contains(e.target) || $('createBar').contains(e.target))) return;
-  crResetSearch(); // Beta 1.232 fix round 5 (PR #112, Codex P2): dismissing the results ENDS the search too - since fix round 1 the crossing renders while its fetch is still in flight, and un-invalidated that fetch's landing (the success merge, or the catch's crossing re-render under crSearchCurrent) reopened this box over the tap-away that dismissed it. The pending debounce is cleared with it, or it would fire a fresh search 300 ms after the user tapped away. The tap-away itself is untouched: the box still hides here, and the map pick still runs. Beta 1.243 (Arch-3): the close runs through crResetSearch, the one owner - as it does at the row pick, the clear disc, the short-input return and the flow close
+  crResetSearch(); // dismissing ends the search too (via crResetSearch): an un-invalidated landing would reopen the box over the tap-away
 }, true);
-let crRowState = new Map(); // Beta 1.234: the results box's live rows, by row text -> { el, leaving, timer } - the populate animation's bookkeeping (below)
-let crRowCtx = null; // the last render's shape { streets, hint } - a fresh populate (the card fades in, the first screenful staggers) is a new search context: the box was closed, a hint stood (or gives way), or the new rows share no street with the last render's; a typing re-populate (fade-outs, no card fade) is any render that continues the same streets, narrowed or widened
-function crRenderRows(res, cont) { // Beta 1.234 (Andrew, the populate sample he approved): the render is a DIFF, not a rebuild. Entering rows fade in and rise 8px on the city search's own .crRowIn shape; rows that stop matching fade out in place (.crRowOut, removed when the fade lands) instead of vanishing; survivors keep their DOM nodes and never re-stagger on a pure narrow - the stagger is for rows ENTERING. Beta 1.236 (Andrew, from his results-box sample): the populate lands IN SYNC - on a fresh populate the rows are seated first and the CARD fades in with them (the .crCardIn seat at the tail, 160ms), so the box never paints empty and waits; and the entrance stagger now reaches ONLY the first screenful - the first 8 rows by list position, 30ms apart on every render - while a row past the eighth carries no entrance at all and simply rests, already present when scrolled to (through 1.235 every entering row staggered, 55ms apart on a fresh populate across up to 40 rows, so the tail of a long list drifted in for ~2s behind an already-painted card). Under reduced motion the CSS rests the animations and the removal below is instant, so rows simply rest.
+let crRowState = new Map(); // the results box's live rows, by row text -> { el, leaving, timer }: the populate animation's bookkeeping
+let crRowCtx = null; // the last render's shape: a fresh populate is a new context; a typing re-populate continues the same streets
+function crRenderRows(res, cont) { // the render is a diff: entries fade in, leavers fade out in place, survivors keep nodes and never re-stagger
   const box = $('createResults');
   const entries = res.hint ? [{ key: 'hint:' + res.hint, hint: res.hint }] : res.items.map(it => ({ key: it.display_name, it }));
-  const fresh = !cont && (!box.classList.contains('on') || !crRowCtx || crRowCtx.hint !== !!res.hint || (!res.hint && !crSharesStreet(crRowCtx.streets, res.streets))); // fresh = a NEW context. Beta 1.234 fix round 3: a coverage refresh (cont, from crRefreshSearch) is never fresh - it is the SAME search continuing as its answer lands, so its rows take the re-populate path even across the hint-to-rows boundary the rule below otherwise treats as a new context: the box was closed, a hint stands or gives way, or the new rows share no street with the last render's (a different street altogether). Sharing even one street makes it a typing continuation - the same search, narrowed or widened - however different the full street set is ('Wes' fans out to dozens of streets; 'Weston & Ru' is one of them, and the keystrokes between them narrow, they do not restart)
+  // fresh means a new context; a refresh (cont) is never fresh - the same search continuing as coverage lands
+  const fresh = !cont && (!box.classList.contains('on') || !crRowCtx || crRowCtx.hint !== !!res.hint || (!res.hint && !crSharesStreet(crRowCtx.streets, res.streets)));
   const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const keep = new Set(entries.map(e => e.key));
   for (const [key, st] of Array.from(crRowState)) {
     if (keep.has(key)) continue;
     if (fresh || reduced) { if (st.timer) clearTimeout(st.timer); st.el.remove(); crRowState.delete(key); } // a fresh context (or reduced motion) drops the old rows at once - no fade out of a closed box
-    else if (!st.leaving) { st.leaving = true; st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut'); st.timer = setTimeout(() => { st.el.remove(); crRowState.delete(key); }, 190); } // 190ms: just past the 180ms fade, so the node lands after it reads as gone. Beta 1.234 fix round 1 (PR #114, Codex P2): the entrance animation is RELEASED as the exit starts, in two beats - .crRowIn runs fill-mode both, so its final keyframe (opacity 1) kept overriding .crRowOut's opacity 0 and the row stayed opaque until this timer dropped it; and the release must COMMIT before the fade class lands (the forced reflow between them), or the browser folds both changes into one style update, the transition never starts, and the row still jumps straight to invisible (measured both ways in the round's QA: same-task remove+add reads opacity 0 at fade start and at +90ms; remove, reflow, add reads 1, then ~0.24 at +90ms)
+    // 190 ms, just past the fade: the entrance releases first (reflow between), or the fade never starts
+    else if (!st.leaving) { st.leaving = true; st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut'); st.timer = setTimeout(() => { st.el.remove(); crRowState.delete(key); }, 190); }
   }
   let anchor = box.firstChild;
   const place = el => { if (el === anchor) anchor = el.nextSibling; else box.insertBefore(el, anchor); }; // survivors and entering rows take the list's order; leaving rows are stepped over and fade where they stand
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
     let st = crRowState.get(e.key);
-    if (st && e.it) st.el._crItem = e.it; // Beta 1.234 fix round 1 (PR #114, Codex P2): a RETAINED row's pick destination refreshes to the current item on every render. The row text is the reuse key, but the same crossing name in another city's extract - or a different crossing of the same pair, when the nearest-crossing resolver's answer moves within a session - carries different coordinates, and the creation-time click closure would otherwise fly to the stale ones. The click reads _crItem at tap time (crResultRowEl), so a row always picks what it currently displays.
+    if (st && e.it) st.el._crItem = e.it; // a row's destination refreshes every render: the click reads _crItem at tap time, picking what it displays
     if (st && st.leaving) { // narrowed away and back inside one fade: the leave cancels and the row settles back in
       clearTimeout(st.timer); st.timer = null; st.leaving = false; st.el.classList.remove('crRowOut');
-      if (ei < 8) { st.el.classList.add('crRowIn'); st.el.style.animationDelay = (ei * 30) + 'ms'; } // Beta 1.236: the settle-back joins the first-screenful stagger on the same gate as every entrance (below)
+      if (ei < 8) { st.el.classList.add('crRowIn'); st.el.style.animationDelay = (ei * 30) + 'ms'; } // the settle-back joins the first-screenful stagger on the same gate as every entrance (below)
     } else if (!st) {
       const el = e.hint ? crHintRowEl(e.hint) : crResultRowEl(e.it);
-      if (ei < 8) { el.classList.add('crRowIn'); el.style.animationDelay = (ei * 30) + 'ms'; } // Beta 1.236: ONLY the first screenful staggers (the first 8 rows by list position, 30ms steps) - a row past the eighth takes no entrance class and no delay, so it is simply THERE when scrolled to, never still waiting on a stagger tail
+      if (ei < 8) { el.classList.add('crRowIn'); el.style.animationDelay = (ei * 30) + 'ms'; } // only the first 8 rows stagger (30 ms steps): past them a row is there when scrolled to
       st = { el, leaving: false, timer: null }; crRowState.set(e.key, st);
-    } else if (fresh) { // a survivor on a fresh populate: in the first screenful it re-settles with the rest - its node outlived a closed box, so its entrance replays; past the eighth its entrance is stripped instead, so no stale delay from an earlier render can hold it invisible - it rests, already present
+    } else if (fresh) { // a survivor re-settles in the first screenful; past it the entrance strips, so no delay holds it invisible
       if (ei < 8) { st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowIn'); st.el.style.animationDelay = (ei * 30) + 'ms'; }
       else { st.el.classList.remove('crRowIn'); st.el.style.animationDelay = ''; }
     }
     place(st.el);
   }
-  if (fresh) { box.classList.remove('crCardIn'); void box.offsetWidth; box.classList.add('crCardIn'); } // Beta 1.236: the card lands WITH its first screen of names - the fade (the .crCardIn rule, 160ms) restarts through the reflow in this same render, after the rows above are seated, so the box's first painted frame already holds them. Fresh renders only: a typing continuation narrows inside the standing card and never re-fades it.
+  if (fresh) { box.classList.remove('crCardIn'); void box.offsetWidth; box.classList.add('crCardIn'); } // the card fades in with its first names seated (the reflow restarts the fade; fresh renders only)
   box.classList.toggle('on', entries.length > 0);
   crRowCtx = res.hint ? { streets: new Set(), hint: true } : { streets: res.streets, hint: false };
 }
 function crSharesStreet(a, b) { if (!a || !b) return false; for (const s of a) if (b.has(s)) return true; return false; }
-function crHintRowEl(text) { // Beta 1.234: the hint row - a message inside the results card, NOT a result: a plain div (no button, no pin, no handler), so it can be read and never tapped
+function crHintRowEl(text) { // this row is a message in the card, not a result: a plain div, readable, never tappable
   const d = document.createElement('div'); d.className = 'crHintRow'; d.textContent = text; return d;
 }
-function crResultRowEl(it) { // one intersection row: the set's pin + the crossing's name. Beta 1.234: every row this search renders is an on-device crossing, so its display name IS the row text ('Weston Road & Rutherford Road') - the 1.233 name-only rule stands untouched; there is simply no address tail left anywhere in this search to strip, and no 'near' label: the row names its crossing outright.
+function crResultRowEl(it) { // one row: the pin + the crossing's name; the name is the row text (no address tail here)
   const box = $('createResults');
-  const b = document.createElement('button'); b.className = 'crResult'; // Beta 1.227 (Andrew): the row is the set's pin + the name, the pin the set's own teardrop with no chip behind it
+  const b = document.createElement('button'); b.className = 'crResult'; // the row: the set's pin (its own teardrop, no chip behind it) + the name
   const pin = document.createElement('span'); pin.className = 'crPin'; pin.innerHTML = ICONS.pin;
   const nameEl = document.createElement('span'); nameEl.className = 'crName'; nameEl.textContent = it.display_name;
   b.append(pin, nameEl);
-  b._crItem = it; // Beta 1.234 fix round 1 (PR #114, Codex P2): the destination this row picks - crRenderRows refreshes it on every render that retains the row, and the click below reads it at tap time, never the creation-time item alone
+  b._crItem = it; // the destination this row picks, refreshed on every retaining render; the click reads it at tap time
   b.addEventListener('click', () => {
-    crResetSearch(); // Beta 1.232 fix round 3 (PR #112, Codex P2): selecting a result ENDS the search - the pending debounce is cleared and the sequence bumped at this seat exactly as at the clear disc and the flow close, or a late keystroke burst would reopen the box over the destination just picked. Beta 1.234: with the search synchronous there is no in-flight landing left; the seat's form stands because the debounce + sequence ARE the search's invalidation now. Beta 1.243 (Arch-3): the close runs through crResetSearch, the one owner
-    const cur = b._crItem || it; // the item this row displays NOW (see _crItem above) - a retained row re-rendered with another city's same-named crossing picks the new coordinates, not its first render's
+    crResetSearch(); // a result pick ends the search (via crResetSearch): debounce cleared, sequence bumped, or a burst reopens it
+    const cur = b._crItem || it; // the item the row displays now: a re-rendered row picks its crossing's coordinates, not its first render's
     const lat = parseFloat(cur.lat), lon = parseFloat(cur.lon); if (!isFinite(lat) || !isFinite(lon)) return;
-    const a = cur.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || (cur._isect && crCity ? crCity.name : ''); // Beta 1.234: an on-device crossing carries no address block - its area is the city whose extract computed it, so the guess the city pick set (crPickCity) stands for a crossing pick instead of blanking
-    crIsectSet(lat, lon, cur.display_name); // Beta 1.262 (Andrew): the pick lands the POI surface - the full crossing name in the bar and the pulsing marker on the crossing, one lifecycle (crIsectSet / crIsectClear above)
-    if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 17), duration: 900 }); // Beta 1.262 (Andrew): intersections land at zoom 17, his decided fly-to - the max() form stands, so a pick made from closer in never zooms out (through 1.261 the floor was 15)
-    if (crGrid && crCity && crInBox(crGrid.bbox, lat, lon)) { /* inside the picked city: its grid is the preparation (already running or saved) - no second download for a search pick */ }
-    else crStartPrep({ lat, lng: lon }); // Beta 1.121: outside any city coverage, the search pick ANCHORS the fallback box preparation (anchor rule (a)) - taps then resolve locally from the extract
+    // a crossing carries no address: its area is its city's, so the pick's guess stands instead of blanking
+    const a = cur.address || {}; crAreaGuess = a.city || a.town || a.village || a.municipality || a.county || (cur._isect && crCity ? crCity.name : '');
+    crIsectSet(lat, lon, cur.display_name); // the pick lands the POI surface (name in the bar, marker on the crossing, one lifecycle: crIsectSet/crIsectClear)
+    if (map) map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 17), duration: 900 }); // intersections land at zoom 17 (the max() form stands: a pick from closer in never zooms out)
+    /* inside the picked city: its grid is the preparation - no second download for a search pick */
+    if (crGrid && crCity && crInBox(crGrid.bbox, lat, lon)) { }
+    else crStartPrep({ lat, lng: lon }); // outside any city coverage, the pick anchors the fallback box preparation: taps then resolve locally
   });
   return b;
 }
-// ================= Beta 1.232: crossings, computed on-device =================
-// Pieces 1 and 2 both answer from the prepared extract itself: crCov.byName
-// holds every street's polylines for the loaded city, so they work offline
-// and never invent geometry the device does not hold. A crossing follows the
-// app's own junction semantics (crStreetParts): a true segment intersection,
-// or a vertex of either street lying on the other's line (<= 4 m, projected
-// onto it). One pair's points dedupe at 15 m - the merge the sector cuts use.
+// ===== crossings ===== answers come from the extract itself (offline, never invented); junction semantics are crStreetParts', dedupe 15 m
 let crXIndexCache = null; // { stamp, cells, segs, cross } - rebuilt whenever crCovStamp() moves
 function crSegProjM(p, a, b) { // p projected onto segment a-b, in metres: { pt, d }
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
@@ -1833,7 +1571,7 @@ function crSegProjM(p, a, b) { // p projected onto segment a-b, in metres: { pt,
   const qx = ax + t * dx, qy = ay + t * dy;
   return { pt: [qy / MLAT, qx / MLNG], d: Math.hypot(px - qx, py - qy) };
 }
-function crSegCrossPt(a, b, c, d) { // where segments a-b and c-d cross, or null; a shared endpoint counts (parallel pairs still register through the vertex test below)
+function crSegCrossPt(a, b, c, d) { // where segments a-b and c-d cross, or null; an endpoint counts (parallel pairs register via the vertex test)
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, cx = c[1] * MLNG, cy = c[0] * MLAT, dx = d[1] * MLNG, dy = d[0] * MLAT;
   const rx = bx - ax, ry = by - ay, sx = dx - cx, sy = dy - cy, den = rx * sy - ry * sx;
   if (Math.abs(den) < 1e-9) return null;
@@ -1865,7 +1603,7 @@ function crCrossingsOf(name) { // [{ other, pt }] - every crossing of one street
   const hit = ix.cross.get(name); if (hit) return hit;
   const CS = 220, byOther = new Map();
   const add = (other, pt) => { let arr = byOther.get(other); if (!arr) { arr = []; byOther.set(other, arr); } for (const p of arr) if (distM(p, pt) <= 15) return; arr.push(pt); };
-  const PAD = 4; // Beta 1.232 fix round (PR #112, Codex P2): the gather window below grows by the junction tolerance (4 m, converted per axis) - the index registers a segment in the cells its own bounds span, so a vertex lying within tolerance of this segment but across a 220 m cell boundary would otherwise never be gathered and its junction silently lost. Growing the QUERY keeps the invariant provable in this one place: any segment holding a vertex within tolerance of this one IS gathered, because that vertex's own cell (which its registration covers) lies inside the grown window. The index stays unpadded, so its one-time build cost is unchanged; the dedupe (15 m) and cluster (30 m) semantics are untouched
+  const PAD = 4; // the window grows by the junction tolerance (4 m): a vertex within tolerance across a cell boundary still gathers
   for (const s of ix.segs.get(name)) {
     const a0 = Math.floor((Math.min(s[0][0], s[1][0]) - PAD / MLAT) * MLAT / CS), a1 = Math.floor((Math.max(s[0][0], s[1][0]) + PAD / MLAT) * MLAT / CS);
     const o0 = Math.floor((Math.min(s[0][1], s[1][1]) - PAD / MLNG) * MLNG / CS), o1 = Math.floor((Math.max(s[0][1], s[1][1]) + PAD / MLNG) * MLNG / CS);
@@ -1901,9 +1639,9 @@ function crNameKey(s) { // a typed fragment and a pack name meet on one key: low
   if (CR_ABBR[parts[parts.length - 1]]) parts[parts.length - 1] = CR_ABBR[parts[parts.length - 1]];
   return parts.join(' ');
 }
-let crNameKeysCache = null; // { stamp, map, stem } - a typed fragment's key -> the full pack names it can mean, rebuilt when the extract stamp moves (a per-query rescan of the whole catalogue would tax every keystroke burst on the big packs). The stem map is Beta 1.233's directional widening (package A), built in the same pass.
+let crNameKeysCache = null; // { stamp, map, stem }: a fragment's key -> pack names, rebuilt when the stamp moves, never per keystroke
 const CR_DIR_TOKENS = ['east', 'west', 'north', 'south'];
-function crNameKeys() { // both key forms of every street: its full name, and the app's short form of it. PLUS, for a name ending in a directional (Bloor Street East), its stem's two key forms (Bloor Street, Bloor) in the stem map - so a bare stem typed in a crossing search finds the directional street. Only a TRAILING directional makes a stem: East Lynn Avenue is nobody's stem case, and a stem is registered only for a name with a suffix in front of the directional (three tokens or more).
+function crNameKeys() { // key forms per street (full, short), plus trailing-directional stem forms (a stem needs a name before it)
   const stamp = crCovStamp();
   if (crNameKeysCache && crNameKeysCache.stamp === stamp) return crNameKeysCache;
   const map = new Map(), stem = new Map();
@@ -1919,20 +1657,20 @@ function crNameKeys() { // both key forms of every street: its full name, and th
   crNameKeysCache = { stamp, map, stem };
   return crNameKeysCache;
 }
-function crMatchStreetName(part) { // the full pack names a typed fragment can mean - the full name itself, or the app's short form of it. Beta 1.233 (package A): an exact miss falls to the directional stems, so Bloor resolves to Bloor Street East / Bloor Street West (both crossings of the pair are candidates; the intersection item's city bound and nearest-to-centre choice decide, unchanged). Exact names always win - the stem map is consulted only when the exact map has nothing, so a street really named Bloor Street is never shadowed by its directional kin, and when neither side resolves even widened, the caller falls back to the network exactly as before.
+function crMatchStreetName(part) { // exact names win: the stem map answers only on an exact miss, so a Bloor Street is never shadowed
   if (!crCov || !crCov.byName) return [];
   const key = crNameKey(part); if (!key) return [];
   const keys = crNameKeys();
   const hit = keys.map.get(key) || keys.stem.get(key);
   return hit ? hit.slice() : [];
 }
-function crParseTwoStreets(q) { // 'A and B' / 'A & B' / 'A at B' / 'A, B' -> [a, b]; anything else is not a two-street query
+function crParseTwoStreets(q) { // separators 'and' / '&' / 'at' / ',' split a two-street query into [a, b]; anything else does not
   const m = /^\s*(.+?)\s*(?:,|&)\s*(.+?)\s*$/.exec(q) || /^\s*(.+?)\s+(?:and|at)\s+(.+?)\s*$/i.exec(q);
   if (!m) return null;
   const a = m[1].trim(), b = m[2].trim();
   return (a && b) ? [a, b] : null;
 }
-function crStreetFamily(part) { // Beta 1.233 (package A, tier 2): a typed fragment's exact names PLUS its directional kin, exact first. A crossing search needs this wider net as a fallback: Toronto really has a plain Bloor Street, so the exact map hits it - but the segment that actually crosses Yonge is named Bloor Street East, and an exact-only pair scan finds no junction and the search falls to the network for a crossing the device already knows. The family is consulted only when the exact pair yields no crossing (see crIntersectionItem), so a plain street that does cross still wins outright.
+function crStreetFamily(part) { // exact names plus their kin, exact first: the family answers only when the exact pair yields no crossing
   if (!crCov || !crCov.byName) return [];
   const key = crNameKey(part); if (!key) return [];
   const keys = crNameKeys();
@@ -1946,7 +1684,7 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   const As = crMatchStreetName(parts[0]), Bs = crMatchStreetName(parts[1]);
   if (!As.length || !Bs.length) return null;
   const ctr = (typeof map !== 'undefined' && map) ? map.getCenter() : null; // several crossings of one pair: the one nearest the map centre wins - the search's standing map bias
-  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // Beta 1.232 fix round 4 (PR #112, Codex P2): since 1.153 the search is city-only - the network landing enforces it with crInBox on this same box - but the extract's ways run past the boundary, so the pair's CANDIDATES are bounded here, before clustering and nearest-selection: a pair crossing both inside and outside keeps its inside crossing (a post-check on the chosen point would kill exactly that pair), and a pair crossing only outside yields no item, falling back to the already city-bound network exactly as a non-crossing pair does. No city box in force, no bound - the same scoped test the network path applies
+  const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // candidates are city-bounded before clustering: an inside+outside pair keeps its inside crossing; only-outside yields none
   const scan = (aNames, bNames) => {
     let best = null;
     for (const A of aNames) {
@@ -1962,7 +1700,7 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
     return best;
   };
   let best = scan(As, Bs);
-  if (!best) { // Beta 1.233 tier 2: the exact pair may name real streets that never touch (plain Bloor Street vs the Bloor Street East segment at Yonge) - retry once with each side widened to its directional family before giving the search to the network
+  if (!best) { // the pair may never touch: retry once with each side widened to its family before the network
     const fA = crStreetFamily(parts[0]), fB = crStreetFamily(parts[1]);
     if (fA.length > As.length || fB.length > Bs.length) best = scan(fA, fB);
   }
@@ -1978,9 +1716,9 @@ function shortStreetName(osm) { // the app's short-name convention (the sandbox'
   return s && s !== osm ? s : osm;
 }
 function crLineLen(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; }
-function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 1.5 m tolerance into runs. A run whose joins were all exact keeps its ways as segments (the app's own stitcher re-chains them identically); a run with a bridged join is stored as its single stitched line.
+function chainWays(ways) { // the stitch: greedy endpoint chaining at 1.5 m into runs; a bridged run stores as its stitched line
   const pool = ways.map(w => w.slice());
-  const lens = pool.map(w => crLineLen(w)); // Beta 1.245: each way's length is computed ONCE - the seed scan below re-reads it for every run it starts, where the 1.118 form re-walked every pooled way's points on every scan (the resolve's one quadratic habit, ~60 ms on the library's longest names). The values are the very numbers crLineLen always produced and the comparison is the same strict >, so the seed order - and every run built on it - is unchanged (the round's node differential over every name in every pack compares the two forms' runs byte for byte).
+  const lens = pool.map(w => crLineLen(w)); // way lengths compute once: the seed scan re-reads them per run (re-walking points per scan was quadratic)
   const runs = [];
   while (pool.length) {
     let bi = 0; for (let i = 1; i < pool.length; i++) if (lens[i] > lens[bi]) bi = i;
@@ -2007,34 +1745,24 @@ function chainWays(ways) { // the sandbox's stitch: greedy endpoint chaining at 
   return runs;
 }
 const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']; // primary + fallback (both named in the stamped CSP's connect-src)
-// Beta 1.121: overpassQuery + fetchStreetGeometry are GONE - they were the
-// per-tap fetch (and the malformed query's home). All Overpass traffic now
-// goes through crOverpassFetch with queries built by crQL/crAreaQL/
-// crNameQL (see the preparation block above); taps resolve locally.
 async function pickStreet(osmName, lngLat) {
   if (!draft) return;
-  const name = osmName; // Beta 1.144 (DA-04): the draft key IS the full map name; the short form appears only in display text (shortStreetName at the toast sites below)
-  const exists = Object.prototype.hasOwnProperty.call(draft.roads, name); // Beta 1.150 (security-audit fix round, finding covfromways-prototype-name-throw): own-property, not a bare read - on a plain object a street named 'constructor' reads Object.prototype's member as if the street were already picked, and the tap was routed to the sectors door for a street that was never picked
-  if (exists && (crPickBusy || !(crCov && crCov.boxes.length))) { crOpenSectors(name); return; } // already picked, and either no prepared extract to resolve the tap against or a pick is in flight: the 1.128 sectors door, exactly as before (the pre-1.144 order - the picked check always outranked the busy flag)
-  if (Object.prototype.hasOwnProperty.call(crPending, name)) { toast(shortStreetName(name) + ' is pending, it runs past the prepared area and is not in your route yet', 3400); return; } // Beta 1.150: the same own-property rule for the pending read
+  const name = osmName; // the draft key IS the full map name; the short form appears only in display text
+  const exists = Object.prototype.hasOwnProperty.call(draft.roads, name); // own-property, not a bare read: 'constructor' on a plain object reads as already picked and misroutes the tap
+  if (exists && (crPickBusy || !(crCov && crCov.boxes.length))) { crOpenSectors(name); return; } // picked, with no extract to resolve against or a pick in flight: the sectors door, as before
+  if (Object.prototype.hasOwnProperty.call(crPending, name)) { toast(shortStreetName(name) + ' is pending, it runs past the prepared area and is not in your route yet', 3400); return; } // the same own-property rule for the pending read
   if (crPickBusy) return;
-  // Beta 1.121: the tap resolves LOCALLY from the prepared extract - no
-  // network on the ordinary path (CG-PF-04). Before the extract is ready
-  // the tap still IDENTIFIES the street and says so honestly; it never
-  // pretends to add it - nothing appears added until accurate geometry
-  // is in hand and validated (the line the whole create flow holds).
-  // A tap inside a part of the city that has ALREADY landed resolves
-  // even while the rest still loads - progress is real (amendment B).
+  // taps resolve locally (no network); before the extract lands, a tap identifies its street, never pretending to add
   if (crCov && crCov.boxes.length) {
     const res0 = crResolve(osmName, lngLat);
     if (res0.status === 'ok') {
       if (!exists) { crAddStreet(name, res0.segs); return; }
       if (crRunHeld(name, res0.segs)) { crOpenSectors(name); return; } // the tap landed on a run the draft already holds: the 1.128 sectors door
-      crAddRun(name, res0.segs); return; // Beta 1.144 (OPT-L1): the tap landed on a DIFFERENT disconnected run of the picked street - it joins the same street entry (docs/ARCHITECTURE.md carries the rule)
+      crAddRun(name, res0.segs); return; // the tap landed on a DIFFERENT disconnected run of the picked street: it joins the same street entry
     }
     if (exists) {
       if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) { toast('The other part of ' + shortStreetName(name) + ' runs past the prepared area, it was not added - prepare a wider area, then tap it again', 4200); return; } // an unheld run that reaches past verified coverage is never half-added over an existing pick; the wider preparation + a fresh tap is the honest path
-      crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run itself: the sectors door is the answer the 1.128 fork chose
+      crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run: the sectors door is the answer
     }
     if (res0.status === 'absent') {
       if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + shortStreetName(name) + ' here - the map data holds no line for it', 3600); return; }
@@ -2047,10 +1775,7 @@ async function pickStreet(osmName, lngLat) {
       crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(shortStreetName(name) + ' is outside the prepared area - prepare this area, then tap it again', 3800);
       return;
     }
-    // edge (Codex (c)): the run reaches beyond verified coverage - ONE
-    // targeted fetch for this name over an expanded bounded area (centred
-    // on the run's open end), merged by way id, then resolved again
-    // against that wider boundary. Still beyond afterwards: PENDING.
+    // past coverage: one fetch for this name over an area, merged by id, resolved again; still past, pending
     const session = crSession, gen = crCovGen, topKey = name + '@' + gen;
     if (crToppedUp[topKey]) { crPendStreet(name, lngLat, res0.run, null); return; }
     crToppedUp[topKey] = true;
@@ -2070,10 +1795,10 @@ async function pickStreet(osmName, lngLat) {
         crRenderHint();
         return;
       }
-      crCovMerge(got.json.elements, null); // merged by way id; the top-up's box verifies THIS resolution (below) but does not join the coverage set - a later street must earn its own proof
+      crCovMerge(got.json.elements, null); // the top-up's box verifies this resolution but never joins coverage: a later street earns its own proof
       const res = crResolve(osmName, lngLat, box);
       if (res.status === 'ok') crAddStreet(name, res.segs); else crPendStreet(name, lngLat, res.run, box);
-    } finally { if (crTopOp === op) crTopOp = null; crPickBusy = false; } // Beta 1.120: EVERY exit path releases the picker - 1.119's early return on a null shape skipped this line and one refused fetch wedged tapping for the whole session (Andrew, on device). The session/generation guards above are what bind the COMPLETION (CG-PF-05); the busy flag can only be held by the one pick in flight, so releasing it here can never clear a newer operation's state.
+    } finally { if (crTopOp === op) crTopOp = null; crPickBusy = false; } // every exit releases the picker: the busy flag is the in-flight pick's alone, never a newer operation's
     return;
   }
   if (exists) { crOpenSectors(name); return; } // an extract exists but holds no verified box yet - the picked street's sectors are still the honest door
@@ -2083,7 +1808,7 @@ async function pickStreet(osmName, lngLat) {
   toast('Street shapes aren’t ready for this area yet - tap Prepare this area, then tap ' + shortStreetName(name) + ' again', 3800);
   crRenderHint();
 }
-function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point of a tile feature's line(s), in distM's flat-earth metres. CHOICE ONLY (see crMapTap): the number judges which named street a tap meant - it is never stored and never shapes the route
+function crFeatDistM(lngLat, geom) { // metres from tap to a feature line's nearest point: choice only (which street was meant), never stored
   if (!geom) return Infinity;
   const lines = geom.type === 'LineString' ? [geom.coordinates] : (geom.type === 'MultiLineString' ? geom.coordinates : []);
   const px = lngLat.lng * MLNG, py = lngLat.lat * MLAT;
@@ -2103,7 +1828,7 @@ function crFeatDistM(lngLat, geom) { // metres from the tap to the nearest point
   }
   return best;
 }
-function crFeatDistPx(lngLat, part) { // pixels from the tap to the nearest point of a part line ([lat, lng] pairs), in the map's own projection - crSectorTap's geometry fallback is judged in the same pixels its query boxes are measured in (Beta 1.156). The caller guards map.project before calling
+function crFeatDistPx(lngLat, part) { // pixels from tap to a part line's nearest point (projection): fallback is judged in its boxes' unit
   const pt = map.project([lngLat.lng, lngLat.lat]);
   let best = Infinity, prev = null;
   for (const p of part) {
@@ -2119,24 +1844,15 @@ function crFeatDistPx(lngLat, part) { // pixels from the tap to the nearest poin
 }
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
-  if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; } // Beta 1.127: while trimming, a map tap speaks only to the street being trimmed - it can neither add nor remove another street. Beta 1.210 (Andrew): a tap that resolves to NO sector of the trim street is a tap-away and runs the whole crCancelSectors path (snapshot restored, session closed, glow out), never a parallel exit - through 1.268 it acted exactly like the bar's Cancel button; since Beta 1.269 the button is Deselect and this tap is the cancel's only door. Taps on sectors still toggle and never exit (crSectorTap answers true); taps on the card, the search bar and the other create chrome are DOM and never reach the map; and a drag/pan cannot land here at all - MapLibre's click fires only when press and release land within its click tolerance, the same tap-vs-drag discipline the main map's tap-away deselect already rests on
-  // Beta 1.119: query a small BOX around the tap, not the tap's single pixel.
-  // Rendered road lines are a few px wide and a fingertip lands +/-10-20 px
-  // off them, so the 1.118 point query almost never held a road and every
-  // real tap toasted "No road there" (Andrew, on device). The tile
-  // geometry's ONLY job here is to choose WHICH named street the tap meant
-  // (the line passing closest to the tap wins); it is never stored - the
-  // street's stored shape still comes from the accurate source - the
-  // prepared Overpass extract (identity from the tile name, shape from
-  // the extract - the approved reconciliation; display tiles re-segment
-  // streets and misplace joins).
+  if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; } // while trimming, taps speak only to the trimmed street: no sector resolved = tap-away, running crCancelSectors
+  // a box query, not a pixel: tile geometry only chooses the street meant, and is never stored
   const roadFeats = (half) => {
     let feats = [];
     try { feats = map.queryRenderedFeatures([[e.point.x - half, e.point.y - half], [e.point.x + half, e.point.y + half]]) || []; } catch (err) {}
     return feats.filter(x => x && x.sourceLayer === 'roads' && x.properties && typeof x.properties.name === 'string' && !!x.properties.name);
   };
   let pick = null;
-  for (const half of CR_TAP_BOXES) { // a finger's real tolerance first; one wider retry before giving up (the widths live at CR_TAP_BOXES - Beta 1.156 narrowed them from [16, 28] on Andrew's device report: at 28 a tap far off the line still selected the road)
+  for (const half of CR_TAP_BOXES) { // a finger's real tolerance first, one wider retry before giving up (the widths live at CR_TAP_BOXES)
     const named = roadFeats(half);
     if (!named.length) continue;
     let pickD = Infinity;
@@ -2148,17 +1864,18 @@ function crMapTap(e) {
   pickStreet(pick, e.lngLat);
 }
 onMapReady(() => map.on('click', crMapTap));
-$('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); }); // "Done" (Beta 1.128: the panel footer's ONLY button - the 1.127 "+ Add a street" ghost is gone; it never added anything, it only tucked the panel, and tucking belongs to the head's grab/tap gesture)
+$('crDoneBtn').addEventListener('click', () => { if (draftStreets().length) setCreateStage('preview'); }); // 'Done': the panel footer's ONLY button - tucking belongs to the head's grab/tap gesture, not a footer button
 $('crReviewBtn').addEventListener('click', () => crExpandPanel()); // the bar's way back (mockup screen 4)
-$('crClearAll').addEventListener('click', () => { // Andrew's addition (2026-11-06): empty the picks at once - behind the shared confirm, the same discipline as Start over and route deletion; the city and the session stay
+$('crClearAll').addEventListener('click', () => { // empty the picks at once, behind the confirm (Start over's discipline); the city and session stay
   const n = draft ? draftStreets().length : 0; if (!n) return;
-  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => { DRAFT.clearAll(); }, { yes: 'Clear all', no: 'Cancel', danger: true }); // Architecture #14: the wholesale reset lives on the DRAFT owner (its clearAll method)
+  // the wholesale reset lives on the DRAFT owner (its clearAll method)
+  crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => { DRAFT.clearAll(); }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });
 $('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel
-$('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Deselect (Beta 1.269): the street leaves the draft entirely, through crRemoveStreet. Through 1.268 this slot was Cancel (Beta 1.129's snapshot restore) - the restore lives on the tap-away now (crMapTap -> crCancelSectors), and this button does the removal Andrew reached for
-(() => { // the panel's tuck-away gesture (mockup screens 3-4): drag or flick the grab handle / header downward to collapse; a plain tap there collapses too. Buttons inside the header keep their own taps (the check below), and the rows below scroll natively - drags never start there
-  const sheet = $('createSheet'), head = $('crPanelHead'); if (!sheet || !head) return; // Beta 1.129: the drag moves the SURFACE (the one card), not a face inside it
+$('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Deselect: the street leaves entirely through crRemoveStreet (the snapshot restore lives on the tap-away, crCancelSectors)
+(() => { // the tuck-away gesture: drag/flick the handle down, or tap it, to collapse; header buttons keep their taps
+  const sheet = $('createSheet'), head = $('crPanelHead'); if (!sheet || !head) return; // the drag moves the SURFACE (the one card), not a face inside it
   let pid = null, startY = 0, lastY = 0, samples = [], moved = false;
   head.addEventListener('pointerdown', e => {
     if (pid !== null || e.target.closest('button')) return;
@@ -2186,9 +1903,9 @@ $('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Desel
   head.addEventListener('pointerup', up);
   head.addEventListener('pointercancel', up);
 })();
-$('pvAddBtn').addEventListener('click', () => { // back to picking for more streets; Done there returns to this same preview (Beta 1.128: the panel button never changes its label, so no return-mode state is needed)
+$('pvAddBtn').addEventListener('click', () => { // back to picking for more; Done there returns to this same preview (the button's label never changes)
   if (crCity) { setCreateStage('pick'); return; }
-  if (draft && draft.area) { crCity = { name: draft.area, lat: null, lon: null, bbox: null }; setCreateStage('pick'); return; } // Beta 1.121: a draft that already names its city pre-answers the city step - still changeable from the pick sheet's city chip (through 1.242 the photo door's imported drafts were this branch's shape; it stands as the general area fallback)
+  if (draft && draft.area) { crCity = { name: draft.area, lat: null, lon: null, bbox: null }; setCreateStage('pick'); return; } // a draft that names its city pre-answers the city step - still changeable from the pick sheet's city chip
   crOpenCityPane('preview');
 });
 

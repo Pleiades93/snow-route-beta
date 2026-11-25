@@ -1,56 +1,41 @@
-// ===== Beta 1.118: CREATE A ROUTE (Step 2 of the route programme; Andrew's approved mockups) =====
-// The flow: two doors (Select from list, Manual search) pick a city, the
-// area's street shapes are prepared on-device, and Andrew TAPs roads on
-// the map - a tap chooses a street's IDENTITY from the basemap's roads
-// layer, never its geometry: the street's true shape comes from the
-// prepared extract and is stitched with the sandbox's rules (endpoint
-// chaining, divided roads chain into their hairpin). Both doors land in
-// one shared preview ("Review selection") with corrections, then a
-// name-it step, then the pack is saved on-device (below). (Beta 1.243:
-// the photo door - a photo read by Muse outside the app, the returned
-// draft file imported back - is removed whole; this file's normalizePack
-// keeps its draft option for the validator's own completeness.)
-// PACK FORMAT (defined once, here and in docs/ARCHITECTURE.md): the same
-// shape as a ROUTE_PACKS entry - { name, area, primaries: [names], roads:
-// { street: [segment, ...] }, reference: {...}, tileNames?: [...] }, each
-// segment an array of [lat, lng] points. normalizePack is the one validator
-// every entry path (save, backup restore, boot merge) uses.
+// ===== CREATE A ROUTE ===== taps choose identity, never geometry: shapes come from the extract, stitched by the sandbox's rules
 const USERPACKS_KEY = 'snowroute.v2.userpacks'; // the on-device record of created routes: { <id>: <pack> }. Shipped packs live in data.js; created packs live here.
 const SHIPPED_PACK_IDS = new Set(ROUTE_PACKS.map(p => p.id)); // captured at eval, BEFORE any user pack merges - data.js holds shipped packs only
-const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted'; // Beta 1.271 (Andrew, 2026-11-21: EVERY route gets a Delete, the shipped 5W included): the tombstone record for deleted SHIPPED packs. A shipped pack's definition lives in data.js (code), so its deletion cannot remove a stored definition the way a created route's delete does - the delete writes this record instead (verified, like every house write) and every boot unregisters the named packs before the first render (the filter below). A DEVICE record - this phone's route list - never backed up: a backup carries route data, not this phone's deletions.
-function readShippedDeleted() { // the stored tombstone list, or null when it cannot be read/parsed at all (the readUserPacks discipline: strict writers treat null as a failure and never rewrite blind)
+const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted'; // tombstones for deleted shipped packs: their definition lives in code, so deletion writes this record; device-only, never backed up
+function readShippedDeleted() { // the stored tombstone list, or null when unreadable (strict writers treat null as failure, never rewrite blind)
   try { const raw = localStorage.getItem(SHIPPED_DELETED_KEY); if (raw == null) return []; const o = JSON.parse(raw); return Array.isArray(o) ? o.filter(x => typeof x === 'string') : null; } catch (e) { return null; }
 }
 function loadShippedDeleted() { const r = readShippedDeleted(); return r || []; }
-function readUserPacks() { // the stored record, or null when it cannot be read/parsed at all (callers that must not lose data treat null as a failure; lenient callers use loadUserPacks)
+function readUserPacks() { // the stored record, or null when unreadable (strict callers treat null as failure; lenient ones use loadUserPacks)
   try { const raw = localStorage.getItem(USERPACKS_KEY); if (raw == null) return {}; const o = JSON.parse(raw); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : null; } catch (e) { return null; }
 }
 function loadUserPacks() { const r = readUserPacks(); return r || {}; }
-// ===== Beta 1.166: created routes live in IndexedDB, one record per route =====
-// The legacy record above was ONE localStorage value holding EVERY created route's geometry: a single legal pack can be 1-4 MB inside the ~5 MB localStorage budget shared with everything else, one failed save of it endangered every route in it, and a corrupt record failed the strict writers for routes that had nothing to do with the corruption. The store below gives each route its own record and its own transaction: a save touches one route, a failure refuses one route, and boot never waits on any of it. The database is a SIBLING of the city cache (docs/STORAGE-SCHEMA.md contracts snowroute-citycache as a re-downloadable cache, never user data) so the two failure domains stay separate. Every write is VERIFIED by read-back before its caller may proceed - the same discipline lsSet's read-back gives localStorage writes, carried to a store that has no synchronous verify of its own.
+// ===== created routes in IndexedDB, one record each ===== a save touches only its route; every write verified by read-back
 const UP_IDB_NAME = 'snowroute-userdata', UP_IDB_STORE = 'packs';
-const UP_MIG_KEY = 'snowroute.v2.userpacks.migrated'; // '1' once a legacy drain has completed with parity verified. Housekeeping only: boot reads the legacy record whenever one is present, marker or not, so a downgrade-then-upgrade cycle can never strand routes an older build wrote back into the record
-const UP_READ_FAILED = {}; // strict-read sentinel (RAW_READ_FAILED's sibling): a FAILED store read must stay distinguishable from an absent route - a writer about to overwrite a route it could not read first refuses, before anything is written
+const UP_MIG_KEY = 'snowroute.v2.userpacks.migrated'; // '1' once a legacy drain completed with parity verified; boot reads the legacy record whenever present, marker or not
+const UP_READ_FAILED = {}; // a failed store read stays distinguishable from an absent route: overwriting an unread route is refused before writing
 const UP_TX_FAILED = {}; // internal: a store transaction that errored, aborted, or never opened - distinct from a successful read of an absent key
-let userPackCache = {}; // the merged {id: pack} picture of BOTH homes (the store + any not-yet-drained legacy entries, legacy winning per id) - what the synchronous backup export serializes. It only ever reflects VERIFIED writes and the boot read: every writer updates it at its commit point and nowhere else
-let upStoreComplete = false; // true once the boot store read has succeeded, i.e. once userPackCache is provably the COMPLETE created-route picture. A failed boot read leaves it false and the strict backup export refuses (audit B04: never ship a valid-looking backup that silently lost routes) while the best-effort recovery export tops the cache up from validated memory instead
+let userPackCache = {}; // the merged {id: pack} picture of both homes (the backup export's source); it reflects only verified writes
+let upStoreComplete = false; // true once the boot read succeeded: only then is the cache provably complete and the strict backup export allowed
 let upStatus = { state: 'boot' }; // the init outcome, exposed as window.__userPacksStatus for the battery (the migratePack status-object precedent)
 function upCanon(v) { if (v === null || typeof v !== 'object') return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(upCanon).join(',') + ']'; return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + upCanon(v[k])).join(',') + '}'; } // key-order-insensitive canonical form for read-back equality: a structured-clone round-trip through IndexedDB is not a byte channel, so equality is judged on content, never on key order
 function upIdbOpen() { return new Promise(res => { let rq; try { rq = indexedDB.open(UP_IDB_NAME, 1); } catch (e) { res(null); return; } rq.onupgradeneeded = () => { const db = rq.result; if (!db.objectStoreNames.contains(UP_IDB_STORE)) db.createObjectStore(UP_IDB_STORE, { keyPath: 'id' }); }; rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); rq.onblocked = () => res(null); }); }
 function upTx(mode, fn) { return new Promise(res => { upIdbOpen().then(db => { if (!db) { res(UP_TX_FAILED); return; } let req; try { const tx = db.transaction(UP_IDB_STORE, mode); tx.oncomplete = () => { db.close(); res(req ? req.result : true); }; tx.onerror = () => { db.close(); res(UP_TX_FAILED); }; tx.onabort = () => { db.close(); res(UP_TX_FAILED); }; req = fn(tx.objectStore(UP_IDB_STORE)); } catch (e) { try { db.close(); } catch (e2) {} res(UP_TX_FAILED); } }); }); } // one short transaction per operation, the crIdb* shape - and a write counts at transaction COMPLETE, never at request success alone
 async function upGetAll() { const all = await upTx('readonly', st => st.getAll()); if (all === UP_TX_FAILED || !Array.isArray(all)) return null; const map = {}; for (const rec of all) if (rec && typeof rec === 'object' && typeof rec.id === 'string') map[rec.id] = rec; return map; } // {id: pack} for the whole store; null on any failure
-async function upGet(id) { const rec = await upTx('readonly', st => st.get(id)); if (rec === UP_TX_FAILED) return UP_READ_FAILED; return rec === undefined ? null : rec; } // one pack: the pack, null when absent, UP_READ_FAILED when the read itself failed - a failed transaction and an absent key resolve differently above, and the distinction is the point
+// one pack: the pack, null when absent, UP_READ_FAILED when the read itself failed - the distinction is the point
+async function upGet(id) { const rec = await upTx('readonly', st => st.get(id)); if (rec === UP_TX_FAILED) return UP_READ_FAILED; return rec === undefined ? null : rec; }
 async function upPut(id, pack) { const rec = { ...pack, id }; const w = await upTx('readwrite', st => st.put(rec)); if (w === UP_TX_FAILED) return false; const back = await upGet(id); return !!back && back !== UP_READ_FAILED && upCanon(back) === upCanon(rec); } // a created-route write counts only when the record reads back content-equal - the verified half of the house write discipline, and the gate every caller refuses on
 async function upDel(id) { const w = await upTx('readwrite', st => st.delete(id)); if (w === UP_TX_FAILED) return false; return (await upGet(id)) === null; } // deletion likewise: verified absent before the caller may treat the route as gone
-async function initUserPacks() { // first-1.166-launch migration + every later boot's store registration. Never rejects and never blocks boot: the synchronous legacy registration below has already run, so any failure here leaves the app fully usable on the legacy data and the drain simply retries next launch
+async function initUserPacks() { // migration + boot registration; never blocks boot: on failure the app runs on legacy data and the drain retries
   const result = { state: 'done', fromStore: 0, fromLegacy: 0, drained: 0, migrated: false, legacyDeleted: false };
   try {
-    const legacy = readUserPacks(); // null = a corrupt record: left exactly as it stands (never deleted blind), its routes unavailable this boot exactly as before 1.166, the store still registers below
+    const legacy = readUserPacks(); // null = corrupt: left exactly as it stands, never deleted blind; its routes sit out this boot
     const stored = await upGetAll();
     if (stored) {
       upStoreComplete = true;
       userPackCache = { ...stored };
-      for (const id of Object.keys(stored)) { if (ROUTE_PACKS.some(p => p.id === id)) continue; const v = normalizePack(stored[id], {}); if (!v.ok) continue; v.pack.id = id; ROUTE_PACKS.push(v.pack); result.fromStore++; } // fill-only (the rk.migfill discipline): an id the legacy pass already registered keeps the legacy copy - for drained ids the two are content-equal by the parity check below, and a legacy record an older build wrote after a downgrade is the NEWER copy, so it wins
+      // fill-only: a legacy-registered id keeps the legacy copy (an older build's post-downgrade write is the newer copy)
+      for (const id of Object.keys(stored)) { if (ROUTE_PACKS.some(p => p.id === id)) continue; const v = normalizePack(stored[id], {}); if (!v.ok) continue; v.pack.id = id; ROUTE_PACKS.push(v.pack); result.fromStore++; }
     }
     if (legacy) {
       userPackCache = { ...userPackCache, ...legacy };
@@ -66,32 +51,16 @@ async function initUserPacks() { // first-1.166-launch migration + every later b
   if (typeof renderRouteLists === 'function') renderRouteLists();
   return result;
 }
-// ===== Beta 1.259: boundary ends - the ONE computation of where route paint
-// must feather out (Andrew's decision, 2026-11-20, option C). A boundary end
-// is a run end where the street continues past the route into a NON-route
-// street: the paint ends AT the join (the boundary street's first centreline,
-// measured from the approach side) with a gradient fade over the last 15 m
-// (the engine's half of the rule lives in engine.js). A run end shared with
-// another route street is a junction - the junction machinery owns it, never
-// a feather. A run end no non-route street crosses near is a dead end (or a
-// mid-block pick end) - the street ends there; since Beta 1.267 the DEAD
-// class earns its own record from the sibling computation below (10 m,
-// Andrew's Option 1) while a pick end still earns none. Records:
-// { street: [[endLat, endLng, joinLat, joinLng, fadeM], ...] } - fadeM is
-// per-record data since 1.267; 4-element records from older packs default
-// to 15 in the engine.
-// Called by the create save with the prepared extract, and by
-// scripts/derive-pack-ends.mjs for the shipped pack (the extract there is
-// the city pack's street library) - one computation, both callers.
-const BOUNDARY_FADE_M = 15; // Beta 1.259: a boundary end's fade length, carried ON each record (element 5) since Beta 1.267 made the length per-record data
-const DEAD_FADE_M = 10; // Beta 1.267 (Andrew, Option 1): a dead end's fade length, likewise per-record
-function endsPtSeg(p, a, b) { // distance from p to segment a-b, flat-metre space (projOnLine's axes) - shared by both end computations (hoisted at Beta 1.267 from computeBoundaryEnds' closure, verbatim)
+// ===== boundary ends ===== paint ends at the join, fading over the record's fadeM (15 m); junctions are never feathers
+const BOUNDARY_FADE_M = 15; // a boundary end's fade length, carried on each record (element 5): the length is per-record data
+const DEAD_FADE_M = 10; // a dead end's fade length, likewise per-record
+function endsPtSeg(p, a, b) { // distance from p to segment a-b in flat-metre space, shared by both end computations
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
   const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
   let t = L2 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t));
   return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
 }
-function endsJunction(routeNames, runsOf, n, E) { // whether another route street's vertex sits at the run end E (the <=2 m vertex test) - the ONE junction test both end computations judge by (Beta 1.283, architecture #11 stage 4: before, each carried the loop verbatim in shape, free to drift apart)
+function endsJunction(routeNames, runsOf, n, E) { // another route street's vertex at the run end (<=2 m): the one junction test both end computations judge by
   for (const m of routeNames) { if (m === n) continue; for (const rl of runsOf(m)) for (const v of rl) if (Math.abs(v[0] - E[0]) < 0.00004 && Math.abs(v[1] - E[1]) < 0.00004 && distM(v, E) <= 2) return true; }
   return false;
 }
@@ -131,8 +100,7 @@ function computeBoundaryEnds(roads, allStreets) {
             for (let i = 1; i < w.length; i++) {
               const a = w[i - 1], b = w[i];
               if (ptSeg(E, a, b) > 45) continue; // nothing this segment does can touch the end's window
-              // a segment running ALONG the run is the street's own continuation (the extract
-              // names it in full - 'Valeria Boulevard' against the pack's 'Valeria'), never a boundary
+              // a segment along the run is the street's own continuation, never a boundary
               const pa = projOnLine(line, cum, a), pb = projOnLine(line, cum, b);
               if (pa.off <= 1 && pb.off <= 1) { collinear = true; continue; }
               for (let j = 1; j < line.length; j++) {
@@ -149,42 +117,20 @@ function computeBoundaryEnds(roads, allStreets) {
           }
           if (!collinear) crossings.push(...mine);
         }
-        if (!crossings.length) continue; // no crossing: not a boundary end - computeDeadEnds below decides whether it is a dead end (record) or a pick end (none)
+        if (!crossings.length) continue; // no crossing: not a boundary end - computeDeadEnds below decides dead end (record) or pick end (none)
         let minBehind = Infinity; for (const c of crossings) if (c.behind < minBehind) minBehind = c.behind;
         const street0 = crossings.find(c => c.behind === minBehind).street; // the boundary street is the closest crossing's
-        let joinBehind = minBehind; // the join is that street's FURTHEST-back crossing near the end - its first centreline (a divided road's near carriageway); the cluster bound keeps a second, unrelated crossing of the same street from dragging the join away
+        let joinBehind = minBehind; // the join is the street's furthest-back crossing near the end (its first centreline); the cluster bound excludes unrelated crossings
         for (const c of crossings) if (c.street === street0 && c.behind <= minBehind + 20 && c.behind > joinBehind) joinBehind = c.behind;
         const join = atD(atStart ? joinBehind : total - joinBehind);
         const r6 = v => Math.round(v * 1e6) / 1e6;
-        (out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(join[0]), r6(join[1]), BOUNDARY_FADE_M]); // Beta 1.267: element 5 is the fade length - per-record data the engine reads (older 4-element records default to 15 there)
+        (out[n] = out[n] || []).push([r6(E[0]), r6(E[1]), r6(join[0]), r6(join[1]), BOUNDARY_FADE_M]); // element 5 is the fade length, per-record data the engine reads (older 4-element records default to 15 there)
       }
     }
   }
   return out;
 }
-// ===== Beta 1.267: dead ends - the sibling computation (Andrew's decision,
-// 2026-11-21, Option 1: dead ends feather too, over 10 m; boundary ends stay
-// 15 m). A dead end is a run end that is NOT a junction (no other route
-// street's vertex there), NOT a boundary end (no non-route street crosses
-// near it - computeBoundaryEnds owns that class and its records win), and
-// where the street's OWN extract geometry terminates: an own way ends at
-// the run end and no own point extends past it along the run's outward
-// direction. That last pair is what separates a true dead end from a
-// mid-block pick end (the street continues past the pick, so its geometry
-// extends past the end and no record is written) - the distinction the
-// dead-end count record (dead-end-count-2026-11-21) proved on Route 5W:
-// exactly 8 (Dianawood SW, Julian W, Bayside E, Tina N, Topper E, Boddy N,
-// Angie NW, Ferrari S), reconciling 53 junctions + 7 boundary + 8 dead = 68
-// run ends. A record's join IS its end (the paint dies AT the terminus) and
-// element 5 carries DEAD_FADE_M. Own-way matching is name-prefix based (the
-// shipped pack's short names against the library's full names) but every
-// signal is judged geometrically within 50 m, so a same-prefix street
-// across the city (Julian Drive vs Julian Court) can never qualify an end.
-// Conservative extras from the count record's evidence bar: any OTHER
-// street passing within 4 m of the end, or ending within 12 m of it,
-// disqualifies the end - a terminus something else nearly touches is not
-// painted as a dead end on this evidence. Called from the same two call
-// sites as computeBoundaryEnds (the create save, derive-pack-ends.mjs).
+// ===== dead ends ===== no junction, no boundary end, and the street's geometry terminates there; the join IS the end
 function computeDeadEnds(roads, allStreets) {
   const out = {};
   if (!roads || !allStreets) return out;
@@ -194,7 +140,7 @@ function computeDeadEnds(roads, allStreets) {
   const runsOf = n => runsCache[n] || (runsCache[n] = stitchRuns(n, roads));
   const r6 = v => Math.round(v * 1e6) / 1e6;
   for (const n of routeNames) {
-    const ownNames = Object.keys(allStreets).filter(m => m === n || m.startsWith(n + ' ') || n.startsWith(m + ' ')); // the street's own extract names - exact name first: a CREATE draft keys its roads by the FULL street name, so the exact-name key IS a route name and must not be vetoed by route membership (Codex P2, PR #163: with the veto, a created route's own geometry was excluded at both filters and its dead ends never feathered)
+    const ownNames = Object.keys(allStreets).filter(m => m === n || m.startsWith(n + ' ') || n.startsWith(m + ' ')); // exact name first: a draft's full-name key IS a route name and must not be vetoed by route membership
     for (const line of runsOf(n)) {
       for (const atStart of [true, false]) {
         const E = atStart ? line[0] : line[line.length - 1];
@@ -243,7 +189,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let totalLen = 0;
   const cleanRoads = (obj, label) => {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return { error: 'the ' + label + ' are missing or the wrong shape' };
-    const out = Object.create(null); const names = Object.keys(obj); // Beta 1.169 (Carbon fix round, D-05 + X-05): prototype-free - on a plain object the duplicate test below reads ({}).constructor / ({}).toString as truthy and '__proto__' as the prototype itself, so a FIRST street carrying one of those names was falsely rejected as a duplicate (and a '__proto__' street could not be stored at all). The 1.150 city-cache fold set this precedent for stored names.
+    const out = Object.create(null); const names = Object.keys(obj); // prototype-free: on an object, a first 'constructor'/'__proto__' street read as a duplicate or could not be stored
     if (names.length > PACK_STREETS_MAX) return { error: 'too many streets in the ' + label };
     for (const nm0 of names) {
       const nm = nm0.trim();
@@ -261,7 +207,8 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
           if (!seg.length || seg[seg.length - 1][0] !== p[0] || seg[seg.length - 1][1] !== p[1]) seg.push(p);
           if (++totalPts > PACK_POINTS_MAX) return { error: 'the route is too big' };
         }
-        if (seg.length > 1) { segs.push(seg); for (let li = 1; li < seg.length; li++) totalLen += distM(seg[li - 1], seg[li]); if (totalLen > PACK_LENGTH_MAX_M) return { error: 'the route is too long' }; } // Beta 1.152 (NV round, NV1): the total-length ceiling, accumulated over the CLEANED segments (roads and reference alike). Nothing else bounds a pack's length - the point caps alone allow one crafted street of ~246,000 km - and samplesFor (app3) lays one sample per COV_SAMPLE_M over whatever it is given: the audit measured 16.4M samples / ~756 MB from a single crafted street. The ceiling (~4x the worst legitimate pack, the 300 longest Toronto streets at 2,962 km) bounds every validated pack to ~800,000 samples.
+        // the length ceiling over cleaned segments: unbounded, one crafted street would make samplesFor lay millions of samples
+        if (seg.length > 1) { segs.push(seg); for (let li = 1; li < seg.length; li++) totalLen += distM(seg[li - 1], seg[li]); if (totalLen > PACK_LENGTH_MAX_M) return { error: 'the route is too long' }; }
       }
       if (!segs.length) return { error: 'the street "' + nm + '" has no usable shape' };
       out[nm] = segs;
@@ -272,7 +219,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   if (!Object.keys(rc.roads).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
   let reference = {};
   if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = fc.roads; for (const nm of Object.keys(reference)) if (rc.roads[nm]) delete reference[nm]; }
-  const primariesIn = raw.primaries; // the ONE stored key (2026-11-15, Andrew's override completing the Beta 1.205 rename at the storage layer): no aliases - a pack written by an older build (field 'main', or a draft-side 'mains') normalizes to an empty primaries list with its streets intact, never a rejection
+  const primariesIn = raw.primaries; // the one key, no aliases: an older 'main'/'mains' field normalizes to empty primaries, streets intact, never rejected
   const primaries = [];
   if (primariesIn !== undefined) {
     if (!Array.isArray(primariesIn)) return bad('the primaries list is the wrong shape');
@@ -284,8 +231,9 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   let box = null;
   if (raw.box && isFinite(raw.box.w) && isFinite(raw.box.s) && isFinite(raw.box.e) && isFinite(raw.box.n) && raw.box.w < raw.box.e && raw.box.s < raw.box.n) box = { w: raw.box.w, s: raw.box.s, e: raw.box.e, n: raw.box.n };
   else { const cb = computeRouteBox({ ...rc.roads, ...reference }); if (cb) box = { w: Math.max(-180, cb.w - 0.03), s: Math.max(-90, cb.s - 0.025), e: Math.min(180, cb.e + 0.03), n: Math.min(90, cb.n + 0.025) }; }
-  if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big'); // Beta 1.152 (NV round, NV3a): extent and world-bounds validation, fail-closed like every other check here, over the declared box and the derived one alike. A box is an offline-download area and the tile enumerators (app4) iterate it zoom by zoom: a worldwide box enumerates ~356.8M tile URLs per source and never returns (measured) - it is a preload wedge, not a route. The ceiling (~7.6x the widest shipped city bbox, 10x the declared 5W box) rejects it at EVERY entry point, this validator being the single gate for draft import, save, backup restore and the boot merge. The enumerators carry their own budget as well (NV3b), for records that never pass through here.
-  const ends = {}; // Beta 1.259: boundary-end records, cleaned leniently like primaries - records naming a real road with four in-range coordinates survive (rounded to the pack's own 1e-6 grid); anything else is dropped, never a rejection: a malformed ends field must not block a save or a restore of an otherwise valid route
+  // extent validation, fail-closed, over declared and derived boxes: a worldwide box enumerates ~356.8M tile URLs and never returns
+  if (box && (box.w < -180 || box.e > 180 || box.s < -90 || box.n > 90 || box.e - box.w > PACK_BOX_MAX_DEG || box.n - box.s > PACK_BOX_MAX_DEG)) return bad('the route area is too big');
+  const ends = {}; // boundary records clean leniently: four in-range coordinates on a real road survive; the rest drop, never a rejection
   if (raw.ends && typeof raw.ends === 'object' && !Array.isArray(raw.ends)) {
     for (const nm of Object.keys(raw.ends)) {
       if (!rc.roads[nm] || !Array.isArray(raw.ends[nm])) continue;
@@ -295,7 +243,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
         const a = r[0], b = r[1], c = r[2], d = r[3];
         if (!isFinite(a) || !isFinite(b) || !isFinite(c) || !isFinite(d) || Math.abs(a) > 90 || Math.abs(b) > 180 || Math.abs(c) > 90 || Math.abs(d) > 180) continue;
         const rec = [Math.round(a * 1e6) / 1e6, Math.round(b * 1e6) / 1e6, Math.round(c * 1e6) / 1e6, Math.round(d * 1e6) / 1e6];
-        if (isFinite(r[4]) && r[4] > 0 && r[4] <= 100) rec.push(Math.round(r[4] * 10) / 10); // Beta 1.267: element 5, the per-record fade length - a sane value survives; an absent or bad one leaves the 4-element form and the engine's 15 m default applies
+        if (isFinite(r[4]) && r[4] > 0 && r[4] <= 100) rec.push(Math.round(r[4] * 10) / 10); // element 5: a sane fade length survives; absent or bad leaves the 4-element form and the engine default
         list.push(rec);
       }
       if (list.length) ends[nm] = list;
@@ -303,10 +251,10 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   }
   const cleaned = { name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference, ends };
   const pack = {};
-  for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // Beta 1.131 (programme A): the pack is built by walking PACK_FIELDS (app1) - the list is the single source for what a pack carries. Every listed field has a cleaner above today, so the raw fall-through never fires; it exists so a future field added to the list (before its cleaner lands) is carried through rather than silently dropped - the pre-1.131 trap was the hand-written return literal here forgetting a field.
+  for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f]; else if (raw[f] !== undefined) pack[f] = raw[f]; } // packs are built by walking PACK_FIELDS (app1): a listed field with no cleaner yet carries through, never drops
   return { ok: true, pack };
 }
-function mergeUserPacks() { // boot: the runtime pack list = shipped packs + created packs (a created pack wins an id collision - created ids are generated slugs that never collide with a shipped id, so a collision means the record was hand-edited; the created route is Andrew's data and wins)
+function mergeUserPacks() { // boot: shipped + created packs; a created pack wins an id collision (a collision means a hand-edited record)
   const rec = loadUserPacks();
   for (const id of Object.keys(rec)) {
     const v = normalizePack(rec[id], {});
@@ -316,15 +264,17 @@ function mergeUserPacks() { // boot: the runtime pack list = shipped packs + cre
     if (ix >= 0) ROUTE_PACKS[ix] = v.pack; else ROUTE_PACKS.push(v.pack);
   }
 }
-const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1); } // Beta 1.271: the tombstone applies BEFORE the created-pack merge - mergeUserPacks' collision rule (a created pack wins its id) is Andrew's-data-wins, and a created pack must never be hidden by a shipped pack's tombstone
-mergeUserPacks(); // Beta 1.166: this synchronous pass is now the LEGACY half of the boot - the pre-1.166 record registers exactly as every earlier build registered it, so a first 1.166 boot is fully usable on the legacy data before the store read lands, and the record stays the fallback read until initUserPacks' drain has verified every route into the store
-window.__userPacksReady = initUserPacks(); // Beta 1.166: the store half of the boot + the migration drain, exposed (with the status reader below) so the battery can await and inspect it - the migratePack/__migrateStatus precedent. Fire-and-forget for the app itself: it never blocks the boot, and because the marker is earned, an incomplete drain simply runs again next boot
+// the tombstone applies BEFORE the created-pack merge: a created pack must never be hidden by a shipped pack's tombstone
+const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1); }
+mergeUserPacks(); // the legacy half of boot: the app is fully usable on legacy data before the store read lands
+window.__userPacksReady = initUserPacks(); // the store half + drain, exposed for the battery; fire-and-forget, an incomplete drain reruns next boot
 window.__userPacksStatus = () => upStatus;
 window.__userPacksReady.then(() => { migratePack(); }); // chained on the packs settle so the manifest is the full union; migratePack self-gates when nothing was downloaded
 function uniqueRouteId(name) { // a slug from the name, uniqueness-checked against shipped + created ids
   let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'route';
   let id = base, i = 2;
-  while (ROUTE_PACKS.some(p => p.id === id) || SHIPPED_PACK_IDS.has(id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; } // Beta 1.271 (Codex P2, PR #167): SHIPPED_PACK_IDS stay reserved even when the pack is tombstoned off ROUTE_PACKS - a created route that took a shipped id would be misread as shipped by deleteRoute (its store definition never deleted, resurrecting it) and refused by doRestore's created-id check
+  // shipped ids stay reserved even when tombstoned: a created one taking one would be misread as shipped
+  while (ROUTE_PACKS.some(p => p.id === id) || SHIPPED_PACK_IDS.has(id) || Object.prototype.hasOwnProperty.call(userPackCache, id)) { id = base + '-' + i; i++; }
   return id;
 }
 function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const m = /^Route (\d+)$/.exec(p.name || ''); if (m) mx = Math.max(mx, +m[1] + 1); } return 'Route ' + Math.max(mx, ROUTE_PACKS.length + 1); }

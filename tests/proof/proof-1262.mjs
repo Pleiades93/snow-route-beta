@@ -32,7 +32,7 @@ const changelog = read('CHANGELOG.md');
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 const span = (from, to) => { const a = pick.indexOf(from); const b = pick.indexOf(to, a + 1); return a > -1 && b > a ? pick.slice(a, b) : ''; };
-const block = span('// ---- Beta 1.262 (Andrew, 2026-11-20): the intersection POI', "$('crClear').addEventListener('click'");
+const block = span('// ---- intersection POI ----', "$('crClear').addEventListener('click'");
 
 // ---------- the surface ----------
 check('1: the surface state stands: one GeoJSON source id, one POI record, one frame handle',

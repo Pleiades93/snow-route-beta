@@ -76,7 +76,7 @@ check('4c: the grid watchdog + stall landing exist and settle through the existi
   // pump's own finish calls must not carry it.
   cache.includes('function crGridWatchdog(g)') && cache.includes('function crGridStall(g)') &&
   cache.slice(cache.indexOf('function crGridStall(g)'), cache.indexOf('function crGridPump(g)')).includes('crGridFinish(g);'));
-check('4d: the heartbeat is armed at preparation entry, not only at the pump', cache.includes('crGridArmTicker(g); // Beta 1.229: the heartbeat runs from preparation ENTRY'));
+check('4d: the heartbeat is armed at preparation entry, not only at the pump', cache.includes('crGridArmTicker(g); // the heartbeat runs from entry'));
 check('4e: the fallback box prep carries the mirror watchdog, orphaning its wedged landing by generation',
   citydata.includes('function crPrepWatchdog(prep, gen, session)') && citydata.includes('crPrepWatchdog(prep, gen, session);'));
 
