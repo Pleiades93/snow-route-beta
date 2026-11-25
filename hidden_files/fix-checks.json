@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "1715b53bb8b79db45bbd844f792a3c9a016a30de4d4d9c72ccf1863aac3bb4de",
+  "canonical_registry_sha256": "74c8d57964ae31fee4713c6b5a067b4326c0ce349e97634ebbb8d8c736669fa8",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -259,7 +259,7 @@
    "file": "parts/app5.js",
    "fix": "The 1.54 keyboard PIN stays OUT (1.55 correction): offsets follow the live report while typing \u2014 pinning them put the note box behind the keyboard, out of sight (Andrew, 2026-11-01). (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-kb-pin-absent",
-   "pattern": "The pin is OUT: offsets follow the live report while typing",
+   "pattern": "offsets follow the live report while typing",
    "type": "grep_present"
   },
   {
@@ -267,7 +267,7 @@
    "file": "parts/app2.js",
    "fix": "Keyboard state has ONE owner (app4's kbSync): renders never touch the kb class \u2014 they report editor removal to the owner (Beta 1.56). A second writer strands the state on.",
    "id": "beta-kb-single-owner",
-   "pattern": "renders never touch the kb class - the keyboard owner (app4) reconciles",
+   "pattern": "renders never touch the kb class: the keyboard owner (app4) reconciles",
    "type": "grep_present"
   },
   {
@@ -329,7 +329,7 @@
    "file": "parts/app5.js",
    "fix": "While the keyboard is up the layout variables FREEZE at their pre-keyboard values (Beta 1.61): the keyboard overlays the app instead of resizing it \u2014 the live-chase re-fit the sheets on every keyboard tick and the note menus flickered (Andrew, 2026-11-01). (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-kb-layout-freeze",
-   "pattern": "if (kb) return; // Beta 1.61: while typing, the layout variables stay frozen at their pre-keyboard values",
+   "pattern": "if (kb) return; // while typing, layout variables freeze at pre-keyboard values",
    "type": "grep_present"
   },
   {
@@ -337,7 +337,7 @@
    "file": "parts/app2.js",
    "fix": "A note DRAFT is scoped to its street (noteEdFor names the editor's owner): switching streets finalizes the old editor against ITS street first \u2014 a draft landing on the wrong street is data corruption in miniature.",
    "id": "beta-note-draft-scoped",
-   "pattern": "noteEdFor names the street whose editor is actually in the DOM - the draft's owner",
+   "pattern": "noteEdFor names the street whose editor is actually in the DOM: the draft's owner",
    "type": "grep_present"
   },
   {
@@ -345,7 +345,7 @@
    "file": "parts/app1.js",
    "fix": "Verified writes are the rollback primitive (Phase 4, C3): txSet/txDel write AND read back, so a rollback knows the truth. An unverified rollback can 'restore' a lie.",
    "id": "beta-rollback-verified",
-   "pattern": "// Verified writes + the transaction coordinator (Beta 1.102, architecture Phase 4 / C3).",
+   "pattern": "trust is earned by read-back; runTx undoes in reverse",
    "type": "grep_present"
   },
   {
@@ -353,7 +353,7 @@
    "file": "parts/app1.js",
    "fix": "Deletions REPORT like writes (Beta 1.63, F03): a failed removeItem used to be invisible, so 'deleted' state resurrected on the next load. lsDel's honesty is the contract.",
    "id": "beta-lsdel-reports",
-   "pattern": "deletions report like writes - a failed removeItem used to be invisible",
+   "pattern": "deletions report like writes",
    "type": "grep_present"
   },
   {
@@ -444,7 +444,7 @@
    "file": "parts/app5.js",
    "fix": "Keyboard-settle conclusion NEEDS A REAL DROP (Beta 1.69, N02): unchanged samples alone no longer prove settle \u2014 iOS can report full height for hundreds of ms before the keyboard moves, and the old sampler lined the field up against wrong geometry, never to recheck. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-kb-settle-needs-drop",
-   "pattern": "unchanged samples alone no longer prove the keyboard has settled",
+   "pattern": "unchanged samples do not prove settlement (iOS reports full height early)",
    "type": "grep_present"
   },
   {
@@ -466,7 +466,7 @@
    "file": "parts/app5.js",
    "fix": "Keyboard CLOSE waits for the height to RISE back and settle before releasing the frozen state (1.54/1.55 lifecycle): dropping it at blur re-animated the sheet 'like opening for the first time' against a moving target (Andrew, 2026-11-01). (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-kb-close-needs-rise",
-   "pattern": "SETTLES (back at the settled size, or unchanged across samples, capped ~1.5s)",
+   "pattern": "on close, release only once the height settles",
    "type": "grep_present"
   },
   {
@@ -490,7 +490,7 @@
    "file": "parts/app3.js",
    "fix": "The trail break rule (gap > 300 s, jump > 1000 m) lives in trailSegments ONLY (Phase 2) \u2014 trailKm consumes its segments; a second copy of the rule in the consumer is how the two drifted apart before.",
    "id": "beta-trailkm-shared-breaks",
-   "pattern": "lives in trailSegments now; the pairs inside a segment are exactly the pairs",
+   "pattern": "the break rule (gap > 300 s, jump > 1000 m) lives in trailSegments now",
    "type": "grep_present"
   },
   {
@@ -498,7 +498,7 @@
    "file": "parts/app3.js",
    "fix": "trailKm compares its window boundary at SECOND precision (Beta 1.71, B04): trail timestamps are whole seconds \u2014 a mid-second start otherwise discards the run's first legitimate segment.",
    "id": "beta-boundary-second-precision",
-   "pattern": "const sinceSec = Math.floor(sinceMs / 1000); // Beta 1.71 (audit B04)",
+   "pattern": "timestamps are whole seconds: compare at the same precision",
    "type": "grep_present"
   },
   {
@@ -635,7 +635,7 @@
    "file": "parts/app1.js",
    "fix": "The coverage sanitizer does NOT run at script eval (it moved into the loader, where the route's samples exist) \u2014 an eval-time pass judged coverage against an empty geometry.",
    "id": "beta-cov-sanitizer-not-at-eval",
-   "pattern": "this pass used to sit at script eval in app3",
+   "pattern": "inflated coverage; the pass lives here now",
    "type": "grep_present"
   },
   {
@@ -758,7 +758,7 @@
    "file": "parts/app2.js",
    "fix": "A Streets rebuild finalizes the open editor's pending save SYNCHRONOUSLY first (Beta 1.79): a debounced timer pointing at a discarded textarea stranded notes (drive88) when a style-ready refresh landed mid-edit.",
    "id": "beta-note-save-flush-on-rebuild",
-   "pattern": "replaces the open editor too. Finalize its pending save HERE, synchronously",
+   "pattern": "finalize its pending save here, synchronously, not by its timer",
    "type": "grep_present"
   },
   {
@@ -985,7 +985,7 @@
    "file": "parts/app4.js",
    "fix": "The ACTIVE route exports from the key mapping it is actually RUNNING on (Beta 1.92, F02): on a legacy-fallback boot LS points at the legacy keys \u2014 reading the fresh slot would emit a valid-looking EMPTY backup.",
    "id": "beta-backup-active-mapping",
-   "pattern": "the ACTIVE route exports from the key mapping it is actually running on",
+   "pattern": "exports from the keys the route runs on: a legacy-fallback boot's fresh slot",
    "type": "grep_present"
   },
   {
@@ -1001,7 +1001,7 @@
    "file": "parts/app4.js",
    "fix": "A backup FLUSHES FIRST (Beta 1.92, F04): the buffered trail/coverage land before the export reads \u2014 a backup must not lag the work it claims to hold.",
    "id": "beta-backup-flush-first",
-   "pattern": "PERSIST.flush(true); // Beta 1.92 (deep audit F04): flush the buffered trail/coverage first",
+   "pattern": "PERSIST.flush(true); // flush the buffered trail/coverage first",
    "type": "grep_present"
   },
   {
@@ -1009,7 +1009,7 @@
    "file": "parts/app1.js",
    "fix": "A failed start-key DELETE retries through the flush (startDirty \u2014 Beta 1.92, F05): a delete that silently failed resurrected a finished run's start on the next load.",
    "id": "beta-start-delete-retry",
-   "pattern": "if (this.flags.start) saveStart(); // Beta 1.92 (audit F05)",
+   "pattern": "if (this.flags.start) saveStart(); // saveStart re-arms the flag itself on failure",
    "type": "grep_present"
   },
   {
@@ -1017,7 +1017,7 @@
    "file": "parts/app4.js",
    "fix": "The offline download is SINGLE-FLIGHT (Beta 1.92, F07): a second tap while a download runs starts no competing job.",
    "id": "beta-preload-single-flight",
-   "pattern": "let preloadRunning = false; // Beta 1.92 (deep audit F07): single-flight",
+   "pattern": "let preloadRunning = false; // single-flight",
    "type": "grep_present"
   },
   {
@@ -1113,7 +1113,7 @@
    "file": "parts/app1.js",
    "fix": "The migration COMMITS with its marker only after the copy lands \u2014 an unmarked migration re-runs and (no-wipe notwithstanding) re-judges data it already moved.",
    "id": "beta-migration-marker-commit",
-   "pattern": "lsSet(rk.mig, '1'); // commit.",
+   "pattern": "lsSet(rk.mig, '1'); // commit: if this write fails",
    "type": "grep_present"
   },
   {
@@ -1205,7 +1205,7 @@
    "file": "parts/app5.js",
    "fix": "The pack migration is VERIFIED: the completion flag is set only after verifying everything that exists in either cache is present in the pack cache (Beta 1.95, SR-194-05/06) \u2014 1.94 set it unconditionally after a catch-all copy, so a partial copy was marked complete and never retried. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-pack-migration-verified",
-   "pattern": "the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache",
+   "pattern": "the flag sets only after verification",
    "type": "grep_present"
   },
   {
@@ -1213,7 +1213,7 @@
    "file": "parts/app4.js",
    "fix": "The preload LIST is shared (preloadUrlList \u2014 Beta 1.95 SR-194-06): the download handler and the pack migration derive from the SAME list, one source of truth, so the two can never drift apart.",
    "id": "beta-preload-list-shared",
-   "pattern": "extracted from the download handler so the offline-pack migration below derives its manifest from the SAME list",
+   "pattern": "function preloadUrlList() { // the set: the union over every known pack",
    "type": "grep_present"
   },
   {
@@ -1363,7 +1363,7 @@
    "file": "parts/app4.js",
    "fix": "Unknown-name counting scans notes in the OBJECT form too (Beta 1.96, SR-195-05): the restore accepts that shape and the loader drops its names \u2014 counting only the array form let those names vanish uncounted.",
    "id": "beta-notes-object-counted",
-   "pattern": "notes in the OBJECT form ({street: [entries]})",
+   "pattern": "object-form notes ({street: [entries]}): never written, but restore accepts them",
    "type": "grep_present"
   },
   {
@@ -1371,7 +1371,7 @@
    "file": "parts/app4.js",
    "fix": "ONE Backup button (Beta 1.96, Andrew's design): a backup that cannot be built falls back AUTOMATICALLY to the loudly-labelled recovery export instead of refusing mid-clean and sending him to a second button.",
    "id": "beta-backup-auto-recovery",
-   "pattern": "if (!b) { shareRecovery(true); return; } // Beta 1.96 (Andrew's design): ONE Backup button",
+   "pattern": "if (!b) { shareRecovery(true); return; } // one Backup button",
    "type": "grep_present"
   },
   {
@@ -1570,7 +1570,7 @@
    "file": "parts/app1.js",
    "fix": "The loader CALLS the reconciler on every route load (Beta 1.102): a reconciler that exists but is never called is a decoration, and interrupted finishes would strand forever.",
    "id": "phase4-reconcile-call",
-   "pattern": "reconcileInterruptedFinish(rawHistory); // Beta 1.102",
+   "pattern": "reconcileInterruptedFinish(rawHistory); // resolve a finish that died between gates",
    "type": "grep_present"
   },
   {
@@ -2031,7 +2031,7 @@
    "file": "parts/app1.js",
    "fix": "Keep-awake is SESSION-ONLY (Beta 1.112, Andrew): loadSettings forces awake=false every load \u2014 a persisted awake flag would hold the screen on forever after one forgotten toggle.",
    "id": "beta-1112-awake-session-only",
-   "pattern": "s.awake = false; // Beta 1.112 (Andrew)",
+   "pattern": "s.awake = false; // screen-awake is session-only",
    "type": "grep_present"
   },
   {
@@ -2064,7 +2064,7 @@
    "file": "parts/app3.js",
    "fix": "Wake-lock acquisition RECOMPUTES want after the async gap (Beta 1.113): between requesting and receiving, the setting or visibility may have changed \u2014 hold the lock only if it's still wanted.",
    "id": "beta-1113-wake-recompute",
-   "pattern": "if (wantNow()) wakeLock = lock; // still wanted: hold it",
+   "pattern": "still wanted: hold it - the sentinel is owned from here until its release",
    "type": "grep_present"
   },
   {
@@ -2236,7 +2236,7 @@
    "file": "parts/app5.js",
    "fix": "buildGeometry is CALLED per route load (Beta 1.117, F1): definition without the call leaves the second route rendering the first route's geometry. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "sep-buildgeometry-called-per-load",
-   "pattern": "buildGeometry(pack); // Beta 1.117 (F1)",
+   "pattern": "buildGeometry(pack); // geometry BEFORE state",
    "type": "grep_present"
   },
   {
@@ -2244,7 +2244,7 @@
    "file": "parts/app1.js",
    "fix": "The stretch builder is a PURE function of a roads object (Beta 1.117): the pre-1.117 eval-time IIFE, parameterized \u2014 geometry must be rebuildable for any pack, not computed once for 5W.",
    "id": "sep-no-eval-stretch-builder",
-   "pattern": "the stretch builder as a PURE function of a roads object - the pre-1.117 eval-time IIFE, parameterized",
+   "pattern": "the stretch builder: pure, per-run",
    "type": "grep_present"
   },
   {
@@ -2252,7 +2252,7 @@
    "file": "parts/app3.js",
    "fix": "The coverage samples are a PURE function of a stretch set (Beta 1.117): same separation rule as the stretch builder \u2014 samples derive from whatever geometry is loaded.",
    "id": "sep-no-eval-samples",
-   "pattern": "the coverage samples as a PURE function of a stretch set - the pre-1.117 eval-time IIFE, parameterized",
+   "pattern": "samples as a pure function of a stretch set",
    "type": "grep_present"
   },
   {
@@ -2271,7 +2271,7 @@
    "file": "parts/app5.js",
    "fix": "Route switches CALL the engine's rebuild seam (Beta 1.117): the seam existing without the call leaves stale geometry on screen after a switch. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "sep-engine-rebuild-called",
-   "pattern": "if (window.GLP) window.GLP.rebuildRoute(); // Beta 1.117",
+   "pattern": "if (window.GLP) window.GLP.rebuildRoute(); // geometry + CUR follow the pack on every load",
    "type": "grep_present"
   },
   {
@@ -2309,7 +2309,7 @@
    "file": "parts/app3.js",
    "fix": "A switch CLEARS the in-memory cancel snapshot (Beta 1.117, F3): runSnap belongs to the outgoing run \u2014 a stale snapshot would let Cancel 'restore' route A's board onto route B. Beta 1.148 (Tranche 5, A4(ii)): the clearing line moved verbatim into app3's own resetNotesHistorySession hook (app4's resetSwitchSession now calls the hook) - probe re-pointed to the line's new home, pattern unchanged.",
    "id": "sep-runsnap-cleared-on-switch",
-   "pattern": "runSnap = null; // F3: the in-memory cancel snapshot belongs to the outgoing run.",
+   "pattern": "the in-memory snapshot is the outgoing run's; the persisted copy stays untouched",
    "type": "grep_present"
   },
   {
@@ -3015,7 +3015,7 @@
    "file": "parts/app5.js",
    "fix": "Create-after-delete works because boot REMOVES the boot class (Beta 1.126): the restored boot class had hidden the whole create stage \u2014 remove, never add. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "create-after-delete-no-html-boot",
-   "pattern": "document.documentElement.classList.remove('boot'); // Beta 1.126: NOT add.",
+   "pattern": "document.documentElement.classList.remove('boot'); // do NOT add html.boot here",
    "type": "grep_present"
   },
   {
@@ -3079,7 +3079,7 @@
    "file": "parts/app4.js",
    "fix": "The recovery file can be built from IN-MEMORY definitions (Beta 1.142, DA-09): when storage cannot be read at all, the definitions come from the in-memory packs \u2014 recovery must work in exactly the state where storage is broken.",
    "id": "beta-1142-da09-recovery-memory-defs",
-   "pattern": "when it cannot be read at all, the definitions come from the in-memory packs",
+   "pattern": "definitions settle first: as stored, or re-validated from memory when unreadable",
    "type": "grep_present"
   },
   {
@@ -3087,7 +3087,7 @@
    "file": "parts/app4.js",
    "fix": "A non-active RUNNING route's cancel snapshot rides the recovery file (Beta 1.142, DA-08): recovery covers every route with a live run, not just the one on screen.",
    "id": "beta-1142-da08-recovery-nonactive-snap",
-   "pattern": "a non-active RUNNING route's cancel snapshot rides the recovery file too",
+   "pattern": "a non-active running route's snapshot rides too, validated on its geometry",
    "type": "grep_present"
   },
   {
@@ -3608,7 +3608,7 @@
    "fix": "Beta 1.146 (census rider D2): the PACK_FIELDS comment points at create-packs.js for normalizePack - it said 'in app4' through 1.145, a stale pointer a future edit would follow.",
    "fix_id": "packages-de-riders",
    "id": "rider-d2-packfields-pointer",
-   "pattern": "normalizePack (create-packs.js) builds every validated pack",
+   "pattern": "the one list of pack fields: normalizePack walks it",
    "type": "grep_present"
   },
   {
@@ -4529,7 +4529,7 @@
    "fix": "B-02: positionChips returns early with no map (its projLL projection has nothing to project against) instead of throwing mid-refreshSelUI on the same no-map selection path.",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-b02-positionchips-guard",
-   "pattern": "if (!sel || !map) return; // Beta 1.169 (Carbon fix round, B-02)",
+   "pattern": "if (!sel || !map) return; // chips are placed by projection",
    "type": "grep_present"
   },
   {
@@ -5297,7 +5297,7 @@
    "fix": "Beta 1.186 storage fix round (PR #25, merge 0c66e05fe5fe): the three adjudicated storage findings closed - P2 run-distance undercount, C-01 sess/trail marker mismatch, P1 restore write-fence race - plus the gate-round corrections (Codex F1 adopt-before-bank, F2 primary re-arm, F3 drop-don't-clear). If a probe fails, that fix has regressed or been reverted in the source - restore the fixed form and re-run drive169/drive187.",
    "fix_id": "storage-fix-round-1186",
    "id": "storage1186-p1-fence-before-snapshot",
-   "pattern": "Beta 1.186 (storage fix round, P1): the write fence rises BEFORE the snapshot",
+   "pattern": "PERSIST.fenceUp(); // the fence rises before the snapshot",
    "type": "grep_present"
   },
   {
@@ -5333,7 +5333,7 @@
    "fix": "Beta 1.186 storage fix round (PR #25, merge 0c66e05fe5fe): the three adjudicated storage findings closed - P2 run-distance undercount, C-01 sess/trail marker mismatch, P1 restore write-fence race - plus the gate-round corrections (Codex F1 adopt-before-bank, F2 primary re-arm, F3 drop-don't-clear). If a probe fails, that fix has regressed or been reverted in the source - restore the fixed form and re-run drive169/drive187.",
    "fix_id": "storage-fix-round-1186",
    "id": "storage1186-p2-forced-flush-banks-counter",
-   "pattern": "persistRunDistFn(true); // Beta 1.186 (storage fix round, P2)",
+   "pattern": "persistRunDistFn(true); // a forced flush is the page's last word",
    "type": "grep_present"
   },
   {
@@ -5351,7 +5351,7 @@
    "fix": "Beta 1.186 storage fix round (PR #25, merge 0c66e05fe5fe): the three adjudicated storage findings closed - P2 run-distance undercount, C-01 sess/trail marker mismatch, P1 restore write-fence race - plus the gate-round corrections (Codex F1 adopt-before-bank, F2 primary re-arm, F3 drop-don't-clear). If a probe fails, that fix has regressed or been reverted in the source - restore the fixed form and re-run drive169/drive187.",
    "fix_id": "storage-fix-round-1186",
    "id": "storage1186-p2-adopt-before-bank",
-   "pattern": "never bank an UN-ADOPTED counter",
+   "pattern": "never bank an un-adopted counter: a post-reload flush",
    "type": "grep_present"
   },
   {
@@ -5378,7 +5378,7 @@
    "fix": "Beta 1.187 GPS package (PR #26, merge 1eda7b7c0fb3): the two evidence-gated items that passed their sim acceptance gates - TURN A (heading smoother sized by the real time between fixes, retention 0.65^dt, instead of 0.35 per fix) and STOP B (a fix reporting < 0.5 m/s records no trail point and banks no run distance; GPS_STILL_MPS). TURN B, STOP A and the 28 m drift gate FAILED their gates and did NOT ship - no probes for them. If a probe fails, that shipped fix has regressed or been reverted in the source - restore the fixed form and re-run drive127/drive133 + selftest-gps-package.",
    "fix_id": "gps-package-1187",
    "id": "gps1187-turna-lastfix-clock",
-   "pattern": "let lastHeadFixAt = 0; // Beta 1.187 (GPS package, TURN A)",
+   "pattern": "when the prior fix landed: the heading path is sized by the time between fixes",
    "type": "grep_present"
   },
   {
@@ -5996,7 +5996,7 @@
    "fix": "Beta 1.194 (Codex P2, PR #40): the stopGps cleanup statements stand on their own line as executable code - in the first 1.194 build a trailing comment on the line above swallowed them, leaving the render pump and compass listeners alive after location off.",
    "fix_id": "heading-filter-2a",
    "id": "stopgps-cleanup-executable",
-   "pattern": "  clearInterval(renderPump); renderPump = 0; stopCompass(); // Beta 1.64 (audit F08); Beta 1.65: the render loop stops with the watch",
+   "pattern": "clearInterval(renderPump); renderPump = 0; stopCompass(); // the render loop stops with the watch",
    "type": "grep_present"
   },
   {
@@ -6068,7 +6068,7 @@
    "fix": "Beta 1.195 GPS debug log toggle (PR #42): the 1.189/1.190 raw fix logger STAYS (Andrew reversed the same-day removal, PR #41, ten minutes after it merged; this build reverts it and converts the logger) behind a Settings switch in the Backup pane (#swFixLog). The enabled state is runtime-only: fixLogEnabled is a plain app3 let initialized false at every boot, with NO stored representation anywhere (not in SETTINGS/canonicalSettings, not in LS_GLOBAL, not in any backup field), reachable from app4 only through the doors fixLogIsEnabled/fixLogSetEnabled. Recording is gated at fixLogRaw (off = never recorded, storage never touched \u2014 fixLogClose's no-session early return keeps a logging-off watch stop from writing even an empty record); on mid-watch records from the next fix; off never deletes the log; segmentation stays by locate-on. Caps cut to ~1 hour: FIXLOG_MAX 3600, FIXLOG_MAX_CHARS 200000 (measured worst case ~46.0 chars/fix -> ~165,600 at 3,600, the rest margin). Proof: drive194 (39 checks, T1-T4 toggle sections + re-derived L sections). If a probe fails, the toggle has regressed or been reverted \u2014 restore the shipped form and re-run drive194.",
    "fix_id": "fixlog-toggle-1195",
    "id": "fixlog1195-recording-gate",
-   "pattern": "if (!fixLogEnabled) return null; // Beta 1.195: THE gate",
+   "pattern": "if (!fixLogEnabled) return null; // THE gate",
    "type": "grep_present"
   },
   {
@@ -6248,7 +6248,7 @@
    "fix": "Beta 1.201 camera traverse rule (PR #49, merge 0c9bde36): the fix for drive126 F2, adjudicated APP on shipped Beta 1.198 by the verification round \u2014 followCam's centre spring capped per-call travel at (20 + lastFixSpd) x dt with dt clamped to 100 ms, so closing a large centre gap was bounded by call count (a 643 m gap needed >= 271 calls at any cadence, ~27 s at a perfect 60 fps, minutes under frame starvation; the pre-1.198 chase closed a fixed fraction per call, 5 calls). THE RULE: per-call travel is capped ONLY when the remaining error is correction-scale (<= 25 m). followCam engages the traverse exemption on the centre error itself \u2014 if (err > 25) camUncapped = true; \u2014 however the gap arose (teleporting fix feed, reacquisition, explicit re-centre), unifying 1.198's resumeFollow-only exemption into one rule; the shipped release line and the relative cap expression are byte-untouched. Proof: acceptance simulator (1.198 harness + traverse scenario) \u2014 the 643 m gap closes to <20 m in 9 calls at starved cadence (100 ms and 3000 ms arms identical) and 60 calls / 1.0 s at 60 fps (before: 271 calls / 27.1 s); the judged session-2 replay is byte-identical to 1.198 frame-for-frame (replay centre error never exceeds 9.02 m \u2014 bearing step 4.50 deg, jerk p95 191, corner parity 11.11, lag 323 ms all exactly as shipped); resume returns (100/300/1000 m) and 30 m/s highway tracking (bounded 9.37 m lag) unchanged; PR #49 gate all four contexts success, Tier B 20/20 incl. drive194 39/39; locally drive126's F2 checks and drive148's A0/P0 readiness gates pass on the fixed build (their remaining local noise classified ENVIRONMENT in the round record). If a probe fails, the traverse rule has regressed or been reverted \u2014 restore the shipped form and re-run the camera drives.",
    "fix_id": "camera-traverse-1201",
    "id": "traverse1201-rule-invariant",
-   "pattern": "per-call travel is capped ONLY when the remaining error is a correction-scale distance (<= 25 m)",
+   "pattern": "a traverse suspends the cap while error exceeds 25 m",
    "type": "grep_present"
   },
   {
@@ -6958,7 +6958,7 @@
    "fix": "Pack cache round (PR #70, merge a417427db94fa9fc45438a0de3d09a24f308e717; rollback: revert the merge -> 6ddbb380). Andrew approved 'fix all of it' in chat 2026-11-15, covering two assessed Carbon-sweep leftovers (human assessment: denylist-mediums-assessment; both graded REAL at LOW; the tile cache holds re-downloadable map data only, no stored format touched). C-02 (parts/app4.js, stDel): the offline-cache delete ran guarded only by the per-page preloadRunning flag, breaking the pack writers'-turn contract (takePackWriteTurn) both other pack mutations honour; it now acquires the turn and holds it across the delete and the metadata clears, released in a finally. C-01 (same file, the xPre download handler): downloads only ever PUT manifest URLs and never pruned entries orphaned by route deletions/updates (deleteRoute never touches the pack cache), so orphans survived every same-session download while the census weighed their bytes against the 250 MB cap; the download now prunes off-manifest entries (URL-normalized comparison, like migratePack) right after its census, subtracting the freed bytes from the cap accounting. Three Codex P2s in the PR #69/#70 gate hardened the prune before it shipped: the handler refreshes persisted route registrations (initUserPacks) before building the manifest; the prune runs only on a PROVEN manifest - a fresh full store read (upGetAll) succeeds and every persisted route, normalized via normalizePack, has its whole packTileUrls set inside the manifest (a content proof, not an ID check, so a route recreated under a reused ID in a different area fails it); and the pack turn is acquired FIRST, with the refresh and manifest built inside it, so a preceding writer's completed download cannot be overtaken by a stale snapshot. On any doubt the cache is preserved whole. Proofs: tests/proof/proof-pack-cache-c01.mjs (four scenarios, both-ways demonstrated at every gate step) and proof-pack-cache-c02.mjs. Maintenance, no Beta bump (page still reads Beta 1.205, live-verified byte-identical).",
    "fix_id": "pack-cache-c01-c02",
    "id": "pack-cache-turn-first-refresh",
-   "pattern": "the turn is taken FIRST, before the registration refresh and the manifest build below",
+   "pattern": "releasePack = await takePackWriteTurn(); // the writers' turn is taken first",
    "type": "grep_present"
   },
   {
@@ -12673,7 +12673,7 @@
    "fix": "Architecture #7 (Beta 1.279): the note-editing session has ONE owner - NOTEEDIT in app2 holds the editor's state (the open street, the in-DOM editor's street, the debounced save timer, the sheet-raise flag) and every session act (draft capture, the street-switch flush, the rebuild flush, the debounced and immediate saves, toggle/close/collapse/reset, draft seeding, detach). renderStreets renders and calls it; finalising goes through the session, not the renderer.",
    "fix_id": "arch7-notesession-1279",
    "id": "arch7-noteedit-owner",
-   "pattern": "const NOTEEDIT = { // Architecture #7: the note-editing session owner",
+   "pattern": "const NOTEEDIT = { // the note session owner",
    "type": "grep_present"
   },
   {

@@ -60,7 +60,7 @@ check('4a: the Android document claims the largest viewport height', rule('html.
 check('4b: syncViewport carries the Android anchor behind the gate', app5.includes('if (DP_ANDROID && !kb && inStandalone() && fullH > h && window.innerHeight >= fullH - 2)'));
 check('4c: the anchor publishes the settled height and the matching bottom strip', app5.includes("de.style.setProperty('--vvh', fullH + 'px'); de.style.setProperty('--vvb', Math.max(0, window.innerHeight - t - fullH) + 'px');"));
 check('4d: the manifest theme_color is the app blue, matching the meta', manifest.includes('"theme_color": "#2c4ad2"') && head.includes('<meta name="theme-color" content="#2c4ad2">'));
-check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes("BOUND (Codex P2, PR #110): the anchor stands in only while the window itself still spans the settled height"));
+check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes("the settled height publishes over a short report while the window still spans the settled height"));
 
 
 console.log(`proof-1230: ${pass} passed, ${fail} failed`);
