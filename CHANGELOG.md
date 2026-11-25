@@ -1,5 +1,26 @@
 # Changelog
 
+## Beta 1.295 — 2026-11-25
+
+The spin-out pair from the issue #180 sweep. (1) GPS gap surfacing: when a clean's GPS watch goes silent past the stale window and the watchdog restarts it, the gap is recorded against the run and stamped onto the archived clean record
+(gpsGap), and after the finish flow fully completes the app advises with the new notification banner: "GPS gap in this clean" / "Part of this clean was not tracked". The banner is one shared component (showBanner in app1.js, markup and
+style in head.html) built to Andrew's decided spec: it drops in with the sampled recoil motion, rests level with the Snow Route title, stays 3 seconds and leaves on its own, white by day and dark by night, no buttons. It fires only on
+the finYes path after finishRun returns, so it can never sit between Finish and the save; a clean with no gap archives and finishes exactly as before. The gap record is held in memory for the session: a mid-clean page reload loses the
+pending flag (persisting it would need a new storage key, which is a contract change, not a drive-by). (2) Startup version check: every startup, beside the service-worker registration, the app now runs the Settings update check's own
+probe (network-only, the worker never answers it from cache), bounded by a 1500 ms abort so it can never stall the splash, and compares the served version label with the running one using the existing parseVerLabel strictly-newer rule.
+On strictly newer only, it reloads once through the existing updnav path, guarded to at most one boot-triggered reload per session; every other outcome (current, older, offline, timeout, unparseable, no registration) is silent and
+startup continues exactly as before.
+
+Evidence: drive225 (new) grades the gap clean end to end: the watchdog restart is recorded, the archive carries gpsGap, the banner shows the decided wording seated level with the title (top and left within 2 px, title span), the day
+and night faces measure headline contrast at or above 4.5:1, the banner leaves on its own, and the no-gap control archives with no stamp and no banner. proof-1273 (new) pins the seams (watchdog stamp, buildSnap stamp, banner strictly
+after finishRun in the finYes handler, the banner owner and keyframes). Mutation receipts gpsgap-1295-drive225-banner and gpsgap-1295-proof-1273 (the finYes banner call removed fails drive225 G5 twice; the record stamp removed fails
+G4/G5; proof-1273 fails 11 of 13 on the Beta 1.294 tree, twice). Local drives 118, 146, 148, 196, 204, 207, 210, 212 pass; drives 89, 136 and 162 fail locally with signatures identical on a pristine Beta 1.294 control (the T4 sampler,
+and the navigate-plus-fixed-sleep loadRoute race under rig load) and are cited as environmental, with CI as the arbiter.
+
+Rollback: a revert PR through the gate that restores the Beta 1.294 behaviour under a new version, Beta 1.296 - the label goes up, never back, so every phone that took 1.295 receives the rollback (DEVELOPMENT_RULES.md section 5).
+
+Editorial: this entry; What's New replaced with the two spin-out lines; the #ver label reads Beta 1.295. plus 6 maintenance PRs since Beta 1.294.
+
 ## Beta 1.294 — 2026-11-24
 
 The label handover, shipped turned on (Andrew's decision, 2026-11-24, taken from the real-app basemap samples): the flags.js switch ROUTE_TITLES_ON ships true, so the app-drawn centred route titles are live. They name the route at far zooms exactly as Beta 1.293 built them; across zoom 15 to 16 they fade out (the fade lives in the title layers' own spec, and the layers end at maxzoom 16), while route-names-only copies of the two basemap road-label layers (roads_labels_major-route and roads_labels_minor-route, built by the basemap pass only while the titles are on and no route is being created) fade in across the same band and name the route streets above it, like a normal map. The originals keep excluding route names at every zoom, so no street ever prints twice, in the band or out of it. Below 15 the copies render nothing. The basemap name repetition is re-picked at symbol-spacing 250 (Andrew, 2026-11-24, replacing his Beta 1.259 pick of 500): one owned write in the basemap pass covers the originals and the copies. The zoomed-out basemap floor is unchanged (names still start at zoom 13). Create mode is unchanged (no copies are built while creating, and the basemap names every street there). The off state is unchanged from Beta 1.293: flip flags.js to false and the app adds no titles and no copies, and the basemap names the route streets itself. The measured basis: at the settled fly-in view (zoom 13.98) the basemap data in use carries only 1 of the 34 route names, so the titles carry the far view; from zoom 16 up the basemap names nearly every on-screen route street, so the copies carry the close view.

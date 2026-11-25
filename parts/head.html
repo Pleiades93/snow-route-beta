@@ -400,6 +400,22 @@
   /* the re-centre button never drops: it holds its 91px seat under Day/Night in every state */
   #toast { position: absolute; left: 50%; bottom: calc(var(--vvb) + 188px + var(--sab)); /* Beta 1.221 (placement, Andrew's bar: the pill never sits on a control): this 188px is only the FLOOR the pill starts from - the old fixed 120px band sat inside the dock stack's span (measured top ~208px), so a pill painted across the Start button it reported on, and no other fixed number clears every state either (the note banner rides above the dock, sheets and modals bring their own controls, and the pill's height changes with its text). placeToast() in app1.js therefore measures at fire time and raises the pill above whatever it would cover, with a 6px gap; drive204 verifies zero overlap in the rendered page across every state a surviving toast can fire. The floor rides var(--vvb) like the dock does, so the starting gap holds when browser chrome shows */ transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45); /* Beta 1.223 (Andrew, option A): EVERY pop-up wears this one style - the app blue gradient pill, white bold text, one size standard, identical day and night; #createHint and #crHintBtn carry the same declarations. Through 1.222 the toast was a dark box (rgba(20,22,28,.95), radius 10px, 13px) that matched nothing else */ opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* THE notification banner: one owner for every advisory; rests level with the title */
+  #banner { position: fixed; top: calc(var(--vvt, 0px) + 25px + var(--sat)); left: calc(12px + var(--sal)); right: calc(12px + var(--sar)); z-index: 10003;
+    background: var(--card-solid); color: var(--ink); border-radius: 22px; box-shadow: var(--shadow-card); padding: 11px 14px;
+    display: flex; align-items: center; gap: 10px; visibility: hidden; pointer-events: none; }
+  #banner.show { animation: bannerDrop .55s cubic-bezier(.3,1.2,.4,1) both, bannerExit .4s ease-in 3.55s forwards; }
+  #bannerIco { flex: none; width: 26px; height: 26px; border-radius: 8px; background: var(--hair); display: flex; align-items: center; justify-content: center; }
+  #bannerIco:empty { display: none; }
+  #bannerIco .pwrapT, #bannerIco .pwrapD { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; }
+  #bannerIco .pico, #bannerIco .xico { width: 18px; height: 18px; flex: none; display: block; }
+  #bannerHead { display: block; font-size: 15px; line-height: 1.25; }
+  #bannerLine { display: block; font-style: normal; font-size: 13px; line-height: 1.35; opacity: .72; margin-top: 1px; }
+  #bannerLine:empty { display: none; }
+  @keyframes bannerDrop { 0% { visibility: visible; transform: translateY(-130%); opacity: 0; } 55% { transform: translateY(3%); opacity: 1; }
+    75% { transform: translateY(-1%); } 100% { visibility: visible; transform: translateY(0); opacity: 1; } }
+  @keyframes bannerExit { from { visibility: visible; transform: translateY(0); opacity: 1; }
+    to { visibility: hidden; transform: translateY(-130%); opacity: 0; } }
   #map { transition: transform .45s ease-in-out; }
 /* ===== SPLASH ===== the brand arrives and holds while the map loads behind it, then dissolves into the app */
 #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -800,4 +816,5 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="confirmPill" class="hidden"><div class="cfTitle"></div><div class="cfSub"></div><div class="cfRow"><button id="cfKeep" type="button"></button><button id="cfDanger" type="button"></button></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
 <div id="toast"></div>
+<div id="banner" role="status"><span id="bannerIco"></span><div><b id="bannerHead"></b><i id="bannerLine"></i></div></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>

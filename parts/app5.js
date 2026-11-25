@@ -78,6 +78,27 @@ $('homeBtn').addEventListener('click', ev => { if (!tapGuard('homeBtn', ev)) ret
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // a refused registration records why: the preload refuses to run without the worker and can say why
+  void (async () => {
+    const reloadKey = 'snowroute.bootUpdateReloaded';
+    try {
+      if (sessionStorage.getItem(reloadKey)) return;
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) return;
+      reg.update().catch(() => {});
+      const probe = new AbortController();
+      const timeout = setTimeout(() => probe.abort(), 1500);
+      try {
+        const served = parseVerLabel(await probeServedVer(probe.signal));
+        const running = parseVerLabel($('ver').textContent);
+        if (served && running && (served[0] > running[0] || (served[0] === running[0] && served[1] > running[1]))) {
+          sessionStorage.setItem(reloadKey, '1');
+          location.replace(location.pathname + '?updnav=1&v=' + Date.now());
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (e) {}
+  })();
   // ask to exempt this origin's data from eviction; the answer is recorded and surfaced by the Status row
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist().then(v => { storagePersist = (v === true); }).catch(() => {}); } catch (e) {} }
   // a first boot is not worker-controlled and caches nothing: once controlled, warm both style files through the worker

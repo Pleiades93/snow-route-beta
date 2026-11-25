@@ -122,6 +122,17 @@ const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#s
   }
 }
 /** @param {string} msg @param {number} [ms] @returns {void} */ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; placeToast(t); t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400); }
+// THE notification banner: the one advisory surface; a new call replaces the showing one
+/** @param {string} head @param {string} [line] @param {string} [icon] @returns {void} */ function showBanner(head, line, icon) {
+  const b = $('banner');
+  $('bannerHead').textContent = head;
+  $('bannerLine').textContent = line || '';
+  $('bannerIco').innerHTML = icon && ICONS[icon] ? ICONS[icon] : '';
+  b.onanimationend = e => { if (e.animationName === 'bannerExit') b.classList.remove('show'); };
+  b.classList.remove('show');
+  void b.getBoundingClientRect(); // restart the drop on a re-fire
+  b.classList.add('show');
+}
 // Storage — guarded; a failure is SHOWN, never silent
 /** @returns {void} */ function flagStorage() { document.body.classList.add('storage-bad'); }
 /** @param {string} k @returns {string | null} */ function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }

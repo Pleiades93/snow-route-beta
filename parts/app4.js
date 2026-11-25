@@ -777,16 +777,19 @@ let updState = ''; // state: '' unchecked this session, 'ok' current, 'avail' ne
 let storagePersist = null; // the persist() answer, recorded: true exempt, false refused, null no answer; read at pane open, never persisted
 // the version ordering the update check compares by - two numeric components, nothing else parses
 function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; }
+// the one version probe: the worker answers updprobe from the network itself, never its cached shell
+async function probeServedVer(signal) {
+  const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store', signal });
+  if (!r.ok) return null;
+  const m = (await r.text()).match(/id="ver">([^<]+)</);
+  return m ? m[1].trim() : null;
+}
 $('updBtn').addEventListener('click', async ev => {
   if (!tapGuard('updBtn', ev)) return;
   const updDone = () => { showSetPane('setStatusPane'); renderStatus(true); }; // the toasts are cut (Andrew's keep-list), so a finished check lands on the version row, rendered fresh
   try {
     if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); }
-    const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store' }); // the probe's updprobe marker makes the worker answer from the network itself, never its cached shell
-    if (!r.ok) { updState = 'fail'; updDone(); return; }
-    const html = await r.text();
-    const m = html.match(/id="ver">([^<]+)</);
-    const served = m && m[1].trim();
+    const served = await probeServedVer();
     const mine = $('ver').textContent.trim();
     if (!served) { updState = 'fail'; updDone(); return; }
     if (served === mine) { updState = 'ok'; updDone(); return; }
