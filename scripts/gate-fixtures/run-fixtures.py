@@ -1140,10 +1140,7 @@ with tempfile.TemporaryDirectory() as td:
 
 # ------------------------------------------------------- PR limit judge
 def run_limits(root, base, labels=""):
-    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-pr-limits.py"),
-                           str(root), "--base", base, "--labels", labels],
-                          capture_output=True, text=True, timeout=120)
-    return proc.returncode
+    return run_limits_out(root, base, labels)[0]
 
 
 def run_limits_out(root, base, labels=""):
@@ -1233,10 +1230,7 @@ with tempfile.TemporaryDirectory() as td:
                           capture_output=True, text=True, env=genv,
                           timeout=60)
     assert proc.returncode == 0, proc.stderr
-    # Exit 1 alone cannot tell the size verdict from the
-    # ancestry-refusal verdict (both exit 1): assert the size
-    # diagnostic, and use the labelled control on the same clone -
-    # broken ancestry refuses it too, a working size rule allows it.
+    # Assert the size diagnostic and labelled control because ancestry refusal also exits 1.
     rc, out = run_limits_out(clone, b)
     check("pr-limits: a shallow (CI-shaped) checkout still judges "
           "the size rule",
