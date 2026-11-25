@@ -200,6 +200,12 @@ round (a); the packfields cap list in this round); the rest are
 checked on every push, against the prospective tree like the
 other gates.
 
+**Approval policy.** The merge and approval rules (who may
+approve what, the large-change label, when a Beta bump is carried)
+are consolidated in `docs/APPROVAL-POLICY.md` — approval only; the
+gate's checks stay in §3 and in `checks.yml`, and the policy file
+never restates them.
+
 ## 2. Per-change report (required with every merge)
 
 - What changed and why.

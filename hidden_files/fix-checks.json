@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "bf48083435241ba09366e9ac6c0158b94588b2d6493cfce44c118112d19b6728",
+  "canonical_registry_sha256": "fac2ed7860e8e1658c224004aad01b550667ede44bc73f416dc3702b09ab5ee8",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1526,
-   "included": 1496,
+   "canonical": 1527,
+   "included": 1497,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13319,6 +13319,15 @@
    "fix_id": "machinery-gate-ci-limits",
    "id": "machinery-gate-guidelines-sync",
    "pattern": "GUIDELINES_CANONICAL",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "docs/APPROVAL-POLICY.md",
+   "fix": "Machinery gate round (Claude Ship graft): the merge and approval rules have one home in the repo - approval only; the file never restates the gate's checks.",
+   "fix_id": "machinery-gate-approval-policy",
+   "id": "machinery-gate-approval-policy",
+   "pattern": "Approval policy",
    "type": "grep_present"
   }
  ]
