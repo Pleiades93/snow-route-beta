@@ -188,9 +188,7 @@ function showPaceMain() { // the Pace sheet main view - header + pace content vi
 function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; showPaceMain(); renderPace(); $('pacePanel').classList.add('open'); }
 function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet
 
-// ===== CLEAN DETAIL (production v5.53 model): one archived clean inside the list sheet - totals, its streets
-// in mark order with per-street times, its notes, noted-but-not-cleaned group, two-tap delete. Back and Delete
-// both land on Previous cleans (expanded), never on the Streets list. =====
+// ===== CLEAN DETAIL ===== one archived clean in the list sheet: totals, streets in mark order, notes, two-tap delete
 const CLEAN_DEL_MIN_ARM_MS = 700;
 let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0, cleanDelArmedAt = NaN;
 function cleanNoteLines(entries) { return CLEAN.noteLines(entries); }
@@ -342,24 +340,7 @@ function saveSnap() {
   const ok = lsSet(LS.snap, BOARD.serialiseSnap(runSnap, runStart)); // Arch-2: the snapshot string is the board module's one construction
   if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
 }
-// the run's transitions have ONE owner - RUN
-// Through 1.276 the four transitions each spelled their own reset ritual by
-// hand: Start captured the snapshot, stamped runStart and opened the
-// distance counter inline; Cancel and Finish each repeated the same
-// teardown (the cancel snapshot's delete, its flag clean, the counter's
-// end, the run identity zero) in their own order beside their own extras;
-// and the route switch kept a fourth, state-only reset of the same session
-// (the counter's state zero, the snapshot dropped, the history panel and
-// the note editor closed down). The suggestion half of the recorded
-// no candidate here: the suggestion offer is removed outright
-// (showSuggest, the queue and the banner handlers are gone; coverage
-// still computes and feeds the board), so no protocol remains to own -
-// what remains is the transitions, and they are RUN's methods now. The
-// state itself stays where it lives (runStart is app1's binding, runSnap
-// is declared above with its 1.91 rationale): the owner holds the ACTS,
-// each in its transition's old order. The four doorway functions
-// (startClean, cancelStart, finishRun, resetNotesHistorySession) keep
-// their names and signatures - the test battery calls them by name.
+// the run's transitions have ONE owner, RUN: each transition keeps its old order; the doorway functions keep their names
 const RUN = {
   // the identity half: board captured, run stamped, counter opened; startClean keeps the saves around it
   /** @returns {void} */ begin() {
@@ -378,17 +359,11 @@ const RUN = {
     noteFor = null; $('noteModal').classList.add('hidden');
   },
 };
-// startClean carries the Start fence - the four statements after
-// persistRunDist inside it window the trail to the new run, so anything recorded before this
-// Start is evicted here (finish/cancel already clear theirs; the fence makes the window
-// invariant local to Start rather than trusting every exit path).
-// the snapshot is captured by the module (BOARD.capture - its copy depths are Cancel's semantics)
+// startClean carries the Start fence: the trail windows to the new run here, so pre-Start points are evicted at Start
 // Start is a hard exit: the shown point is back on the true position before the first fix
 function startClean() { snapReset();
   RUN.begin(); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started - warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started - warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started - warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): Start banks a fresh distance counter for the new run (RUN.begin, the transition owner's Start half), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
-// Cancel start erases everything the run recorded - its trail points, its session
-// marker, any sides marked during it, its coverage and suggestions - and stores nothing. Only Finish
-// (Andrew's word - supersedes the call that kept the trail as history.)
+// Cancel start erases everything the run recorded and stores nothing: only Finish keeps history
 function cancelStart() {
   const wasRunGps = gpsFromRun;
   const startSec = runStart ? Math.floor(runStart / 1000) : 0;
@@ -430,12 +405,7 @@ function cancelStart() {
 // cancelStart once ignored saveAll's result and claimed success; it also never refreshed the trail
 }
 $('startBtn').addEventListener('click', ev => { if (!tapGuard('startBtn', ev)) return; startClean(); });
-// CLEAR (Andrew): header button beside Pace - wipes EVERY mark on the board (all streets,
-// both sides), plus the completion times/vias and the GPS coverage behind them.
-// the tap ASKS first, through the shared confirmation (askClearAll) - through 1.270 this was the most
-// destructive un-asked action in the app (the danger inventory's #17).
-// The run itself (start time, trail, notes, history) is untouched - this is the mistake eraser, not a finish.
-// coverage-only clears too: the guard is its own predicate - the tap reads it, clearAllMarks checks it first
+// CLEAR: the header button beside Pace wipes every mark, time and coverage (the run is untouched); the tap asks first
 function boardHasMarks() { return doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0; }
 function clearAllMarks() {
   const any = boardHasMarks();
@@ -464,19 +434,7 @@ $('resetBtn').addEventListener('click', ev => {
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
 $('finYes').addEventListener('click', ev => { if (!tapGuard('finYes', ev)) return; $('finModal').classList.add('hidden'); finishRun(); });
-// THE shared confirmation surface (head.html #confirmPill -
-// the selection pill's faces and box, centred). The app grew three
-// unrelated confirm patterns (the Finish modal, the Settings reset two-step,
-// the saved-clean two-tap arm); this is the ONE reusable surface new
-// confirmations take, first used by Cancel start.
-// the backdrop ladder samples - his pick B1): the surface owns a backdrop
-// (head.html #confirmBackdrop - a quarter dim, rgba(0,0,0,.25), under a 3px
-// backdrop blur), shown and hidden with the pill by the two functions below,
-// so every confirmation gets the same focus treatment and no call site ever
-// adds its own. Buttons only: the backdrop is focus, not a tap target -
-// there is no outside-tap dismissal, so a stray tap can neither confirm
-// nor dismiss. showConfirm replaces any pending question wholesale - the
-// stored danger callback is the only one the danger button can ever run.
+// THE shared confirmation surface (#confirmPill): one reusable surface, buttons only; the backdrop is focus, never a tap target
 let confirmDangerCb = null;
 /** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; $('confirmBackdrop').classList.add('on'); p.classList.remove('hidden'); }
 /** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
@@ -494,60 +452,7 @@ function trailKm(sinceMs) {
   }
   return d / 1000;
 }
-// ===== RUN DISTANCE COUNTER =====
-// The counter accumulates each accepted fix's segment AT RECORD TIME (acceptFix), under
-// trailKm's own pair rule (both endpoints in the run, <=300 s apart, <=1000 m), so the total
-// survives any later trail truncation; buildSnap reads it when it belongs to the finishing
-// run. It persists (LS.rundist) so a mid-run reload resumes it; a lost or foreign record
-// re-derives from the surviving trail (RUNDIST.adopt) - the pre-1.167 figure, never worse.
-// extended the never-worse rule to a matching but STALE
-// record: adoption reconciles a banked figure against the surviving trail by max(), and
-// PERSIST.flush's forced flush (app1) banks the counter at page death.
-// the trail is
-// now a backend-only rolling window - only the live run's last 60 minutes of points
-// (TRAIL_WINDOW_S, app1) - kept solely as this counter's fallback; there is no drawn trail
-// line and no archived path, so the 1.167 capped flag (which meant "the trail lost this
-// run's points, the stored path is shorter") retires with the surface it described: under
-// a window, eviction is the design, not an event, and nothing branches on it. The counter
-// is hardened instead: persistRunDist banks on EVERY recorded fix (the 30 s / 25 m throttle
-// is gone - the record is a few dozen characters, overwritten in place, so the storage
-// footprint is unchanged) and a second copy rides LS.rundist2, written only by the
-// trail-flush path (bankRunDistMirror via PERSIST.flush, app1) so the two records fail
-// independently. THE RECONCILIATION INVARIANT: every recovery candidate is a LOWER BOUND
-// of the run's true total - a banked record only ever accumulates real recorded segments,
-// and the window's trailKm sums a SUBSET of the run's recorded pairs under the same pair
-// rule - so max() can raise a stale bank toward truth but can never overstate it, and the
-// trail derivation is never the authority for a span the window does not cover. The named
-// residual: if BOTH counter copies are dead, recovery is exactly the window's own
-// distance - the last hour, nothing more is promised.
-// The record also carries the counter's ENDPOINT (end - the last recorded point).
-// Per-fix banking writes the counter synchronously while the trail's own write is
-// buffered in PERSIST.flush, so a process death inside that buffer leaves the banked
-// total AHEAD of the stored trail; without the endpoint, adoption would restore
-// the newer total while the next segment is measured from the stored trail's
-// older tail - counting the in-between travel twice,
-// Codex P2). Adoption restores the endpoint as the counter's SEGMENT ANCHOR
-// (RUNDIST.cur.end, read by RUNDIST.record when it is newer than the trail's tail) -
-// deliberately NOT as a point in the trail: an appended endpoint would hand
-// trailKm a synthetic edge (flushed tail -> endpoint) that was never a
-// recorded pair, and where the lost span held pair-rule-rejected jumps that
-// edge's chord could invent distance the counter never banked,
-// Codex P2). Held outside the trail, the endpoint steers only the next
-// segment's measurement; the derivation keeps summing recorded pairs alone.
-// Records written before carry no endpoint and adopt as they did.
-// the counter has ONE owner - RUNDIST. Through
-// 1.275 the record and its two bank ledgers were loose bindings down here and
-// the lifecycle's obligations sat with the callers: Start assigned the record
-// inline before banking, acceptFix adopted before recording, buildSnap adopted
-// before reading, and Finish/Cancel each spelled the reset-plus-two-deletes
-// teardown. The methods below are those obligations, moved in: every consumer
-// (record, bank, flushMirror, distance) adopts-if-foreign FIRST, so no path
-// can bank or read an un-adopted counter - the invariant persistRunDist's own
-// 1.186 guard already enforced for the writer alone. The two published handles
-// survive as one-line delegations under the owner (persistRunDist for
-// PERSIST.flush's forced-bank step and bankRunDistMirror for its mirror step -
-// app1 resolves both by name through lateFn, and scripts/app1-types.d.ts
-// declares both); adoptRunDist and resetRunDist retire as globals.
+// ===== RUN DISTANCE COUNTER ===== accumulates at record time; every recovery candidate is a lower bound, so max() never overstates
 const RUNDIST = {
   cur: { run: 0, m: 0, end: null },
   wrote: { run: 0, m: 0, end: null },
@@ -605,9 +510,7 @@ const RUNDIST = {
     this.reset(); lsDel(LS.rundist); lsDel(LS.rundist2);
   },
 };
-// The published doorway: PERSIST.flush's step table (app1) resolves
-// these two by name through lateFn, exactly as it resolved the loose helpers -
-// the walk's steps keep their handles, the work is the owner's now.
+// the published doorway: PERSIST.flush's step table resolves these two by name through lateFn; the work is RUNDIST's
 /** @param {boolean} [force] @returns {void} */ function persistRunDist(force) { RUNDIST.bank(force); }
 /** @returns {void} */ function bankRunDistMirror() { RUNDIST.flushMirror(); }
 // a fingerprint of the geometry as cleaned (names + side-metres, FNV-1a): later edits are detectable against it
@@ -643,22 +546,13 @@ function finishRun() {
   // under 3 streets clears unsaved, unless the clean is full: a short route's complete clean is real
   const archiving = !!(snap && (doneSet.size >= 3 || (doneSet.size > 0 && STREETNAMES.every(n => doneSet.has(n)))));
   const prevHist = history;
-  // the finish is a small TRANSACTION -
-  // both gated writes land BEFORE any state changes, so a storage failure
-  // leaves the run fully intact instead of half-finished: (1) the archive
-  // record, (2) the cleared authority (sides) record. Gate 2 failing rolls
-  // gate 1 back. Before 1.57 only the archive was gated; the cleared board
-  // written afterwards was not, so a failed sides write resurrected the
-  // finished clean beside its own archive entry on the next launch.
+  // the finish is a TRANSACTION: both gated writes land before any state changes; gate 2 failing rolls gate 1 back
   let newHist = null;
   // the incoming archive JOINS the history - nothing is evicted, at any size
   if (archiving) newHist = HIST.appended(snap);
   const cleared = BOARD.clearedSides(); // Arch-2: the zeroed sides a committed finish writes are built by the board module
   const prevSidesRaw = lsGet(LS.sides); // kept so the start step's rollback can restore this write exactly (including its absence)
-  // the finish transaction on the ONE coordinator - the
-  // 1.57-1.93 gate discipline mechanized: archive, cleared authority, start-key
-  // delete; verified writes; verified rollback in reverse. A kill between gates
-  // leaves a signature reconcileInterruptedFinish resolves at boot (CG-196-04).
+  // the finish transaction on the ONE coordinator: archive, cleared authority, start-key delete; verified writes, verified rollback in reverse
   const fSteps = [];
   // the cleanup obligation is the transaction's first step, so every prefix carries it; the post-commit saveAll discharges it
   fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: finishAt })), undo: () => txDel(LS.finclean) });
@@ -751,27 +645,13 @@ function pushGps() {
   src.setData({ type: 'FeatureCollection', features: feats });
 }
 let gpsAccM = 0;
-// drawTrail is RETIRED with the surface it served - there is no
-// trail line on the map any more (the 'trail' source and 'trail-line' layer went with it,
-// app2). Through 1.190 this block filtered the stored trail to the live run and painted it
-// (run-scoped, throttled). The stored trail itself survives as
-// the distance counter's backend fallback window (see the counter block above); its
-// remaining readers are trailKm (the derivation) and buildGpx (internal only, app4).
+// drawTrail is RETIRED: no trail line on the map; the stored trail survives only as the distance counter's fallback window
 // one frame-synced loop drives dot and camera: two unsynced timers once overlapped and sped the easing up
 let renderRaf = 0, renderPump = 0, lastFrameAt = 0, lastCamAt = 0, lastPushKey = '';
 // the display coasts on the predicted track; corrections decay via dispOff over ~0.3 s (display-only)
 let dispOff = [0, 0], lastDispAt = 0;
 function dispSettled() { return Math.abs(dispOff[0]) < 0.05 && Math.abs(dispOff[1]) < 0.05; }
-// standing still, Andrew's puck
-// twitches - the position filter keeps re-settling in sub-metre steps (0.5-1.5 m display steps on
-// fixes whose raw step is under 0.02 m; ~4 px hops at zoom 18) even though this phone's raw at-rest
-// scatter measures 0.08-0.28 m. The twitch is a DISPLAY artefact, so the fix is display-only: once
-// the display has genuinely settled, the rendered point freezes at the held point until the vehicle
-// really moves. Nothing upstream changes - gpsPos, dispPos, coverage, trail, banking and the fix
-// logger (which records the un-held display track, keeping its data comparable with the 1.189-1.193
-// logs) all see true values exactly as before; only what is RENDERED (the puck, the beam and ring,
-// the follow camera's target) reads dispShownPos(). An estimator-level hold (ZUPT) was judged and
-// dropped on the same evidence: its target wander measured 20-70x smaller than its premise here.
+// standing still, the puck twitches: the fix is display-only: once settled, the rendered point freezes until the vehicle really moves
 let dispHoldPt = null; // the held [lat, lng] while engaged, else null
 // raw position at engagement: exits judge raw travel (at rest it moves <0.4 m in any window)
 let dispHoldRaw = null;
@@ -804,41 +684,7 @@ function dispHoldFix(speed, ll) {
   // exit: one moving-speed fix, two at creep threshold, or real raw travel (measured jumps 0.20-1.18 m)
   if ((spd !== null && spd >= 0.8) || dispHoldFast >= 2 || dispHoldFar >= 2) { dispHoldPt = null; dispHoldRaw = null; dispHoldLow = 0; dispHoldFast = 0; dispHoldFar = 0; }
 }
-// the driving road snap (Andrew's ask + the map-matching study):
-// driving, the puck drifts off the drawn road - measured on Andrew's two real logged drives,
-// the DISPLAYED position sat a median 5.2 m (arterials) / 2.9 m (residential) off the nearest
-// centreline, past 3.5 m for 59% / 41% of moving fixes, with sustained 6-9 m runs on Highway
-// 27. The big apps answer this with map matching over a road graph; this app has no graph,
-// and the study's continuity-hold matcher - proven in simulation on those same two drives
-// (shown point within 3.5 m of the true road on 98.1% / 99.1% of engaged fixes, longest
-// wrong-road lock 2-3 fixes) - is what ships here, in the study's design (b) shape: an
-// explicit DRIVING state wrapping the hold, DISPLAY-ONLY throughout.
-// THE INVARIANT (the 2026-11-13 rejection, reaffirmed by the study): the recorded position
-// is never snapped. Coverage, trail, distance banking and the fix logger read gpsPos /
-// dispPos exactly as before - the snap is a second presentation transform inside
-// dispShownPos, beside the stillness hold, reachable only by rendered consumers. Three
-// guarantees keep the driveway objection dead: (1) that data path - a snapped value has no
-// route to any record; (2) the speed gate - engagement needs driving speed on EVERY fix
-// (one sub-gate fix releases outright), while plow work runs 0.5-3 m/s; (3) the hard exit -
-// a clean running makes snapping impossible, full stop (snapFix's runStart gate, and
-// startClean calls snapReset at the tap itself, before the clean's first fix).
-// ENTRY FORM (measured deviation from the study's (b) example, evidence in the build
-// record): the study sketched a multi-fix sustained entry (~5 s); priced against the
-// acceptance bars before this build, a 2-fix entry delay costs Drive 1 to 0.98113 and a
-// 3-fix delay to 0.98077 against the study's 0.98148 - both below the bar. The shipped
-// form therefore enters on the FIRST qualifying fix (the exact form the study simulated
-// and the replay sample showed) and carries "sustained" the sim's way: the gate is
-// re-earned on every single fix, so a hold can only ever persist through continuously
-// driving-speed fixes. The switch margin (3 m x 3 fixes), the drop distance (18 m), the
-// engage distance (12 m) and the speed gate (4 m/s) are the study's values exactly.
-// ROAD DATA: the index is built from what the app itself holds - the ACTIVE ROUTE's street
-// lines (always resident) plus the SHIPPED CITY PACK for the city containing the fix,
-// loaded through the create flow's own pack loader (crPackLoad; one same-origin download
-// per session per city, the download create mode already performs; packs are network-only
-// by the service worker's design, so a failed load simply means no snap - silently,
-// today's behaviour). Outside the twelve pack cities and the route's streets the app
-// holds no road geometry, so nothing snaps there. Stale geometry degrades the same way:
-// "no candidate nearby" is always answered with the true position, never a guess.
+// the road snap is DISPLAY-ONLY: records never snap; engagement needs driving speed on every fix, and a clean disables it
 const SNAP_SPEED_MPS = 4; // the driving-speed gate: engage and hold are re-earned on every fix at or above it; one fix below it releases
 const SNAP_ENGAGE_M = 12; // a candidate road must be within this of the fix to take the hold
 const SNAP_DROP_M = 18; // the hold drops when the fix is farther than this from the held road
@@ -1004,21 +850,7 @@ function renderLoop(now) {
   renderRaf = requestAnimationFrame(renderLoop);
 }
 function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || !dispSettled()) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && dispSettled() && camSpringsRest() && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
-// the camera glide (Andrew) - designed and measured in the camera-glide study on his own
-// recorded drive): both camera chases are now critically-damped springs (the SmoothDamp form —
-// Game Programming Gems 4 ch. 1.10, Unity's Mathf.SmoothDamp) instead of exponential chases. The
-// old chase (close 35% of the gap per 50 ms, tau ~116 ms) applies its largest step on the FIRST
-// frame of every chase — maximum velocity at the instant an error appears — which is the "abrupt,
-// then settle" Andrew reported: replaying his session-2 drive through the shipped path, the worst
-// bearing step measured 10.18 deg in a single frame (611 deg/s) and the smoothed centre jerk p95
-// 1,021 m/s^3, every worst event within ~50 ms of a fix landing. A spring carries VELOCITY between
-// frames, so a stepped target is absorbed into an S-curve: it starts at the velocity it already
-// has, peaks mid-travel and lands soft. The exp term is a polynomial in omega*dt, so convergence
-// is frame-rate independent exactly as the old time-based ease was. TARGETS ARE UNCHANGED —
-// followCam still centres dispShownPos(), headCam still reads theta + omega*h from heading filter
-// 2a; only the per-frame controllers changed. The estimator, 2a, the stillness hold and the
-// display track (the dispOff decay - its own follow-up, deliberately not here) are
-// untouched.
+// the camera glide: both chases are critically-damped springs carrying velocity between frames, so a stepped target lands soft, never abrupt-then-settle
 // the spring's velocity, carried between frames; zeroed whenever the follow is not the owner, so re-engages rest-start
 let camVel = [0, 0];
 let camBVel = 0; // the bearing spring's velocity state (deg/s), same rule
@@ -1071,24 +903,11 @@ function syncCentreBtn() { const b = $('centreBtn'); if (b) b.classList.toggle('
 // re-engage from rest: the spring is the ease back (no snap), cap-exempt until under 25 m
 function resumeFollow() { if (watchId == null || !followPaused) return; followPaused = false; camVel = [0, 0]; camBVel = 0; camUncapped = true; syncCentreBtn(); startRenderLoop(); }
 onMapReady(() => map.on('dragstart', () => { followPaused = true; syncCentreBtn(); }));
-// 'it locks and I'm not able to move around while I'm moving' (Andrew's drive report):
-// the dragstart above almost never fires while following - followCam's panBy on every frame keeps
-// resetting MapLibre's drag-pan handler mid-gesture, so the drag never registers (measured in the
-// rig: GPS on + following = dragstart x0 across a full drag; GPS off = it fires at once). Suspension
-// therefore ALSO listens to the raw pointer stream, which no camera move can eat: a press on the
-// canvas that moves >10 px yields the camera to the user, pan AND bearing both (the old dragend
-// northUp haul is gone - while suspended the map stays exactly where he put it), until he re-centres.
+// follow suspension also listens to the pointer stream: followCam's per-frame panBy eats the drag gesture, so dragstart almost never fires
 // the press itself suspends (map movable from the first pixel); the >10 px rule remains as backstop
 
 onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - the ONE pointer that pressed the canvas
-  // multi-touch policy, stated explicitly: only the pointer
-  // that pressed the canvas can suspend the follow, and only ITS moves count. A second
-  // pointerdown while a press is armed is IGNORED - it never re-arms the press, and its
-  // moves never suspend (a finger resting or moving on an overlaid panel, or the second
-  // half of a pinch, cannot take the camera). If the ARMING finger itself travels >10 px -
-  // including as one half of a pinch - the follow suspends: that finger is on the map and
-  // moving it, which is exactly the claim this seam exists for. Only the arming pointer's
-  // own up/cancel releases the press.
+  // multi-touch policy: only the arming pointer can suspend the follow; a second pointerdown never re-arms and its moves never count
   // the press takes the camera (no 10 px toll); the re-centre button lights in the same instant
   c.addEventListener('pointerdown', e => { if (!press) { press = { x: e.clientX, y: e.clientY, id: e.pointerId }; if (watchId != null && !followPaused) { followPaused = true; syncCentreBtn(); } } });
   window.addEventListener('pointermove', e => { if (press && e.pointerId === press.id && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } });
@@ -1097,9 +916,7 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
   c.addEventListener('wheel', () => { if (!followPaused) { followPaused = true; syncCentreBtn(); } }, { passive: true }); });
 // HEADING-UP (Andrew): whenever location is on and the camera follows, run or not, the map rotates
 
-// so his direction of travel points up - course-up from the GPS course, not the compass and not true
-// north: 'my north' is wherever he is heading. Smoothed around the circle so low-speed wobble can't spin
-// the map; under ~1 m/s the course is unreliable, so the map just holds its last bearing.
+// course-up: his heading points up, smoothed around the circle; under ~1 m/s the map holds its last bearing
 let smHeading = null;
 // when the prior fix landed: the heading path is sized by the time between fixes, not fix count
 let lastHeadFixAt = 0;
@@ -1127,13 +944,7 @@ function updateHeading(hdg, speed, now) {
   const dt = Math.min(3, Math.max(0.05, (now - lastHeadFixAt) / 1000)); lastHeadFixAt = now; lastHeadFixPerf = performance.now();
   // under ~1 m/s the course is unreliable: theta holds, the rate decays, no reverse-specific handling exists
   if (spd < 1) { headF.om *= Math.pow(0.5, dt); headF.gate = 0; return; }
-  // the EMA lagged a
-  // steady turn by omega * tau (tau = 2.32 s - the 60 deg peak the field test measured) and
-  // chased the OS course's STEPS for 5-9 s after every corner on Andrew's real drives (52 of
-  // 659 fixes over 20 deg out). This filter carries the turn rate as a state: predict theta
-  // forward by omega * dt, weigh each course fix by R = sigma(v)^2, soften outliers through
-  // the gate below - a steady turn then has no lag to chase, and a genuine step is classified
-  // as a manoeuvre within two fixes by the step escape.
+  // the heading filter carries turn rate as state: steady turns have no lag, and a step classifies within two fixes
   const q = HEAD_Q;
   const p00 = headF.p00 + dt * (headF.p10 + headF.p01) + dt * dt * headF.p11 + q * dt ** 3 / 3;
   const p01 = headF.p01 + dt * headF.p11 + q * dt * dt / 2;
@@ -1152,12 +963,7 @@ function updateHeading(hdg, speed, now) {
   headF.om = Math.max(-40, Math.min(40, headF.om + K1 * y));
   headF.p00 = (1 - K0) * p00; headF.p01 = (1 - K0) * p01; headF.p10 = p10 - K1 * p00; headF.p11 = p11 - K1 * p01;
 }
-// heading-up is applied per render tick, fractionally, in the same pipeline
-// as followCam's pan. The old form was a map.easeTo fired from updateHeading - but a camera
-// ease is cancelled by the next panBy, and while following, followCam pans on nearly every
-// frame, so the rotation starved whenever the dot was off-centre (measured in the rig:
-// smHeading chased 90 -> 170 while the bearing sat at 90). Tick application rides with the
-// pan instead of fighting it, and is frame-smooth like the rest of the follow.
+// heading-up applies per render tick with the pan: an easeTo would be cancelled by the next panBy, starving the rotation
 let lastHeadAt = 0;
 function headCam(now) {
   // no-map guard; the bearing spring zeroes whenever headCam is not the owner, so re-engages start from rest
@@ -1177,15 +983,7 @@ function headCam(now) {
 }
 // no-map tolerance as pushGps: a map-less finish must reach its transaction, not throw here
 function northUp() { smHeading = null; camBVel = 0; if (!map) return; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); }
-// ===== POSITION FILTER =====
-// A Kalman filter [the estimator navigation apps use: it carries a position AND a
-// velocity, and weighs each new fix by its stated accuracy against how well the fix
-// fits the motion so far] replaces the 3-fix weighted average. The average let every
-// noisy fix drag the dot metres sideways - worst at driveway speeds, where raw GPS
-// wander is bigger than the real movement. The filter discounts wander (at low speed
-// the estimate barely creeps) and trusts steady motion (at speed it tracks fully).
-// Worked per-axis in local metres around the first fix's origin. The hard gates in
-// acceptFix (finite/on-Earth, accuracy) still run BEFORE a fix reaches the filter.
+// ===== POSITION FILTER ===== a Kalman filter (position plus velocity) weighing fixes by accuracy: wander discounted, steady motion tracked
 let kf = null; // {ox, oy, at, x:{p,v,a,b,c}, y:{...}} - a/b/c are the axis covariance terms
 const KF_Q = 0.5; // process noise: how much real acceleration to expect between fixes
 function kfAxis(z, ax, dt, R) {
@@ -1210,28 +1008,11 @@ function kfUpdate(ll, acc, now) {
   const est = [(kf.oy + kf.y.p) / MLAT, (kf.ox + kf.x.p) / MLNG];
   return { est, snap: false };
 }
-// where the estimator's motion model says we are at THIS instant - the estimate
-// extrapolated along its own velocity from the last fix. This (not the raw estimate) is what
-// the display draws, so between fixes the dot coasts instead of freezing at the last one.
-// The horizon is capped at 2.5 s: if fixes stop arriving the dot stops too, a little past
-// the last one, instead of sailing away on a stale velocity. A reacquisition (the filter
-// voiding itself above: >10 s silence or a >75 m jump) reports snap instead, and the
-// display takes the new position immediately.
+// the estimate extrapolated along its own velocity, capped at 2.5 s: between fixes the dot coasts instead of freezing
 function kfPredict() { if (!kf) return null; const h = Math.min(Math.max((performance.now() - kf.atF) / 1000, 0), 2.5); return [(kf.oy + kf.y.p + kf.y.v * h) / MLAT, (kf.ox + kf.x.p + kf.x.v * h) / MLNG]; }
-// ===== FACING =====
-// One funnel for every facing source, smoothed around the circle so the beam never
-// snaps. Sources: the GPS course while moving (truest inside a steel vehicle), the
-// device compass while still. On iOS the compass needs a permission granted from a
-// tap, so it is requested from startGps - a genuine user gesture.
+// ===== FACING ===== one funnel for every facing source, smoothed around the circle so the beam never snaps
 let facingDeg = null, lastCourseAt = 0, compassOn = false;
-// the puck's direction light stepped about once a second -
-// facingDeg only moves when a fix or compass event lands, while the position and the camera
-// glide per frame. beamDeg is the beam's RENDERED angle: a critically-damped spring
-// (camSmoothDampAngle - the camera bearing spring's own controller, the same 0.22 s smoothTime)
-// chases facingDeg on every rendered frame, so a turn sweeps continuously between fixes and
-// lands exactly on facingDeg at rest. Presentation only: facingDeg, the recorded position,
-// the position glide and the camera are untouched, and the spring converges to the same
-// heading - no accuracy is added or taken away.
+// beamDeg is the beam's RENDERED angle: a spring chases facingDeg every frame, so turns sweep continuously and land at rest
 let beamDeg = null, beamVel = 0, lastBeamAt = 0;
 function beamTick(now) {
   if (facingDeg == null) { beamDeg = null; beamVel = 0; lastBeamAt = now; return; }
@@ -1264,86 +1045,14 @@ function startCompass() {
   else listen();
 }
 function stopCompass() { compassGen++; if (compassHandler) { window.removeEventListener('deviceorientationabsolute', compassHandler, true); window.removeEventListener('deviceorientation', compassHandler, true); } compassOn = false; }
-// ===== RAW FIX LOG - a DEBUGGING instrument =====
-// pass's recommendation): every GPS verdict so far rests on a simulator whose fixes are
-// white noise; a real phone's fixes are autocorrelated, and only the phone's own record can
-// say by how much. This log is that record: EVERY fix the watch delivers, captured in
-// acceptFix BEFORE any gate (the finite/on-Earth check, the out-of-order drop, the accuracy
-// gate) can refuse it — the raw input exactly as delivered (timestamp, lat, lng, reported
-// accuracy, speed, course — nulls kept, they are data: a stationary fix reporting no speed
-// is half of what a replay needs) — with the estimator's outputs for the same fix beside it
-// (filtered position, display position, smoothed heading), so a replay compares raw against
-// filtered without re-deriving either. Segmented by SESSION (one locate-on period, opened
-// by startGps, closed by stopGps; each session stamps the app version that recorded it) and
-// every fix carries the Start-Clean run stamp live at its delivery (0 = no clean running),
-// so cleans are marked inside the stream. BOUNDARY (the trail's standing rule, identically):
-// on-device only, it rides inside Andrew's own backup JSON and NOWHERE else — there is NO
-// display, export or share surface for it anywhere in the app; it leaves the phone only
-// inside a backup he exports and hands over himself. It is debug data, not clean data:
-// capped at FIXLOG_MAX fixes and FIXLOG_MAX_CHARS stored characters (app1) with
-// oldest-session eviction, where cleans are unlimited. And it is a pure observer: every entry point is failure-isolated (a logging
-// fault fails silent and can never touch the estimator, camera, trail or the distance counter), the
-// per-fix cost is one in-memory append, and persistence rides the trail's throttled flush.
-// Entry shape: [timestamp, lat, lng, accuracy, speed, heading, out, run] — out is null
-// until the estimator has run on the fix (a gated fix keeps null forever: delivered,
-// refused, and the refusal is itself replay data), else [filteredLat, filteredLng,
-// displayLat, displayLng, smoothedHeading] at the trail's precision.
+// ===== RAW FIX LOG ===== every fix captured before any gate, raw beside filtered; on-device, inside his backup, nowhere else
 let fixLog = [], fixLogSession = null, fixLogCount = 0;
 // records only while this flag is on: runtime-only, off at boot, never stored; the gate is fixLogRaw
 let fixLogEnabled = false;
 function fixLogIsEnabled() { return fixLogEnabled; }
 // flipping off stops recording at the next fix without closing the session or touching the stored log
 function fixLogSetEnabled(on) { fixLogEnabled = !!on; }
-// ===== the fix log's STORED form ("e3") =====
-// 1.189 stored the log as plain JSON of the in-memory sessions (~169 characters/fix
-// at full precision), and WebKit's localStorage quota is 5 MB per origin with
-// strings persisted as UTF-16 — 2 bytes per character, so the WHOLE origin holds
-// 2,500,000 characters (LocalStorageManager's quota constant; webkit.org bug
-// 245479, comment 5). A plain 36,000-fix log alone would need ~6.1M characters.
-// The e3 form is a LOSSLESS packed encoding of exactly the same in-memory
-// sessions, applied only at the storage boundary: saveFixLog encodes, the boot
-// load below and canonicalFixLog (app4) decode through fixLogDecodeSessions, and
-// everything in between (fixLogRaw, fixLogOut, fixLogTrim) works on the absolute
-// in-memory entries exactly as in 1.189. The record is an object
-// { e: 3, s: [{ v, t0, n, b, f }] } - an object, not an array, so a
-// 1.189 build that meets an e3 record ignores it whole (its loader required an
-// array) instead of misreading packed data as absolute fixes; this decoder
-// accepts BOTH forms, so every 1.189 record and backup still loads and restores.
-// Inside a session, f is the session's entry byte stream packed 7 bits per
-// character (code points 0x100-0x17F, all single UTF-16 units needing no JSON
-// escape); b is the stream's byte length and n the entry count, so a decoder can
-// prove it consumed exactly what was written. The byte stream is a chain of
-// entries in a small varint code (LEB128; signed values zigzag):
-// - a flags byte: keyframe / estimator output present / output in full form /
-//   run stamp carried by this entry.
-// - keyframes carry absolute values; delta entries carry the millisecond gap
-//   and the SIGNED DIFFERENCE OF THE COORDINATES' IEEE-754 BIT PATTERNS — decode
-// adds it back onto the prior fix's pattern and recovers the EXACT double,
-//   bit for bit. An entry that cannot delta (a null or non-finite coordinate on
-//   either side — a refused fix — a non-integer timestamp, or a bit delta beyond
-//   2^53) is written as a keyframe instead.
-// accuracy/speed/heading ride as bit-pattern deltas against the prior fix
-//   (tag 1), an absolute pattern (tag 2), or the null tag (0) — non-finite leaf
-//   values collapse to null, exactly as JSON serialization treated them in v1.
-// - the estimator output rides as micro-degree integer deltas of the four
-//   positions plus a tenths delta of the heading (fixLogOut only ever writes
-//   6dp positions and a 1dp heading, so the integers restore them exactly);
-//   whenever a delta would not restore a value exactly, the full form carries
-//   the absolutes instead (micro-degree integers, or raw bit patterns when a
-//   value is not even on the micro grid).
-// The decoder is the ONE lens for the boot load and the backup validator, as in
-// 1.189: leaf fields pass the number-or-null lens (a null coordinate survives —
-// the refusal data); a structurally broken entry ends
-// its session there (later entries chain from it and cannot be recovered) —
-// never the boot, never the other sessions. Sizing is enforced by TWO caps
-// (app1): FIXLOG_MAX fixes, and FIXLOG_MAX_CHARS characters of stored record —
-// the logger keeps an exact per-entry byte account as it appends, so the
-// character cap is enforced on the packed size itself, not on a hope about
-// stream density. Measured on worst-case-realistic full-precision streams:
-// ~48 characters/fix at transit speed with stepwise accuracy (~55 with accuracy
-// jumping full-range every fix — a harsher model than the OS produces), ~44 at
-// plow pace, ~33 parked; drive194 asserts the measured characters against the
-// quota arithmetic in FIXLOG_MAX_CHARS' comment.
+// ===== the fix log's form (e3): a lossless packed encoding at the storage boundary; decoder accepts e3 and plain records
 const _fxDv = new DataView(new ArrayBuffer(8));
 function _fxBits(x) { _fxDv.setFloat64(0, x); return _fxDv.getBigInt64(0); }
 function _fxUnbits(b) { _fxDv.setBigInt64(0, b); return _fxDv.getFloat64(0); }
@@ -1631,8 +1340,7 @@ function acceptFix(pos) {
   spd.textContent = String(Math.round(Math.max(0, speed || 0) * 3.6)); // the bare number - the KM/H unit is the circle's own centred label now
   // a teleport voids the springs; the map guard keeps this jump from starving the recording block
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); camVel = [0, 0]; camBVel = 0; camUncapped = false; }
-  // outside-route note (route box + 400 m)
-  // no box (no route / empty pack) - no area to be outside of, so no note
+  // outside-route note (route box + 400 m): no box means no area to be outside of, so no note
   const inB = routeBox ? (sm[0] > routeBox.s - 0.0036 && sm[0] < routeBox.n + 0.0036 && sm[1] > routeBox.w - 0.005 && sm[1] < routeBox.e + 0.005) : true;
   if (!inB && offRouteArmed) { offRouteArmed = false; }
   if (inB) offRouteArmed = true;
@@ -1653,23 +1361,7 @@ function acceptFix(pos) {
     coverFix(sm);
   }
 }
-// ---- coverage caches: coverFix runs on every
-// accepted fix of a clean. Through 1.134 it rebuilt a Set from coveredIdx[n] for EVERY
-// street on EVERY fix and distance-tested every still-uncovered sample of every street,
-// though a fix can only ever cover samples within 22 m of itself. Two caches fix that:
-// the per-street Sets now PERSIST across fixes, mirroring coveredIdx's arrays exactly
-// (same insertion order, and written back in 1.134's own per-fix form, so the stored
-// JSON - including its duplicate-index normalization - is byte-identical), and each
-// street's samples are boxed once - bounds padded by the 22 m coverage radius - so a
-// street the fix cannot reach skips its DISTANCE TESTS only, never its suggestion
-// check: a street can sit at 85% from coverage loaded at boot with the suggestion set
-// reset, and 1.134 re-offers it on the first fix wherever that fix lands (the 1.135
-// Codex verify caught a box skip that swallowed this - the harness now covers it).
-// The caches key on identity, never on content comparison: coveredIdx is only ever
-// rebound wholesale (route load, cancel-restore, finish, clear - it is never edited in
-// place outside this function), so a new object rebuilds the Sets; the boxes key on the
-// buildSamples generation, bumped on every route load. Judged by drives 126/127 and the
-// the suggestion offer is cut below: nothing offers a street any more; the coverage computation is untouched
+// coverage caches: per-street Sets persist across fixes and samples are boxed once, so a fix distance-tests streets it can reach
 
 let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {

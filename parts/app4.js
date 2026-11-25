@@ -149,8 +149,7 @@ function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, nul
 let recoveryDisclosure = null; // routes the last recovery build could not carry; shareRecovery names them in its message, never silent
 function recoveryObj() { return ENVELOPE.recovery(); } // the doorway - the recovery policy is ENVELOPE.recovery (above)
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
-// downloadBackup follows shareBackup's one-button rule - a build failure is the recovery fallback, never a dead-end refusal
-// the filename no longer carries the retired 5W name; the format and its internal marker are unchanged
+// downloadBackup follows the one-button rule: a build failure is the recovery fallback, never a dead-end refusal
 function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported(); }
 function clearTrailAll() { // the clearing stays as a callable piece (guard, storage honesty intact) so a re-homed button wires to it
   trail = []; trailSessions = []; const okSessClr = saveSess().ok; if (!okSessClr) markDirty('sess'); // the markers describe this trail - clearing the trail clears them; the marker write is CHECKED like the trail write
@@ -804,8 +803,7 @@ $('updBtn').addEventListener('click', async ev => {
   updDone(); // 'diff' and the catch's 'fail' land here: same trip to the version row as the early returns
 });
 
-// updnav is stripped at boot: its work ends with this navigation, and later reloads must serve cached
-// window.history explicitly: the app's clean-history array shadows the bare `history` name, and the bare form throws
+// updnav is stripped at boot, and window.history is spelled out: the app's clean-history array shadows the bare name, which throws
 try { if (/(^|[?&])updnav=/.test(location.search)) window.history.replaceState(null, '', location.pathname); } catch (e) {}
 
 // ===== FAN / NIGHT / FLIP / HOME =====

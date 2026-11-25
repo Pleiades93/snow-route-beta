@@ -737,8 +737,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
   if (lsGet(LS.finclean) !== null) lsDel(LS.finclean); // a landed save discharges the cleanup obligation: stored notes/coverage are the in-memory ones now
   return storeOk();
 }
-// PERSIST, the scheduling owner: a flag clears only when its write lands (a failure retries next flush)
-// late-writer resolution: app3 loads after app1, so its writers resolve by name at flush time
+// PERSIST, the scheduling owner: a flag clears only when its write lands; late writers resolve by name at flush time
 /** @param {string} name @returns {Function|null} */ function lateFn(name) { const f = globalThis[name]; return typeof f === 'function' ? f : null; } // the step table's one late-writer resolution: app3 loads after app1, so its writers are resolved by name at flush time (and a partial load simply skips the step, exactly what the old typeof probes did)
 const PERSIST = {
   flags: { trail: false, sess: false, snap: false, start: false, aux: false, primary: false, fixlog: false },
