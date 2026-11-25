@@ -79,7 +79,7 @@ function scanText(text) {
     const safe = new Set();
     for (let k = 0; k + 1 < calls.length; k++) {
       const between = stmt.slice(calls[k][1], calls[k + 1][0]);
-      const mm = /^\s*(<=|>=|<|>)\s*[\w$.]*$/.exec(between);
+      const mm = /^\s*\)*\s*(<=|>=|<|>)\s*\(*\s*[\w$.]*$/.exec(between);
       if (!mm) continue;
       const op = mm[1];
       if (op === '<' || op === '<=') {
@@ -117,6 +117,8 @@ const FIXTURES = [
   ['F12 an inverted includes is not a guard', `check('x', a.includes('clip guard') === false || a.indexOf('clip guard') < a.indexOf('boundary'));`, 1],
   ['F13 mutual non-strict pins share no safe side', `check('x', a.indexOf('left') <= a.indexOf('right') && a.indexOf('right') <= a.indexOf('left'));`, 2],
   ['F14 mutual strict pins guard each other', `check('x', a.indexOf('left') < a.indexOf('right') && a.indexOf('right') < a.indexOf('left'));`, 0],
+  ['F15 a parenthesized right operand is still a pin', `check('x', a.indexOf('write();') > (a.indexOf('anchor')));`, 1],
+  ['F16 a parenthesized left operand is still a pin', `check('x', (a.indexOf('gone')) < a.indexOf('here'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;

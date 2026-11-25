@@ -12411,6 +12411,20 @@
    "red": "scanner at 0382ab44 run on a scratch root whose proof-neg.mjs checks a.indexOf('left') <= a.indexOf('right') && a.indexOf('right') <= a.indexOf('left') against a = 'write();' (both needles absent): the scan check for proof-neg.mjs PASSED - no findings, the vacuous pair was certified",
    "green": "fixed scanner flags both needles on the same scratch file (line 3, ops <=, needles 'left' and 'right'); fixtures F13 (mutual non-strict flagged x2) and F14 (mutual strict still guards) pin the correction in-suite; full suite 106/106 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r4",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "2999cb9dace74a945c494b14879d3b84de5469daef1ae3dede684ec91d89f878",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner's between-operands pattern rejects parentheses, so an ordering pin with a parenthesized operand is silently skipped instead of checked",
+   "red": "scanner at 654b1104 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > (a.indexOf('anchor')) and (a.indexOf('gone')) < a.indexOf('here') with the vacuous needles absent: the scan check for proof-neg.mjs PASSED - no findings for either shape",
+   "green": "fixed scanner flags both on the same scratch file (line 3 needle 'anchor' via >, line 4 needle 'gone' via <); fixtures F15/F16 pin the shapes in-suite; full suite 108/108 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
