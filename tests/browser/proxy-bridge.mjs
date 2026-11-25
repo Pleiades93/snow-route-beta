@@ -34,8 +34,11 @@
 import net from 'node:net';
 import tls from 'node:tls';
 import { createHash } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
+
+const execFileP = promisify(execFile);
 
 export const BRIDGE_PORT = 18123;
 const HEALTH_MARKER = 'snow-route-proxy-bridge';
@@ -227,18 +230,49 @@ function portFree(port) {
 // endpoint or credentials changed since the resident bridge started,
 // reusing it would silently route this run through the OLD upstream
 // (Codex review, PR #101). A resident bridge with a different
-// fingerprint is left alone - it may belong to a concurrent run with
-// its own configuration - and this run's bridge takes the next free
-// port in the scan range. Returns { port } when the browser should
+// fingerprint is left alone while any port is free - it may belong to
+// a concurrent run with its own configuration - and this run's bridge
+// takes the next free port in the scan range; only a pool with no
+// free port reaps one stale bridge (7c). Returns { port } when the browser should
 // use the bridge, or null when no authenticated proxy is configured
 // (the CI path - the caller launches exactly as before). A bridge
 // that cannot be started degrades to null WITH a stderr note: the
 // pre-fix launch is the fallback, and the drive's own checks still
 // judge the outcome - nothing passes or fails by this module's say-so.
+// Reap one stale bridge by its port-owner PID (never a pattern kill).
+async function reapBridge(port) {
+  try {
+    const { stdout } = await execFileP('ss', ['-tlnp']);
+    for (const line of stdout.split('\n')) {
+      const m = new RegExp('127\\.0\\.0\\.1:' + port + '\\s.*pid=(\\d+)').exec(line);
+      if (m) { process.kill(Number(m[1]), 'SIGTERM'); break; }
+    }
+    const t0 = Date.now();
+    while (Date.now() - t0 < 3000 && !(await portFree(port))) await new Promise(r => setTimeout(r, 150));
+  } catch (e) {}
+}
+
 export async function ensureProxyBridge(env = process.env) {
   const up = authenticatedProxyFromEnv(env);
   if (!up) return null;
   const want = healthBody(up);
+  // Pool exhaustion (7c): per-session credentials rotate, so resident
+  // bridges go stale and fill the pool; reap one only when no port is
+  // ours and none is free.
+  {
+    const bodies = [];
+    let anyOurs = false, anyFree = false;
+    for (let port = BRIDGE_PORT; port < BRIDGE_PORT + PORT_SCAN; port++) {
+      const b = await bridgeHealth(port);
+      bodies.push(b);
+      if (b === want) anyOurs = true;
+      else if (b === null && (await portFree(port))) anyFree = true;
+    }
+    if (!anyOurs && !anyFree) {
+      const staleIdx = bodies.findIndex(b => typeof b === 'string' && b.startsWith(HEALTH_MARKER + ':'));
+      if (staleIdx >= 0) await reapBridge(BRIDGE_PORT + staleIdx);
+    }
+  }
   for (let port = BRIDGE_PORT; port < BRIDGE_PORT + PORT_SCAN; port++) {
     if ((await bridgeHealth(port)) === want) return { port };
     if (!(await portFree(port))) continue;
