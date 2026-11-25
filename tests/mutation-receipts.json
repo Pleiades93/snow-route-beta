@@ -12508,6 +12508,21 @@
    "red": "scanner at e76948cf run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(newline 'anchor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F23 pins the wrapped-needle shape in-suite; full suite 115/115 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r8",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "d6f687a1c7e6e295d4ae70358813057dd5f9082c48cdc52d0c73af38ed62d697",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's presence-guard pattern prefix-matches, so a clause indexOf(n) > -10 (true even when the needle is absent) is accepted as a presence guard",
+   "red": "scanner at 45c83233 run on a scratch root whose proof-neg.mjs guards a.indexOf('write();') > a.indexOf('anchor') with a.indexOf('anchor') > -10 and 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F24 pins the shape in-suite; full suite 116/116 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

@@ -82,7 +82,7 @@ function scanText(text) {
     const guardNeedles = new Set();
     const boundedGuardNeedles = new Set();
     for (const c of calls) {
-      if (!/^\s*(>\s*-1|>=\s*0)/.test(stmt.slice(c[1]))) continue;
+      if (!/^\s*(>\s*-1(?![\d.])|>=\s*0(?![\d.]))/.test(stmt.slice(c[1]))) continue;
       if (negatedBefore(stmt, c[0])) continue;
       (c[3] ? boundedGuardNeedles : guardNeedles).add(c[2]);
     }
@@ -155,6 +155,7 @@ const FIXTURES = [
   ['F21 a bounded guard clears its bounded pin', `check('x', a.indexOf('anchor', 10) > -1 && a.indexOf('write();') > a.indexOf('anchor', 10));`, 0],
   ['F22 a bounded left of < is flagged', `check('x', a.indexOf('gone', 3) < a.indexOf('here'));`, 1],
   ['F23 a needle wrapped onto its own line is still a pin', "check('x', a.indexOf('write();') > a.indexOf(\n'anchor'));", 1],
+  ['F24 a > -10 clause is not a presence guard', `check('x', a.indexOf('anchor') > -10 && a.indexOf('write();') > a.indexOf('anchor'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
