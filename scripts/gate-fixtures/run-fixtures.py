@@ -447,9 +447,7 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a check edited after its receipt was issued is refused (stale receipt)",
           run_push(t / "rcstale", ["tests/proof/proof-9001.mjs", "tests/mutation-receipts.json"],
                    mode="push", env_extra=rc_stale), 1)
-    # Claim-span pins (7c): a receipt may pin only the region between
-    # two marker lines - an edit outside the region leaves it current,
-    # an edit inside refuses, a duplicated marker refuses.
+    # Claim-span pins (7c): outside edits push, inside edits and duplicated markers refuse.
     SPAN_PROOF = "header v1\n// CLAIM-BEGIN\nclaim body v1\n// CLAIM-END\nfooter v1\n"
     rc_span = receipts_tree("rcspan", proof_text=SPAN_PROOF)
     issue_receipt_span(t / "rcspan", "fixture-rcspan", "tests/proof/proof-9001.mjs",

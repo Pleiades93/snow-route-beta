@@ -58,9 +58,7 @@ END-LINE (each an exact full line occurring exactly once in the
 file, inclusive). An edit outside a span leaves the receipt
 CURRENT; an edit inside it goes STALE; a marker that is missing,
 duplicated or out of order is BROKEN - the gate refuses all three
-non-CURRENT states for a changed path, exactly as before (7c:
-whole-file pins on shared files went stale on any edit, and the
-re-issue churn buried the receipts' meaning).
+non-CURRENT states for a changed path, exactly as before.
 """
 import argparse
 import fnmatch
