@@ -145,6 +145,7 @@ const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el)
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')) }); })()`));
 ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 1.75) | ' + JSON.stringify(T4),
   T4.sheetBg === 'rgba(32, 33, 37, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg);
+await waitTrue(poll, `(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L; return !!(byId['places_subplace'] && typeof byId['places_subplace'].minzoom === 'number' && byId['places_locality'] && typeof byId['places_locality'].maxzoom === 'number'); })()`, 15000); // poll the terminal shape P2 asserts: the night setStyle rebuild seats layers before applying their zoom ranges (7c)
 const PL2 = JSON.parse(await ev(`(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = { mn: L.minzoom, mx: L.maxzoom }; return JSON.stringify({ sub: byId['places_subplace'], loc: byId['places_locality'] }); })()`));
 ok('P2 night map too: same Protomaps ladder (subplace 9, locality capped 15.5) | ' + JSON.stringify(PL2),
   !!PL2.sub && PL2.sub.mn === 9 && !!PL2.loc && PL2.loc.mx === 15.5);
