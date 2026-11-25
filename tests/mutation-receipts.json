@@ -12583,6 +12583,21 @@
    "red": "scanner at cd952f89 on two scratch roots: (A) a.includes(needleLong) guarding a.indexOf(needle) with needle='anchor' absent - no findings; (B) a commented-out // const needle = 'present'; resolving a var needle pin - no findings",
    "green": "fixed scanner flags both scratch pins (needle shown as 'needle'); fixtures F32/F33 pin the shapes in-suite; full suite 125/125 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r13",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "f7e6798ea538ef0a94cdc4b85cde847d1d75f8a8c4a1a2e2d51f87f60104f1b2",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner compares literal needles by source spelling instead of runtime value (escapes undecoded), and resolves const identifiers file-wide regardless of scope, so an unrelated scope's const certifies a pin",
+   "red": "scanner at 1212919a on two scratch roots: (A) a.includes('\\n') guarding a.indexOf('n') pin with a holding a newline then write(); (no letter n) - no findings; (B) const needle = 'present' inside an unrelated function resolving a var needle = 'anchor' pin - no findings",
+   "green": "fixed scanner flags both scratch pins; fixtures F34 (escapes decoded) and F35 (nested const does not resolve) pin the shapes in-suite; full suite 127/127 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

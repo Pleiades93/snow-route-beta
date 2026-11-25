@@ -54,14 +54,34 @@ function blankComments(text) {
 
 function constLiterals(text) {
   const d = {};
-  const re = new RegExp(String.raw`\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*(` + LIT + String.raw`)\s*;`, 'g');
-  let m;
   const clean = blankComments(text);
-  while ((m = re.exec(clean)) !== null) d[m[1]] = m[2];
+  const re = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")\s*;/y;
+  let depth = 0, instr = null, esc = false;
+  for (let k = 0; k < clean.length; k++) {
+    const c = clean[k];
+    if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; continue; }
+    if (c === "'" || c === '"' || c === '`') { instr = c; continue; }
+    if (c === '{') { depth++; continue; }
+    if (c === '}') { depth--; continue; }
+    if (depth === 0 && c === 'c') {
+      re.lastIndex = k;
+      const m = re.exec(clean);
+      if (m) { d[m[1]] = m[2]; k += m[0].length - 1; }
+    }
+  }
   return d;
 }
 
-const unquote = (tok) => (tok.length >= 2 && (tok[0] === "'" || tok[0] === '"') && tok[tok.length - 1] === tok[0]) ? tok.slice(1, -1) : tok;
+const unquote = (tok) => {
+  if (!(tok.length >= 2 && (tok[0] === "'" || tok[0] === '"') && tok[tok.length - 1] === tok[0])) return tok;
+  return tok.slice(1, -1).replace(/\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F]+\}|.)/g, (s, e) => {
+    if (e[0] === 'x') return String.fromCharCode(parseInt(e.slice(1), 16));
+    if (e[0] === 'u' && e[1] === '{') return String.fromCodePoint(parseInt(e.slice(2, -1), 16));
+    if (e[0] === 'u') return String.fromCharCode(parseInt(e.slice(1), 16));
+    if (e === '\n') return '';
+    return { n: '\n', r: '\r', t: '\t', '0': '\0' }[e] ?? e;
+  });
+};
 
 function scanText(text) {
   const consts = constLiterals(text);
@@ -214,6 +234,8 @@ const FIXTURES = [
   ['F31 a guard on the same identifier clears it', `check('x', a.indexOf(V) > -1 && a.indexOf('write();') > a.indexOf(V));`, 0],
   ['F32 an identifier guard does not clear a prefix identifier', `check('x', a.includes(needleLong) && a.indexOf('write();') > a.indexOf(needle));`, 1],
   ['F33 a commented-out const does not resolve', "// const needle = 'present';\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
+  ['F34 an escape in a guard is decoded before comparing', "check('x', a.includes('\\n') && a.indexOf('write();') > a.indexOf('n'));", 1],
+  ['F35 a const inside another scope does not resolve', "function unused() { const needle = 'present'; }\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
