@@ -233,14 +233,11 @@ from pathlib import Path
 root = Path.cwd()
 parts = sorted(p for p in (root / "parts").glob("*") if p.is_file()) if (root / "parts").exists() else []
 expect = "".join(p.read_text() for p in parts)
-tracker = root / "src" / "tracker-source.html"
-if not tracker.exists() or tracker.read_text() != expect:
-    print("ASSEMBLY FAIL (fixture stub)"); sys.exit(1)
 cl = (root / "CHANGELOG.md").read_text() if (root / "CHANGELOG.md").exists() else ""
 m = re.search(r"## Beta (\\S+)", cl)
 idx = (root / "index.html").read_text() if (root / "index.html").exists() else ""
-if m and ("Beta " + m.group(1)) not in idx:
-    print("VERSION FAIL (fixture stub)"); sys.exit(1)
+if m is None or idx != "shell Beta " + m.group(1) + " " + expect:
+    print("CHECK FAIL (fixture stub)"); sys.exit(1)
 sys.exit(0)
 '''
 STUB_BUILD_PAGES_IMPORTING = """import csp_stamp
