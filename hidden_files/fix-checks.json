@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "4f29aad4d7425df7b4f33e245b9739b0cd082dcbb5997a6decbc0fcea33e7b3e",
+  "canonical_registry_sha256": "24c463226713fa5d394904e50908c4d6ca6408b4fbc5ded276e3e9d04498da40",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -7684,7 +7684,7 @@
    "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs.",
    "fix_id": "green-half-road",
    "id": "green-half-road-version-1208",
-   "pattern": "Beta 1.208",
+   "pattern": "both pills wear the same ink: true black #000000, all caps",
    "type": "grep_present"
   },
   {
