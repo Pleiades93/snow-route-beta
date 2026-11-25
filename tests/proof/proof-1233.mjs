@@ -68,7 +68,9 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const head = read('parts/head.html');
 const pick = read('parts/create-pick.js');
 const app2 = read('parts/app2.js');
-const app4 = read('parts/app4.js');
+// Phase 5 re-pin: app4 reads resolve @@GLYPH tokens from assets/glyphs; payload claims and sha pins unchanged.
+const resolveGlyphs = (s) => s.replace(/@@GLYPH:([a-z0-9-]+)@@/g, (m, stem) => readFileSync(new URL('assets/glyphs/' + stem + '.webp', root)).toString('base64'));
+const app4 = resolveGlyphs(read('parts/app4.js'));
 const changelog = read('CHANGELOG.md');
 const sha = b => createHash('sha256').update(b).digest('hex');
 const payload = (table, key) => {
