@@ -269,10 +269,7 @@ const installStubK = `(() => {
 })()`;
 await ev(installStubK);
 await ev(`window.__kFailCellKey = 'r1c1'`); // cell r1c1 of the fixture city
-// K2 needs a grid that truly fetches: a cache-restored grid has no
-// fetch to refuse, and a late save from the last section can
-// resurrect a partial record past the wipe. Re-enter until the
-// prep settles uncached; three tries, then the check fails honest.
+// K2 needs a truly fetching grid: a cache-restored grid has no fetch to refuse.
 const jEnterUncached = async () => {
   for (let i = 0; i < 3; i++) {
     await ev(`window.__kPrevGrid = (typeof crGrid !== 'undefined' ? crGrid : null)`); // judge only the grid THIS entry creates: the last section's grid also reads fromCache
