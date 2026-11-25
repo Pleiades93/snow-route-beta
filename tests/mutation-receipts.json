@@ -11526,6 +11526,33 @@
    "red": "flake-log.md: P2 {\"sub\":{},\"loc\":{}} signature, documented count 4 burns; and PR #212 gate attempt 3, shard 4: P2 failed with the same {} signature (plus a restack 'Style is not done loading' exception) against the first 7c poll, whose terminal shape a second rebuild could still unseat",
    "green": "drive125 28/28 locally, twice, on the strengthened poll (settled ladder values plus the completed restack - the centres source present) before the read",
    "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "title-drop-loaded-stream-r3",
+   "check": "tests/browser/selftest-title-drop.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-title-drop.mjs": "0dcfd7c701a16e64d7c2c184a0c39f9dbc5558d63cc837e9b1bc257f1280274e",
+    "tests/browser/title-drop.mjs": "9b3e67008ddc67237bed88cfc9f5497caff6bb9d16f8fcc6cd8febe7ac0c4397"
+   },
+   "mutation": "two neuters of title-drop.mjs judgeTitleDrops: (1) unloaded samples counted as evidence (the loaded filter removed); (2) every phase streams loaded-only (the theme opt-in ignored - Codex P1 on PR #212)",
+   "red": "(1) selftest 2 FAIL: the P6-shape blackout fixture convicts and the loaded-stream shape reads 4 of 4. (2) selftest 1 FAIL: 'the same blackout convicts without the opt-in' dropped [], expected [A]",
+   "green": "selftest-title-drop: all fixtures hold (20 cases) on the final judge - the exemption is scoped to the opted-in theme phase",
+   "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive216-blackout-sampler-r4",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive216.mjs": "addcecd0176c98e7c5238fec477477fcc4f5b9241eef8df212056f66b7f4ae60",
+    "tests/browser/title-drop.mjs": "9b3e67008ddc67237bed88cfc9f5497caff6bb9d16f8fcc6cd8febe7ac0c4397",
+    "tests/browser/selftest-title-drop.mjs": "0dcfd7c701a16e64d7c2c184a0c39f9dbc5558d63cc837e9b1bc257f1280274e"
+   },
+   "mutation": "the pre-7c sampler recorded title names only, so a setStyle theme-swap blackout read as title absence; separately, the throttled phases' fixed 800/900 ms windows starved the 50 ms sampler to its own floor",
+   "red": "Beta 1.293/1.294 gates: P6 flaked on the theme-swap blackout (flake-log.md). Locally on the sampler-fixed tree: P7 failed 3 of 6 runs at samples 5, dropped []",
+   "green": "drive216 9/9 twice on the final tree (theme phase streams loaded samples only by opt-in; all other phases judge every sample; throttled windows 2400 ms, floors unchanged)",
+   "issued": "2026-11-25 test-reliability-7c"
   }
  ]
 }
