@@ -12688,6 +12688,36 @@
    "red": "scanner at 7d1893d8 run on a scratch root whose proof-neg.mjs hides a const declaration inside a regex literal and pins an identifier declared with var: the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 5); fixture F41 pins the shape in-suite; full suite 133/133 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "gpsgap-1295-drive225-banner",
+   "check": "tests/browser/drive225.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive225.mjs": "78c73bc183dfba95fa061965eb2b40b59831fbb184f5b63e92c0894217c18de8",
+    "parts/app3.js": "43c26d0dc8c7e9c146efcd0ff19a6fd2683601d75aaddf0f5032db2a6f998c62",
+    "parts/app1.js": "e15dab6473e68b68d417c59ac9b16fd5bf0aedc66e798d2b08cef82e6fda3762",
+    "parts/head.html": "fb1541ca1236b4617f7476a8570a840ff40db261ddeb22cc99e899b938045b26"
+   },
+   "mutation": "finYes banner call removed from parts/app3.js (the showBanner line deleted, finish and stamp intact); separately, the buildSnap gpsGap stamp removed",
+   "red": "banner-call mutation: drive225 FAIL 12/13 at G5 (the banner shows the decided wording), observed twice; stamp mutation: FAIL 11/13 at G4+G5, observed once",
+   "green": "drive225 PASS 13/13 on the restored tree (66s local run)",
+   "issued": "2026-11-25 spinout-round1"
+  },
+  {
+   "id": "gpsgap-1295-proof-1273",
+   "check": "tests/proof/proof-1273.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1273.mjs": "ddf3dcfadc131d94ef1752a0fd65b7a129da96c9d7ca69574a3a3abb05097732",
+    "parts/app3.js": "43c26d0dc8c7e9c146efcd0ff19a6fd2683601d75aaddf0f5032db2a6f998c62",
+    "parts/app1.js": "e15dab6473e68b68d417c59ac9b16fd5bf0aedc66e798d2b08cef82e6fda3762",
+    "parts/head.html": "fb1541ca1236b4617f7476a8570a840ff40db261ddeb22cc99e899b938045b26"
+   },
+   "mutation": "proof run against the Beta 1.294 tree (base 4938a13a, pristine worktree)",
+   "red": "proof-1273 FAIL on the 1.294 tree: 11 of 13 checks fail (every gap/banner seam absent), observed twice",
+   "green": "proof-1273 PASS 13/13 on the round tree; full proof suite 93/93",
+   "issued": "2026-11-25 spinout-round1"
   }
  ]
 }

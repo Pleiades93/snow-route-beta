@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-s/n1lONnD5emhbLP7vn9oneL/fWyM217GsOqWQQW3ZFqxww7yWgjbDgDtHccg/Xc' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-Qa11A6kIRrU4V1GymY77QEAAzGb+oWTrp2K5pw531AEZ+0BjCLD8qresLPdq7sZk' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-vzcjC8VT/pQ3KGswz4p1CHm28lydn3G2HvrWoerYu1W5yFjuMJkqcS4ouOIB2/uT' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-67q7QMPmgh2aCJP7nLmLFL6NNbCzjyfTU/RiMdssE/Wnrx8hwSs2aDRKABfZJy4n' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -401,6 +401,22 @@
   /* the re-centre button never drops: it holds its 91px seat under Day/Night in every state */
   #toast { position: absolute; left: 50%; bottom: calc(var(--vvb) + 188px + var(--sab)); /* Beta 1.221 (placement, Andrew's bar: the pill never sits on a control): this 188px is only the FLOOR the pill starts from - the old fixed 120px band sat inside the dock stack's span (measured top ~208px), so a pill painted across the Start button it reported on, and no other fixed number clears every state either (the note banner rides above the dock, sheets and modals bring their own controls, and the pill's height changes with its text). placeToast() in app1.js therefore measures at fire time and raises the pill above whatever it would cover, with a 6px gap; drive204 verifies zero overlap in the rendered page across every state a surviving toast can fire. The floor rides var(--vvb) like the dock does, so the starting gap holds when browser chrome shows */ transform: translateX(-50%) translateY(16px); z-index: 10001; /* Beta 1.93 (deep audit F03): above the full-screen takeovers (10000) - backup/restore errors toasted from inside Settings were hidden behind its opaque blue */ background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45); /* Beta 1.223 (Andrew, option A): EVERY pop-up wears this one style - the app blue gradient pill, white bold text, one size standard, identical day and night; #createHint and #crHintBtn carry the same declarations. Through 1.222 the toast was a dark box (rgba(20,22,28,.95), radius 10px, 13px) that matched nothing else */ opacity: 0; pointer-events: none; transition: opacity var(--anim-dur) var(--ease-open), transform var(--anim-dur) var(--ease-open); max-width: 86vw; text-align: center; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* THE notification banner: one owner for every advisory; rests level with the title */
+  #banner { position: fixed; top: calc(var(--vvt, 0px) + 25px + var(--sat)); left: calc(12px + var(--sal)); right: calc(12px + var(--sar)); z-index: 10003;
+    background: var(--card-solid); color: var(--ink); border-radius: 22px; box-shadow: var(--shadow-card); padding: 11px 14px;
+    display: flex; align-items: center; gap: 10px; visibility: hidden; pointer-events: none; }
+  #banner.show { animation: bannerDrop .55s cubic-bezier(.3,1.2,.4,1) both, bannerExit .4s ease-in 3.55s forwards; }
+  #bannerIco { flex: none; width: 26px; height: 26px; border-radius: 8px; background: var(--hair); display: flex; align-items: center; justify-content: center; }
+  #bannerIco:empty { display: none; }
+  #bannerIco .pwrapT, #bannerIco .pwrapD { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; }
+  #bannerIco .pico, #bannerIco .xico { width: 18px; height: 18px; flex: none; display: block; }
+  #bannerHead { display: block; font-size: 15px; line-height: 1.25; }
+  #bannerLine { display: block; font-style: normal; font-size: 13px; line-height: 1.35; opacity: .72; margin-top: 1px; }
+  #bannerLine:empty { display: none; }
+  @keyframes bannerDrop { 0% { visibility: visible; transform: translateY(-130%); opacity: 0; } 55% { transform: translateY(3%); opacity: 1; }
+    75% { transform: translateY(-1%); } 100% { visibility: visible; transform: translateY(0); opacity: 1; } }
+  @keyframes bannerExit { from { visibility: visible; transform: translateY(0); opacity: 1; }
+    to { visibility: hidden; transform: translateY(-130%); opacity: 0; } }
   #map { transition: transform .45s ease-in-out; }
 /* ===== SPLASH ===== the brand arrives and holds while the map loads behind it, then dissolves into the app */
 #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -668,7 +684,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn">Not saving. Storage is full or blocked</div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.294</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.295</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -801,6 +817,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="confirmPill" class="hidden"><div class="cfTitle"></div><div class="cfSub"></div><div class="cfRow"><button id="cfKeep" type="button"></button><button id="cfDanger" type="button"></button></div></div>
 <div id="noteModal" class="modal hidden"><div class="card"><h3 id="noteTitle">Note</h3><textarea id="noteText"></textarea><div class="row"><button id="noteNo">✕</button><button id="noteYes">Save note</button></div></div></div>
 <div id="toast"></div>
+<div id="banner" role="status"><span id="bannerIco"></span><div><b id="bannerHead"></b><i id="bannerLine"></i></div></div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <script>
 // Route titles on/off: source-only switch, no in-app control. True shows the app-drawn centred street names.
@@ -944,6 +961,17 @@ const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#s
   }
 }
 /** @param {string} msg @param {number} [ms] @returns {void} */ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; placeToast(t); t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400); }
+// THE notification banner: the one advisory surface; a new call replaces the showing one
+/** @param {string} head @param {string} [line] @param {string} [icon] @returns {void} */ function showBanner(head, line, icon) {
+  const b = $('banner');
+  $('bannerHead').textContent = head;
+  $('bannerLine').textContent = line || '';
+  $('bannerIco').innerHTML = icon && ICONS[icon] ? ICONS[icon] : '';
+  b.onanimationend = e => { if (e.animationName === 'bannerExit') b.classList.remove('show'); };
+  b.classList.remove('show');
+  void b.getBoundingClientRect(); // restart the drop on a re-fire
+  b.classList.add('show');
+}
 // Storage — guarded; a failure is SHOWN, never silent
 /** @returns {void} */ function flagStorage() { document.body.classList.add('storage-bad'); }
 /** @param {string} k @returns {string | null} */ function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }
@@ -4532,14 +4560,17 @@ function saveSnap() {
   const ok = lsSet(LS.snap, BOARD.serialiseSnap(runSnap, runStart)); // Arch-2: the snapshot string is the board module's one construction
   if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
 }
+const gpsGapRuns = new Map(); // runs whose GPS watch went silent mid-clean, by start key; buildSnap stamps the archive
 // the run's transitions have ONE owner, RUN: each transition keeps its old order; the doorway functions keep their names
 const RUN = {
   // the identity half: board captured, run stamped, counter opened; startClean keeps the saves around it
   /** @returns {void} */ begin() {
+    gpsGapRuns.delete(LS.start);
     runSnap = BOARD.capture(); runStart = Date.now(); RUNDIST.begin();
   },
   // the teardown: run consumed or erased, snapshot deleted, counter ended, identity zeroed; each caller keeps its extras in position
   /** @returns {void} */ end() {
+    gpsGapRuns.delete(LS.start);
     lsDel(LS.snap); markClean('snap'); RUNDIST.end(); runSnap = null; runStart = 0;
   },
   // the switch reset: counter zeroes (record stays for switch-back), in-memory snapshot drops, persisted copy untouched
@@ -4625,7 +4656,12 @@ $('resetBtn').addEventListener('click', ev => {
   $('finModal').classList.remove('hidden');
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
-$('finYes').addEventListener('click', ev => { if (!tapGuard('finYes', ev)) return; $('finModal').classList.add('hidden'); finishRun(); });
+$('finYes').addEventListener('click', ev => {
+  if (!tapGuard('finYes', ev)) return;
+  $('finModal').classList.add('hidden');
+  const finished = finishRun();
+  if (finished && finished.gpsGap) showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); // after the finish fully completes: the save is never obstructed
+});
 // THE shared confirmation surface (#confirmPill): one reusable surface, buttons only; the backdrop is focus, never a tap target
 let confirmDangerCb = null;
 /** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; $('confirmBackdrop').classList.add('on'); p.classList.remove('hidden'); }
@@ -4726,6 +4762,7 @@ function buildSnap() {
   if (startMs) { let wm = 0; const endMs = Date.parse(snap.at); const winStart = runStart || startMs; for (const n of Object.keys(snap.sides.p)) { const pv = snap.sides.p[n] || [], T = snap.sides.t[n] || []; const parts = STRETCH[n] ? STRETCH[n].parts : []; parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((pv[i] & 1) && st[0]) { const ts = Date.parse(st[0]); if (ts >= winStart && ts <= endMs) wm += L; } if ((pv[i] & 2) && st[1]) { const ts = Date.parse(st[1]); if (ts >= winStart && ts <= endMs) wm += L; } }); } snap.workM = Math.round(wm); }
   snap.totalWorkM = Math.round(totalWorkM());
   snap.geoFP = geoFingerprint();
+  if (gpsGapRuns.get(LS.start) === runStart) snap.gpsGap = true;
   // no path bake: the trail's only job is the counter's fallback, so the archive keeps the km alone
 
   return snap;
@@ -4770,6 +4807,7 @@ function finishRun() {
   if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared - under 3 streets, nothing saved') + ' - some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
   // only on the committed path: failures leave the run intact; the chime and vibration play here
   onFinishFeedback();
+  return archiving ? snap : null;
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
 // the stale-clean ask (run over 12 hours) lives on the pill; the danger seat runs Finish's click
@@ -5593,7 +5631,14 @@ function startGps(fromRun, restart) {
   // the frame-synced loop keeps centring between fixes - on the display's own clock now, not a second timer
   startRenderLoop();
   clearInterval(staleWatchTimer);
-  staleWatchTimer = setInterval(() => { const silentSince = Math.max(lastFixAt, watchStartedAt); if (watchId != null && silentSince && Date.now() - silentSince > GPS_STALE_MS) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
+  staleWatchTimer = setInterval(() => {
+    const silentSince = Math.max(lastFixAt, watchStartedAt);
+    if (watchId != null && silentSince && Date.now() - silentSince > GPS_STALE_MS) {
+      const wasRunGps = gpsFromRun;
+      if (wasRunGps && runStart && Date.now() - runStart > GPS_STALE_MS) gpsGapRuns.set(LS.start, runStart); // a silent watch mid-clean is a gap on that clean's record
+      stopGps(true); startGps(wasRunGps, true);
+    }
+  }, 15000); // run ownership is captured before stopGps clears it, so the restart keeps its run and follow state
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // recording wears red on the Locate tab; view-only wears blue
   renderIcons(); // the Locate face follows the state flip at once
@@ -6732,7 +6777,7 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.294', items: ["Street names hand over to the map's own names as you zoom in"] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
+  v: 'Beta 1.295', items: ["If GPS drops out during a clean, a banner tells you after you finish and the clean is marked", "The app checks for a newer version each time it starts and updates itself on the spot"] }; // Beta 1.223 (Andrew): What's New entries are SHORT from now on - point form, one short plain line each, no prose paragraphs, no em dashes
 
 function renderAbout() {
   const cur = $('ver').textContent.trim();

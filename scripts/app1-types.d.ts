@@ -158,6 +158,9 @@ declare var selStretch: { name: string, idx: number } | null;
 /** app2.js: normalizes basemap label layers for a map; app1 only forwards the function through GL_HOST's getter. Its map parameter is MapLibre's, unmodelled in this pilot (see `map` above). */
 declare function glUnifyLabels(m: any): void;
 
+/** app4.js: `const ICONS = {...}` - the icon mint table, filled by renderIcons; showBanner (app1) reads a named entry for the banner's chip. */
+declare var ICONS: { [key: string]: string };
+
 // ---- 3. Browser surface actually used by the checked parts ----
 
 /** Source-only title switch, provided by flags.js before the parts execute. */
@@ -184,6 +187,8 @@ interface AppRect {
 /** An element as app1 uses it: text content, its class list, and (Beta 1.221, placeToast) its inline bottom offset, its measured band and its running animations. */
 interface AppElement {
   textContent: string;
+  innerHTML: string;
+  onanimationend: ((e: { animationName: string }) => void) | null;
   classList: AppClassList;
   style: { bottom: string };
   getBoundingClientRect(): AppRect;

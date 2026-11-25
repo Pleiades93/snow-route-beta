@@ -340,14 +340,17 @@ function saveSnap() {
   const ok = lsSet(LS.snap, BOARD.serialiseSnap(runSnap, runStart)); // Arch-2: the snapshot string is the board module's one construction
   if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
 }
+const gpsGapRuns = new Map(); // runs whose GPS watch went silent mid-clean, by start key; buildSnap stamps the archive
 // the run's transitions have ONE owner, RUN: each transition keeps its old order; the doorway functions keep their names
 const RUN = {
   // the identity half: board captured, run stamped, counter opened; startClean keeps the saves around it
   /** @returns {void} */ begin() {
+    gpsGapRuns.delete(LS.start);
     runSnap = BOARD.capture(); runStart = Date.now(); RUNDIST.begin();
   },
   // the teardown: run consumed or erased, snapshot deleted, counter ended, identity zeroed; each caller keeps its extras in position
   /** @returns {void} */ end() {
+    gpsGapRuns.delete(LS.start);
     lsDel(LS.snap); markClean('snap'); RUNDIST.end(); runSnap = null; runStart = 0;
   },
   // the switch reset: counter zeroes (record stays for switch-back), in-memory snapshot drops, persisted copy untouched
@@ -433,7 +436,12 @@ $('resetBtn').addEventListener('click', ev => {
   $('finModal').classList.remove('hidden');
 });
 $('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
-$('finYes').addEventListener('click', ev => { if (!tapGuard('finYes', ev)) return; $('finModal').classList.add('hidden'); finishRun(); });
+$('finYes').addEventListener('click', ev => {
+  if (!tapGuard('finYes', ev)) return;
+  $('finModal').classList.add('hidden');
+  const finished = finishRun();
+  if (finished && finished.gpsGap) showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); // after the finish fully completes: the save is never obstructed
+});
 // THE shared confirmation surface (#confirmPill): one reusable surface, buttons only; the backdrop is focus, never a tap target
 let confirmDangerCb = null;
 /** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; $('confirmBackdrop').classList.add('on'); p.classList.remove('hidden'); }
@@ -534,6 +542,7 @@ function buildSnap() {
   if (startMs) { let wm = 0; const endMs = Date.parse(snap.at); const winStart = runStart || startMs; for (const n of Object.keys(snap.sides.p)) { const pv = snap.sides.p[n] || [], T = snap.sides.t[n] || []; const parts = STRETCH[n] ? STRETCH[n].parts : []; parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((pv[i] & 1) && st[0]) { const ts = Date.parse(st[0]); if (ts >= winStart && ts <= endMs) wm += L; } if ((pv[i] & 2) && st[1]) { const ts = Date.parse(st[1]); if (ts >= winStart && ts <= endMs) wm += L; } }); } snap.workM = Math.round(wm); }
   snap.totalWorkM = Math.round(totalWorkM());
   snap.geoFP = geoFingerprint();
+  if (gpsGapRuns.get(LS.start) === runStart) snap.gpsGap = true;
   // no path bake: the trail's only job is the counter's fallback, so the archive keeps the km alone
 
   return snap;
@@ -578,6 +587,7 @@ function finishRun() {
   if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared - under 3 streets, nothing saved') + ' - some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
   // only on the committed path: failures leave the run intact; the chime and vibration play here
   onFinishFeedback();
+  return archiving ? snap : null;
 }
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
 // the stale-clean ask (run over 12 hours) lives on the pill; the danger seat runs Finish's click
@@ -1401,7 +1411,14 @@ function startGps(fromRun, restart) {
   // the frame-synced loop keeps centring between fixes - on the display's own clock now, not a second timer
   startRenderLoop();
   clearInterval(staleWatchTimer);
-  staleWatchTimer = setInterval(() => { const silentSince = Math.max(lastFixAt, watchStartedAt); if (watchId != null && silentSince && Date.now() - silentSince > GPS_STALE_MS) { const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true); } }, 15000); // Beta 1.48 (audit B02): capture run ownership BEFORE stopGps clears it - the restart used to always come back as non-run GPS, so a mid-run watcher lost its run. Beta 1.116 (CG-115-01): the restart also preserves followPaused (startGps's restart flag) - a dead zone must not hand the camera back
+  staleWatchTimer = setInterval(() => {
+    const silentSince = Math.max(lastFixAt, watchStartedAt);
+    if (watchId != null && silentSince && Date.now() - silentSince > GPS_STALE_MS) {
+      const wasRunGps = gpsFromRun;
+      if (wasRunGps && runStart && Date.now() - runStart > GPS_STALE_MS) gpsGapRuns.set(LS.start, runStart); // a silent watch mid-clean is a gap on that clean's record
+      stopGps(true); startGps(wasRunGps, true);
+    }
+  }, 15000); // run ownership is captured before stopGps clears it, so the restart keeps its run and follow state
   $('gpsBtn').classList.add('on');
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // recording wears red on the Locate tab; view-only wears blue
   renderIcons(); // the Locate face follows the state flip at once

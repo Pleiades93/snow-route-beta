@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "6535b37c98faba161c26b474aa56eb0c3d1d9dc7320dbf2c92dc49ccfe17cf40",
+  "canonical_registry_sha256": "507a28188e2c5b1498fbf29331b93091a631ba2000b34067a7e72ecede4008aa",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1542,
-   "included": 1512,
+   "canonical": 1545,
+   "included": 1515,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -111,7 +111,7 @@
    "file": "parts/app3.js",
    "fix": "The stale-fix watchdog restarts GPS preserving RUN OWNERSHIP (Beta 1.48 B02): it captures gpsFromRun BEFORE stopGps clears it \u2014 a mid-run restart that came back as non-run GPS silently stopped recording the run.",
    "id": "beta-watchdog-run-ownership",
-   "pattern": "const wasRunGps = gpsFromRun; stopGps(true); startGps(wasRunGps, true);",
+   "pattern": "stopGps(true); startGps(wasRunGps, true);",
    "type": "grep_present"
   },
   {
@@ -13464,6 +13464,33 @@
    "id": "correct-extract-no-clone-pack-expect",
    "pattern": "function extract(src, sig)",
    "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app1.js",
+   "fix": "Round 1 (spin-out 6d-2): showBanner in app1.js is the ONE notification banner owner - every advisory routes through it, never a per-feature surface.",
+   "fix_id": "gps-gap-banner",
+   "id": "gps-gap-banner-owner",
+   "pattern": "function showBanner(head, line, icon)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app3.js",
+   "fix": "Round 1 (spin-out 6d-2): buildSnap stamps gpsGap onto the archived clean record when the watchdog recorded a silent run-owned watch.",
+   "fix_id": "gps-gap-banner",
+   "id": "gps-gap-record-stamp",
+   "pattern": "snap.gpsGap = true",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app3.js",
+   "fix": "Round 1 (spin-out 6d-2): the GPS gap advisory fires only after finishRun returns (the finish flow completes first), with the decided wording.",
+   "fix_id": "gps-gap-banner",
+   "id": "gps-gap-banner-after-finish",
+   "pattern": "if (finished && finished.gpsGap) showBanner('GPS gap in this clean'",
+   "type": "grep_present"
   }
  ]
 }
