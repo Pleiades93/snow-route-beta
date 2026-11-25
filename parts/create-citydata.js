@@ -1,21 +1,10 @@
-// ---- the city packs (Beta 1.123): the app's own street library ----
-// Pre-generated whole-city street-shape files, hosted beside the app on
-// its own origin under packs/ (one <slug>.json per city + index.json,
-// the library's catalogue). This is the app's offline philosophy applied
-// to street shapes: a prepared city downloads ONCE from a static file
-// (seconds, same origin - no third-party service in the path), commits
-// through the same grid/cache machinery as a service load, and is then
-// the phone's own copy. The catalogue is data, not code: publishing a
-// new city's pack + index entry lights it up in the chooser and at this
-// seam with NO app change. A city with no pack - or a pack that fails
-// to load - uses the live Overpass grid exactly as 1.121 did, and the
-// fallback is SAID in the hint (crPackNote), never silent.
+// ---- city packs ---- a pack in the catalogue lights its city up in the chooser with no app change
 let crPackCtx = null; // { slug, bbox, failed } while the active city's preparation is pack-backed; null = the service is the source
 let crPackNote = ''; // the disclosed pack state ('' = nothing to say); rides the hint like crCacheNote
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
-let crPackIndexKnown = false; // Beta 1.251 (cross-audit fix round, R-02): the catalogue ANSWERED (a cities list came back) - a city it does not list is the live service's dataset ('overpass'), which is an identity of its own; an unanswered catalogue states no identity at all
+let crPackIndexKnown = false; // the catalogue answered: an unlisted city is the live service's dataset ('overpass'); an unanswered catalogue states no identity
 let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
-const crPackCtls = Object.create(null); // Beta 1.254 (O-06): slug -> the CURRENT download attempt's AbortController, owned by the load (registered by crPackDownload below) - so dropping the load (crGridStall, create-cache.js) can abort the attempt itself; through 1.253 the controller was local to the attempt, the promise-drop left a progressing download streaming to nowhere, and a Retry then downloaded the pack twice over mobile data
+const crPackCtls = Object.create(null); // slug -> the current download attempt's AbortController, owned by the load: dropping the load can abort the attempt itself
 function crPackAbort(slug) { const c = crPackCtls[slug]; if (c) { delete crPackCtls[slug]; try { c.abort(); } catch (e) {} } }
 function crPackSlugOk(s) { return typeof s === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(s) && s.toLowerCase() !== 'index'; }
 function crPackIndexLoad() {
@@ -33,8 +22,8 @@ function crPackIndexLoad() {
   }
   return crPackIndexP;
 }
-function crWarmCityLibrary() { crPackIndexLoad(); } // Beta 1.130 (Andrew's cold-open stutter): the catalogue used to be requested for the FIRST time inside crRenderCityChoices - at the Select-from-list tap itself - so on a cold open the list pane sat on its loading state for the fetch's whole duration (diagnosis beta1/work/cold-stutter-1130/DIAGNOSIS.md: tap->rows painted = the fetch duration to within ~25 ms, while the same tap with the catalogue in hand paints in ~21 ms; even a 1.5 s dwell at the doors bought nothing, because nothing had started the download). The download now starts during BOOT - Andrew's own suggestion, adjudicated to the catalogue only: the boot tail's menu-arming slot fires crWarmCityLibrary (see the boot IIFE) once first paint is safe, and the create gate (Create button / openDoors) plus the route menu (openRouteMenu) re-trigger it as no-ops on the SAME cached promise - still at most one catalogue fetch per session, and a failed one still lands the chooser on its honest Manual-search note.
-async function crPackResolveCity(name, bbox) { // does the library hold THIS city? The match is by city name against the catalogue; the pack's own bounding box must CONTAIN the grid's box (a pack that covers less than the grid would certify coverage it never downloaded - the CG-PF-15 lesson, applied at the source). A slow catalogue never wedges preparation: past the race, the service path proceeds as if there were no pack.
+function crWarmCityLibrary() { crPackIndexLoad(); } // the catalogue downloads from BOOT: a cold-open chooser tap otherwise waits the whole fetch before the list paints
+async function crPackResolveCity(name, bbox) { // the pack's box must contain the grid box (less would certify coverage never downloaded); a slow catalogue cannot wedge preparation
   if (!name || !bbox) return null;
   const entries = await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]);
   if (!entries) return null;
@@ -44,11 +33,11 @@ async function crPackResolveCity(name, bbox) { // does the library hold THIS cit
   if (![pb.s, pb.w, pb.n, pb.e].every(isFinite)) return null;
   const EPS = 1e-6;
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
-  return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // Beta 1.251 (R-02): the catalogue's generatedAt is the pack's version stamp - republishing a pack re-stamps it, and the dataset identity (crDatasetId, create-cache.js) binds saved records to it
+  return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // the catalogue's generatedAt is the pack's stamp: republishing re-stamps it, and the dataset identity binds saved records to it
 }
-async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a city pack, watched at the byte level (Andrew's pack stall rule, 2026-11-19). Through 1.248 the pack fetch carried no timeout of its own - a wedged connection, or a host that never answers, pended crPackLoad's promise forever, and only the preparation watchdogs' 180 s landing bound ever surfaced it, as a failed preparation. The attempt now carries a silence timer in crOverpassFetch's shape (Beta 1.246), on the pack's own two windows from CR_TIMING: packFirstByteMs (120 s) until the first body byte - the static host spends real time producing a big city's file before the first byte moves, so silence there is not yet a wedge - then packStallMs (60 s) between bytes once they flow. On expiry the timer aborts the attempt through its own controller and the attempt throws a TAGGED error (err.packStall) - the retry loop's signal in crPackLoad below. Every other failure (HTTP status, an unreadable or misshapen body, a network throw) is untagged and behaves exactly as it always has. The body is consumed through the shared streaming read (crReadBodyText, create-fetch.js - Architecture #18: stream, accumulate, decode, one body for both watched downloads); there is still NO byte cap (the caps in CR_TIMING govern service extracts, not the app's own library). A reader-less response falls back to r.text() under the first-byte window armed at the attempt's start: it cannot see mid-body progress, so the generous window is its only honest bound - the fallback limit 1.246 documented for its own no-stream branch.
+async function crPackDownload(slug) { // one attempt: silence past packFirstByteMs, then packStallMs between bytes, aborts it with a tagged error the retry reads
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-  if (ctl) crPackCtls[slug] = ctl; // Beta 1.254 (O-06): the load owns this attempt's controller until the attempt settles (the finally below unregisters it) or the load is dropped (crPackAbort)
+  if (ctl) crPackCtls[slug] = ctl; // the load owns this attempt's controller until it settles or the load is dropped (crPackAbort)
   let stallTo = null, sawByte = false, killed = false;
   const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { killed = true; try { ctl.abort(); } catch (e) {} }, sawByte ? CR_TIMING.packStallMs : CR_TIMING.packFirstByteMs); };
   const clearStall = () => { if (stallTo) clearTimeout(stallTo); };
@@ -56,12 +45,12 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
   try {
     const r = await fetch('packs/' + slug + '.json', { cache: 'no-cache', signal: ctl ? ctl.signal : undefined });
     if (!r.ok) { clearStall(); throw new Error('pack HTTP ' + r.status); }
-    const read = await crReadBodyText(r, () => { // Architecture #18: the consumption (stream, accumulate, decode) is crReadBodyText's (create-fetch.js); the pack's POLICIES stay here - the chunk hook records the first byte and re-arms the silence clock on the flowing window, and the hook never stops the read (the pack has no cap and no session verdict to give)
+    const read = await crReadBodyText(r, () => { // consumption is crReadBodyText's (create-fetch.js); the policies stay here: the hook records a byte, re-arms the silence clock
       sawByte = true;
       armStall(); // a landed chunk is progress: the silence clock restarts here, on the flowing window once the first byte has landed
       return null;
     });
-    const text = read.fallback ? await r.text() : read.text; // no reader: the first-byte window armed at the start bounds the whole read (see the header - no mid-body visibility exists to arm anything finer)
+    const text = read.fallback ? await r.text() : read.text; // no reader: the first-byte window bounds the whole read (no mid-body visibility exists)
     clearStall();
     const pack = JSON.parse(text); // a SyntaxError propagates untagged, exactly as r.json()'s did through 1.248
     if (!pack || !pack.streets || typeof pack.streets !== 'object') throw new Error('pack shape');
@@ -72,7 +61,7 @@ async function crPackDownload(slug) { // Beta 1.249: ONE download attempt of a c
     throw e;
   } finally { if (ctl && crPackCtls[slug] === ctl) delete crPackCtls[slug]; } // a settled attempt unregisters itself; an aborted one was already unregistered by crPackAbort
 }
-function crPackLoad(slug, force) { // one same-origin download per session per city, adapted ONCE into the Overpass element shape the extract machinery consumes ({ id, tags: { name }, geometry: [{ lat, lon }] }). The pack holds raw segments per street ([[lat, lng], ...] runs, unchained - the app chains at resolve time, as it does for service extracts). Synthetic ids are NEGATIVE and sequential: OSM way ids are positive, so a pack way can never collide with a service way in the merged by-id index. A failed load is NOT cached - a later preparation may retry it.
+function crPackLoad(slug, force) { // adapted into the extract shape; ids are negative (OSM ids are positive); a failed load is not cached
   if (!crPackSlugOk(slug)) return Promise.reject(new Error('pack slug'));
   if (!force && crPackLoads[slug]) return crPackLoads[slug];
   const t0 = Date.now();
@@ -80,7 +69,7 @@ function crPackLoad(slug, force) { // one same-origin download per session per c
     for (;;) {
       let pack;
       try { pack = await crPackDownload(slug); } catch (e) {
-        // Beta 1.249: a SILENCE kill (tagged by crPackDownload) retries INSIDE this promise - invisible to every caller, so nothing already landed is discarded (committed cells, the coverage record, the preparation's state all stand); only the killed attempt's in-flight bytes restart, and bytes in flight were never landed progress - the pack is one JSON document, adapted whole below, exactly as a killed attempt's partial chunks are discarded inside crOverpassFetch (1.246). The retry stands down the moment the load is no longer the session's wanted one: crPackLoads[slug] moving off this promise - crGridStall's delete of the cached promise (create-cache.js), or a superseding force load - is the abandonment signal, the same one that orphaned the wedged promise through 1.248. And it stands down once the load is older than the preparation watchdogs' own bound (CR_TIMING.stallMs, referenced, not restated): inside a preparation that watch always fires first - its clock (last landing / preparation start) starts before this load does, and nothing can land while the pack wedges - so its promise-drop is what stops the loop there, and any late settlement is orphaned by the generation checks as before. The age bound is the loop's own stop for the one caller with no watchdog (the snap index, app3.js), where the rejection lands in its existing fail-cooldown path instead of pending forever. A real failure (untagged) rejects at once, exactly as through 1.248. (The identity read of p below is safe: it is only evaluated after an await settles, by which time the const has been assigned - the same shape the p.catch under this function has always relied on.)
+        // a silence kill retries here, invisible to callers; it stands down when the promise is dropped, or past stallMs
         if (e && e.packStall && crPackLoads[slug] === p && Date.now() - t0 < CR_TIMING.stallMs) continue;
         throw e;
       }
@@ -99,10 +88,10 @@ function crPackLoad(slug, force) { // one same-origin download per session per c
   p.catch(() => { if (crPackLoads[slug] === p) delete crPackLoads[slug]; });
   return p;
 }
-async function crPackServe(box, name, sessionOk) { // the seam's pack answer: the extract for `box` (optionally one street) filtered out of the active city's pack, in the seam's result shape. A way belongs to a box when any of its points lies in it - the same membership the service's bounding-box query applies - and its FULL geometry is returned, exactly as `out geom` returns it. Returns null when no pack applies (the caller then takes the service path): no context, a box reaching past the pack's bounds, or a pack that failed to load - and that failure flips the context to the service for the rest of the preparation and says so in the hint.
+async function crPackServe(box, name, sessionOk) { // a way belongs when any of its points lies in the box, geometry returned whole; null when no pack applies
   const ctx = crPackCtx;
   if (!ctx || ctx.failed) return null;
-  const EPS = 2e-6; // the grid rounds its cell edges to 6 decimals (crGridCellsFor), which can set an edge cell's side up to 5e-7 of a degree (~5 cm) outside the city's exact box - that is the grid's own rounding, not a coverage gap; anything beyond it is real and the service answers
+  const EPS = 2e-6; // grid edges round to 6 decimals (~5 cm out): the grid's own rounding, not a coverage gap
   if (!(box.s >= ctx.bbox.s - EPS && box.n <= ctx.bbox.n + EPS && box.w >= ctx.bbox.w - EPS && box.e <= ctx.bbox.e + EPS)) return null; // outside the pack's coverage the service answers (its extract is the honest one there)
   let els = null;
   try { els = await crPackLoad(ctx.slug); } catch (e) { els = null; }
@@ -117,8 +106,9 @@ async function crPackServe(box, name, sessionOk) { // the seam's pack answer: th
   for (const el of els) { if (name && el.tags.name !== name) continue; if (el.geometry.some(g => g.lat >= box.s && g.lat <= box.n && g.lon >= box.w && g.lon <= box.e)) out.push(el); }
   return { ok: true, json: { elements: out }, ms: Date.now() - t0 };
 }
-function crCleanPtPush(pts, lat, lon) { const p = [Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); } // Architecture #17: THE point normalisation - one body for the two cleaners that each spelled it out through 1.280 (crIndexWays on fetched geometry, crCleanPts on stored pairs): 1e7 rounding, and a point is kept only when it sits more than 0.1 m past the last kept one. Each caller keeps its own admission rules around it (crIndexWays trusts the extract's shape; crCleanPts validates finiteness/range first) and its own survival rule (a way is kept only when more than one point survives)
-function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, with the point cleaning the per-tap fetch used (crCleanPtPush: 1e7 rounding, sub-0.1 m duplicates dropped)
+// the point normalisation for both cleaners: 1e7 rounding; a point survives only past 0.1 m from the last kept
+function crCleanPtPush(pts, lat, lon) { const p = [Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, cleaned by crCleanPtPush (1e7 rounding, sub-0.1 m duplicates dropped)
   for (const el of elements || []) {
     if (!el || el.type !== 'way' || el.id == null || !el.tags || typeof el.tags.name !== 'string' || !el.tags.name) continue;
     if (!Array.isArray(el.geometry) || el.geometry.length < 2) continue;
@@ -128,7 +118,7 @@ function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name
   }
   return byId;
 }
-function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE point cleaning for a stored [lat, lon] pair list, sharing crIndexWays' normalisation through crCleanPtPush (1e7 rounding, a point is kept only when it sits more than 0.1 m past the last kept one, at least 2 points must survive) plus the finiteness/range condition crResolve demands of every point it reads. A point that is not a finite in-range pair is skipped; the way survives on its remaining points or not at all
+function crCleanPts(rawPts) { // stored pairs clean through crCleanPtPush, plus the finiteness/range condition crResolve demands of every point it reads
   if (!Array.isArray(rawPts)) return null;
   const pts = [];
   for (const gp of rawPts) {
@@ -137,33 +127,33 @@ function crCleanPts(rawPts) { // Beta 1.150 (security-audit fix round): THE poin
   }
   return pts.length > 1 ? pts : null;
 }
-function crCleanStoredWay(entry) { // Beta 1.150: a city-cache record's stored triple [id, name, pts] earns installation only by passing the extract's own cleaning - a usable id, a non-empty string name, and geometry that cleans to at least 2 points. Anything else returns null and the way is dropped whole (the cache fold in create-cache.js is the caller)
+function crCleanStoredWay(entry) { // a triple installs only by passing the extract's cleaning (usable id, non-empty name, 2+ cleaned points); else dropped whole
   if (!Array.isArray(entry) || entry.length < 3) return null;
   if (entry[0] == null || typeof entry[1] !== 'string' || !entry[1]) return null;
   const pts = crCleanPts(entry[2]);
   return pts ? { id: entry[0], name: entry[1], pts } : null;
 }
-function crCovFromWays(byId, boxes) { // the coverage record: the extract's ways indexed by street name (ids kept in byId - grid cells and top-ups merge into the SAME index, deduped by way id), plus the SET of verified boxes completeness is judged against
-  const byName = Object.create(null); // Beta 1.150 (security-audit fix round, finding covfromways-prototype-name-throw): street names are external data - on a plain object, a street named 'constructor' reads Object.prototype's member as if a run existed and the push below threw, and '__proto__' would write the prototype instead of an entry. A null-prototype index makes every name an own property
+function crCovFromWays(byId, boxes) { // the record: ways by name, ids in byId (cells and top-ups merge into one index), plus the verified boxes
+  const byName = Object.create(null); // street names are external data: a null-prototype index keeps 'constructor'/'__proto__' as own properties, never the prototype
   for (const id of Object.keys(byId)) {
     const w = byId[id];
     (byName[w.name] = byName[w.name] || []).push(w);
   }
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
-function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // Beta 1.150: the coverage byId starts life null-prototype (as crCovFromWays' byName now does) - the cache fold writes stored way ids into it, and an id of '__proto__' must land as an entry, never as the index's prototype. Every coverage birth site (here, crCityPrepare) passes Object.create(null) for the same reason
+function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // byId starts null-prototype too: a stored '__proto__' id must land as an entry, never the prototype
 function crCovFold(byId, box) { const cov = crCovEnsure(); for (const id of Object.keys(byId)) cov.byId[id] = byId[id]; if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box); return cov; } // Architecture #17: the coverage record's FOLD - already-validated ways and one answered box land on the record, and nothing else happens: no reindex, no search refresh. The cache restore folds per restored cell through here (through 1.280 it wrote crCov.byId and crCov.boxes directly from create-cache.js); the once-only reindex + refresh after its loop stays the caller's discipline (Beta 1.254, A-02)
-function crCovReindex() { const cov = crCovEnsure(); cov.byName = crCovFromWays(cov.byId, cov.boxes).byName; return cov; } // Architecture #17: the byName rebuild - the name index is a pure function of byId, rebuilt whole at the moments coverage settles (a merge landing below, the restore's fold completing), never per cell (Beta 1.169 / 1.254)
-function crCovMerge(elements, box) { // fold one answered extract (a grid cell, the fallback box, a top-up) into the merged coverage: ways dedupe by id, the answered box joins the verified set
+function crCovReindex() { const cov = crCovEnsure(); cov.byName = crCovFromWays(cov.byId, cov.boxes).byName; return cov; } // the byName rebuild: the name index is a pure function of byId, rebuilt when coverage settles, never per cell
+function crCovMerge(elements, box) { // fold one answered extract into the coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);
   crCovReindex();
   if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box);
   cov.fetchedAt = Date.now();
-  crRefreshSearch(); // Beta 1.234 fix round 3 (PR #114, Codex P2): a merge is the moment coverage changes - an open street search re-runs against the fuller extract here, instead of standing on the answer it computed before these streets landed (the refresh and its dismissal guards live at crRefreshSearch in create-pick.js; the search itself merges nothing, so this cannot cascade)
+  crRefreshSearch(); // a merge changes coverage: an open search re-runs against the fuller extract here, not its earlier answer
   return cov;
 }
-function crClipLineToBox(line, box) { // Beta 1.245: the maximal sub-lines of a stitched line that lie inside a box, cut where the line crosses the boundary (parametric clip per segment, on the same flat-earth plane distM uses - a crossing point is a real point of the road, interpolated on its own segment). Each piece records whether its ends were made by the cut (startCut / endCut): a cut end sits ON the boundary; an uncut end is one of the line's own ends inside the box.
+function crClipLineToBox(line, box) { // the sub-lines of a stitched line inside a box, cut at the boundary; pieces record cut-made ends (startCut/endCut)
   const pieces = [];
   let cur = null;
   const close = () => { if (cur && cur.line.length > 1) pieces.push(cur); cur = null; };
@@ -189,7 +179,7 @@ function crClipLineToBox(line, box) { // Beta 1.245: the maximal sub-lines of a 
   close();
   return pieces;
 }
-function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from the extract: the sandbox stitch + the run nearest the tap (the 1.118 rule), plus the fail-closed completeness check (Codex (c)): a run end is CLOSED only when it lies INSIDE verified coverage - any same-name continuation starts at that end, inside a query that was actually answered, and the source returns every way touching that box, so it would have been returned. Verified coverage is the extract's box SET (city cells + fallback boxes); an explicit boundary (a top-up's own box) replaces the set for that one resolution. Verify round (CG-PF-08): an earlier form also accepted an end touched by ANY other returned way ('junction proof') - unsound, and removed: a cross street touching the endpoint says nothing about a same-name continuation that starts there and runs wholly outside the box, which the extract never saw (Codex's adversarial fixture: Main Road certified complete by an unrelated Cross Road). Outside verified coverage the run is unproven, however many other streets touch it.
+function crResolve(osmName, lngLat, boundary) { // a run end is closed only inside verified coverage (a continuation would have been returned); outside, the run is unproven
   const cov = crCov; if (!cov) return { status: 'nocov' };
   const ways = cov.byName[osmName];
   if (!ways || !ways.length) return { status: 'absent' };
@@ -197,34 +187,10 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   let best = null, bestD = Infinity;
   for (const run of runs) for (const p of run.line) { const d = distM(p, [lngLat.lat, lngLat.lng]); if (d < bestD) { bestD = d; best = run; } }
   if (!best) return { status: 'absent' };
-  // Beta 1.245 (Andrew's phone report): the CITY CLIP. The extract's ways
-  // carry their full geometry, so a stitched run follows its road OUT of
-  // the working city to wherever the ways end - and the completeness
-  // check below then finds those ends outside every verified box and
-  // sends the tap into the 90-second top-up for geometry the route
-  // should never hold (tapping Highway 400 in Vaughan burned the whole
-  // top-up budget and added nothing). When a working city is in force
-  // and the tap lies inside it - and this is not a top-up's own
-  // re-resolution (an explicit boundary stands in for the coverage set
-  // there, unchanged) - and the chosen run actually reaches past the box
-  // (a run wholly inside it resolves exactly as it always has, stored
-  // form included), the run is cut at the city box first: an end the
-  // cut makes sits ON the city boundary and is complete by definition
-  // (the city is the working extent; nothing past its edge is the user's
-  // to select), while an original end inside the box still faces the
-  // coverage test below - a genuinely unproven interior end falls
-  // through to the exact pre-1.245 logic (edge, top-up, pending). The
-  // stored shape of a clipped pick is the one stitched in-city line (the
-  // bridged-run form), so a clipped street's sectors cut from it exactly
-  // as a bridged street's do.
+  // city clip: runs are cut at the boundary; a cut end is complete by definition, an original end is not
   if (!boundary && crCity && crCity.bbox && crInBox(crCity.bbox, lngLat.lat, lngLat.lng) && best.line.some(p => !crInBox(crCity.bbox, p[0], p[1]))) {
     const pieces = crClipLineToBox(best.line, crCity.bbox);
-    // the piece is chosen by distance to its SEGMENTS (crSegProjM), not
-    // its vertices: a road that leaves the city and comes back can put
-    // another piece's vertex nearer the tap than every vertex of the
-    // piece the tapped segment belongs to (the Codex catch on this
-    // round's gate: Aurora's Chambers Crescent returned its ~20 m piece
-    // instead of the ~398 m piece containing the tap).
+    // pieces are chosen by segment distance, not vertices: another piece's vertex can sit nearer the tap
     let piece = null, pieceD = Infinity;
     for (const pc of pieces) { let d = Infinity; for (let i = 1; i < pc.line.length; i++) { const sd = crSegProjM([lngLat.lat, lngLat.lng], pc.line[i - 1], pc.line[i]).d; if (sd < d) d = sd; } if (d < pieceD) { pieceD = d; piece = pc; } }
     if (piece) {
@@ -241,8 +207,9 @@ function crResolve(osmName, lngLat, boundary) { // resolve a tapped street from 
   }
   return { status: 'ok', segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
 }
-function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; } // Beta 1.154 (B3 build, G3 option (i)): the prep family's current-check under the one convention - cr<Family>Current(<the family's own invalidation inputs>), answering "may this landing still write?" (the convention is stated at crSearchCurrent in create-pick.js); this family's true inputs are (gen, session)
-function crPrepWatchdog(prep, gen, session) { // Beta 1.229: the fallback preparation's progress watchdog - the box prep's mirror of the grid's (crGridWatchdog, create-cache.js). The prep's fetch carries the service budget, but its LANDING is one promise - a pack download inside it (crPackLoad's fetch carries no timeout of its own) can wedge that promise forever, and through 1.228 nothing watched the wait: the readout sat at 'Preparing this area' with no way out but leaving. Past CR_TIMING.stallMs, force the existing failed landing (the readout's Retry re-enters crStartPrep on the same anchor). The generation bump orphans the wedged landing first: if it ever settles, it finds a dead generation and lands nowhere, instead of completing a preparation the state table has already failed - a failed -> ready move it would refuse.
+// the prep family's current-check under the one convention (at crSearchCurrent, create-pick.js); this family's true inputs are (gen, session)
+function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
+function crPrepWatchdog(prep, gen, session) { // the fallback's watchdog (the grid's mirror): past stallMs, force the failed landing, the wedged landing orphaned first
   if (!crPrepCurrent(gen, session) || crPrep !== prep) return;
   if (Date.now() - prep.startedAt < CR_TIMING.stallMs) return;
   clearInterval(prep.ticker);
@@ -252,18 +219,18 @@ function crPrepWatchdog(prep, gen, session) { // Beta 1.229: the fallback prepar
   crSetPrepState('failed'); crPrepFail = { ok: false, kind: 'unreachable' };
   crRenderHint();
 }
-function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, item D): one bounded box around an anchor, session-only - for places with no picked/saved city, and for anchors outside the city's coverage. The whole-city path is crCityPrepare below.
+function crStartPrep(anchor) { // the fallback preparation: one bounded box around an anchor, session-only, for places with no picked or saved city
   if (!creating || !anchor || !isFinite(anchor.lat) || !isFinite(anchor.lng)) return;
   if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
   if (crPrep && crPrepState === 'preparing' && crInBox(crBoxAround(crPrep.anchor.lat, crPrep.anchor.lng, CR_INNER_KM), anchor.lat, anchor.lng)) return; // the same preparation is already in flight - dedupe
   if (crPrep) crAbortOp(crPrep.op); // a superseding preparation stops the old download outright (CG-PF-10)
-  if (crGrid) crGridStop('superseded'); // CG-PF-13: a fallback starting over a live grid must STOP the grid first - the generation bump below would otherwise orphan its in-flight cells in 'fetching' (their answers settle into the dead generation, their handlers discard them, and Resume - which only resets 'failed' cells - could never reschedule them, wedging the city mid-load forever). crGridStop aborts the grid's downloads and returns those cells to 'pending', so the city stays resumable; on a settled grid it changes nothing but the stopped marker, which crGridSettledState already reads correctly
+  if (crGrid) crGridStop('superseded'); // a fallback over a live grid stops the grid first: otherwise its cells orphan in 'fetching', unresumable forever
   const session = crSession, gen = ++crCovGen;
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
-  crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to any outstanding offer (the offer itself clears inside crPrepBegin, Architecture #16; the anchor stays this site's own - it is the fallback's Retry target)
+  crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to an outstanding offer (it clears inside crPrepBegin); the anchor stays this site's own
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
-  prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // Beta 1.229: every tick runs the progress watchdog before it renders
+  prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // every tick runs the progress watchdog before it renders
   crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crPrepCurrent(gen, session), prep.op).then(res => {
     clearInterval(prep.ticker);
     if (!creating || crSession !== session || crCovGen !== gen) return; // obsolete: land NOWHERE - not the draft, not the hint, not a newer operation's state (CG-PF-05)
@@ -271,13 +238,13 @@ function crStartPrep(anchor) { // the FALLBACK preparation (second amendment, it
     if (res.kind === 'stale') return; // superseded mid-flight; the newer operation owns the state
     if (res.ok) {
       crCovMerge(res.json.elements, outer);
-      crSetPrepState(crGrid ? crGridSettledState() : 'ready'); // a fallback box landing does not pretend a part-missing city is whole: the settled state comes from the grid's own judge - CG-PF-14: the pending count alone promoted a city with a FAILED cell (nothing pending, one part refused) to plain 'ready', dropping the missing-parts disclosure and its Retry. Beta 1.154 (B3 build): the copy of crGridFinish's failed-handling that stood on the next line through 1.153 is DELETED as dead code - crStartPrep stops the grid first (CG-PF-13), so the grid's stopped marker reads 'superseded' at this landing and crGridSettledState's stopped branch answers 'degraded' before its done===0 test can ever say 'failed'; the 2026-11-09 lifecycle trace observed this landing as ready/degraded only, with crPrepFail null throughout (TRACE-RECORD G1). The live copy is crGridFinish's, at the grid's own finish, where stopped is null and 'failed' IS reachable
+      crSetPrepState(crGrid ? crGridSettledState() : 'ready'); // the settled state comes from the grid's judge: the pending count alone once hid a failed cell behind 'ready'
       crSweepPending();
     } else { crSetPrepState('failed'); crPrepFail = res; }
     crRenderHint();
   });
 }
-function crCancelPrep() { // stops the wait AND the downloads (CG-PF-10), keeps the draft, the city and every cell already loaded; the generation bump makes any late answer land nowhere
+function crCancelPrep() { // stops the wait AND the downloads, keeps the draft, the city and every loaded cell; late answers land nowhere
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
   if (crGrid) crGridStop('cancelled');
   crCovGen++;
@@ -290,6 +257,7 @@ function crSweepPending() { // a fresh extract may complete streets that were pe
   for (const pk of Object.keys(crPending)) {
     const p = crPending[pk]; if (!p) continue;
     const res = crResolve(p.osmName, p.lngLat);
-    if (res.status === 'ok') { if (draft && draft.roads[pk]) { delete crPending[pk]; crAddRun(pk, res.segs); } else crAddStreet(pk, res.segs); } // Beta 1.144 (OPT-L1): a swept street that meanwhile entered the draft gains the resolved shape as a further run of the same entry, never an overwrite
+    // a swept street that meanwhile entered the draft gains the resolved shape as a further run, never an overwrite
+    if (res.status === 'ok') { if (draft && draft.roads[pk]) { delete crPending[pk]; crAddRun(pk, res.segs); } else crAddStreet(pk, res.segs); }
   }
 }

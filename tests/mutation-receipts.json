@@ -11553,6 +11553,186 @@
    "red": "Beta 1.293/1.294 gates: P6 flaked on the theme-swap blackout (flake-log.md). Locally on the sampler-fixed tree: P7 failed 3 of 6 runs at samples 5, dropped []",
    "green": "drive216 9/9 twice on the final tree (theme phase streams loaded samples only by opt-in; all other phases judge every sample; throttled windows 2400 ms, floors unchanged)",
    "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "comment-trims-1262",
+   "check": "tests/proof/proof-1262.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1262.mjs": {
+     "span": [
+      "const block = span('// ---- intersection POI ----', \"$('crClear').addEventListener('click'\");",
+      "const block = span('// ---- intersection POI ----', \"$('crClear').addEventListener('click'\");"
+     ],
+     "sha256": "4d0a79625e3b5e5c23c21c413ee22bd651a3ce995d92ef4eaeceed70d95c7cb0"
+    }
+   },
+   "mutation": "Phase 4 comment trims: the create-pick.js section banner carrying proof-1262's span anchor was trimmed to '// ---- intersection POI ----'; the needle follows the trimmed comment, claim unchanged",
+   "red": "original proof against the trimmed tree: 8 passed, 6 failed - checks 2, 4, 7, 8, 9, 14 fail because the span anchor '// ---- Beta 1.262 (Andrew, 2026-11-20): the intersection POI' no longer exists, so the extracted span is empty",
+   "green": "re-pinned anchor: proof-1262 14 passed, 0 failed on the trimmed tree",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": {
+     "span": [
+      "  app2.indexOf(\"setL(L.id, 'symbol-spacing', 250);\") > app2.indexOf('LABEL RULE: titles name the route below 15'));",
+      "  app2.indexOf(\"setL(L.id, 'symbol-spacing', 250);\") > app2.indexOf('LABEL RULE: titles name the route below 15'));"
+     ],
+     "sha256": "239023e9a8e55ed013a15a650b3ef964d76f62276ab73f6996c39e38c9a09b9f"
+    }
+   },
+   "mutation": "Phase 4 comment trims: app2.js u22 LABEL RULE comment trimmed; the pinned phrase 'LABEL RULE (Andrew, 1.294)' was removed; the needle follows the trimmed comment, claim unchanged",
+   "red": "the original needle is absent from trimmed app2.js (0 grep hits): the ordering check degenerated to vacuous (indexOf -1) and passed while observing nothing",
+   "green": "re-pinned needle 'LABEL RULE: titles name the route below 15' is present at app2.js line 92, before the symbol-spacing line at 93: proof-1263 13 passed, 0 failed - the ordering is observed again",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1230",
+   "check": "tests/proof/proof-1230.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1230.mjs": {
+     "span": [
+      "check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes(\"the settled height publishes over a short report while the window still spans the settled height\"));",
+      "check('4e (Codex P2 on PR #110): the anchor is bound to the current window - it stands in only while the window spans the settled height', app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes(\"the settled height publishes over a short report while the window still spans the settled height\"));"
+     ],
+     "sha256": "cb0f618799221481694a035bca6656646fbb3a47d5b8233882976a91e9bccda7"
+    }
+   },
+   "mutation": "Phase 4 comment trims: the app5.js u52 comment carrying check 4e's BOUND needle was trimmed; the needle follows the trimmed comment, claim unchanged (the app1 needle in the same proof was kept verbatim and needed no change)",
+   "red": "original proof against the trimmed tree: 24 passed, 1 failed - check 4e's needle quoted the pre-trim app5 comment text",
+   "green": "re-pinned needle: proof-1230 25 passed, 0 failed on the trimmed tree",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1268",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1268.mjs": {
+     "span": [
+      "  eng.includes('ROAD_WIDTH_K (genstyles)') &&",
+      "  eng.includes('ROAD_WIDTH_K (genstyles)') &&"
+     ],
+     "sha256": "d1929d91997cb8b6d0f27fdcf7bc9c0537940008f4dcf40563858dc873f47beb"
+    }
+   },
+   "mutation": "Phase 4 comment trims: the engine.js u116 road-width comment carrying the check's three needles was trimmed; all three needles follow the trimmed comment, claim unchanged",
+   "red": "original proof against the trimmed tree: 5 pass, 1 fail - the road-width check's needles quoted the pre-trim engine comment",
+   "green": "re-pinned needles: proof-1268 6 pass, 0 fail on the trimmed tree",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1229",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": {
+     "span": [
+      "check('4d: the heartbeat is armed at preparation entry, not only at the pump', cache.includes('crGridArmTicker(g); // the heartbeat runs from entry'));",
+      "check('4d: the heartbeat is armed at preparation entry, not only at the pump', cache.includes('crGridArmTicker(g); // the heartbeat runs from entry'));"
+     ],
+     "sha256": "ce0926c5ce95c51d2dd306ae7210a83ae1601e1726f35d5b796dcc5519b69983"
+    }
+   },
+   "mutation": "Phase 4 comment trims: the create-cache.js trailing comment in check 4d's code+comment needle was trimmed ('// Beta 1.229: the heartbeat runs from preparation ENTRY' removed); the needle follows the trimmed comment, claim unchanged",
+   "red": "full proof suite on the trimmed tree with the original proof: proof-1229 32 passed, 1 failed (check 4d)",
+   "green": "re-pinned needle 'crGridArmTicker(g); // the heartbeat runs from entry': proof-1229 33 passed, 0 failed; full suite 90/90",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1232",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": {
+     "span": [
+      "check('1q (fix round 5, PR #112 Codex P2; Beta 1.243, Arch-3): dismissing the results ENDS the search - the outside-pointer dismissal calls crResetSearch as it hides the box (the owner clears the pending debounce and bumps the sequence), so no landing can reopen the box over the tap-away', pick.includes(\"crResetSearch(); // dismissing ends the search too\"));",
+      "check('1q (fix round 5, PR #112 Codex P2; Beta 1.243, Arch-3): dismissing the results ENDS the search - the outside-pointer dismissal calls crResetSearch as it hides the box (the owner clears the pending debounce and bumps the sequence), so no landing can reopen the box over the tap-away', pick.includes(\"crResetSearch(); // dismissing ends the search too\"));"
+     ],
+     "sha256": "ef34400c3bcac154a9055a40619ac688f7ba3f4759a9e4872641b82016487237"
+    }
+   },
+   "mutation": "Phase 4 comment trims: the create-pick.js trailing comment in check 1q's code+comment needle was trimmed ('// Beta 1.232 fix round 5' removed); the needle follows the trimmed comment at the outside-pointer dismissal seat, claim unchanged",
+   "red": "full proof suite on the trimmed tree with the original proof: proof-1232 26 pass, 1 fail (check 1q)",
+   "green": "re-pinned needle 'crResetSearch(); // dismissing ends the search too': proof-1232 27 pass, 0 fail; full suite 90/90",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1252",
+   "check": "tests/proof/proof-1252.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1252.mjs": {
+     "span": [
+      "  app3.includes('watchStartedAt = Date.now();') && app3.includes(\"every start records its session start (the watchdog's clock)\"));",
+      "  app3.includes('watchStartedAt = Date.now();') && app3.includes(\"every start records its session start (the watchdog's clock)\"));"
+     ],
+     "sha256": "833921ced17dffd686bd7171d4300115dd3a3878909206c8aa82809cc0886259"
+    }
+   },
+   "mutation": "Phase 4 comment trims: the app3.js session-start comment was relocated above its line by the 240-char gate rule, so check 2's code+trailing-comment needle could not survive in trailing form; the needle now pins the assignment and the relocated why comment separately, claim unchanged",
+   "red": "full proof suite on the trimmed tree with the original proof: proof-1252 9 passed, 1 failed (check 2)",
+   "green": "re-pinned two-part needle: proof-1252 10 passed, 0 failed; full suite 90/90",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-green-half-road",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": {
+     "span": [
+      "  pick.includes('syncCrGlow(); // the trim glow tracks the draft') && pick.includes('crSectorReset(); renderDraft(); syncCrGlow();'));",
+      "  pick.includes('syncCrGlow(); // the trim glow tracks the draft') && pick.includes('crSectorReset(); renderDraft(); syncCrGlow();'));"
+     ],
+     "sha256": "e233e693c839d47d6dc8c9ff1372e8126f9a4d8dc323474537f3ae90e551d09e"
+    }
+   },
+   "mutation": "Phase 4 comment trims: the create-pick.js trailing comment in R7's code+comment needle was trimmed ('// Beta 1.208: the trim glow tracks the draft' shortened); the needle follows the trimmed comment, claim unchanged",
+   "red": "full proof suite on the trimmed tree with the original proof: R7 check failed (1 check failed)",
+   "green": "re-pinned needle 'syncCrGlow(); // the trim glow tracks the draft': proof-green-half-road ALL CHECKS PASS; full suite 90/90",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1230-r2",
+   "check": "tests/proof/proof-1230.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1230.mjs": {
+     "span": [
+      "  app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes(\"the settled height publishes over a short report while the window still spans the settled height\"));",
+      "  app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes(\"the settled height publishes over a short report while the window still spans the settled height\"));"
+     ],
+     "sha256": "a555d4a3b9c69bc64a8690657502919fbe712b982e5fa64697e259d7117a606a"
+    }
+   },
+   "mutation": "gate fix on PR #213: the re-pinned check 4e stood on one 319-char line; the check is split into a label line and an expression line - the assertion, both needles and the claim are byte-identical, only the line layout changed",
+   "red": "PR #213 checks run 45580187655: pr-limits error 'tests/proof/proof-1230.mjs: added line of 319 chars (limit 240)'",
+   "green": "split form: proof-1230 25 passed, 0 failed; local pr-limits replication over the full PR diff reports 0 line-length and 0 comment-word violations",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1232-r2",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": {
+     "span": [
+      "  pick.includes(\"crResetSearch(); // dismissing ends the search too\"));",
+      "  pick.includes(\"crResetSearch(); // dismissing ends the search too\"));"
+     ],
+     "sha256": "6d7fbb49394f6110fee3667c65757e0ec3a4f0633a4b462c0b91545c56cd16b0"
+    }
+   },
+   "mutation": "gate fix on PR #213: the re-pinned check 1q stood on one 360-char line; the check is split into label and expression lines and the label itself is split by string concatenation - the runtime label string, the needle and the claim are byte-identical, only the line layout changed",
+   "red": "PR #213 checks run 45580187655: pr-limits error 'tests/proof/proof-1232.mjs: added line of 360 chars (limit 240)'",
+   "green": "split form: proof-1232 27 pass, 0 fail; local pr-limits replication over the full PR diff reports 0 line-length and 0 comment-word violations",
+   "issued": "2026-11-25 comment-trims"
   }
  ]
 }

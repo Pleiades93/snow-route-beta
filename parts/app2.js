@@ -1,14 +1,9 @@
 
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
-const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // Beta 1.33 (Andrew's pick): BOTH basemaps are Protomaps - one map in light + dark flavours - embedded by pmstyles.js, so a day/night switch is a local setStyle: nothing to fetch, nothing to break mid-switch
-const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day'])); // Beta 1.77: MapLibre rewrites fields of a style object it is handed - a night boot followed by a day flip rewrote PM_NIGHT's own sprite to the LIGHT sheet, and the offline preload (which enumerates these objects) then never fetched the dark sprites (drive123 A8: 893 files, not 897). The embedded styles are the single source of truth and are never handed over directly; every map gets a copy.
+const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // both basemaps are Protomaps flavours embedded by pmstyles.js: a day/night switch is a local setStyle
+const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day'])); // MapLibre rewrites a handed style's fields: the styles are never handed over directly, every map gets a copy
 let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
-// Beta 1.44 (Andrew: the splash stuttered): the map is created by bootMap(), which
-// app4 calls only AFTER the splash intro has played (~1.1s). Map creation, style
-// processing and the first tile work arrive in a few big processor chunks; while
-// they ran during the intro, the animation froze and lurched - worst on a cold
-// open, invisible on a warm one. Anything that must register on the map before
-// it exists goes through onMapReady and is replayed, in order, at creation.
+// bootMap() runs only after the intro: creation's chunks froze the animation mid-intro; registrations replay via onMapReady
 let map = null;
 const __onMap = [];
 function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
@@ -16,25 +11,23 @@ function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
   map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: dpPixelRatio(), maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, cancelPendingTileRequestsWhileZooming: false, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // Beta 1.230: the canvas ratio comes from the device profile (app1) - on Android the applied tier's ratio (the boot starts from the stored hint, the boot grade lands it at the first idle), everywhere else dpPixelRatio() answers the literal 2 this constructor carried through 1.229, so an iPhone's map is built exactly as before (drive131's W1 reads the live value)
-  map.setCenter(routeBox ? [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2] : [-79.57, 43.82]); map.setZoom(12); // Beta 1.76: a plain area view - the camera frames the ROUTE only when one is chosen (loadRoute does the fitBounds). Beta 1.117: no route is baked in, so before any pick there is no routeBox - the map opens on the plain fallback view (themePos's constants) behind the picker
+  map.setCenter(routeBox ? [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2] : [-79.57, 43.82]); map.setZoom(12); // an area view until a route is chosen (loadRoute frames it); no route is baked in
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
   for (const fn of __onMap) fn();
   __onMap.length = 0;
-} // Beta 1.41 (performance round, Andrew approved): tiles MELT in over 200ms instead of snapping (fadeDuration was 0); the canvas renders at pixel ratio 2 instead of the phone's 3 - 4/9 the pixels per frame across all 106 layers, the biggest single fluidity win (labels are SDF and stay crisp); the tile cache is sized so a 13->17 sweep AND the trip back stay parsed. // full gestures (Beta 1.27, Andrew): drag/two-finger rotate and two-finger pitch stay ON, as in the prototype - the fresh build had them switched off
+} // tiles melt in (200 ms); ratio 2 = 4/9 the pixels, the fluidity win; full gestures stay on
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
-let routeBox = null; // Beta 1.117: the ACTIVE pack's bounding box - set by buildGeometry (app1) on every load via computeRouteBox; null before any route is chosen and for an empty pack. (Pre-1.117 this was an eval-time IIFE over the baked-in 5W ROADS.)
-function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); if (dead) { const t = $('toast'); if (t && t.classList.contains('show')) placeToast(t); } } // Beta 1.221: this banner can appear WHILE a pill is up (it arms on a timer / a late map error) - a pill placed before it arrived would be covered by it, so a shown pill re-places itself the moment the banner lands (Andrew's placement bar: zero overlap, measured by drive204)
+let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
+// the banner can land while a pill is up: a pill re-places itself when it lands (zero overlap)
+function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); if (dead) { const t = $('toast'); if (t && t.classList.contains('show')) placeToast(t); } }
 $('mapNoteNo').addEventListener('click', ev => { if (!tapGuard('mapNoteNo', ev)) return; mapNoteOff = true; noteMapState(); });
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
-onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })); // Beta 1.33: proof the basemap is really drawing - and the moment a tile lands after an outage, the death notice clears itself
-const ROUTE_TILE_NAMES = []; // Beta 1.40: every route street's name AS THE TILES SPELL IT (census of the protomaps 'roads' source layer, 2026-10-31: 34/34 matched exactly once; Fifth = '5th Avenue'). Drives the label exclusion in glUnifyLabels. Beta 1.117: the list itself is pack data (pack.tileNames in data.js) - this live array starts empty and buildGeometry refills it in place on every load.
-function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the day and night styles are two
-  // different ready-made maps, each printing its own names in its own lettering and size. On every (re)stack,
-  // normalize every basemap text layer: same typeface (each glyph service's own Noto Sans - the same face under
-  // each service's naming), same size curve per kind of name, road names from the same zoom in both. The words
-  // themselves come from the same map data in both styles. The engine calls this at the end of its stack build;
-  // our own route layers are never touched (they carry no 'source-layer').
+// proof the basemap is drawing: the moment a tile lands after an outage, the death notice clears itself
+onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } }));
+const ROUTE_TILE_NAMES = []; // every street's name as the tiles spell it (drives the exclusion in glUnifyLabels); pack data, refilled per load
+function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styles are two different ready-made maps
+  // on every restack, normalize every basemap text layer (typeface, size curve per kind); route layers are never touched
   try {
     const glyphs = (m.getStyle() && m.getStyle().glyphs) || '';
     const font = glyphs.indexOf('versatiles') >= 0 ? ['noto_sans_regular'] : ['Noto Sans Regular'];
@@ -44,16 +37,13 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
-    // HANDOVER clones (Andrew, Beta 1.294): a filter cannot key on zoom, so
-    // route names get their own copy of each road-label layer - route names
-    // only, from zoom 15, fading in across 15-16 while the titles fade out.
-    // Rebuilt from the embedded style spec on every restack; the originals
-    // exclude route names at every zoom instead.
+    // route names get their own label-layer copies (from 15, fading in 15-16): a filter cannot key on zoom
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-    const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // Beta 1.41: no-op guards - every redundant style mutation re-triggers symbol placement in the workers, and this pass runs on EVERY stack build (boot, every theme flip, every marking tap). When the value already matches, the mutation is skipped; the end state is identical.
+    const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // no-op guards: this pass runs on every stack build, and a mutation re-triggers symbol placement - skip matches
     const setP = (id, k, v) => { if (!eq(m.getPaintProperty(id, k), v)) { try { m.setPaintProperty(id, k, v); } catch (e2) {} } };
-    const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f; // the generated styles author kind filters in legacy form; as expressions they must be rebuilt or any combined filter is rejected whole
+    // kind filters are authored in legacy form: rebuilt as expressions, or any combined filter is rejected whole
+    const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f;
     const titlesOff = typeof ROUTE_TITLES_ON === 'undefined' || !ROUTE_TITLES_ON;
     const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);
     for (const baseId of ['roads_labels_major', 'roads_labels_minor']) {
@@ -84,19 +74,11 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
       setL(L.id, 'text-font', font);
       setL(L.id, 'text-size', SIZE[kind]);
       if (typeof isNight === 'function' && isNight()) {
-        // NIGHT READABILITY (Andrew, Beta 1.27): some of the dark style's own name colours sit almost
-        // on top of its dark road colours and vanish. Lift every basemap name to one calm light grey
-        // with a firm dark edge - readable, not loud. Night only; day keeps its native colours. (This
-        // overrules the Beta 1.6 style-native-colours call for the night style, on his road report.)
+        // night names lift to one calm light grey with a dark edge: native colours vanish on dark roads
         setP(L.id, 'text-color', '#ccd6df'); setP(L.id, 'text-halo-color', 'rgba(8,10,14,0.9)'); setP(L.id, 'text-halo-width', 1.3);
       }
       if (kind === 'place' && (sl === 'place_labels' || sl === 'places')) {
-        // MORE PLACES (Andrew, Beta 1.31): a zoom gate buried in a filter (the night style holds
-        // neighbourhoods back to z14 inside its hamlet layer's filter) relaxes to 9 so it agrees
-        // with the earlier arrival the PLACE_EARLY zooms now allow. Native collision still thins a
-        // crowded view on its own.
-        // (Zoom ranges themselves live in ONE place: the engine's PLACE_EARLY table, applied by
-        // tunePlaceLabels before this hook runs. What remains here is the filter-side gate.)
+        // a gate buried in the hamlet filter relaxes to 9, agreeing with the PLACE_EARLY zooms applied before this hook
         if (L.filter) {
           const relax = f => Array.isArray(f) ? f.map((x, i) => (i === 2 && f[0] === '>=' && Array.isArray(f[1]) && f[1][0] === 'zoom' && typeof x === 'number' && x > 9) ? 9 : relax(x)) : f;
           const nf = relax(L.filter);
@@ -106,35 +88,19 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
       if (kind === 'road') {
         const isClone = id === 'roads_labels_major-route' || id === 'roads_labels_minor-route';
         if (isClone) { if ((L.minzoom || 0) !== 15 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 15, 24); }
-        else if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // Beta 1.41 guard: same no-op rule as setL/setP
-        // LABEL RULE (Andrew, 1.294): titles name the route below 15, fade
-        // out across 15-16; clones take route names over from 15.
+        else if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // guard: same no-op rule as setL/setP
+        // LABEL RULE: titles name the route below 15, fade out across 15-16; clones take route names over from 15
         setL(L.id, 'symbol-spacing', 250); // Andrew re-picked 250 on 2026-11-24: names repeat sooner when zoomed in.
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
-          // The originals keep every NON-route name; route names are the titles' job.
-          // Beta 1.265 (Andrew): while a route is being CREATED, naming reverts to
-          // MAP DEFAULTS - the exclusion clause is simply not added, so the basemap
-          // names every street, the loaded route's included (in create mode its own
-          // titles hide with the route stack, so through 1.264 its streets showed
-          // NO name at all - a blank hole exactly where he is picking). The
-          // create-mode state (`creating`) is the single condition: crSetBackdrop
-          // re-runs this pass when the backdrop flips, and every restack (a
-          // mid-create theme swap included) recomputes the filter from the same
-          // state. Outside create mode the target is byte-for-byte the filter
-          // above. For create mode the same two layers carry both states.
-          // Beta 1.293: titles off lifts the exclusion too - the basemap names every street.
+          // while creating, the exclusion is simply not added (every street named); `creating` is the single condition
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
           const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
           const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);
-          if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // Beta 1.41 guard
+          if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // guard
         }
         if ((id === 'roads_labels_major' || id === 'roads_labels_minor' || isClone) && !(typeof isNight === 'function' && isNight())) {
-          // DAY READABILITY (Andrew, Beta 1.40): the stock day road names are pale and wash
-          // out over the app's coloured route lines. Darken them to the app's own label ink
-          // with a firm light edge - the same treatment our titles use. Day only; the night
-          // branch above already lifts every name for the dark map. The handover clones
-          // wear it too; their route-only filter is set once, at their creation above.
+          // day names darken to the label ink with a light edge (stock names wash out over route lines)
           setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5);
         }
       }
@@ -143,13 +109,14 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION (Andrew, Beta 1.6): the
 }
 function addReferenceLayers() {
   const feats = [];
-  for (const name of Object.keys(REFERENCE)) { if (name === 'Village Green' || name === 'Ott' || name === 'West link') continue; // Beta 1.32/1.40 (Andrew): ALL reference lines are OFF the map - Village Green and Ott duplicate roads the basemap already names, and West link traced a dashed line over Velmar's west leg toward Rutherford (his report, 2026-10-31). The data stays (production parity); nothing draws.
-    const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); } // production REFERENCE shape: { name: [segment, ...] } - the first cut wrongly iterated it as an array of {name, pts}, threw on every style-ready, and silently killed the GPS + trail layers queued after it (Andrew's missing GPS dot, 2026-10-30)
-  if (map.getSource('ref')) { map.getSource('ref').setData({ type: 'FeatureCollection', features: feats }); return; } // Beta 1.117: a route switch re-points the existing source at the new pack's reference features instead of leaving the old route's drawn
+  for (const name of Object.keys(REFERENCE)) { if (name === 'Village Green' || name === 'Ott' || name === 'West link') continue; // all reference lines are off the map (duplicates or over-traces); the data stays, nothing draws
+    // reference shape: { name: [segment, ...] }; the {name, pts} misread threw per style-ready, killing queued layers
+    const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); }
+  if (map.getSource('ref')) { map.getSource('ref').setData({ type: 'FeatureCollection', features: feats }); return; } // a switch re-points the source at the new pack's reference features (never the old route's)
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
   map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }
-function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andrew's reference image) - strong at the dot, fading with distance, with a soft skirt at the edges. Beta 1.174: the fan's hue is the GPS family's flat midpoint (44,74,210 — the icon-gradient family's centre) since the blue unification. Two passes (a wide faint fan under a narrower stronger one) fake the blur a flat polygon cannot do.
+function makeBeamImage() { // the beam is a fan (strong at the dot, fading, soft-skirted); two passes fake the missing blur
   const S = 512, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
   const x = cv.getContext('2d'), c = S / 2;
   const pass = (halfDeg, len, a0) => {
@@ -167,7 +134,8 @@ function makeBeamImage() { // Beta 1.49: the facing beam as a painted fan (Andre
 function addGpsLayers() {
   if (map.getSource('gps')) return;
   map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); } // raw ImageData form: handing MapLibre the canvas element itself throws 'mismatched image size' (its size reads come back 0) and the throw silently killed this whole layer batch in the boot queue - found by drive129's layer checks before 1.49 ever shipped
+  // raw ImageData: handing over the canvas element throws 'mismatched image size' and killed this layer batch silently
+  if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); }
   map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
@@ -239,7 +207,7 @@ function addGpsLayers() {
       const cssW = cnv.clientWidth, cssH = cnv.clientHeight;
       if (!cssW || !cssH || !cnv.width) return;
       const dev = cnv.width / cssW;
-      const pt = map.project([dispShownPos()[1], dispShownPos()[0]]); // Beta 1.194: the puck centres on the RENDERED point - while the stillness hold (app3) is engaged this is the held point, so the puck sits truly still at rest instead of twitching with the display track
+      const pt = map.project([dispShownPos()[1], dispShownPos()[0]]); // the puck centres on the rendered point: under the stillness hold that is the held point, still at rest
       const D = 0.054 * cssW * dev;
       const pitch = map.getPitch() * Math.PI / 180;
       const faceK = Math.max(0.30, Math.pow(Math.cos(pitch), 1.47));
@@ -281,17 +249,11 @@ function addGpsLayers() {
       if (prevScissor) gl.enable(gl.SCISSOR_TEST);
     },
     onRemove(m, gl) { if (this._prog) gl.deleteProgram(this._prog); if (this._buf) gl.deleteBuffer(this._buf); this._prog = null; }
-  }); // Beta 1.188 (Andrew's pick from the touchable demo): the puck is ONE custom WebGL layer drawing the approved coin in SCREEN SPACE, replacing the two 1.182 fill-extrusions (gps-puck-white / gps-puck-blue, retired). MapLibre projects geometry vertices into single-precision tile coordinates, so at z19 the extrusion edges stair-stepped no matter the segment count, the ground-disc size had to be clamped into a 14-110 px band (and still ballooned to the cap), and as a fellow extrusion the puck lost the depth fight to any 3D building in front of it (field report 2026-11-13: a house 7 m away hid ~95% of it). Here the puck is a quad centred on project(dispPos) read inside render() every frame - it cannot lag the camera - and a signed-distance fragment shader shapes the coin: D = 5.4% of canvas width at EVERY zoom/pitch/bearing, the blue core 62% of D recessed ~1 px under the rim (wall lift 0.14 x D, blue top 0.10 x D at pitch 60), face height cos(pitch)^1.47 so the tilt silhouette is 0.50 x D at pitch 60 and a true circle at pitch 0, app blue #2C4AD2. Edges are anti-aliased analytically (~1 device px) at any zoom. Depth test OFF + depth mask off: buildings can never cover it. GL state is snapshotted and restored around the draw. Visibility is the old puck's rule exactly: drawn while dispPos is set (render() returns early otherwise) - locate-off keeps the last position marked with the beam gone, no fix yet draws nothing. The beam and the accuracy ring are untouched, and the estimator/dispPos/watch logic is untouched - rendering only.
+  }); // one WebGL layer: a quad on project(dispPos) per frame, shader-shaped, depth off (buildings never cover it)
 }
-// Beta 1.193 (trail redesign, Andrew's adopted design): addTrailLayers is RETIRED - the map
-// carries no 'trail' source and no 'trail-line' layer any more. Through 1.190 the recorded
-// trail painted as a blue line under the GPS stack (anchored before gps-beam since Beta
-// 1.65 so it could never cross the dot's face). Andrew's call: his trail is the streets he
-// marks done, not a line - the stored trail is a backend-only fallback for the distance
-// counter now, and nothing draws it.
-function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for OUR route labels (Beta 1.6: same
-  // typeface day and night - Versatiles names it noto_sans_regular, CARTO lists Noto Sans Regular inside its
-  // stacks; a guessed stack renders NO text, so prefer a stack the style itself carries and mentions Noto)
+// no trail layer: his trail is the streets marked done; the stored trail is a distance fallback only
+function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for our route labels
+  // a guessed stack renders NO text: prefer a stack the style itself carries and mentions Noto
   try {
     const syms = (map.getStyle().layers || []).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
     const notoRoad = syms.find(l => /road|highway|street|label/i.test(l.id) && /noto/i.test(l.layout['text-font'].join(' ')));
@@ -307,12 +269,12 @@ function onStyleReady() {
   if (routeLoaded && window.GLP && !map.getSource('centres')) window.GLP.init(map, GL_HOST);
   else if (routeLoaded && window.GLP) window.GLP.sync();
   for (const fn of [addReferenceLayers, addGpsLayers]) { try { fn(); } catch (e) { /* one bad layer must never kill the rest of the stack (the REFERENCE throw hid the GPS dot until 2026-10-30) */ } }
-  pushGps(); if (routeLoaded) refreshAll(); // Beta 1.76: before a route is chosen the map is basemap-only - no route paint, no streets list, no count
+  pushGps(); if (routeLoaded) refreshAll(); // before a route is chosen the map is basemap-only: no route paint, no streets list, no count
 }
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
 function setBasemap() {
-  map.setStyle(glStyleFor(isNight()), { diff: false }); // Beta 1.77: never a diff - a diff keeps the existing tile source (and its errored tiles from an outage) when the style is unchanged, so a recovered connection never re-requested the basemap and the failure notice never cleared (drive115 C1, caught by the intro flight's wider errored-tile sweep). A basemap switch always rebuilds fully; the tiles themselves come back from cache.
+  map.setStyle(glStyleFor(isNight()), { diff: false }); // never a diff: a diff keeps errored tiles, so recovery never re-requested the basemap; a switch rebuilds fully
   if (restackArmed) return;
   restackArmed = true;
   const go = () => { if (!restackArmed) return; restackArmed = false; map.off('styledata', waiter); onStyleReady(); };
@@ -327,17 +289,16 @@ function setBasemap() {
 
 // ===== SELECTION + CHIPS =====
 let sel = null; // {name, idx, anchor:[lat,lng]}
-let selSet = []; // [{name, idx, anchor}] - EVERY stretch currently selected (Beta 1.28 multi-select, Andrew); sel/selStretch stay the ANCHOR entry (last tapped) that positions the chips
+let selSet = []; // every stretch currently selected; sel/selStretch stay the anchor entry (last tapped) that positions the chips
 let selStretch = null; // {name, idx} — the paint engine reads this global in syncSel()
 let swallowClickUntil = 0;
-function spendTap(ms) { swallowClickUntil = Date.now() + ms; } // Beta 1.148 (Tranche 5, A4(iii)): app2 is the SOLE writer of its tap-swallow variable - other parts spend a tap through this setter, never by assigning swallowClickUntil themselves
+function spendTap(ms) { swallowClickUntil = Date.now() + ms; } // app2 is the sole writer of its tap-swallow variable: others spend a tap through this setter only
 function projLL(p) { return map.project([p[1], p[0]]); }
 function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy; let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t)); }
 function nearestStreet(pt) { let best = null, bd = Infinity; for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd }; }
 function nearestStretch(name, pt) { let bi = 0, bd = Infinity; STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } }); return { idx: bi, d: bd }; }
 function geoSideFrame(name, idx, anchorLL) {
-  // The engine's convention: side 0 = geographic LEFT of the stitched line (off0, +3.3 m x WIDTH_K = 4.29 m at 1.3x, Beta 1.268; 4.95 m at the 1.5x of Beta 1.181), side 1 = RIGHT.
-  // Returns the anchor's projection on the stretch + the geographic LEFT unit vector (metre space).
+  // side 0 = geographic left, side 1 = right (the engine's convention); returns the projection + left vector
   const part = STRETCH[name].parts[idx];
   const px = anchorLL[1] * MLNG, py = anchorLL[0] * MLAT;
   let best = { d: Infinity, gx: 0, gy: 0, lx: 0, ly: 0 };
@@ -351,13 +312,13 @@ function geoSideFrame(name, idx, anchorLL) {
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
 function clearChips() { $('chips').innerHTML = ''; }
-const GROUP_PATH_JOIN_M = 20; // metres: two consecutively tapped sections join into one drive when an end of one sits within this of an end of the next (Beta 1.209). Measured on Route 5W's real stretch data: true junction joins are exact (stretch parts share vertices, 0 m, within and across streets) and the nearest non-joining part ends anywhere on the route are 58.7 m apart - the tolerance sits in a wide empty band
-function groupSideMap(side) { // Beta 1.209 (Andrew): the stored side a press of chip `side` toggles on EACH selected stretch, in tap order. Through 1.208 the press applied `side` itself to every stretch - but a stored side is numbered against its own street's drawn direction, so across a turn one press lit his right on one street and his left on the next (his Valeria -> Greenpark drive). Andrew's rule: the tapped sections in tap order ARE his drive, and the press marks the side that was on his right (or his left) as he travels that drive, continuously through turns. So: consecutive taps chain into drives (an end of one within GROUP_PATH_JOIN_M of an end of the next); each section's travel direction comes from its drive neighbours (enter end -> exit end; a drive's first section derives its direction from its exit end, its last from its enter end; a section both neighbours join at the SAME end - he drove in and back out the one junction - is travelled from that end inward); the press's driver meaning is read off the ANCHOR section (the last tapped - the chips sit on it): the chip names a geographic side of the anchor's drawn line (0 = its left, 1 = its right, the engine's convention), and the anchor's own travel direction turns that into driver's right or left; each section then maps that meaning through its own travel-vs-drawn direction (same way: no flip; opposite: flip). Fallbacks keep today's raw mapping exactly: a lone section, any section whose drive is a single section, and the whole press when the anchor's own drive is a single section (a directionless anchor cannot name a driver side). Pure: reads selSet/sel/STRETCH, writes nothing.
+const GROUP_PATH_JOIN_M = 20; // sections join into a drive when ends sit within this (true joins: 0 m; nearest non-join: 58.7 m)
+function groupSideMap(side) { // a press toggles the driver's side along the tap-order drive, read off the anchor - not the raw side
   const n = selSet.length;
   const raw = selSet.map(() => side);
   if (n < 2) return raw;
   const ends = selSet.map(en => { const p = STRETCH[en.name].parts[en.idx]; return [p[0], p[p.length - 1]]; });
-  const join = [null]; // join[k] (k >= 1): {a, b} = selSet[k] joins selSet[k-1] at k-1's end a and k's end b (0 = first point, 1 = last); null = a new drive starts at k
+  const join = [null]; // join[k]: {a, b} = ends where selSet[k] joins selSet[k-1]; null = a new drive at k
   for (let k = 1; k < n; k++) {
     let best = null;
     for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) { const d = distM(ends[k - 1][a], ends[k][b]); if (d <= GROUP_PATH_JOIN_M && (!best || d < best.d)) best = { a, b, d }; }
@@ -365,7 +326,7 @@ function groupSideMap(side) { // Beta 1.209 (Andrew): the stored side a press of
   }
   const drives = [];
   for (let k = 0; k < n; k++) { if (k === 0 || !join[k]) drives.push([]); drives[drives.length - 1].push(k); }
-  const withDir = new Array(n).fill(null); // withDir[k]: the drive travels section k the way its line is drawn (first point -> last point); null = a single-section drive (no travel direction)
+  const withDir = new Array(n).fill(null); // withDir[k]: section k is travelled as drawn; null = a single-section drive (no direction)
   for (const drv of drives) {
     if (drv.length < 2) continue;
     drv.forEach((k, pos) => {
@@ -382,7 +343,8 @@ function groupSideMap(side) { // Beta 1.209 (Andrew): the stored side a press of
   const driverRight = withDir[ai] ? side === 1 : side === 0;
   return selSet.map((en, k) => { if (withDir[k] === null) return side; return driverRight ? (withDir[k] ? 1 : 0) : (withDir[k] ? 0 : 1); });
 }
-function groupSideDone(side) { const map = groupSideMap(side); return selSet.length > 0 && selSet.every((en, k) => !!(pieces[en.name][en.idx] & (map[k] ? 2 : 1))); } // a side reads done only when EVERY selected stretch has it - Beta 1.209: "it" is the side this chip's press would toggle on that stretch (groupSideMap's per-stretch side), so the chip's done state reads the same side its press writes
+// a side reads done only when every stretch has the side this press would toggle on it (groupSideMap)
+function groupSideDone(side) { const map = groupSideMap(side); return selSet.length > 0 && selSet.every((en, k) => !!(pieces[en.name][en.idx] & (map[k] ? 2 : 1))); }
 function showChips() {
   clearChips();
   if (!sel) return;
@@ -398,16 +360,14 @@ function showChips() {
   positionChips();
 }
 function positionChips() {
-  if (!sel || !map) return; // Beta 1.169 (Carbon fix round, B-02): the chips are placed by map projection - with no map there is nothing to project against, and throwing here (projLL) aborted the rest of refreshSelUI mid-selection
+  if (!sel || !map) return; // chips are placed by projection: with no map, throwing here would abort the rest of refreshSelUI
   const kids = $('chips').children; if (kids.length !== 2) return;
   const frame = geoSideFrame(sel.name, sel.idx, sel.anchor);
   const base = projLL(frame.baseLL);
   const probe = projLL([frame.baseLL[0] + frame.left[1] * 12 / MLAT, frame.baseLL[1] + frame.left[0] * 12 / MLNG]);
   let lx = probe.x - base.x, ly = probe.y - base.y; const LL = Math.hypot(lx, ly) || 1; lx /= LL; ly /= LL; // screen direction of geographic LEFT
   const cw = map.getCanvas().clientWidth, ch = map.getCanvas().clientHeight;
-  // Stage 2 (drive120 V3): clamp the BASE point into the canvas first, so the two chips keep
-  // their full separation near screen edges - clamping each chip independently squeezed them
-  // together (measured 21.6px apart, overlapping) when the stretch point sat at the edge.
+  // clamp the base point into the canvas first: clamping each chip independently squeezed them together at edges
   base.x = Math.max(62, Math.min(cw - 62, base.x)); base.y = Math.max(62, Math.min(ch - 62, base.y));
   [0, 1].forEach(side => {
     const sgn = side === 0 ? 1 : -1; // side 0 sits on geographic LEFT, side 1 on geographic RIGHT - the same sides the engine paints
@@ -419,7 +379,7 @@ function positionChips() {
     const btn = kids[side].querySelector('.chipBtn');
     const ang = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
     const ckey = done ? 'done' : 'a' + ang;
-    if (btn.dataset.k !== ckey) { // Beta 1.50 (audit P02): positionChips runs on EVERY map move - rebuilding the chip's SVG each time was pure waste; rebuild only when the picture actually changes (done state, or the arrow's whole-degree direction)
+    if (btn.dataset.k !== ckey) { // positionChips runs on every map move: rebuild the SVG only when the picture changes (done state, arrow direction)
       btn.dataset.k = ckey;
       btn.innerHTML = done
         ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6"/></svg>'
@@ -430,7 +390,7 @@ function positionChips() {
 onMapReady(() => map.on('move', positionChips));
 function refreshSelUI() { if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
 function selectStretch(name, idx, anchor) { selSet = [{ name, idx, anchor }]; sel = { name, idx, anchor }; selStretch = { name, idx }; refreshSelUI(); } // a fresh single selection (streets list, drives)
-function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tapping a selected stretch removes just it; the anchor follows the last remaining selection
+function tapStretch(name, idx, anchor) { // map taps ACCUMULATE: tapping a selected stretch removes just it; the anchor follows the last remaining selection
   const i = selSet.findIndex(en => en.name === name && en.idx === idx);
   if (i >= 0) selSet.splice(i, 1); else selSet.push({ name, idx, anchor });
   if (!selSet.length) { deselect(); return; }
@@ -440,21 +400,25 @@ function tapStretch(name, idx, anchor) { // map taps ACCUMULATE (Beta 1.28): tap
 }
 function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
 onMapReady(() => map.on('click', e => {
-  if (creating) return; // Beta 1.118: in the create flow, map taps pick streets for the DRAFT - they never mark the active route
+  if (creating) return; // in the create flow, map taps pick streets for the DRAFT: they never mark the active route
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
   const near = nearestStreet(pt);
   const tol = (window.GLP && GLP.tapTolPx) ? GLP.tapTolPx(map.getZoom()) : 24;
-  if (near.name && near.d <= tol) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }   // Beta 1.181: the tolerance is 16 x WIDTH_K (engine) = 24 px, so a tap anywhere on the 1.5x paint still selects instead of deselecting; Beta 1.206: the tolerance now comes from the engine (GLP.tapTolPx) and follows the widest paint at this zoom, floored at that same 24 px — the width fix widened the paint past a fixed 24 px at z18-19
+  // tolerance comes from the engine (GLP.tapTolPx), following the widest paint at this zoom, floored at 24 px
+  if (near.name && near.d <= tol) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
   else deselect();
 }));
 
 // ===== MARKING (one finish path) =====
-let saveWarned = false; // Beta 1.101 (Phase 3 / C2): the storage-warning episode state - app-layer messaging state, moved out of the storage layer with the warning itself. One warning per failure episode; resets on the next fully successful save (the 1.63 discipline, unchanged).
-function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; } // the non-transactional save path: saveAll plus the episode warning. The finish transaction calls saveAll directly and does its own gated messaging.
-function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; } // Beta 1.63 (audit F04): callers that announce an outcome branch on the save result - since Beta 1.101 (Phase 3) that result is the storage-outcome object
-function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved - storage problem', 3200); return r; } // Beta 1.97 (audit loop CG-196-05): the marking callers' half of the save-honesty contract - when the save fails, NO outcome toast may replace the storage warning; saveAll raises that warning once per episode (saveWarned), so when it was already raised before this call, the caller still owes a plain 'not saved' rather than silence
-function applyPiece(name, idx, side, on) { // Beta 1.274 (programme #1): the piece mutation lives in BOARD.setSide now - this wrapper keeps the global the callers and drives use, fires the completion feedback the operation reports, and returns the street name if this change completed it, exactly as before. Beta 1.111: the feedback (app4, fully guarded, can never throw into marking) fires on the exact false-to-true flip, here and in markDone - the only two places a street becomes complete.
+let saveWarned = false; // the storage-warning episode state: one warning per failure episode; resets on the next fully successful save
+// the non-transactional path: saveAll plus the episode warning; the finish transaction calls saveAll with its own messaging
+function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; }
+// callers that announce an outcome branch on the save result - since the storage-outcome object, that is the object
+function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; }
+// on failure, no outcome toast replaces the storage warning; if it already fired, 'not saved' is owed
+function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved - storage problem', 3200); return r; }
+function applyPiece(name, idx, side, on) { // mutation is BOARD.setSide; this wrapper fires completion feedback on the false-to-true flip, returns the name
   const t = BOARD.setSide(name, idx, side, on);
   if (t.completed) onStreetComplete(t.completed);
   return t.completed;
@@ -464,78 +428,83 @@ function togglePiece(name, idx, side) {
   applyPiece(name, idx, side, !(pieces[name][idx] & bit));
   showChips(); finishChangeMarked();
 }
-function togglePieceGroup(side) { // one chip, whole selection: a side not done everywhere gets completed everywhere; a side done everywhere gets cleared everywhere. Beta 1.209: the side is the DRIVER's side - groupSideMap turns the one press into the per-stretch stored side, so the marking follows his drive through a turn instead of landing on one raw index everywhere
+function togglePieceGroup(side) { // one chip, selection: not-done-everywhere completes everywhere, done-everywhere clears; the side is the driver's (groupSideMap)
   if (!selSet.length) return;
   const on = !groupSideDone(side);
   const map = groupSideMap(side);
   selSet.forEach((en, k) => { applyPiece(en.name, en.idx, map[k], on); });
   showChips(); finishChangeMarked();
 }
-$('selAllBtn').addEventListener('click', ev => { if (!tapGuard('selAll', ev)) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); }); // Beta 1.146 (census C3): the outcome is the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the old bare test fired the success toasts beside the storage warning; every sibling marking caller (okTp/okTg/okMd/okMu) already branches on .ok
+// the outcome is an OBJECT: {ok:false} is truthy, so branch on .ok, never the object
+$('selAllBtn').addEventListener('click', ev => { if (!tapGuard('selAll', ev)) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); });
 $('selClearBtn').addEventListener('click', ev => { if (!tapGuard('selClear', ev)) return; deselect(); });
-function markDone(name, via, at) { // Beta 1.274 (programme #1): the mutation is BOARD.completeStreet (production contract unchanged: whole street done; sides already marked keep their real times, the rest inherit the completion moment); the feedback and the finish stay here, in the old order
+function markDone(name, via, at) { // mutation is BOARD.completeStreet: marked sides keep their real times, the rest inherit the completion moment
   const t = BOARD.completeStreet(name, via, at);
-  if (t.flipped) onStreetComplete(name); // Beta 1.111: whole-street marking bypasses applyPiece - the completion feedback fires only on a real false-to-true flip here too
-  finishChangeMarked(); // Beta 1.94 (audit F-01): the total derives from the route's street list
+  if (t.flipped) onStreetComplete(name); // whole-street marking bypasses applyPiece: the completion feedback fires only on a real false-to-true flip here too
+  finishChangeMarked(); // the total derives from the route's street list
 }
-function markUndone(name) { // Beta 1.274: the mutation is BOARD.clearStreet; the finish stays here
+function markUndone(name) { // the mutation is BOARD.clearStreet; the finish stays here
   BOARD.clearStreet(name);
   finishChangeMarked();
 }
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
-function renderPanel() { // ONE selection pop-up (Beta 1.30, Andrew): the header strip and the multi-select pill are the same pop-up now - pill glass, every action inside, content follows the selection
+function renderPanel() { // one selection pop-up: header strip and multi-select pill are the same pop-up (pill glass, every action inside)
   const p = $('selPop');
   if (!sel) { p.classList.add('hidden'); return; }
-  p.classList.remove('hidden'); // Beta 1.271: renderPanel no longer raises body.selOpen - its only consumer, the 1.214 re-centre drop, is retired; the button holds its seat in every state
-  const multi = selSet.length >= 2; // Beta 1.34 (Andrew): single and multi are the SAME size now - same box, same two rows; only the words and buttons change
+  p.classList.remove('hidden'); // renderPanel no longer raises body.selOpen: its consumer is retired; the button holds its seat in every state
+  const multi = selSet.length >= 2; // single and multi are the SAME size: same box, same two rows; only the words and buttons change
   if (!multi) {
     $('selName').textContent = sel.name;
     const total = STRETCH[sel.name].parts.length;
     const val = pieces[sel.name][sel.idx];
     const doneSides = (val & 1 ? 1 : 0) + (val & 2 ? 1 : 0);
-    $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + (streetComplete(sel.name) ? ' · street complete' : doneSides === 2 ? ' · both sides done' : doneSides === 1 ? ' · 1 of 2 sides done' : ''); // Beta 1.32: concise - the chips on the map already show WHICH side
+    // concise: the chips on the map already show WHICH side
+    $('selStatus').textContent = 'Stretch ' + (sel.idx + 1) + ' of ' + total + (streetComplete(sel.name) ? ' · street complete' : doneSides === 2 ? ' · both sides done' : doneSides === 1 ? ' · 1 of 2 sides done' : '');
   } else {
     $('selName').textContent = selSet.length + ' sections selected';
     let dn = 0; for (const en of selSet) { const v = pieces[en.name][en.idx]; dn += (v & 1 ? 1 : 0) + (v & 2 ? 1 : 0); }
-    $('selStatus').textContent = dn + ' of ' + (selSet.length * 2) + ' sides done'; // Beta 1.34: multi carries the same second line a single does - the sides tally for the whole set
+    $('selStatus').textContent = dn + ' of ' + (selSet.length * 2) + ' sides done'; // multi carries the same second line a single does: the sides tally for the whole set
   }
   $('selStatus').style.display = '';
-  $('selNote').style.display = multi ? 'none' : ''; // Beta 1.31: multi carries ONLY the count, Mark both sides and Clear - the reference pill's contents, nothing crammed
+  $('selNote').style.display = multi ? 'none' : ''; // multi carries ONLY the count, Mark both sides and Clear - the reference pill's contents, nothing crammed
   $('selAllBtn').style.display = multi ? '' : 'none';
   $('selClearBtn').style.display = multi ? '' : 'none';
   const b = $('selBtn');
   b.style.display = multi ? 'none' : '';
   if (!multi) {
     if (streetComplete(sel.name)) { b.textContent = 'Mark not done'; b.className = 'notdone'; b.disabled = false; }
-    else { b.textContent = 'Complete entire road'; b.className = ''; b.disabled = false; } // Beta 1.209 (Andrew): the button completes the WHOLE road (markStreet), so it says so - the old label read as if it finished only the lit stretch
+    else { b.textContent = 'Complete entire road'; b.className = ''; b.disabled = false; } // the button completes the whole road (markStreet) and says so: the label implied only the stretch
   }
 }
 $('selBtn').addEventListener('click', ev => { if (!sel || !tapGuard('selBtn', ev)) return; markStreet(sel.name, !streetComplete(sel.name)); });
 $('selNote').addEventListener('click', ev => { if (!sel || !tapGuard('selNote', ev)) return; openNote(sel.name); });
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
-  const tw = totalWorkM(); // Beta 1.170 (Carbon fix round Phase 2, A-05): the share's denominator, read once and GUARDED - a route with no work in it (an empty pack, or geometry whose totals are all zero) divided by zero through 1.169 and the counter read 'NaN%' with a 'NaN%' meter width; it now reads 0%
+  const tw = totalWorkM(); // the share's denominator, read once and guarded: an empty route divided by zero and read 'NaN%'
   const pct = tw > 0 ? Math.round(workDoneM() / tw * 100) : 0;
-  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.width = (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%'; // the meter fills with the same work fraction the % is computed from. Beta 1.94 (audit F-01): the total derives from the route's street list
+  // the meter fills with the same fraction the % uses; the total derives from the street list
+  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.width = (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%';
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
-  $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Beta 1.91: Cancel start is offered for the whole run - it erases the run's records, marks included
+  $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Cancel start is offered for the whole run: it erases the run's records, marks included
   $('resetBtn').style.display = runStart ? '' : 'none';
-  $('count').style.visibility = runStart ? 'visible' : 'hidden'; // Beta 1.199 (Andrew): the streets-done pill shows ONLY while a clean is running - this line is the ONE place that rule lives, beside the run chrome it keeps company with: Start Clean calls here with runStart set (the pill appears), Finish and Cancel call here with it cleared (the pill leaves), and a boot that restores a live run calls here through refreshAll (the pill is up). The text and meter above are written either way, so marking outside a clean still counts internally - the panel, the Streets header and Pace read the same state directly, never this pill. Beta 1.209 (Andrew): the toggle is VISIBILITY, not display - the pill's slot is permanently reserved in the dock, so it appears INTO its spot and the Start circle and flanking buttons never move (the display toggle compacted the dock by the pill's 37px footprint, the jump the 1.202 delivery flagged and Andrew later hit live)
+  $('count').style.visibility = runStart ? 'visible' : 'hidden'; // the done pill shows only while a clean runs; visibility only, its dock slot permanently reserved
 }
 
 // ===== LIST SHEET =====
-let listFilter = 'primaries'; // Beta 1.109 (Andrew): the Streets filter is the route's two groups - Primaries (the gold roads) or Secondaries (the raspberry ones) - replacing All / To do / Done; Primaries is the opening view
-const NOTEEDIT = { // Architecture #7: the note-editing session owner - the inline editor's state and acts live here, not in the renderer. renderStreets renders; the session owns the draft capture, the street-switch flush, the rebuild flush, the debounced save and its timer, and finalising. The note DATA functions (noteTextOf/setNoteText) stay in app3 - they are the storage surface, not the session.
+let listFilter = 'primaries'; // the Streets filter is the route's two groups: Primaries (gold) or Secondaries (raspberry); Primaries is the opening view
+const NOTEEDIT = { // the note session owner: the editor's state and acts live here, not in the renderer
   openFor: null, // the street whose editor is open (the user's intent)
-  edFor: null, // Beta 1.63 (audit F01): noteEdFor names the street whose editor is actually in the DOM - the draft's owner
+  edFor: null, // noteEdFor names the street whose editor is actually in the DOM: the draft's owner
   saveTimer: 0, // the pending debounced save; 0 = none armed
-  raiseActive: false, // Beta 1.184 (Codex review, PR #22): true while the Streets sheet stands at the full stop BECAUSE the note editor raised it (the raise below) - a sheet the user dragged to full himself is never claimed, and never lowered by the editor closing
+  raiseActive: false, // true while the sheet is at full because the editor raised it: a user's full sheet is never lowered
   capture(el) { const openEd = el.querySelector('.noteEd textarea'); return { draft: openEd ? openEd.value : null, draftFor: openEd ? this.edFor : null }; },
-  flushSwitch(draft, draftFor) { clearTimeout(this.saveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast('Not saved - storage problem', 3200); }, // the timer is cleared but NOT zeroed here, exactly as the loose code did (the rebuild flush and the reset own the zeroing). Beta 1.169 (Carbon fix round, A-01): the flush's result used to be discarded - saveAllWarned toasts once per failure EPISODE, so when the warning had already fired, a failed finalization here was silent. The finishChangeMarked contract (Beta 1.97) is the codebase's answer for exactly this shape, applied verbatim: a fresh failure is covered by the warning setNoteText just raised; a suppressed one is owed the plain 'not saved'.
-  flushRebuild(draft, draftFor) { clearTimeout(this.saveTimer); this.saveTimer = 0; return setNoteText(draftFor, draft).ok; }, // Beta 1.113 (round 112, CG-112-01): setNoteText returns the 1.101 storage-outcome OBJECT - {ok:false} is truthy, so the flush returns its .ok, never the object itself (the old truthiness test marked a FAILED save flushed and the rebuilt editor announced 'Saved')
+  // the flush's result is kept: fresh failures ride the warning; a suppressed one is owed 'not saved'
+  flushSwitch(draft, draftFor) { clearTimeout(this.saveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast('Not saved - storage problem', 3200); },
+  flushRebuild(draft, draftFor) { clearTimeout(this.saveTimer); this.saveTimer = 0; return setNoteText(draftFor, draft).ok; }, // setNoteText returns an OBJECT: {ok:false} is truthy, so the flush returns .ok, never the object
   scheduleSave(n, ta, hint, paintNt) { hint.textContent = 'Saving…'; clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400); }, // Beta 1.63 (audit F04): the hint tells the truth about the write
-  saveNow(n, ta, hint, paintNt) { clearTimeout(this.saveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, // Beta 1.169 (Carbon fix round, A-01): blur finalizes like the debounced save above it - same result, same words in the same hint. Through 1.168 the result was discarded, so a blur save that failed (storage full, the episode warning already spent) told the user nothing while the editor still read 'Saves automatically'.
+  // blur finalizes like the debounced save (same result, same hint): a failed blur save must say so
+  saveNow(n, ta, hint, paintNt) { clearTimeout(this.saveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; },
   toggle(n) { this.openFor = this.openFor === n ? null : n; },
   close() { this.openFor = null; },
   collapse() { if (!this.openFor) return false; this.openFor = null; return true; },
@@ -543,8 +512,8 @@ const NOTEEDIT = { // Architecture #7: the note-editing session owner - the inli
   takeDraft(n, draft, draftFor) { this.edFor = n; return (draft !== null && draftFor === n) ? draft : noteTextOf(n); },
   detach() { this.edFor = null; }
 };
-let srowCache = { sig: '', rows: new Map() }; // Beta 1.50 (audit P06): rows kept between renders when the visible set is unchanged
-function resetStreetsSession() { // Beta 1.148 (Tranche 5, A4(ii)): app2's OWN route-switch reset, called by app4's resetSwitchSession - the Streets session's reset knowledge lives here, with its state, so a new app2 session field's reset is added where its author is looking
+let srowCache = { sig: '', rows: new Map() }; // rows kept between renders when the visible set is unchanged
+function resetStreetsSession() { // app2's route-switch reset (called by resetSwitchSession): the session's reset knowledge lives here, with its state
   deselect(); // selection + chips + the engine's selection, through the one proven path
   NOTEEDIT.reset(); // the note editor's pending debounced save must never fire into the new route (its flush already happened via collapseNoteEditor)
   listFilter = 'primaries'; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === 'primaries'));
@@ -552,47 +521,44 @@ function resetStreetsSession() { // Beta 1.148 (Tranche 5, A4(ii)): app2's OWN r
   saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
 }
 function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; }
-function streetHalf(n) { const p = pieces[n]; return Array.isArray(p) && !streetComplete(n) && p.some(v => v !== 0); } // Beta 1.184: ONE SIDE DONE - some side bit set on some stretch, the street not complete. The Streets list half state and the Pace menu Progress-by-group half count share this one predicate. Streets whose pieces are not an array (doneSet-only) are binary by construction and never half.
+function streetHalf(n) { const p = pieces[n]; return Array.isArray(p) && !streetComplete(n) && p.some(v => v !== 0); } // one side done: some bit set on some stretch, street not complete; list and Pace share this predicate
 function srowClass(n) { return 'srow' + (streetComplete(n) ? ' done' : '') + (PRIMARIES.has(n) ? ' primary' : '') + (streetHalf(n) ? ' half' : ''); }
-function srowStatus(n) { // Beta 1.184: the row right-hand status slot. A completed street keeps the list full historical string (done <when> (<ago>), check-flag prefix included); where the old list showed nothing, the redesign words apply: 'completed' (a completion with no recorded time), 'one side done' (a half), an em dash (untouched). The flag prefix rides every state, exactly as the old .tm string did.
-  const flag = (Array.isArray(notes[n]) && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : ''; // issue #180: Array.isArray, not truthiness - notes is a plain object, so a street named 'constructor' (or 'toString') reads the inherited member here and .some on it throws, killing the row
+function srowStatus(n) { // the status slot: completed keeps the full string; else 'completed', 'one side done', or an em dash
+  const flag = (Array.isArray(notes[n]) && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : ''; // Array.isArray, not truthiness: a 'constructor' street would read the inherited member and .some would throw
   const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
   if (doneAt) return { t: flag + 'done ' + doneAt + ' (' + fmtAgo(doneTimes[n]) + ')', c: 'st-done' };
   if (streetComplete(n)) return { t: flag + 'completed', c: 'st-done' };
   if (streetHalf(n)) return { t: flag + 'one side done', c: 'st-half' };
   return { t: flag + '–', c: 'st-todo' };
-} // Beta 1.107: street-length display for the Streets list's quiet line - whole metres, thousands separator, never kilometres
-function renderStreets() { // production row design: tap a street's name area to open its inline note editor (auto-saves); the pin button flies to the street
+} // street-length display for the quiet line: whole metres, thousands separator, never kilometres
+function renderStreets() { // tap a street's name area to open its note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
-  const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // Beta 1.31: a rebuild must not yank the list back to the top while he is working in it
-  const { draft, draftFor } = NOTEEDIT.capture(el); // an in-progress note survives re-renders; the draft belongs to draftFor's street only - never poured into another street's editor (Beta 1.63, audit F01)
+  const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // a rebuild must not yank the list back to the top while he is working in it
+  const { draft, draftFor } = NOTEEDIT.capture(el); // an in-progress note survives re-renders: the draft belongs to its street only, never another's editor
   if (draft !== null && draftFor && draftFor !== NOTEEDIT.openFor) NOTEEDIT.flushSwitch(draft, draftFor); // switching streets finalizes the old editor against ITS street first (a destroyed editor's blur is not guaranteed to fire)
-  let noteFlushed = false, noteFlushFailed = false; // Beta 1.79: a rebuild for the SAME street (the map style finishing its load, a theme flip - both end in refreshAll) replaces the open editor too. Finalize its pending save HERE, synchronously, instead of leaving the debounced timer pointing at a discarded textarea - that race is what stranded drive88's note checks when the style-ready refresh landed mid-edit
+  let noteFlushed = false, noteFlushFailed = false; // a same-street rebuild replaces the editor too: finalize its pending save here, synchronously, not by its timer
   if (draft !== null && draftFor && draftFor === NOTEEDIT.openFor && NOTEEDIT.saveTimer) { if (NOTEEDIT.flushRebuild(draft, draftFor)) noteFlushed = true; else noteFlushFailed = true; }
-  const arr = STREETNAMES.filter(n => (listFilter === 'primaries') === PRIMARIES.has(n)); // Beta 1.109: the visible set is exactly the selected group - 6 primaries or 28 secondaries on Route 5W
+  const arr = STREETNAMES.filter(n => (listFilter === 'primaries') === PRIMARIES.has(n)); // the visible set is exactly the selected group (6 primaries or 28 secondaries on Route 5W)
   arr.sort((a, b) => ((PRIMARIES.has(a) ? 0 : 1) - (PRIMARIES.has(b) ? 0 : 1)) || a.localeCompare(b));
-  // Beta 1.184 (Andrew): the redesign fixed head of the Streets sheet - route line, hero,
-  // group heading - rewritten on every render from the same live state the dock pill reads
-  // (updateCount counts and work fraction). Road km = side-metres / 2000 (sides come in pairs).
+  // the fixed head rewrites per render from the dock pill's own state (Road km = side-metres / 2000)
   const stR = $('stRouteN'), stS = $('stRouteS');
   if (stR && stS) { stR.textContent = activeRoute ? activeRoute.name : ''; stS.textContent = (activeRoute && activeRoute.area ? ' · ' + activeRoute.area : '') + (runStart ? ' · clean in progress' : ' · not started'); }
   const stH = $('stHero');
   if (stH) { const tw = totalWorkM(); stH.innerHTML = '<div class="stHeroN">' + STREETNAMES.filter(streetComplete).length + ' <span class="stHeroU">/ ' + STREETNAMES.length + ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' + (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%"></div></div><div class="stCaps"><span>' + (workDoneM() / 2000).toFixed(1) + ' km of road cleared</span><span>' + (tw / 2000).toFixed(1) + ' km total</span></div>'; }
   const stGN = $('stGroupN'), stGC = $('stGroupC');
-  if (stGN && stGC) { stGN.textContent = listFilter === 'primaries' ? 'PRIMARIES' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; } // Beta 1.91 (Andrew): the Streets list leads with the primaries (gold - cleaned first), then the secondary streets (raspberry), alphabetical inside each colour, in every filter view
-  if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">No streets in this group</div>'; srowCache = { sig: '', rows: new Map() }; return; } // Beta 1.109: unreachable with shipped route data (both groups are non-empty by construction) - kept as the safety net it was
-  // Beta 1.50 (audit P06): a routine mark used to rebuild all 34 rows from
-  // scratch. When the visible set and order are unchanged and no note editor
-  // is open, update the kept rows in place instead; anything structural
-  // (filter change, editor open, a row gone) falls back to the full rebuild.
+  // the list leads with the primaries (gold, cleaned first), then the secondaries (raspberry), alphabetical inside each colour
+  if (stGN && stGC) { stGN.textContent = listFilter === 'primaries' ? 'PRIMARIES' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; }
+  // unreachable with shipped route data (both groups non-empty by construction): kept as the safety net it was
+  if (!arr.length) { el.innerHTML = '<div style="padding:14px 4px;color:#8fa0b3">No streets in this group</div>'; srowCache = { sig: '', rows: new Map() }; return; }
+  // unchanged set/order and no editor open: update in place; anything structural rebuilds fully
   const sig = listFilter + '|' + arr.join(',');
   if (!NOTEEDIT.openFor && sig === srowCache.sig && !el.querySelector('.noteEd')) {
     let okAll = srowCache.rows.size === arr.length;
     if (okAll) for (const n of arr) { const c = srowCache.rows.get(n); if (!c || c.row.parentElement !== el) { okAll = false; break; } }
     if (okAll) {
-      for (const n of arr) { srowCache.rows.get(n).paintNt(); } // Beta 1.184: the stored paintNt IS the full row painter now (row class, status slot, name-row note icon, quiet line) - the cache path just calls it
+      for (const n of arr) { srowCache.rows.get(n).paintNt(); } // paintNt is the row painter (class, status, note icon, quiet line): the cache path just calls it
       if (scroller) scroller.scrollTop = keepScroll;
-      kbSync(); // Beta 1.56: renders never touch the kb class - the keyboard owner (app4) reconciles
+      kbSync(); // renders never touch the kb class: the keyboard owner (app4) reconciles
       return;
     }
   }
@@ -604,8 +570,8 @@ function renderStreets() { // production row design: tap a street's name area to
     d.innerHTML = '<div class="dot"></div><div class="nwrap"><div class="nmrow"><div class="nm"></div><button class="sbtn sloc">Locate</button><span class="nmNote" style="display:none"></span></div><div class="nt"><span class="ntIco"></span><span class="ntTxt"></span></div></div><div class="tm"></div>'; // Beta 1.184: the pin rides INSIDE the name row, immediately right of the name; a note icon joins it only while the street carries note text; the COMPLETED pill is retired - its state folds into the status slot (srowStatus). Beta 1.228 (Andrew): the pin is a labelled 'Locate' pill now - same seat in the name row, same handler below, but a word instead of a bare glyph (the glyph was too small to hit cleanly, and its press read as the row's own)
     d.querySelector('.nm').textContent = n;
     const ntEl = d.querySelector('.nt');
-    d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // the active pack's glyphs (Beta 1.30 put glyphs in place of the emoji; Beta 1.219: ICONS.* rides the chosen pack and renderIcons re-stamps these hosts on a switch). Beta 1.228: the row's locate control is stamped with nothing - its label is the markup's own text
-    const paintNt = () => { // Beta 1.184: ONE painter for everything state-shaped on the row - its class (done/primary/half), the status slot, the name-row note icon, and the quiet line (length by default, note text while a note exists - the 1.107 rule, unchanged)
+    d.querySelector('.ntIco').innerHTML = ICONS.note; d.querySelector('.nmNote').innerHTML = ICONS.note; // glyphs ride the chosen pack (ICONS.*), re-stamped on a switch; the locate control is stamped with nothing
+    const paintNt = () => { // one painter for row state: class, status, note icon, quiet line (length, or note text while it exists)
       d.className = srowClass(n);
       const st = srowStatus(n); const tmEl = d.querySelector('.tm'); tmEl.textContent = st.t; tmEl.className = 'tm ' + st.c;
       const t = noteTextOf(n);
@@ -637,7 +603,8 @@ function renderStreets() { // production row design: tap a street's name area to
       ed.querySelector('.nedLbl').textContent = 'Note: ' + n;
       const ta = ed.querySelector('textarea');
       ta.value = NOTEEDIT.takeDraft(n, draft, draftFor);
-      const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved - Storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713'; // Beta 1.113 (round 112, CG-112-01): a failed flush says so, in the debounced path's own words - never 'Saved' // Beta 1.79: the rebuilt editor tells the truth about the save the rebuild just finalized
+      // a failed flush says so, never 'Saved': the editor tells the truth about the finalized save
+      const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved - Storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713';
       ta.addEventListener('input', () => { NOTEEDIT.scheduleSave(n, ta, hint, paintNt); });
       ta.addEventListener('blur', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt); });
       ed.querySelector('.nedSave').addEventListener('click', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt); });
@@ -646,10 +613,10 @@ function renderStreets() { // production row design: tap a street's name area to
     }
   });
   if (scroller) scroller.scrollTop = keepScroll;
-  if (!el.querySelector('.noteEd')) { NOTEEDIT.detach(); kbSync(); } // Beta 1.56: an editor removed by a rebuild must not leave the keyboard state stuck on - reported to the owner (app4 kbSync), which releases it through the settle path
-  syncNoteSheetRaise(); // Beta 1.184: the editor's sheet raise follows the editor's existence on every render
+  if (!el.querySelector('.noteEd')) { NOTEEDIT.detach(); kbSync(); } // an editor removed by a rebuild reports to the owner (kbSync), or the kb state sticks on
+  syncNoteSheetRaise(); // the editor's sheet raise follows the editor's existence on every render
 }
-function syncNoteSheetRaise() { // Beta 1.184 (Codex review, PR #22): the redesign's pinned head (route line, hero, tabs, group heading) sits OUTSIDE #sheetBody, so at the half stop the scroll region's top can fall below the software keyboard's edge - and ensureFieldVisible, which scrolls only inside #sheetBody, can then never surface the note editor: the field it scrolls to is still under the keyboard. While the editor is open the sheet therefore stands at the FULL stop (the drag settle's own end state: .full, inline height, maxHeight none - the shared transition animates the move), which lifts the scroll region's top well above any keyboard; when the editor closes, a sheet this raise owns returns to the half stop's end state. A sheet already at full (the user's own drag) is left exactly as it is, both ways.
+function syncNoteSheetRaise() { // at full while an editor is open: only then can the region lift the field above the keyboard
   const sh = $('sheet'); if (!sh) return;
   if (NOTEEDIT.openFor && sh.classList.contains('open')) {
     if (!sh.classList.contains('full')) { sh.classList.add('full'); sh.style.maxHeight = 'none'; sh.style.height = sheetFullH(vvHeight()) + 'px'; NOTEEDIT.raiseActive = true; }
@@ -658,30 +625,24 @@ function syncNoteSheetRaise() { // Beta 1.184 (Codex review, PR #22): the redesi
     if (sh.classList.contains('open')) { sh.classList.remove('full'); sh.style.height = ''; sh.style.maxHeight = ''; }
   }
 }
-function collapseNoteEditor() { // Beta 1.106 (Andrew): closing the Streets sheet resets the list - an editor left open must not still be open on the next open. Clearing the session's open state and re-rendering finalizes any pending debounced save first (renderStreets' draft flush runs against the editor's own street), so typed text is never lost; only the open-editor state resets. Called from BOTH close funnels of the Streets sheet: closeSheetEl (X, tab toggle, Locate pill, opening another sheet, outside tap) and the drag settleClose landing in makeSheetDraggable.
+function collapseNoteEditor() { // closing resets the list (no editor survives to the next open); the re-render finalizes pending saves first
   if (NOTEEDIT.collapse()) renderStreets();
 }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
-function closeSheetEl(s) { // Beta 1.30: the close now ANIMATES - freeze the height the sheet has at this moment for the whole slide-down, and clear it only after the motion ends. Clearing it instantly (the old way) snapped the sheet to its default height mid-close, which is why closing felt broken while opening felt fine. Beta 1.81: a running release spring is cancelled first (its finish never runs, so the takeover also drops .dragging); a leftover inline transform from an interrupted spring-close is cleared so the class transition owns the slide.
+function closeSheetEl(s) { // the close animates: freeze the height for the whole slide-down, clear it only when the motion ends
   cancelSheetSpring(s);
-  if (s.id === 'sheet') collapseNoteEditor(); // Beta 1.106: any animated close of the Streets sheet resets an open note editor first
+  if (s.id === 'sheet') collapseNoteEditor(); // any animated close of the Streets sheet resets an open note editor first
   if (!s.classList.contains('open')) { s.classList.remove('full'); s.classList.remove('dragging'); return; }
   const h = s.offsetHeight;
   s.style.height = h + 'px'; s.style.maxHeight = 'none'; s.style.transform = '';
   s.classList.remove('open'); s.classList.remove('full'); s.classList.remove('snapping'); s.classList.remove('dragging'); // the base (closing) transition and curve own the motion from here
   setTimeout(() => { if (!s.classList.contains('open')) { s.style.height = ''; s.style.maxHeight = ''; } }, 480);
 }
-function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetEl); } // Beta 1.77: every sheet by class, present and future - no hand-kept list to fall behind a new menu
-// Draggable sheets (Andrew, Beta 1.9 spec; refined 1.10 flick; refined 1.13 touch zone): the drag/flick touch
-// zone is the panel's EMPTY TOP STRIP - the grab handle plus the title row - a comfortable area with no
-// controls except Close (a flick starting on a button never starts a drag). The content area below is pure
-// scrolling again, so flicks never fight the streets list. Three stops: flick/drag up = the
-// full stop (FULL - through Beta 1.227 that filled the screen; Beta 1.228 caps it just above
-// the title, see sheetFullH), down = back to the standard open height (DEFAULT), down again = closed. Slow drags follow the
-// finger; quick flicks throw the panel to the next stop on release. Taps pass through untouched.
-const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // Beta 1.79 (Andrew): the three stops - closed / half (SHEET_DEF_VH, where a sheet opens) / full (SHEET_FULL_VH). Beta 1.228 (Andrew): the full stop is no longer the 0.94 fraction - it is the title cap computed by sheetFullH below; SHEET_FULL_VH survives only as that helper's fallback for when the title cannot be measured
-const SHEET_FULL_MARGIN_PX = 8; // Beta 1.228 (Andrew): at the full stop the sheet's top edge stands this far ABOVE the "Snow Route Beta" title's top edge - the sheet covers the title and stops a notch past it, never reaching the screen top
-function sheetFullH(vh) { // Beta 1.228: the full stop's height. The sheet is bottom-anchored at the visual viewport's own bottom edge (--vvb is exactly the occluded band), so a height of vh - (titleTop - margin) lands the sheet's top edge precisely the margin above the title's top edge, in any safe-area state - the title's rect already carries the inset. Measured live on every call: drags and settles are rare events, and a stale cache is how geometry rules drift. When the title cannot be measured (hidden in create mode, rect height 0) the old 0.94 fraction stands.
+function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetEl); } // every sheet by class, present and future: no hand-kept list to fall behind a new menu
+// the drag/flick zone is the empty top strip (handle + title row): content below is pure scrolling
+const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // the three stops: closed, half (SHEET_DEF_VH), full (sheetFullH's title cap; SHEET_FULL_VH is the fallback)
+const SHEET_FULL_MARGIN_PX = 8; // the full stop stands this far above the title's edge: covers the title, never the screen top
+function sheetFullH(vh) { // the full stop's height, measured per call (drags are rare; a stale cache is how geometry rules drift)
   const t = document.querySelector('#hud .title');
   if (!t) return vh * SHEET_FULL_VH;
   const r = t.getBoundingClientRect();
@@ -689,39 +650,15 @@ function sheetFullH(vh) { // Beta 1.228: the full stop's height. The sheet is bo
   const vvTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
   return vh - Math.max(0, r.top - vvTop - SHEET_FULL_MARGIN_PX);
 }
-// Beta 1.81 (Andrew, reverse-engineered from his Waze screen recording): a drag release used to
-// hand the sheet to a fixed 420ms CSS transition that restarted from rest - measured on the rig,
-// a flick thrown at ~1600px/s crawled +3/+12/+21px in its first 120ms and only then accelerated
-// away (on Pace's short sheet that slow start IS most of the trip, which is why it read as
-// "just disappears"). The recording's settles instead start at the finger's speed and decay
-// geometrically (tails halving each ~33ms frame, ~500px trips landing in ~230-300ms, no overshoot
-// past a stop). So releases now run a critically-damped spring (omega 30/s) whose initial velocity
-// IS the release velocity, and the sheet keeps .dragging (no CSS transition, blur off) until the
-// motion lands - the phone never repaints the frosted blur mid-settle either. End states match
-// the old snap exactly: full = inline full height + .full; half = cleared inline height, no .full;
-// closed = .open off with inline geometry cleared.
+// a release runs a damped spring (omega 30/s) starting at velocity: a from-rest snap read as 'just disappears'
 const SHEET_OMEGA = 30;
 function cancelSheetSpring(sheet) { if (sheet._spring) { cancelAnimationFrame(sheet._spring); sheet._spring = null; } }
 function springSheet(sheet, q0, qT, v0, apply, finish) {
   cancelSheetSpring(sheet);
-  // Closed form of the critically-damped spring, evaluated at the frame's timestamp -
-  // NOT a per-frame Euler integration: the integrated form diverged at the slower frame
-  // rate of the CI browser (drive145 N27 measured a sheet height of 582,683px on run
-  // 41686175718) while passing at the local rig's 60fps. The closed form is exact at any
-  // frame rate. With v0 clamped to 4000px/s it cannot overshoot a stop: crossing needs
-  // v0 > omega * distance, and 30 * distance exceeds the clamp beyond ~134px of travel.
+  // closed form, not per-frame Euler: integration diverged at low frame rates; this is exact at any rate
   const A = q0 - qT, B = Math.max(-4000, Math.min(4000, v0)) + SHEET_OMEGA * A;
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(qT); finish(); return; }
-  // Beta 1.172 (Andrew's call - the drive156-harden record's option (a)): the spring's
-  // clock starts at the FIRST FRAME's rAF timestamp, not at performance.now() inside
-  // the call. The call usually lands mid-frame during input dispatch, up to a frame
-  // after that frame's start timestamp, while step is evaluated AT frame timestamps -
-  // so the first step used to run the closed form at t ~ -10 ms, extrapolating backward
-  // along the curve: a collapse's first applied height dipped ~8 px past the start and
-  // rebounded (190 -> 182 -> 188), an expand's overshot (60 -> 73 -> 61) - the flight
-  // departed from monotonic for its first two frames whenever the spring made the same
-  // frame's callback batch. With t0 taken from the first step's own timestamp, t starts
-  // at exactly 0 and the flight is the closed form from its true start.
+  // clock starts at the first frame's rAF timestamp: starting mid-frame made step one extrapolate backwards
   let t0 = null;
   const step = now => {
     if (t0 === null) t0 = now;
@@ -748,7 +685,7 @@ function makeSheetDraggable(sheet) {
     if (!dragging || e.pointerId !== pid) return;
     const dy = e.clientY - lastY; lastY = e.clientY;
     const total = startY - e.clientY; // +ve = finger travelled up
-    if (!moved && Math.abs(total) < 3) return; // Beta 1.79: near-zero dead zone - the old 9px threshold was the first hitch of the drag hesitation Andrew felt; the panel follows from the first pixels
+    if (!moved && Math.abs(total) < 3) return; // near-zero dead zone: the old 9 px threshold was the first hitch of the drag hesitation
     if (!moved) {
       moved = true;
       if (sheet._spring) { cancelSheetSpring(sheet); sheet.style.transform = ''; startY = e.clientY; lastY = e.clientY; startH = sheet.offsetHeight; samples = [{ t: performance.now(), y: e.clientY }]; } // a catch mid-settle restarts the drag from the sheet's live height
@@ -774,17 +711,9 @@ function makeSheetDraggable(sheet) {
     document.addEventListener('click', swallow, true);
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
     const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
-    // Beta 1.82: the DEFAULT stop's target is the sheet's own natural open height, not
-    // defH. Streets' content overflows the half cap so its natural height IS defH - but
-    // Pace's content is short (its natural height is ~a quarter of the screen), and the
-    // 1.81 spring aimed it at defH: it sprang to half, then snapped to its quarter the
-    // moment the finish cleared the inline height (Andrew's live catch - "goes halfway,
-    // stutters, goes back to its original quarter"). Measure the natural height by
-    // clearing the inline geometry for one read, then spring to exactly that.
+    // the default stop targets the natural height, not defH: short sheets sprang to half, then snapped back
     const naturalH = (() => { const ph = sheet.style.height, pm = sheet.style.maxHeight; sheet.style.height = ''; sheet.style.maxHeight = ''; const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
-    // Release velocity from the last ~130ms of movement, px/ms, positive = upward.
-    // The settle spring starts AT this velocity (Beta 1.81) - the old CSS snap restarted
-    // from rest, which is what made swipe closes read as "just disappears" on Pace.
+    // velocity from the last ~130 ms of movement (px/ms, up positive): the spring starts at it
     let v = 0;
     if (panelMoved && samples.length > 1) {
       const now = performance.now();
@@ -792,9 +721,7 @@ function makeSheetDraggable(sheet) {
       const dt = now - s0.t;
       if (dt >= 30) v = (s0.y - lastY) / dt;
     }
-    // FLICK (Andrew, Beta 1.11 - the Waze gesture): a fast short swipe throws the panel
-    // to its next stop on release instead of following the finger the whole way. Only when
-    // the panel itself moved (a flick that scrolled the list stays a scroll).
+    // a swipe throws the panel to its next stop on release - only when the panel itself moved
     const flick = panelMoved && Math.abs(v) > 0.30 ? (v > 0 ? 1 : -1) : 0;
     const settleStop = targetH => { // spring the height to a stop; end state = the old snap's end state
       const isFull = targetH >= sheetFullH(vh) - 1;
@@ -812,20 +739,8 @@ function makeSheetDraggable(sheet) {
       springSheet(sheet, 0, h * 1.05 + 8, -v * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => {
         sheet.classList.remove('open');
         sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.style.transform = '';
-        if (sheet.id === 'sheet') collapseNoteEditor(); // Beta 1.106: a drag/flick close lands here, not in closeSheetEl - the note-editor reset rides both close funnels
-        // Beta 1.83 (Andrew, live catch on 1.82): a flick close landed, then the sheet
-        // popped back up and down again a split second later - on Streets and Pace both.
-        // The stop landings never did it (flick up to full, flick down to the natural
-        // stop): those finish with the sheet's computed values unchanged, so nothing
-        // re-animates. The close landing was the one finish that ALSO removed .dragging
-        // (transitions back on) in the same breath as flipping .open and clearing the
-        // inline geometry - handing the landing to the browser's compositor with a
-        // state change left to animate or commit in pieces (an intermediate
-        // open-with-no-transform frame reads as exactly that pop). So the close now
-        // lands entirely under .dragging (transition: none): classes and inline
-        // geometry settle to the closed state first, and .dragging comes off two
-        // frames later, when removing it changes no computed value and nothing can
-        // animate. Guarded on still-closed so a reopen in between keeps its drag.
+        if (sheet.id === 'sheet') collapseNoteEditor(); // a drag/flick close lands here, not in closeSheetEl: the note-editor reset rides both close funnels
+        // the close lands under .dragging: closed state settles first; .dragging lifts two frames later, unanimated
         requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
       });
     };
@@ -840,16 +755,8 @@ function makeSheetDraggable(sheet) {
 }
 makeSheetDraggable($('sheet'));
 makeSheetDraggable($('pacePanel'));
-// Beta 1.78 (Andrew): ONE route surface - the full-screen blue route menu.
-// The splash borrows it at boot (.boot; a pick there runs app4's
-// __bootPickRoute) and the Routes tab reopens it any time, sliding up over
-// the app (.tab). The small Routes sheet is retired. The loaded route's
-// marker (Beta 1.233: the Glyph disc check at the pill's right edge; through
-// 1.232 a "Currently loaded" badge) is a TAB-mode-only signal: at boot
-// nothing is loaded yet, and in 1.76/1.77 the marker render landing
-// mid-exit read as a flicker on the pick (Andrew, live catch).
-// wireRouteRows binds the rows to the mode's chooser. Beta 1.271: a row press toggles the row's dropdown (the same press again closes it); the chooser runs only from the dropdown's Load pill.
-function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the ONE route-row builder - a .routeRow element carrying the .routeMeta column (a .routeName line, plus a .routeArea line unless sub is null) and, when opts.chevron, the .routeChev. Through 1.135 the row shape was hand-built at three sites (route rows below, the create flow's city rows and its manual-search rows); they all build through this now, so the shape can only drift in one place. Text is assigned via textContent throughout (the Beta 1.94 F-04 rule: pack/city names are data, never markup). opts.cls adds a class (the city list's loading row); callers hang their own extras (dataset, badge, Delete, listeners) on the returned row.
+// one route surface (boot splash and Routes tab share it); the loaded-route marker is a tab-mode-only signal
+function routeRowShell(tag, name, sub, opts) { // the one builder: every row builds here (one place to drift); text via textContent, never markup
   opts = opts || {};
   const b = document.createElement(tag || 'button'); b.className = 'routeRow' + (opts.cls ? ' ' + opts.cls : '');
   const meta = document.createElement('span'); meta.className = 'routeMeta';
@@ -860,59 +767,62 @@ function routeRowShell(tag, name, sub, opts) { // Beta 1.136 (programme F): the 
   if (opts.chevron) { const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›'; b.appendChild(chev); }
   return b;
 }
-function routeRowEl(p) { // Beta 1.94 (audit F-04): rows are built as DOM nodes with textContent, never by interpolating pack data into innerHTML - a pack's name/area are data, and the day route creation lands, a typed name must not be able to become markup. The row shape (classes, badge rule) is unchanged; wireRouteRows' container delegation reads data-route as before. Beta 1.136: the row itself comes from routeRowShell above; this function adds the route-specific extras (the tab-mode loaded check). Beta 1.271 (Andrew, Option D): EVERY row is a DIV now, shipped packs included - the row's dropdown (routeDropEl below, rendered as its sibling) carries real buttons, and buttons cannot nest in a <button> row; the created-route Delete that rode the row itself retires into that dropdown, live on every route.
+function routeRowEl(p) { // rows are nodes (textContent, never innerHTML); a row is a div - buttons cannot nest in a <button>
   const tab = $('routeMenu').classList.contains('tab');
   const b = routeRowShell('div', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
-  if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck); } // Beta 1.233 (Andrew): the loaded route wears the Glyph disc check at the pill's right edge - appended last so it holds the edge even beside a Delete; the 1.207 "Currently loaded" badge and its centred name-row wrap are gone, and the name + area stay dead centre in the meta column. Beta 1.233 fix round 1 (PR #113, Codex P2): the check's alt text carries the loaded state's name for a screen reader - the words stay off the screen, per Andrew's design
+  // the route's Glyph check sits at the pill's right edge, appended last; its alt serves screen readers
+  if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck); }
   return b;
 }
-function routeDropEl(p) { // Beta 1.271 (Andrew, Option D): a route's dropdown card, rendered as its row's sibling - Load over Delete, or (tab mode, the loaded route) the inert Loaded pill over Delete. Delete is LIVE on every route, shipped 5W included, and asks through the same askDeleteRoute the row's old Delete button used. The card's size is one CSS definition (the .routeDrop custom properties in head.html); this builder only hangs the two pills.
+function routeDropEl(p) { // dropdown (the row's sibling): Load over Delete, or the inert Loaded pill; Delete lives on every route
   const tab = $('routeMenu').classList.contains('tab');
   const card = document.createElement('div'); card.className = 'routeDrop'; card.dataset.route = p.id;
   const top = document.createElement('button'); top.type = 'button';
   if (tab && activeRoute && activeRoute.id === p.id) { top.className = 'dropLoaded'; top.textContent = 'Loaded'; } else { top.className = 'dropLoad'; top.textContent = 'Load'; }
   const del = document.createElement('button'); del.type = 'button'; del.className = 'dropDel'; del.textContent = 'Delete';
-  const inn = document.createElement('div'); inn.className = 'routeDropIn'; inn.appendChild(top); inn.appendChild(del); card.appendChild(inn); // Beta 1.273: the pills ride an inner slider - the card itself is the growing clip (head.html), the inner travels translateY(-100%) to 0 inside it
+  const inn = document.createElement('div'); inn.className = 'routeDropIn'; inn.appendChild(top); inn.appendChild(del); card.appendChild(inn); // the pills ride an inner slider inside the growing clip (translateY(-100%) to 0)
   return card;
 }
-function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); } // Beta 1.271: each row renders with its dropdown card as its sibling
-function menuListFade(el) { // Beta 1.233 (Andrew, the feathered-edges sample): a menu scroll list feathers an edge ONLY while that edge hides more content - 30px of dissolve at a covered end, none at a rested end, both ends dissolving at the same rate (one gradient, mirrored - the symmetry Andrew checked on the samples). Refreshed wherever what an edge covers can change: on scroll, on render, on pane show, on resize. Beta 1.241 (Andrew): this seat also owns the city list's scroll arrow (#crCityArrow, head.html), read from the same two quantities on the same refreshes - the arrow stands only while the list rests at its very top with more below (the fadeB condition at scrollTop 0), fades to its kept seat the moment scrolling starts, and takes no seat at all when the list fits without scrolling.
+// each row renders with its dropdown card as its sibling
+function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); }
+function menuListFade(el) { // edges feather only while hiding content (30 px covered, none at rest); the arrow lives here too
   if (!el) return; const max = el.scrollHeight - el.clientHeight; el.classList.toggle('fadeT', el.scrollTop > 1); el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1); if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
-function wireRouteRows(container, choose) { container.addEventListener('click', e => { // Beta 1.271: the delegation sorts the tap by what it landed on - the dropdown's Delete asks, its Load chooses, its inert Loaded spends the tap, and a press anywhere else on a row toggles that row's dropdown (open, or closed if it was the open one; opening one closes any other)
+function wireRouteRows(container, choose) { container.addEventListener('click', e => { // delegation sorts taps by target: Delete asks, Load chooses, Loaded spends it, anywhere else toggles the dropdown
   const del = e.target.closest('.dropDel'); if (del) { askDeleteRoute(del.closest('.routeDrop').dataset.route); return; }
   const load = e.target.closest('.dropLoad'); if (load) { choose(load.closest('.routeDrop').dataset.route); return; }
   if (e.target.closest('.dropLoaded')) return;
   const row = e.target.closest('.routeRow'); if (!row) return;
   const drop = row.nextElementSibling; if (!drop || !drop.classList.contains('routeDrop')) return;
   const wasOpen = drop.classList.contains('open');
-  container.querySelectorAll('.routeDrop.open').forEach(d => { if (d !== drop) ddClose(d); }); // Beta 1.273: one open at a time, and the others now CLOSE (335ms) rather than vanish
+  container.querySelectorAll('.routeDrop.open').forEach(d => { if (d !== drop) ddClose(d); }); // one open at a time, and the others now CLOSE (335 ms) rather than vanish
   if (wasOpen) ddClose(drop); else ddOpen(drop);
 }); }
-function ddOpen(drop) { // Beta 1.273 (Andrew, the grown dropdown): show the card, reflow so its growth transition starts from height 0, then wear .open - the card grows on the house 420ms --ease-open while its inner slides down and the row above morphs its bottom corners square (the .ddOpen class, head.html). A pending close timer from a mid-close reopen is cancelled first, so the card can never be hidden out from under its own open state
+function ddOpen(drop) { // show, reflow (growth from height 0), then .open; a pending close timer cancels first
   const row = drop.previousElementSibling;
   clearTimeout(drop._ddT);
-  const pane = drop.closest('.rmPane'); // Beta 1.273, the layout law's other half: the panes centre through auto margins, so a growing list would re-centre the pane and drag the title up by half the growth. The first open of a pane visit pins the pane's top margin at its current seat - the growth then runs purely downward (nothing above the opening route moves, only what is below rides down), and showRmPane clears the pin on the next pane switch, so no resting seat ever changes
+  const pane = drop.closest('.rmPane'); // an open pins the pane's top margin at its seat: growth runs purely downward, nothing above moves
   if (pane && !pane._ddPin) { pane._ddPin = true; let mt = parseFloat(getComputedStyle(pane).marginTop); if (!isFinite(mt)) mt = pane.getBoundingClientRect().top - pane.parentElement.getBoundingClientRect().top - 24; pane.style.marginTop = mt + 'px'; }
   drop.style.display = 'block';
   void drop.offsetHeight;
   drop.classList.add('open'); if (row && row.classList.contains('routeRow')) row.classList.add('ddOpen');
   const l = drop.closest('.routeList'); if (l) setTimeout(() => menuListFade(l), 430);
 }
-function ddClose(drop) { // Beta 1.273: the close runs 335ms on --ease-close (Andrew's pick, Liu's exits-shorter rule) - the classes come off together (card shrinks, inner slides up, the row's corners round back), and only when the close has landed does the card leave the layout (display none, its 1.271 rest state), guarded by the timer ddOpen cancels
+function ddClose(drop) { // close runs 335 ms on --ease-close; only when it has landed does the card leave the layout
   const row = drop.previousElementSibling;
   drop.classList.remove('open'); if (row && row.classList.contains('routeRow')) row.classList.remove('ddOpen');
   clearTimeout(drop._ddT);
   drop._ddT = setTimeout(() => { if (!drop.classList.contains('open')) { drop.style.display = 'none'; const l = drop.closest('.routeList'); if (l) menuListFade(l); } }, 345);
 }
 function showRmPane(id) { document.querySelectorAll('.rmPane').forEach(p => { if (p._ddPin) { p._ddPin = false; p.style.marginTop = ''; } }); ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
-function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); } // Beta 1.130: showing the route menu warms the city catalogue - Create lives behind this menu, and the download is done or nearly done by the time the city list is tapped (the cold-open stutter fix; crWarmCityLibrary rides the cached promise, so this costs at most one small fetch per session)
+// showing the menu warms the catalogue (Create lives behind it): the download is nearly done by the list tap
+function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', ev => { if (!tapGuard('routesBtn', ev)) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
-['crCityList', 'rmRoutes'].forEach(id => { const el = $(id); if (el) el.addEventListener('scroll', () => menuListFade(el), { passive: true }); }); // Beta 1.233: the feather follows the scroll
-window.addEventListener('resize', () => { menuListFade($('crCityList')); menuListFade($('rmRoutes')); }); // Beta 1.233: a taller or shorter window changes what the list edges cover
+['crCityList', 'rmRoutes'].forEach(id => { const el = $(id); if (el) el.addEventListener('scroll', () => menuListFade(el), { passive: true }); }); // the feather follows the scroll
+window.addEventListener('resize', () => { menuListFade($('crCityList')); menuListFade($('rmRoutes')); }); // a taller or shorter window changes what the list edges cover
 $('rmChoose').addEventListener('click', () => { renderRouteLists(); showRmPane('rmListPane'); });
-$('rmCreate').addEventListener('click', () => { crWarmCityLibrary(); showRmPane('rmCreatePane'); }); // Beta 1.124 (Andrew, approved mockup): the Create pane opens on the two doors - Select from list renders the city list fresh on ITS entry (crDoorList), not here. Beta 1.130: this tap IS the create gate opening for BOTH entries (the cold-start picker never passes through openRouteMenu, and the Routes menu shares this button), so the catalogue download starts here - by the Select-from-list tap it is in hand
+$('rmCreate').addEventListener('click', () => { crWarmCityLibrary(); showRmPane('rmCreatePane'); }); // this tap is the create gate for both entries: the catalogue starts downloading here
 $('rmBack').addEventListener('click', () => showRmPane('rmMain'));
 $('rmBack2').addEventListener('click', () => showRmPane('rmMain'));
 wireRouteRows($('rmRoutes'), id => {

@@ -1,67 +1,45 @@
 // ---- draft state: session only (not a route, not in any slot) ----
-let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPickBusy = false; // Beta 1.128: crReturnToPreview is GONE - it existed only to rewrite the panel's Done label on the return-from-preview errand, and the label no longer rewrites (Andrew: the button reads "Done", always)
-let draft = null; // { roads, primaries: Set, osmNames, tileNames: [..], name, area, sectors, parts } - EVERY street key is the FULL map name (Beta 1.144, DA-04; osmNames maps every key to itself - tapped streets at the tap (crAddStreet)); sectors: {name: [chosen part indexes]} (Beta 1.127 - an ABSENT entry means the whole road), parts: {name: crStreetParts record} (session cache)
-function newDraft() { return { roads: Object.create(null), primaries: new Set(), osmNames: Object.create(null), tileNames: [], name: '', area: '', sectors: Object.create(null), parts: Object.create(null) }; } // Beta 1.169 (Carbon fix round, D-05): the name-keyed maps are prototype-free - a tapped street named '__proto__' joins by assignment (create-pick.js) and must land as an own key
-let crSectorSession = { street: null, snapshot: undefined, collapsed: false, face: 'panel' }; // Beta 1.154 (B3 build): the sector/panel session as ONE record - through 1.153 its fields were four loose bindings (crSectorStreet + crSectorSnapshot + crPanelCollapsed here, crFaceNow beside crMorph in create-pick.js). The fields: street (Beta 1.127: the street whose sectors are being trimmed, or null), snapshot (Beta 1.129: the street's sector pick as it stood when sector mode was ENTERED - null = the whole road, an array = the trim then in force; undefined = no sector session in flight), collapsed (Beta 1.127: the picked-roads panel's tucked-away state - the slim strip shows instead), face (the face the pick sheet's surface currently rests as; crMorph in create-pick.js stays a separate binding - it is the morph's in-flight descriptor, not session state). The session is three lifecycles sharing one surface (the blocked record's extraction): the sector pair, the panel's tuck, the sheet's face
-function crSectorReset() { crSectorSession.street = null; crSectorSession.snapshot = undefined; } // Beta 1.136 (programme F): a sector session's teardown in ONE place - through 1.135 the pair (street cleared, Cancel snapshot dropped) was written out at six sites (street removal, sector close, stage change, creation start, creation exit, draft start-over); every one of them now calls this. It closes the PAIR ONLY: a stage change resets the pair and deliberately leaves collapsed/face alone, and creation start/exit clear collapsed separately, exactly as through 1.153
+let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPickBusy = false; // crReturnToPreview is gone: it existed only to rewrite the Done label, and the label never rewrites now
+let draft = null; // every street key is the full map name; an absent sectors entry means the whole road
+// the name-keyed maps are prototype-free: a tapped '__proto__' street must land as an own key
+function newDraft() { return { roads: Object.create(null), primaries: new Set(), osmNames: Object.create(null), tileNames: [], name: '', area: '', sectors: Object.create(null), parts: Object.create(null) }; }
+let crSectorSession = { street: null, snapshot: undefined, collapsed: false, face: 'panel' }; // the sector/panel session as one record: street, entry snapshot (null = whole road), collapsed, face
+function crSectorReset() { crSectorSession.street = null; crSectorSession.snapshot = undefined; } // a sector session's teardown in one place; it closes the pair only, collapsed/face cleared separately on purpose
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 
-// ---- city-first preparation (Beta 1.121, audit round pickfetch) ----
-// Andrew's amendment at the gate: manual creation STARTS by asking what
-// city he will be cleaning in. He picks the city FIRST, and every tap
-// then resolves LOCALLY from a prepared extract - no per-tap network
-// (CG-PF-04). 1.118-1.120 fetched each street live at tap time, and the
-// fetch itself was broken three ways: the query was malformed (CG-PF-01:
-// the name filter carried its equals sign INSIDE the quoted key and lost
-// the value's opening quote - so NO tap could ever succeed), the 40 s
-// per-attempt timeouts excluded the measured 40.6/52.7 s successes and
-// burned ~123 s across retries (CG-PF-02), and the attempt timer was
-// cleared when the headers landed, before the body was read (CG-PF-03).
-// SECOND AMENDMENT (Andrew, at the verify gate): he rejected the
-// working-box-only preparation - picking a city loads the WHOLE CITY.
-// The extract for a picked city is therefore a GRID of ~4 x 4 km cells
-// over the city's bounding box, fetched with bounded parallelism,
-// committed cell by cell, and PERSISTED on-device (IndexedDB, see the
-// city cache below + docs/STORAGE-SCHEMA.md), so a city loads once and
-// is instant forever after. The original bounded box survives as the
-// FALLBACK preparation for places with no picked/saved city (an anchor
-// outside the city, a name-only city), session-only. Download size was
-// never the constraint (a whole city is ~14 MB); the service's compute
-// time per query is - which is exactly what the grid bounds.
-// Every async completion below binds to (creation session, coverage
-// generation): exitCreate and every new preparation invalidate older
-// generations, and an obsolete completion mutates nothing (CG-PF-05).
+// ---- city-first preparation ---- a picked city loads whole, once; every tap then resolves locally, no per-tap network
 const CR_TIMING = { budgetMs: 120000, attempt1Ms: 70000, topupBudgetMs: 90000, topupAttempt1Ms: 60000, capBytes: 2 * 1024 * 1024, cityCapBytes: 60 * 1024 * 1024, attemptStallMs: 60000, packFirstByteMs: 120000, packStallMs: 60000, stallMs: 180000 }; // Beta 1.229: stallMs - the no-progress bound for a whole street-grid / area preparation: if NOTHING has landed for this long the load cannot progress, and the watchdogs (crGridWatchdog in create-cache.js, crPrepWatchdog in create-citydata.js) force the existing failed/degraded landing instead of a readout percentage that never moves again (Andrew's Aurora stall). Sized off the fetch budget above: a full budget of honest trying (120s) plus a minute of slack, so a slow-but-alive load is never cut - the preparation watchdogs see LANDINGS, not bytes, so their bound must stay above the whole fetch budget or they would cut fetches the budget itself would have let live. Beta 1.246: attemptStallMs - the OTHER stall rule, one level down (Andrew's Apple-standard rule): inside crOverpassFetch, an attempt that has produced NO BYTES for this long is aborted and the fetch moves to its next instance inside the same budget; the answer landing and every chunk re-arm it, so a slow-but-alive download (bytes trickling) is never cut by it - it lives or dies by its attempt cap and the budget alone. The two rules are not interchangeable: the attempt rule cannot see the unbudgeted wedges the watchdogs exist for (a pack download, a saved-grid read - promises with no bytes to watch), and the watchdogs cannot see bytes. Beta 1.249: packFirstByteMs / packStallMs - the city pack download's own two windows (crPackDownload, create-citydata.js), the silence rules' third seat: a pack is ONE static file whose host spends real time producing a big city's answer before the first byte moves, so its pre-first-byte window is the generous 120 s (Andrew's ruling, 2026-11-19), and once bytes flow the window tightens to the same 60 s the attempt rule uses. A silence kill there retries inside crPackLoad's cached promise, bounded by stallMs itself (referenced from crPackLoad, never restated) - the preparation watchdogs stay the outer backstop, exactly as they were. The battery shrinks them like every other budget here. // ONE overall deadline per fetch with the attempt budgets defined INSIDE it - the primary may take at most attempt1Ms, so the fallback always keeps a meaningful reserve. Verify round (CG-PF-07): the TOP-UP budgets obey the same measured profile as the batch - the primary's measured successes were 40.6/52.7 s, so a 40 s top-up cap reproduced the PF-02 failure on the exception path; the top-up primary now gets 60 s of its 90 s. An object (not bare consts) as the honest test seam: the battery shrinks budgets and caps instead of waiting out real minutes.
-const CR_INNER_KM = 2, CR_BUFFER_KM = 1, CR_TOPUP_RING_KM = 2; // the FALLBACK preparation footprint: a fixed ~4 x 4 km picking box plus a 1 km buffer ring (Codex, debate 1: a fixed geographic footprint, never viewport-derived - the map can be panned anywhere)
-const CR_CELL_KM = 4, CR_GRID_PARALLEL = 3, CR_CELL_TRIES = 2; // the city grid: ~4 x 4 km cells, at most 3 fetches in flight, each cell retried once inside a preparation before it is marked failed
+const CR_INNER_KM = 2, CR_BUFFER_KM = 1, CR_TOPUP_RING_KM = 2; // the fallback footprint: a fixed ~4x4 km box plus 1 km buffer - geographic, never viewport-derived
+const CR_CELL_KM = 4, CR_GRID_PARALLEL = 3, CR_CELL_TRIES = 2; // the grid: ~4x4 km cells, at most 3 fetches in flight, each cell retried once before it is marked failed
 let crSession = 0; // bumped on every enterCreate and exitCreate
-let crCity = null; // { name, lat, lon, bbox } - the city this creation is scoped to (lat/lon/bbox null when only the name is known)
-let crCov = null; // { gen, byName, byId, boxes: [verified boxes], fetchedAt } - the merged extract taps resolve from: city cells + fallback boxes, one index (ids dedupe across cells - a way returned by two cells is stored once)
-let crWanted = null; // { anchor, label } - an explicit preparation offer the hint's button currently acts on (set when a tap lands outside coverage or a street pends; cleared when a preparation starts)
+let crCity = null; // { name, lat, lon, bbox } - the city in scope (lat/lon/bbox null when only the name is known)
+let crCov = null; // the merged extract taps resolve from: city cells + fallback boxes, one index (ids dedupe across cells)
+let crWanted = null; // an explicit preparation offer the hint's button acts on; cleared when a preparation starts
 let crTopOp = null; // the in-flight top-up's cancellation handle (crOverpassFetch's op), so exitCreate can stop its download too
 let crCovGen = 0; // the coverage generation
 let crPrep = null; // { gen, session, anchor, startedAt, ticker, op } while a FALLBACK box preparation is in flight
-let crGrid = null; // { name, bbox, cells: [{ key, box, state, tries }], gen, session, startedAt, ticker, ops: Set, active, fromCache, savedAt, stopped, lastFail } while a CITY grid preparation exists (kept after it settles, for progress/resume state)
-let crPrepState = 'none'; // 'none' | 'preparing' | 'ready' | 'degraded' | 'failed'  ('degraded': a city grid settled with parts missing - what loaded is usable, the rest is resumable). Beta 1.154 (B3 build): app writes go through crSetPrepState below - a direct assignment survives only as the battery's scenario seeding, never in app code
-// Beta 1.154 (B3 build, part 1): THE PREP STATE RECORD. The transition table is the OBSERVED lifecycle - all 13 edges driven through the real UI / preparation paths in the 2026-11-09 lifecycle trace (beta1/work/b3-lifecycle-trace/TRACE-RECORD.md), none inferred. A write outside the table is REFUSED (the state does not move) and recorded in crPrepViolations: entry writes (-> 'preparing') and the exit write (-> 'none') are legal from every state, and every settled landing is guard-gated to fire only from 'preparing', from which all four landings are in-table - so a refusal can only fire on a future bug or a foreign write, which is what the record exists to catch. (A write of the state already held is a re-assertion, not a transition - see the setter.) The setter owns validation + assignment ONLY: each write site's side effects (fail set/clear, anchor, wanted, sweeps, renders) stay at the site, because the sites share no common bundle - with one exception since Architecture #16: the preparation-ENTRY bundle (state to 'preparing', failure and its provenance cleared, outstanding offer answered) proved identical at all three entries and lives on crPrepBegin below; the anchor remains crStartPrep's own, and the settled landings keep their side effects at their sites.
+let crGrid = null; // the city grid preparation's record, kept after it settles for progress/resume state
+let crPrepState = 'none'; // app writes go through crSetPrepState below; a direct assignment survives only as the battery's scenario seeding
+// the prep state record: writes outside the observed transition table are refused and recorded in crPrepViolations
 const CR_PREP_EDGES = { none: ['preparing', 'none'], preparing: ['preparing', 'ready', 'degraded', 'failed', 'none'], ready: ['preparing', 'none'], degraded: ['preparing', 'none'], failed: ['preparing', 'none'] };
 const crPrepViolations = []; // 'from->to' of every refused transition - empty in every healthy run; the battery's teeth checks (drive181) read it
 function crSetPrepState(next) { if (next === crPrepState) return true; const row = CR_PREP_EDGES[crPrepState]; if (row && row.indexOf(next) >= 0) { crPrepState = next; return true; } crPrepViolations.push(crPrepState + '->' + next); return false; } // a write of the state the record already holds is a re-assertion, not a transition: the settle sites are re-entrant (two cell completions in one tick can both reach the grid's finish) and re-asserted the same value, unremarked, through 1.153 - the setter passes it, unrecorded (drive181's first CI run proved the re-assertions happen in healthy flows: ready->ready, failed->failed, degraded->degraded). A current state with no row in the table (a value the app itself never holds) refuses every CHANGE the same way - the record never throws
 let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
-let crFailFromGrid = false; // which preparation produced crPrepFail - the Retry button resumes a failed GRID's missing cells but re-runs a failed fallback BOX at its anchor; the two must never be confused when both exist
-function crPrepBegin() { crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; } // Architecture #16: THE PREPARATION-ENTRY BUNDLE - the one begin every preparation entry runs (crCityPrepare, crGridResume and crStartPrep each spelled it out through 1.280): the state record moves to 'preparing' through its setter, the previous failure and its grid/box provenance clear, and any outstanding preparation offer is answered by the starting. What stays at the sites, deliberately: the coverage-generation bump (each site spends the token differently - a local binding on the two prepare paths, adoption into the grid record on resume) and crStartPrep's anchor (its Retry target is the fallback's own, set in the same breath)
+let crFailFromGrid = false; // which one failed: Retry resumes a grid's cells but re-runs a box at its anchor; never confuse them
+function crPrepBegin() { crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; } // the entry bundle: state to 'preparing', failure cleared, offer answered; the generation bump stays at the sites
 let crPrepAnchor = null; // where Retry / a not-ready tap re-prepares
-let crPending = {}; // full map name -> { osmName, lngLat }: streets whose full shape reaches beyond verified coverage (fail-closed) - listed as pending, NEVER added half-known
+let crPending = {}; // streets whose shape reaches beyond verified coverage (fail-closed): listed as pending, NEVER added half-known
 let crToppedUp = {}; // '<full name>@<gen>' -> true: a street's ONE top-up per coverage generation is spent
 let crCityReturn = 'doors'; // where the city pane's Back lands
 function crBoxAround(lat, lng, halfKm) { const dLat = halfKm * 1000 / MLAT, dLng = halfKm * 1000 / MLNG; return { s: +(lat - dLat).toFixed(6), n: +(lat + dLat).toFixed(6), w: +(lng - dLng).toFixed(6), e: +(lng + dLng).toFixed(6) }; }
 function crInBox(box, lat, lng) { return !!box && lat >= box.s && lat <= box.n && lng >= box.w && lng <= box.e; }
-function crInAnyBox(boxes, lat, lng) { for (const b of boxes || []) { if (crInBox(b, lat, lng)) return true; } return false; } // verified coverage is a SET of boxes (city cells + fallback boxes) - an endpoint is verified when it lies inside ANY of them
-function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS + '];way[' + filter + '](' + box.s + ',' + box.w + ',' + box.n + ',' + box.e + ');out geom;'; } // THE one query builder - batch and top-up share its grammar (single source; the battery decodes the real POST bodies and grades THIS output). The name filter is "name"="..." - quote, name, quote, equals, quote. 1.118-1.120 hand-built the malformed form (equals inside the key quotes) inside fetchStreetGeometry and every tap failed on it (CG-PF-01).
+function crInAnyBox(boxes, lat, lng) { for (const b of boxes || []) { if (crInBox(b, lat, lng)) return true; } return false; } // verified coverage is a SET of boxes: an endpoint is verified when it lies inside ANY of them
+// the one query builder: batch and top-up share its grammar; the battery decodes the bodies and grades this output
+function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS + '];way[' + filter + '](' + box.s + ',' + box.w + ',' + box.n + ',' + box.e + ');out geom;'; }
 function crAreaQL(box, timeoutS) { return crQL('"name"]["highway"', box, timeoutS); }
 function crNameQL(osmName, box, timeoutS) { return crQL('"name"="' + osmName.replace(/(["\\])/g, '\\$1') + '"', box, timeoutS); }
 function crAbortOp(op) { try { if (op && op.ctl) op.ctl.abort(); } catch (e) {} } // stop an in-flight fetch's download, not just its right to land (CG-PF-10: Cancel/exit/supersede abort the request itself)
-async function crReadBodyText(r, onChunk) { // Architecture #18: THE shared response consumption - the streaming read, chunk accumulation and decode that crOverpassFetch (below) and crPackDownload (create-citydata.js) each spelled out through 1.280. Returns { text } for a streamed body; { stopped: <verdict> } when the caller's per-chunk hook stops the read (the reader is cancelled here - the caller's own timers, aborts and outcome bookkeeping stay with the caller); or { fallback: true } when the response has no reader, because the no-stream policies differ per caller (the pack reads the text under its first-byte window; the service measures a declared Content-Length before buffering and the buffered bytes after) - so the fallback's text is read at the caller, never here. onChunk(totalBytes) runs on every landed chunk before the chunk is kept; returning a verdict string stops the read with that verdict, returning null keeps reading. Everything POLITICAL stays at the callers: their controllers, their silence timers and windows, the service's byte cap and session checks (delivered through the hook), the pack's stall tag.
+async function crReadBodyText(r, onChunk) { // the shared response consumption (stream, accumulate, decode); every policy (timers, caps, checks) stays at the callers
   if (!r.body || typeof r.body.getReader !== 'function') return { fallback: true };
   const reader = r.body.getReader(), chunks = []; let total = 0;
   for (;;) {
@@ -76,18 +54,7 @@ async function crReadBodyText(r, onChunk) { // Architecture #18: THE shared resp
   return { text: new TextDecoder().decode(buf) };
 }
 async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
-  // One query against the public Overpass instances (OVERPASS_URLS) under
-  // ONE overall deadline spanning connect + body + parse (CG-PF-02/03):
-  // attempt 1 gets at most attempt1Ms of the budget, the fallback keeps
-  // the rest; the body is consumed as a stream with the size cap enforced
-  // WHILE it arrives (a post-parse length check bounds nothing); the
-  // clock is re-checked after the synchronous parse - which no abort can
-  // interrupt - before the answer is allowed to commit. Honest outcomes:
-  // { ok: true, json, ms } or { ok: false, kind } with kind 'unreachable'
-  // (no instance answered in budget - a throw, or our own deadline
-  // abort), 'error' (HTTP status, or an Overpass remark riding an
-  // HTTP 200), 'dense' (over the byte cap), 'badjson' (unreadable
-  // answer), 'stale' (the caller's session/generation moved on).
+  // one deadline: attempt 1 capped inside it (fallback keeps a reserve); the byte cap is enforced as bytes arrive
   const t0 = Date.now(), deadline = t0 + budgetMs;
   let lastFail = { ok: false, kind: 'unreachable' };
   for (let i = 0; i < OVERPASS_URLS.length; i++) {
@@ -97,7 +64,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
     const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     if (op) op.ctl = ctl; // the caller can stop THIS download (Cancel / exit / supersede - CG-PF-10)
     const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch (e) {} }, cap) : null;
-    // Beta 1.246: the attempt's SILENCE timer (CR_TIMING.attemptStallMs), beside its cap timer: armed at the attempt's start (a service that never answers is silent from the start), re-armed when the answer lands and on every chunk; on expiry it aborts THIS attempt exactly as the cap does, and the loop gives the next instance the budget that remains. clearTimers retires both timers together, so no exit path can leave one armed over a settled attempt.
+    // the attempt's silence timer beside its cap timer: armed at start, re-armed per chunk; clearTimers retires both together
     let stallTo = null;
     const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, CR_TIMING.attemptStallMs); };
     const clearTimers = () => { if (to) clearTimeout(to); if (stallTo) clearTimeout(stallTo); };
@@ -108,7 +75,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
       if (!r.ok) { lastFail = { ok: false, kind: 'error', status: r.status }; clearTimers(); continue; }
       let text;
       if (r.body && typeof r.body.getReader === 'function') {
-        const read = await crReadBodyText(r, (total) => { // Architecture #18: the consumption is crReadBodyText's; the POLICIES ride the hook - the byte cap first (enforced as the bytes arrive, as ever), then the silence clock's re-arm, then the session check
+        const read = await crReadBodyText(r, (total) => { // consumption is crReadBodyText's; the policies ride the hook in order: byte cap, silence re-arm, session check
           if (total > CR_TIMING.capBytes) return 'dense';
           armStall(); // a landed chunk is progress
           if (sessionOk && !sessionOk()) return 'stale';
@@ -122,7 +89,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
       let json = null;
       try { json = JSON.parse(text); } catch (e) { lastFail = { ok: false, kind: 'badjson' }; continue; }
       if (Date.now() > deadline) { lastFail = { ok: false, kind: 'unreachable' }; continue; } // the parse itself ate the deadline (CG-PF-03): a late success is not committed
-      if (json && json.remark) return { ok: false, kind: 'error', remark: String(json.remark).slice(0, 120) }; // an Overpass error remark fails the extract even on HTTP 200 with elements attached (Codex) - partial output is never promoted to ready
+      if (json && json.remark) return { ok: false, kind: 'error', remark: String(json.remark).slice(0, 120) }; // an error remark fails the extract even on HTTP 200: partial output is never promoted to ready
       if (!json || !Array.isArray(json.elements)) { lastFail = { ok: false, kind: 'badjson' }; continue; }
       return { ok: true, json, ms: Date.now() - t0 };
     } catch (e) {
@@ -134,17 +101,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
   return lastFail;
 }
 async function crSourceExtract(box, name, budgetMs, attempt1Ms, sessionOk, op) {
-  // THE EXTRACT SOURCE SEAM (parent architecture note, 2026-11-06): every
-  // street-shape extract this app obtains - a city grid cell, the fallback
-  // box, a street top-up - comes through this ONE function: given a
-  // coverage box (and optionally one street name), it returns the extract
-  // for that box. Beta 1.123: the pre-generated city packs plug in BEHIND
-  // this seam - when a pack context is active (crPackCtx, set by
-  // crCityPrepare when the picked city matches the pack
-  // library), the pack answers the same call shape and the live Overpass
-  // service becomes the fallback. The grid, the fallback box prep, the
-  // top-up and everything downstream consume the identical result shape
-  // either way.
+  // the seam: every extract comes through this one function; packs plug in behind it, the service is the fallback
   const pk = await crPackServe(box, name, sessionOk);
   if (pk) return pk;
   const ql = name ? crNameQL(name, box, Math.ceil(budgetMs / 1000)) : crAreaQL(box, Math.ceil(budgetMs / 1000));

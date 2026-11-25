@@ -49,7 +49,7 @@ function extractFn(src, name) {
 check('1: the session start is declared beside lastFixAt',
   app3.includes('lastFixAt = 0, watchStartedAt = 0,'));
 check('2: every watch creation records its session start',
-  app3.includes('watchStartedAt = Date.now(); // Beta 1.252'));
+  app3.includes('watchStartedAt = Date.now();') && app3.includes("every start records its session start (the watchdog's clock)"));
 const startBody = extractFn(app3, 'startGps');
 check('3: the stamp is recorded inside startGps, before the watch is created',
   startBody.includes('watchStartedAt = Date.now();')

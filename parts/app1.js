@@ -1,63 +1,46 @@
 'use strict';
-// ===== FRESH APP CORE (Beta 1 rebuild) — state, storage, geometry =====
+// ===== FRESH APP CORE: state, storage, geometry =====
 /** @type {(id: string) => AppElement} */ const $ = id => document.getElementById(id);
 const MLAT = 111320, MLNG = 80386;
 /** @type {() => number} */ const vvHeight = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight); // visible-screen height (shrinks when the phone keyboard opens)
 const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
-const PRIMARIES = new Set(); // Beta 1.117: the active pack's primary streets - filled per load by buildGeometry from pack.primaries (the values live in the pack, data.js)
-const SPOT = {}; // Beta 1.117: the active pack's label-anchor hints - filled per load by buildGeometry from pack.spot
+const PRIMARIES = new Set(); // the pack's primary streets: filled per load by buildGeometry from pack.primaries (values live in the pack)
+const SPOT = {}; // the active pack's label-anchor hints: filled per load by buildGeometry from pack.spot
 const TRAIL_MAX = 8000;
-const TRAIL_WINDOW_S = 3600; // Beta 1.193 (trail redesign, Andrew's adopted design): the trail's retention window, in SECONDS of recorded points. Since 1.193 the trail is a backend-only fallback for the run-distance counter (no map line, no archived path): it keeps ONLY the live run's points from its last 60 minutes, windowed by trailWindow below at load, at append (acceptFix, app3), at Start, at Finish and at restore (app4). TRAIL_MAX above survives as the session markers' cap and the loader's absolute backstop - the point cap itself no longer bounds the trail (the window does: ~3,600 points at 1 Hz).
-const FIXLOG_MAX = 3600; // Beta 1.195 (the toggle conversion): the raw fix log's cap, in FIXES (app3's fixLogTrim enforces it: oldest sessions evicted whole, a lone oversize session head-trimmed). 3,600 = ONE HOUR of 1 Hz fixes — Andrew's cap for the log's new life as a deliberate debugging capture behind the Settings switch: he turns it on for a drive he wants examined, and an hour covers the judging drives with room to spare. The Beta 1.190 sizing (36,000, ten hours, fitted to 6-8 h cleans) belonged to the always-on design and is retired with it; cleans themselves stay unlimited, this never touched them.
-const FIXLOG_MAX_CHARS = 200000; // Beta 1.195: the same log's second cap, in CHARACTERS of its stored record (fixLogTrim enforces it beside FIXLOG_MAX, on a byte-accounted estimate; drive194 asserts the real serialized length). Sizing, from the codec's MEASURED worst case: the Beta 1.190 soak's densest stream ran 1,655,295 characters at the old 36,000-fix cap = ~46.0 characters per fix, so 3,600 fixes at that density need ~165,600 characters; this cap is set at 200,000 — about 55.6 characters per fix, a ~21% margin over the measured worst case, so the fix cap binds first in any stream resembling the measured ones and the character cap only trims a stream denser than anything yet recorded. The binding storage limit stays WebKit's: localStorage allows 5 MB per origin and persists strings as UTF-16 — 2 bytes per character, so the whole origin holds 2,500,000 characters (WebKit's LocalStorageManager quota; webkit.org bug 245479). The budget now: 200,000 (this log) + ~112,000 (the trail at its most — the Beta 1.193 window's ~3,600 points) + a 250,000-character board/settings/history allowance = ~562,000 ≤ 2,500,000, with most of the quota standing empty.
-// Beta 1.76 (Andrew): ROUTES. A route is a pack (geometry in data.js) plus its own
-// storage slot: every route-scoped record lives under 'snowroute.<routeId>.',
-// so a second route is a new tenant, never a reshuffle. App-wide records
-// (night, backup-nudge, prep) stay global. LS always points at the ACTIVE
-// route's slot; loadRouteState() resolves it (and runs the one-time legacy
-// migration) before any state is read. LEGACY_KEYS are the pre-1.76 names,
-// kept for that migration and for restoring v1 backups. Backup field list:
-// session markers ride in backups (Beta 1.71, audit B02); an older backup
-// simply lacks a field; restore follows the missing-key rule EXCEPT that a
-// backup replacing the trail clears the current markers (Beta 1.73, C06).
-// Beta 1.117 (route separation, Andrew): ROUTE_PACKS itself is declared in
-// data.js - packs are DATA (metadata + roads + reference), and the app holds
-// no route of its own. ROADS/REFERENCE below are the LIVE working copies of
-// the ACTIVE pack's geometry: empty until a pack loads, refilled in place by
-// buildGeometry on every load/switch (never rebound, so every captured
-// reference - GL_HOST's included - stays valid across a switch).
-/** @type {RoadsMap} */ const ROADS = Object.create(null); // Beta 1.254 (O-02): null-prototype, like normalizePack's own maps - a street literally named '__proto__' (reachable through a crafted backup's userpacks) must land as an ENTRY; on a plain object Object.assign runs the __proto__ setter instead, the street vanishes from the board and the swapped prototype outlives later route switches
+const TRAIL_WINDOW_S = 3600; // the trail window (seconds): the trail is a distance fallback, keeping only the live run's last 60 minutes
+const FIXLOG_MAX = 3600; // the fix log's cap: a debug capture behind the Settings switch (3,600 fixes = one hour at 1 Hz)
+const FIXLOG_MAX_CHARS = 200000; // the character cap: 200,000 (this log), sized from the worst case (~46 chars/fix) with margin; the fix cap binds first
+// a route = pack + its own slot; LS = the active route's slot, resolved before any state is read
+// null-prototype: a '__proto__' street must land as an entry, not run the prototype setter and vanish
+/** @type {RoadsMap} */ const ROADS = Object.create(null);
 /** @type {RoadsMap} */ const REFERENCE = Object.create(null);
 /** @param {string} id @returns {RouteKeys} */ function routeKeys(id) { const p = 'snowroute.' + id + '.'; return { done: p + 'v2', times: p + 'v2.times', hist: p + 'v2.history', notes: p + 'v4.notes', via: p + 'v4.via', trail: p + 'v4.trail', cov: p + 'v4.cov', start: p + 'v5.start', flip: p + 'v5.flip', sides: p + 'v5.sides', sess: p + 'v5.sess', pre: p + 'v5.preload', snap: p + 'v5.snap', mig: p + 'v2.migrated', migfill: p + 'v2.migfill', finclean: p + 'v5.finclean', rundist: p + 'v5.rundist', rundist2: p + 'v5.rundist2' }; } // Beta 1.94 (deep audit SR-193-02/03): two slot-local records join the layout - 'snap' is the running clean's persisted pre-Start board (Start writes it, Finish/Cancel delete it; transient, and not a ROUTE_FIELDS member - it rides backups only in normalized form, via snapForExport in app4, since Beta 1.96/1.97) and 'mig' is the legacy migration's explicit completion marker (see migrateLegacyRoute) and never a backup field. Beta 1.141 (Package A, DA-10): 'finclean' joins them on the same terms - the durable finish-cleanup obligation (finishRun's transaction writes it, saveAll's success discharges it, completeFinishCleanup completes it at load); transient, never backed up, not in ROUTE_FIELDS. Beta 1.150 (security-audit fix round): 'migfill' joins them on the same terms - the migration's per-field fill record (see migrateLegacyRoute); written only while a migration is incomplete, deleted when its marker commits. Beta 1.167 (run/pace fix round, B5): 'rundist' joins on the finclean terms WITHOUT any backup ride - the running clean's accumulated-distance record (app3's runDist), genuinely never backed up: Finish bakes its value into the archive entry's km, and a lost record re-derives from the surviving trail (RUNDIST.adopt, app3).
-const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog', dp: 'snowroute.v1.dp' }; // Beta 1.118: lastArea = the create flow's area pre-fill memory. Beta 1.189: fixlog = the raw GPS fix log (app3) - a DEVICE record, not route data (it spans routes and locate sessions), so it lives with the globals and rides backups at top level like the settings record, never as a ROUTE_FIELDS member. Beta 1.230: dp = the device profile's stored tier hint (the DEVICE PROFILE section below) - a DEVICE record on fixlog's storage terms (global, spans routes, never a ROUTE_FIELDS member) but NOT backed up: the hint is a measurement of THIS device, and a backup restored onto another phone must not import it; a missing key is the standing default (full quality, no hint)
+// lastArea pre-fills the area; fixlog + dp are device records (global, spanning routes); dp is never backed up
+const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog', dp: 'snowroute.v1.dp' };
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', pre: 'snowroute.5w.v5.preload', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in PERSIST.flush below, never backed up; adoption reads it when the primary is lost (RUNDIST.adopt, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5). Beta 1.254 (O-01): 'pre' rides too, naming the LIVE slot (routeKeys('5w').pre) - through 1.253 a fallback boot had LS.pre undefined, so the preload writer stored its record under a localStorage key literally named "undefined" and the readers read it back from there; the fallback session's preload record now lands where a later migrated boot looks for it
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
-const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference', 'ends']; // Beta 1.131 (maintainability programme A): the ONE list of fields a route pack carries - normalizePack (create-packs.js) builds every validated pack by walking THIS list, so a field joins the pack format by joining this list (with its cleaner there); a field absent from the list does not survive validation, by construction. Deliberately distinct from ROUTE_FIELDS above: those are storage-slot fields, and 'snap' in particular is a slot field that is NOT a pack field (hand-carried at restore scope by design) - it must never be added here. Beta 1.259: 'ends' joins the format - per street, the boundary-end records ([endLat, endLng, joinLat, joinLng]) the paint engine feathers at (computeBoundaryEnds, create-packs.js, is the one computation).
-// ===== RULE CONSTANTS (Beta 1.136, maintainability programme F): every number that IS a
-// product rule lives HERE, named once - coverage, GPS acceptance and the pack validator's
-// caps. A rule changes by changing its constant (with the evidence DEVELOPMENT_RULES asks
-// for), never by hunting literals. The fence, stated once and binding: equal numbers that
-// serve DIFFERENT policies stay SEPARATE constants - GPS_STALE_MS and TRAIL_FLUSH_MS are
-// both 45 s today by coincidence, not by reference, and must be free to drift apart; the
-// validator's three 60-character caps and two 80 caps are likewise separate per field.
+const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference', 'ends']; // the one list of pack fields: normalizePack walks it; an absent field fails validation by construction
+// ===== RULE CONSTANTS ===== every product-rule number lives here, named once; equal numbers for different policies stay separate constants
 const COV_SAMPLE_M = 15; // coverage samples are laid along a street every this many metres (samplesFor, app3)
 const COV_RADIUS_M = 22; // a GPS fix covers the samples within this radius of it (coverFix, app3)
-const GPS_ACCURACY_M = 65; // fixes reported worse than this are rejected while a fresh good fix exists; the accept comparison (<=) and the reject comparison (>) are ONE rule - this constant (acceptFix, app3)
-const GPS_STILL_MPS = 0.5; // Beta 1.187 (GPS package, STOP B): a recorded fix reporting under this speed is a stopped fix - acceptFix's trail guard banks no distance and records no trail point from it (a parked truck's fix wander was banking a median 138 phantom metres a minute into saved cleans). The position path is NOT gated by it: the dot follows every accepted fix exactly as before. (A tighter 28 m accuracy gate and a stationary position hold were priced in the same harness and did NOT ship - both measured neutral-to-worse; the round record carries the numbers.)
-const GPS_STALE_MS = 45000; // a watch silent this long is restarted (app3): silence runs from the later of the last accepted fix and the current watch's own start, so this one value is also a fresh watch's first-fix window (Beta 1.252, R-01 - one threshold by design; a longer cold-fix window, if ever wanted, becomes a sibling constant HERE, never a second literal in app3) - a GPS policy
+const GPS_ACCURACY_M = 65; // worse fixes are rejected while a fresh good one exists: accept (<=) and reject (>) are one rule
+const GPS_STILL_MPS = 0.5; // under this speed a fix is stopped: no distance or point banks from it (position is not gated)
+const GPS_STALE_MS = 45000; // silence this long restarts the watch, running from the later of last fix and watch start
 const TRAIL_FLUSH_MS = 45000; // the buffered trail write's flush interval (PERSIST.flush, below) - a STORAGE policy; see the fence above
-const COV_SAVE_MS = 15000; // the coverage write's throttle window (PERSIST.flush, below; declared here with the rule constants since Beta 1.136 - its 1.135 flush discipline is unchanged)
+const COV_SAVE_MS = 15000; // the coverage write's throttle window (PERSIST.flush below; declared here with the rule constants)
 const PACK_NAME_MAX = 60, PACK_AREA_MAX = 60, PACK_STREET_NAME_MAX = 60; // the pack validator's per-field character caps (normalizePack, create.js) - separate constants per field, per the fence above
-const PACK_STREETS_MAX = 300, PACK_SEGS_MAX = 80, PACK_SEG_PTS_MAX = 4000, PACK_POINTS_MAX = 150000; // the pack validator's shape caps (normalizePack, create.js); PACK_SEGS_MAX (segments per street) and PACK_TILENAME_MAX (characters per tile name) both happen to be 80 - different policies, separate constants
+const PACK_STREETS_MAX = 300, PACK_SEGS_MAX = 80, PACK_SEG_PTS_MAX = 4000, PACK_POINTS_MAX = 150000; // the validator's shape caps: two of them are both 80 by coincidence - different policies, separate constants
 const PACK_TILENAME_MAX = 80, PACK_TILENAMES_MAX = 400;
-const PACK_BOX_MAX_DEG = 4, PACK_LENGTH_MAX_M = 12000000; // Beta 1.152 (NV round): the pack validator's extent and total-length ceilings (normalizePack, create-packs.js), beside the shape caps they extend. Sized from the measured real maxima across all 12 shipped city datasets (44,405 streets): the widest city bounding box spans 0.526 degrees (Toronto), the declared Route 5W box 0.40, and the worst legitimate pack - the 300 longest Toronto streets as stitched runs - totals 2,962 km of street; the ceilings sit ~7.6x and ~4x above those. The length ceiling is what bounds samplesFor (app3): at one sample per COV_SAMPLE_M it caps a validated pack at ~800,000 samples.
-const PACK_TILES_MAX = 20000; // Beta 1.152 (NV round): the per-pack tile-URL iteration budget inside the preload enumerators (app4) - ~29x the largest legitimate pack reference (a Toronto-sized box over the 5W core enumerates 689 tile URLs; Route 5W itself 633). A stored pack with a worldwide box is a boot wedge, not a route: its oversized zooms are skipped and enumeration terminates bounded.
-/** @param {string} id @returns {string[]} */ function slotKeys(id) { const rk = routeKeys(id); return ROUTE_FIELDS.map(f => rk[f]).concat(rk.snap); } // Beta 1.136 (programme F): a route slot's BACKUP keys as one list - the ROUTE_FIELDS keys plus the cancel snapshot - for the callers that enumerate keys without needing field names (the restore's rollback scope). Backup field loops keep walking ROUTE_FIELDS itself (they need the names), and route deletion keeps enumerating routeKeys' values (it wipes slots the backup never carries, pre/mig included).
+const PACK_BOX_MAX_DEG = 4, PACK_LENGTH_MAX_M = 12000000; // the validator's extent/length ceilings, sized ~7.6x/~4x above the measured maxima; the length ceiling bounds samplesFor
+const PACK_TILES_MAX = 20000; // the tile-URL iteration budget: a worldwide-box pack is a boot wedge, not a route - enumeration terminates bounded
+// a slot's backup keys as one list (ROUTE_FIELDS + the snapshot), for callers enumerating keys without field names
+/** @param {string} id @returns {string[]} */ function slotKeys(id) { const rk = routeKeys(id); return ROUTE_FIELDS.map(f => rk[f]).concat(rk.snap); }
 /** @type {Object.<string, string>} */ let LS = { ...routeKeys('5w'), ...LS_GLOBAL };
-/** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) { // one-time, 5W only. Beta 1.94 (deep audit SR-193-03): the COMMIT RECORD is the explicit marker key (rk.mig), never field presence. The 1.93 parity gate (R04) could not tell an interrupted copy from a legitimately partial slot - sides restored from a backup, no history yet - and its retry recopied legacy sides OVER the newer restored ones. Now: with the marker absent, the copy fills ONLY fields the slot lacks (a present slot field is never overwritten), each fill verified by read-back; any failure reports false and the caller reads the legacy keys for this boot - verified fills already landed may stay, since without the marker they are never mistaken for a completed move, and each is an exact copy of the legacy value. Parity is re-checked before the marker is written. The legacy keys themselves are never deleted - they stay as the fallback copy. Beta 1.150 (security-audit fix round, finding legacy-migration-fallback-boot-stale-fill): the fill-only rule had one hole - when a fill failed PARTWAY, the fallback boot ran on the legacy keys and its saves wrote NEWER legacy values, and the next boot's retry skipped the fields that had already landed, so the stale partial copy became permanent under the committed marker. The record that tells a migration-owned fill from everyone else's write is rk.migfill: for each field, the exact value a landed fill wrote, persisted (verified) as each fill lands. On a retry, a slot value still EQUAL to its recorded fill is migration's own and is re-copied when the legacy value has moved on; a slot value that DIFFERS from its recorded fill was written by someone else (a restore) - it wins and its record is dropped, which is exactly the 1.94 protection, kept. The record is deleted when the marker commits; from then on the marker alone governs, as before.
+// 5W only: the marker (rk.mig) commits the migration; absent it, fills land only where the slot lacks
+/** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) {
   if (id !== '5w') return true;
   const rk = routeKeys(id);
-  const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : v; }; // Beta 1.169 (Carbon fix round, A-02): THIS pass's decision reads go through rawRead, not lsGet - lsGet reads a THROWN read as an absent key, and deciding what is absent is this pass's whole job: a transient throw on a legacy field used to read as 'legacy no longer holds it', the parity check below agreed, and the marker committed with that field never copied. undefined here means UNKNOWN, and every decision below treats it as 'not migrated - retry next boot', the fail-safe the commit's own comment already states. (The verified fill writes keep their lsSet/lsGet read-backs: a thrown read-back already fails those closed.)
+  const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : v; }; // reads go through rawRead, not lsGet (throws read as absent there): unknown means retry next boot
   const migMark = migGet(rk.mig); if (migMark === undefined) return false; if (migMark !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
   const legSides = migGet(LEGACY_KEYS.sides); if (legSides === undefined) return false; if (legSides === null) return true; // nothing legacy to move
   let prog = {};
@@ -70,26 +53,30 @@ const PACK_TILES_MAX = 20000; // Beta 1.152 (NV round): the per-pack tile-URL it
     if (raw === null) { if (f in prog) { delete prog[f]; progDirty = true; } continue; } // legacy no longer holds the field: its fill record is moot
     const slot = migGet(rk[f]); if (slot === undefined) return false;
     if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; continue; } // fill the gap, verified, and record the fill as migration-owned before moving on
-    if (f in prog && slot === prog[f]) { if (raw !== prog[f]) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; } continue; } // migration's own earlier fill, and the legacy value has moved on (a fallback boot saved over it): re-copy, so the stale fill never becomes permanent
+    // migration's own fill, but the legacy value moved on: re-copy, so the stale fill never becomes permanent
+    if (f in prog && slot === prog[f]) { if (raw !== prog[f]) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; } continue; }
     if (f in prog) { delete prog[f]; progDirty = true; } // the slot value is NOT what migration wrote - someone else (a restore) owns it now; it wins, untouched
   }
-  for (const f of ROUTE_FIELDS) { const lg = migGet(LEGACY_KEYS[f]); if (lg === undefined) return false; if (lg !== null) { const sl = migGet(rk[f]); if (sl === undefined || sl === null) return false; } } // parity before committing: every field legacy holds must now be present in the slot (A-02: a field that cannot be READ on either side blocks the commit - parity over unknowns is not parity)
+  // parity before committing: every legacy field must be present in the slot; an unreadable field blocks it
+  for (const f of ROUTE_FIELDS) { const lg = migGet(LEGACY_KEYS[f]); if (lg === undefined) return false; if (lg !== null) { const sl = migGet(rk[f]); if (sl === undefined || sl === null) return false; } }
   if (!saveProg()) return false;
-  lsSet(rk.mig, '1'); // commit. If THIS write fails the next boot re-runs the pass (by then a no-op) and retries the marker - safe either way
-  lsDel(rk.migfill); // the marker governs from here - the fill record has no further meaning. If this delete fails, the stale record is inert: the marker short-circuits every later call before the record is read
+  lsSet(rk.mig, '1'); // commit: if this write fails, next boot re-runs the pass and retries the marker - safe either way
+  lsDel(rk.migfill); // the marker governs: a failed delete leaves the fill record inert (the marker short-circuits before it is read)
   return true;
 }
 
 /** @param {AnyPoint} a @param {AnyPoint} b @returns {number} */ function distM(a, b) { const dx = (a[1] - b[1]) * MLNG, dy = (a[0] - b[0]) * MLAT; return Math.hypot(dx, dy); }
 const jDistM = distM; // the paint engine's name for the same two-point distance
-/** @param {TrailPoint[]} trail @param {number[]} [trailSessions] @returns {TrailPoint[][]} */ function trailSegments(trail, trailSessions) { // Beta 1.99 (architecture Phase 2, C1): THE trail segment-acceptance rule, in exactly one place - a segment breaks when the gap exceeds 300 s, the jump exceeds 1000 m, or (when session markers are supplied) a recorded session start falls between the two points. trailKm and buildGpx consume this (drawTrail did too, until Beta 1.193 retired the drawn line); before 1.99 each carried its own copy and three audit rounds (1.70/1.71) had to force them back into agreement by hand. Pure: points in, segments (arrays of the same point references) out. The parameters deliberately keep buildGpx's names so its 1.73/1.74 pointer walk (C07/D01) moves VERBATIM: markers are walked with a pointer, and when a point steps BACKWARD below markers already passed, the pointer re-seeks before testing - chronological trails never re-seek, so the walk stays linear (drive143 X6/X7 parity, fixtures in tests/browser/selftest-trail-segments.mjs).
+// the rule, in one place: a segment breaks at gap >300 s, jump >1000 m, or a session start between
+/** @param {TrailPoint[]} trail @param {number[]} [trailSessions] @returns {TrailPoint[][]} */ function trailSegments(trail, trailSessions) {
   trailSessions = trailSessions || [];
   const segs = []; let seg = []; let sessAt = 0;
   for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) { segs.push(seg); seg = []; } seg.push(p); }
   if (seg.length) segs.push(seg);
   return segs;
 }
-/** @param {TrailPoint[]} points @param {number} runStartMs @returns {TrailPoint[]} */ function trailWindow(points, runStartMs) { // Beta 1.193 (trail redesign): THE trail retention rule, in exactly one place - the trail keeps only the live run's points from its last TRAIL_WINDOW_S seconds. No live run (runStartMs 0) means no consumer exists and the window is empty. The window is anchored at the NEWEST point's own timestamp, not at wall-clock now: the fallback a crashed run leaves behind is the last 60 minutes of RECORDING, whenever the app happens to reopen. Points are chronological in every writer, but the anchor takes the maximum timestamp so a planted or crafted array cannot widen the window by disorder. Load, restore (app4) and the Start fence (app3) filter through here; the append path (acceptFix) evicts the same boundary inline, point by point.
+// the retention rule: the live run's last TRAIL_WINDOW_S of points only, anchored at the newest point's timestamp
+/** @param {TrailPoint[]} points @param {number} runStartMs @returns {TrailPoint[]} */ function trailWindow(points, runStartMs) {
   if (!runStartMs || !points.length) return [];
   const runSec = Math.floor(runStartMs / 1000);
   let newest = 0; for (const p of points) if (p[2] > newest) newest = p[2];
@@ -107,23 +94,13 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
 /** @param {LatLng[]} pts @returns {number} */ function segLenM(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; } // the APP-global segment length (plain distM) - workDoneM's progress math. NOT a duplicate of the paint engine's private segLenM inside the GLP closure, which sums jDistM for label/anchor geometry: different scope, different metric, both load-bearing (third audit's 'delete one' was wrong - removing this one broke the progress meter, drive141 F07b caught it)
 // Toast (native dialogs are banned)
 let toastTimer = 0;
-// Toast placement (Beta 1.221, Andrew's bar: the pill must never sit on a
-// control - "make those perfect"). No fixed offset can promise that: the
-// dock stack's top rides at ~208px, the note banner's band sits above it,
-// sheets and modals bring their own controls, and the pill's own height
-// changes with its text. So the pill is placed by MEASUREMENT at fire
-// time: it starts at its CSS floor and hops above anything it would
-// cover - the app's interactive inventory below - until its band is
-// clear, keeping a 6px gap. drive204 measures the result in the rendered
-// page across every state a surviving toast can fire, day and night.
+// placement is by measurement at fire time: no fixed offset can promise the pill never covers a control
 const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#setMenu input', '#setMenu .swRow', '.sheet button', '#sheet .srow', '#mapNote', '#mapNote button', '#mapNote textarea', '#finModal .card', '#finModal button', '#createSheet button', '#createBar input', '#createBar button', '#selPop', '#selPop button', '#spdPill', '#nightBtn', '#centreBtn'];
 /** @param {HTMLElement} t @returns {void} */ function placeToast(t) {
   t.style.bottom = ''; // back to the CSS floor; re-measured on every fire
   for (let hop = 0; hop < 8; hop++) {
     const r = t.getBoundingClientRect();
-    // the resting (shown) band: the pill's rise transition may be partway
-    // (a re-fire can land mid-fade of the previous pill), so read the LIVE
-    // transform offset - the shown state always lands at offset 0
+    // the band: a re-fire can land mid-fade, so read the live transform offset (shown lands at 0)
     let ty = 0;
     try { ty = new DOMMatrixReadOnly(getComputedStyle(t).transform).m42 || 0; } catch (e) { /* transform 'none' reads as 0 */ }
     const top = r.top - ty, bottom = r.bottom - ty;
@@ -132,10 +109,7 @@ const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#s
       if (e === t) return;
       const b = e.getBoundingClientRect(), cs = getComputedStyle(e);
       if (!(b.width > 0 && b.height > 0) || cs.display === 'none' || cs.visibility === 'hidden') return;
-      // An element running its entrance animation (the menuRise family)
-      // starts at opacity 0 and 10px low, then rises into its resting
-      // band - it counts as the obstruction it is BECOMING: never skip it
-      // for the fade, and judge it by its resting top, not its first frame.
+      // one mid-entrance counts as the obstruction it is becoming: judge its resting top, not its first frame
       let restTop = b.top;
       const rising = (e.getAnimations ? e.getAnimations() : []).some(a => a.animationName);
       if (cs.opacity === '0' && !rising) return;
@@ -153,90 +127,44 @@ const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#s
 /** @param {string} k @returns {string | null} */ function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { flagStorage(); return null; } }
 /** @param {string} k @param {string} v @returns {boolean} */ function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
 /** @param {string} k @returns {boolean} */ function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } }
-// ===== DEVICE PROFILE (Beta 1.230, Andrew) =====
-// Andrew opened the beta on his Pixel 7 and found one set of settings serving
-// every phone: marking a side green took about a second there while the
-// iPhone's stronger chip hides the same cost. The profile grades THIS device
-// by MEASURED render speed - never by model name (UA model strings lie, and
-// the core/RAM hints are coarse and Chromium-only) - and, ON ANDROID ONLY,
-// trades canvas resolution for speed when the measurements prove the device
-// needs it. The one knob is the map canvas pixel ratio: the round's
-// measurement (Pixel-class profile, throttled CPU, software GL) put a mark's
-// repaint at ~3.1s of a ~7.6s mark-to-painted at ratio 2, falling to ~1.7s of
-// ~4.5s at 1.25 - the ratio is the lever with a measured effect; the engine's
-// per-mark geometry rebuild is shared, junction-correct machinery and is NOT
-// forked per platform. Tiers: 0 full (ratio 2, today's exact behaviour),
-// 1 mid (1.5), 2 low (1.25).
-// TOTAL SEPARATION (Andrew, locked): the Android machinery - the fit rules
-// (head.html's html.android rule, syncViewport's Android anchor in app4), the
-// grading application, the reduced settings - activates ONLY on Android. On
-// iPhone it does not run at all: dpBoot returns before the Android branch is
-// entered (DP.entered stays false), no class is set, no sampler runs, no
-// listener is attached, and dpPixelRatio() answers the literal 2 the map
-// constructor always used. The grading machinery below the gate is
-// platform-neutral code; everything it can CHANGE sits behind the gate.
-// ANDREW'S EIGHT GRADING RULES, as built: (1) never a single measurement -
-// the boot grade is the MEDIAN of at least 24 work frames, session grades
-// are medians of the last 72; (2) the sampler times real work for the whole
-// session - the grade is a living estimate, not a boot verdict; (3) a
-// session change needs SUSTAINED evidence - two consecutive agreeing
-// evaluations over full windows - plus a 45s minimum dwell between applied
-// changes, so the tier cannot flap, and a pending upgrade is held to the
-// latest verdict - an evaluation that stops supporting it cancels it, to be
-// re-earned, never landed on stale measurements; (4) the default is FULL quality and the
-// burden of proof is on slowness (the grade thresholds sit far past smooth:
-// a window's median frame must exceed 26ms to leave full, 45ms to reach
-// low); (5) the grade recovers when the phone recovers - an earned upgrade
-// applies LIVE through map.setPixelRatio, no reload; (6) the stored record
-// is only the starting hint - the fresh boot median judges the session
-// within the first minute, and the record follows the session's sustained
-// verdicts in both directions (a slowdown writes it at once under rule 8;
-// a recovery, or sustained agreement with the applied tier, rewrites it
-// once two consecutive evaluations agree), so a launch never inherits a
-// grade the last session already disproved; (7) NO VISIBLE FLIPS - an earned
-// change applies only when the map is fully idle (not moving, no pointer
-// down, 600ms quiet since the last touch, no keyboard up), never
-// mid-gesture or mid-mark; (8) UPGRADES ONLY MID-SESSION - live re-grading
-// can only RAISE the tier during a session; a downgrade is written to the
-// stored record and takes effect at the NEXT launch, judged there by the
-// cold phone's fresh median together with the record (the boot grade may
-// apply in either direction, inside its first-minute window, before work
-// starts - after that window a pending downgrade is dropped, never
-// applied late).
+// ===== DEVICE PROFILE ===== Android only, graded by measured speed; on iPhone this machinery never runs at all
 const DP_PLATFORM = (() => { try { const ua = (window.navigator && navigator.userAgent) || ''; if (/Android/i.test(ua)) return 'android'; if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'; if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return 'ios'; return 'other'; } catch (e) { return 'other'; } })(); // iPadOS asks for the desktop UA - a 'Macintosh' agent with a multi-touch screen is an iPad, never an Android
 const DP_ANDROID = DP_PLATFORM === 'android';
 const DP_TIERS = [{ pr: 2 }, { pr: 1.5 }, { pr: 1.25 }]; // the closed knob list: canvas pixel ratio per tier (0 full / 1 mid / 2 low)
 const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1, bootGrade: -1, booted: false, bootApplyUntil: 0, pending: -1, lastEvalTier: -1, agree: 0, lastApplyAt: 0, lastInteractAt: 0, pointerDown: false, renderSeen: false, hooked: false, samples: [] };
-/** @returns {number} */ function dpPixelRatio() { return DP_ANDROID ? DP_TIERS[DP.tier].pr : 2; } // the map constructor's ratio: on Android the applied tier's, everywhere else the literal 2 the constructor carried through 1.229 (drive131's W1 reads it live)
+// the constructor's ratio: on Android the applied tier's, everywhere else the literal 2
+/** @returns {number} */ function dpPixelRatio() { return DP_ANDROID ? DP_TIERS[DP.tier].pr : 2; }
 /** @param {number[]} a @returns {number} */ function dpMedian(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
 /** @param {number} ms @returns {number} */ function dpGradeOf(ms) { return ms <= 26 ? 0 : (ms <= 45 ? 1 : 2); } // median work-frame ms -> tier: full holds ~38fps+ through real render work; past 45ms the full-quality canvas is the strain the Pixel showed
 /** @param {number} t @returns {void} */ function dpWriteStore(t) { if (DP.stored === t) return; try { if (lsSet(LS_GLOBAL.dp, JSON.stringify({ t, at: Date.now() }))) DP.stored = t; } catch (e) { /* the hint is a cache of a measurement - a failed write costs nothing, the next evaluation rewrites it */ } } // Beta 1.254 (N-02): DP.stored advances ONLY on a successful write - through 1.253 it was set before lsSet ran, and lsSet reports failure by returning false rather than throwing, so one failed write marked the tier stored forever and suppressed every retry the catch comment promised
-/** @returns {void} */ function dpBootGrade() { // the launch judgment (rules 1 + 6): the fresh median of the boot's first draws grades the session; the stored hint only chose the starting tier while these frames accumulated
+// the judgment: the fresh median of first draws grades the session; the hint only chose the starting tier
+/** @returns {void} */ function dpBootGrade() {
   DP.booted = true;
   const g = dpGradeOf(dpMedian(DP.samples));
   DP.bootGrade = g;
   dpWriteStore(g);
-  if (g !== DP.tier) DP.pending = g; // either direction - this is the launch judging, before work starts; dpTryApply lands it at the first idle inside the window
+  if (g !== DP.tier) DP.pending = g; // either direction (launch judging, before work starts): dpTryApply lands it at the idle in the window
 }
 /** @returns {void} */ function dpEvaluate() { // a session evaluation over the living window (rules 2 + 3 + 8)
   const w = DP.samples.slice(-72); if (w.length < 36) return;
   const cand = dpGradeOf(dpMedian(w));
-  if (DP.pending >= 0 && DP.pending < DP.tier && cand > DP.pending) DP.pending = -1; // a pending upgrade lives only while the latest verdict supports it: an evaluation that stops supporting it cancels it (to be re-earned below), so an earned upgrade blocked by a gesture or the dwell can never land later on stale measurements
+  if (DP.pending >= 0 && DP.pending < DP.tier && cand > DP.pending) DP.pending = -1; // a pending upgrade lives only while the latest verdict supports it: losing support cancels it, to be re-earned
   if (cand < DP.tier) { // faster than the applied tier: two consecutive agreeing evaluations earn the upgrade (applied at idle by dpTryApply)
     if (DP.pending > DP.tier) DP.pending = -1; // fresh evidence acquits a pending boot downgrade
     if (DP.lastEvalTier === cand) DP.agree++; else { DP.lastEvalTier = cand; DP.agree = 1; }
     if (DP.agree >= 2) DP.pending = cand;
-    if (DP.agree >= 2) dpWriteStore(cand); // the same sustained verdict refreshes the stored record: a session that recovered does not hand the next launch the stale slower hint it already disproved
+    if (DP.agree >= 2) dpWriteStore(cand); // the same verdict refreshes the record: a recovered session never hands the next launch a disproved hint
   } else if (cand > DP.tier) { // slower: NEVER applied this session (rule 8) - the stored record carries it to the next launch's judgment
     DP.lastEvalTier = cand; DP.agree = 0; if (DP.pending < 0 || DP.pending >= DP.tier) DP.pending = -1;
     dpWriteStore(cand);
   } else { // evidence matches the applied tier: a pending boot downgrade is acquitted, and the agreement count runs on this candidate too
     if (DP.lastEvalTier === cand) DP.agree++; else { DP.lastEvalTier = cand; DP.agree = 1; }
     if (DP.pending > DP.tier) DP.pending = -1;
-    if (DP.agree >= 2) dpWriteStore(cand); // sustained agreement with the applied tier also rewrites a stale slower record (the session that slowed, stored low, then recovered to its own tier)
+    if (DP.agree >= 2) dpWriteStore(cand); // sustained agreement with the applied tier also rewrites a stale slower record
   }
 }
-/** @returns {void} */ function dpTryApply() { // lands a pending tier, only at a fully idle moment (rule 7), inside its direction's window (rule 8), past the dwell (rule 3)
+// lands a pending tier only at a fully idle moment, inside its direction's window, past the dwell
+/** @returns {void} */ function dpTryApply() {
   if (DP.pending < 0) return;
   if (DP.pending === DP.tier) { DP.pending = -1; return; }
   const now = Date.now();
@@ -248,7 +176,8 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
   DP.tier = DP.pending; DP.pending = -1; DP.lastApplyAt = now;
   try { if (typeof map !== 'undefined' && map && typeof map.setPixelRatio === 'function') map.setPixelRatio(DP_TIERS[DP.tier].pr); } catch (e) { /* a map without the setter keeps the constructor's ratio; the tier still governs the next map built */ }
 }
-/** @returns {void} */ function dpSamplerStart() { // times REAL work only: a frame counts when the map rendered since the last frame or is moving - an idle screen earns no samples and can neither convict nor acquit
+// real work only: a frame counts when the map rendered or is moving; idle screens earn no samples
+/** @returns {void} */ function dpSamplerStart() {
   let last = performance.now(), sinceEval = 0;
   const frame = now => {
     requestAnimationFrame(frame);
@@ -256,7 +185,7 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
     if (document.hidden) return;
     let work = DP.renderSeen; DP.renderSeen = false;
     try { if (typeof map !== 'undefined' && map) { if (!DP.hooked) { DP.hooked = true; map.on('render', () => { DP.renderSeen = true; }); } if (map.isMoving()) work = true; } } catch (e) { /* the map is not up yet - frames before it exists are not work samples */ }
-    if (!work || !(dt > 0) || dt > 1000) return; // a >1s frame is a stall or a tab switch, not a speed sample - it must not convict the device alone. The cap stands at 1s, not lower: the devices this profile exists for render their honest work frames in the hundreds of ms (the round's throttled QA starved its own boot grade at a 250ms cap - every boot frame was discarded as a 'stall' and the grade never landed), and hidden tabs are already excluded by the document.hidden check above
+    if (!work || !(dt > 0) || dt > 1000) return; // a >1 s frame is a stall or tab switch, not a sample: it never convicts a device alone
     DP.samples.push(dt); if (DP.samples.length > 240) DP.samples.splice(0, DP.samples.length - 240);
     sinceEval++;
     if (!DP.booted) { if (DP.samples.length >= 24) dpBootGrade(); }
@@ -265,7 +194,7 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
   requestAnimationFrame(frame);
 }
 /** @returns {void} */ function dpBoot() {
-  window.__dp = DP; // the diagnostic handle: the QA profiles and drives read the profile's state here (entered / tier / samples), the same way they read the app's other live state
+  window.__dp = DP; // the diagnostic handle: QA and drives read the profile's state here (entered / tier / samples)
   if (!DP_ANDROID) return; // TOTAL SEPARATION: off Android the branch is never entered - no class, no sampler, no listeners, no stored hint read
   DP.entered = true;
   document.documentElement.classList.add('android'); // the fit rules' gate (head.html): the class exists only where the Android branch ran
@@ -281,41 +210,12 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
   setInterval(dpTryApply, 500);
 }
 dpBoot();
-const RAW_READ_FAILED = {}; // Beta 1.136 (programme F): rawRead's failure sentinel - a unique object no stored value can equal, so a THROWN read is distinguishable from an absent key (getItem's null), which lsGet deliberately cannot tell apart
+const RAW_READ_FAILED = {}; // rawRead's failure sentinel: a unique object no stored value can equal - a thrown read, distinguishable from absence
 /** @param {string} k @returns {string | Object | null} */ function rawRead(k) { try { return localStorage.getItem(k); } catch (e) { return RAW_READ_FAILED; } } // Beta 1.136 (programme F): the ONE raw storage read for the backup paths - they read RAW by design (Beta 1.48, audit B04) and each caller keeps its own failure mode against the sentinel: the strict export aborts (null/undefined), the recovery export skips the field, the restore stops before writing // Beta 1.63 (audit F03): deletions report like writes - a failed removeItem used to be invisible while saveStart claimed success
-// Storage outcomes (Beta 1.101, architecture Phase 3 / C2): every save-family function
-// returns ONE shape - { ok, failedKey, retryPending } - so no caller ever has to guess
-// what a save did. failedKey names the first record that failed (null on success);
-// retryPending says a retry is armed in the dirty machinery. The raw layer below this
-// contract stays primitive (lsSet/lsDel report a boolean, lsGet returns null); the
-// contract lives in the save family (saveAll, saveStart, saveSnap, saveTrail, saveSess)
-// and everything above it. Storage code never speaks to the user - messaging belongs
-// to the app layer (saveAllWarned in app2).
+// every save-family function returns one shape { ok, failedKey, retryPending }; storage code never speaks to the user
 /** @returns {StorageOutcome} */ function storeOk() { return { ok: true, failedKey: null, retryPending: false }; }
 /** @param {string | null} failedKey @param {boolean} [retryPending] @returns {StorageOutcome} */ function storeFail(failedKey, retryPending) { return { ok: false, failedKey: failedKey || null, retryPending: !!retryPending }; }
-// Verified writes + the transaction coordinator (Beta 1.102, architecture Phase 4 / C3).
-// txSet/txDel are the ONLY verified-write shapes: a write earns trust by reading back
-// (a delete by reading back absent). runTx runs a step list - { name, write, undo },
-// each returning a Phase 3 result - in order; the first failing write stops the
-// transaction and every completed step is undone in REVERSE order, each undo attempted
-// even if an earlier undo fails. Outcome: 'committed', 'rolled-back', or 'degraded'
-// (a rollback step itself failed - the stored records may disagree, which is the one
-// outcome that changes what the user must be told). The flows (finishRun,
-// restoreBackup) keep their own message texts and select them from (outcome,
-// failedStep) exactly as they selected them from their hand-built gates before.
-// Beta 1.141 (Package A, DA-03): a failed verification is two different events and
-// the result now says which - failKind 'write' (the lsSet/lsDel call itself failed:
-// the write provably never landed, so the step's prior state stands untouched) vs
-// 'verify' (the write returned success but the read-back disagreed: the write may
-// have landed, so the state is unknown until restored). runTx therefore undoes the
-// FAILING step too - first, as the newest write - and verifies that undo like any
-// other; a failing step whose undo cannot be verified makes the outcome 'degraded',
-// never a clean 'rolled-back'. The one exception is a 'write'-kind failure: nothing
-// landed, there is nothing to undo, and an undo write against the same failing
-// storage would only muddy the verdict. A failure carrying no failKind (a
-// hand-built step) is treated as 'verify' - fail-safe. runTx's result carries the
-// failing write's failKind alongside failedStep. Fixture-proven in
-// tests/browser/selftest-tx.mjs, including the landed-write/lying-read-back shape.
+// trust is earned by read-back; runTx undoes in reverse, the failing step first (unless 'write'-kind)
 /** @param {string} key @param {string} value @returns {TxStorageOutcome} */ function txSet(key, value) { if (!lsSet(key, value)) return Object.assign(storeFail(key, true), { failKind: 'write' }); return lsGet(key) === value ? storeOk() : Object.assign(storeFail(key, true), { failKind: 'verify' }); }
 /** @param {string} key @returns {TxStorageOutcome} */ function txDel(key) { if (!lsDel(key)) return Object.assign(storeFail(key, true), { failKind: 'write' }); return rawRead(key) === null ? storeOk() : Object.assign(storeFail(key, true), { failKind: 'verify' }); } // Beta 1.141 verify cycle 1: a delete verifies through rawRead, never lsGet - lsGet reads a THROWN read as absent, so an unverifiable delete could claim success; through rawRead the thrown read is the RAW_READ_FAILED sentinel, a 'verify' failure like any other disagreement
 /** @param {TxStep[]} steps @returns {TxOutcome} */ function runTx(steps) {
@@ -334,20 +234,7 @@ const RAW_READ_FAILED = {}; // Beta 1.136 (programme F): rawRead's failure senti
 }
 /** @param {number} startMs @param {number} lastStartedMs @param {boolean} boardEmpty @returns {string} */ function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startMs || !lastStartedMs || startMs !== lastStartedMs) return 'none'; return boardEmpty ? 'complete' : 'rollback'; } /** @param {HistoryEntry} entry @param {PiecesMap} P @param {PieceTimesMap} T @param {string[]} names @returns {boolean} */ function finishBoardMatch(entry, P, T, names) { if (!entry || !entry.sides || typeof entry.sides !== 'object' || !entry.sides.p || typeof entry.sides.p !== 'object') return false; const EP = entry.sides.p, ET = entry.sides.t && typeof entry.sides.t === 'object' ? entry.sides.t : {}; for (const n of names) { const ep = EP[n], cp = P[n]; if (!Array.isArray(ep) || !Array.isArray(cp) || ep.length !== cp.length) return false; for (let i = 0; i < ep.length; i++) if (ep[i] !== cp[i]) return false; const et = Array.isArray(ET[n]) ? ET[n] : [], ct = T && Array.isArray(T[n]) ? T[n] : [], lim = Math.max(et.length, ct.length); for (let i = 0; i < lim; i++) { const a = Array.isArray(et[i]) ? et[i] : null, b = Array.isArray(ct[i]) ? ct[i] : null; if ((a ? a[0] || null : null) !== (b ? b[0] || null : null) || (a ? a[1] || null : null) !== (b ? b[1] || null : null)) return false; } } return true; } /** @param {number | null} markerRun @param {number} markerAt @param {number} lastRunId @param {boolean} boardEmpty @param {boolean} boardMatch @returns {string} */ function finishReconcileNoRunAction(markerRun, markerAt, lastRunId, boardEmpty, boardMatch) { if (markerRun !== 0 || !markerAt || !lastRunId || markerAt !== lastRunId || boardEmpty || !boardMatch) return 'none'; return 'rollback'; } // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.104 (round 103, CG-103-02): the second argument is the newest archive entry's run identity (its runId), NOT its startedAt - strict equality on the identity is the whole contract // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.146 (census C1): the no-run reconciliation's exactness witness - the loaded board still equals the archive entry's own snapshot (entry.sides, buildSnap's deep copy of pieces/pieceTimes) exactly: pieces elementwise, stamp pairs normalized to [string|null, string|null] so the loader's sanitize round-trip (sparse holes and JSON nulls both read as null) cannot false-mismatch. Any doubt reads as NO match (fail-closed: nothing is removed). // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.146 (census C1): the NO-RUN interrupted finish's signature - the finclean marker of a run-less finish (run: 0, at: the finish time) and the newest entry's runId carrying that same at (finishRun stamps it), the board still holding the archived work exactly. An empty board means the finish completed (the entry stands; completeFinishCleanup owns the marker); anything missing or mismatched means nothing happens.
 /** @param {string | null} raw @param {*} fb @returns {*} */ function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
-// ===== SETTINGS (Beta 1.111, settings redesign) =====
-// One GLOBAL key, additive - no existing data migrates and nothing else reads
-// it. It holds the Settings redesign's PERSISTENT device-behaviour toggles
-// (vibration, chime on/off, chime sound). Defaults: ALL toggles OFF (features
-// that change device behaviour - vibration, sound - start off until Andrew
-// flips them; the approved mockups showed switches ON as state examples,
-// not default decisions); only the chime's sound pick defaults, to Two-Tone.
-// A corrupt or partial stored value falls back per-field to the defaults.
-// Beta 1.112 (Andrew): 'awake' (Keep screen awake) is NOT persistent - it is
-// session-only in-memory state, always OFF at a cold open, and it is
-// deliberately absent from the stored record and from SETTINGS_DEF; a 1.111
-// record that still carries an awake field is simply never read for it, and
-// saveSettings never writes it. Documented in docs/STORAGE-SCHEMA.md
-// (DEVELOPMENT_RULES section 4).
+// ===== SETTINGS ===== one global key; persistent toggles default ALL OFF (device behaviour starts off until flipped)
 const SETTINGS_KEY = 'snowroute.v2.settings';
 const CHIME_KEYS = ['bell', 'two', 'rising', 'pop', 'melody'];
 const SETTINGS_DEF = { vib: false, chime: false, chimeSound: 'two' };
@@ -359,17 +246,19 @@ const SETTINGS_DEF = { vib: false, chime: false, chimeSound: 'two' };
     if (typeof raw.chime === 'boolean') s.chime = raw.chime;
     if (CHIME_KEYS.indexOf(raw.chimeSound) >= 0) s.chimeSound = raw.chimeSound;
   }
-  s.awake = false; // Beta 1.112 (Andrew): screen-awake is SESSION-ONLY - forced OFF at every load, whatever any stored record says; the On-the-job toggle flips this in-memory field for the session only
+  s.awake = false; // screen-awake is session-only: forced off at load whatever the record says; the toggle flips memory only
   return s;
 }
 let settings = loadSettings();
-/** @returns {boolean} */ function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound })); } // only the persistent three - settings.awake is never written (Beta 1.112)
+// only the persistent three: settings.awake is never written
+/** @returns {boolean} */ function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound })); }
 // Tap guard — 400 ms per control
 const tapLast = {};
 /** @param {string} key @param {{ timeStamp: number }} ev @returns {boolean} */ function tapGuard(key, ev) { const timestamp = ev.timeStamp; if (tapLast[key] !== undefined && timestamp - tapLast[key] < 400) return false; tapLast[key] = timestamp; return true; }
 
 // ===== STRETCHES — stitch each street, cut at junctions (checklist SS1) =====
-/** @param {string} name @param {RoadsMap} [roads] @returns {LatLng[][]} */ function stitchRuns(name, roads) { // Beta 1.144 (Package C, DA-02/C1): a street's segments chained into their CONNECTED RUNS - the pre-1.144 stitchLine growth (exact endpoint equality, same scan order, same concat operations) repeated per component, so a street whose segments form several disconnected runs (non-adjacent sector picks at create; genuinely split streets) keeps EVERY run instead of only the one connected to segment 0. Run 1 is byte-identical to the old stitchLine output for any street; a fully connected street has exactly one run and nothing changes anywhere.
+// segments chained into connected runs: a street with several runs keeps EVERY run, not only segment 0's
+/** @param {string} name @param {RoadsMap} [roads] @returns {LatLng[][]} */ function stitchRuns(name, roads) {
   const segs = (roads || ROADS)[name].map(s => s.slice());
   const used = new Array(segs.length).fill(false);
   /** @type {(p: LatLng, q: LatLng) => boolean} */ const eq = (p, q) => p[0] === q[0] && p[1] === q[1];
@@ -424,9 +313,11 @@ const tapLast = {};
   for (let i = 1; i < bounds.length; i++) parts.push(sliceLine(line, cum, bounds[i - 1], bounds[i]));
   return parts;
 }
-/** @type {StretchMap} */ const STRETCH = Object.create(null); // Beta 1.254 (O-02): null-prototype like ROADS - buildGeometry refills it by Object.assign from street-name keys
-/** @param {RoadsMap} roads @returns {StretchMap} */ function computeStretches(roads) { // Beta 1.117: the stretch builder as a PURE function of a roads object - the pre-1.117 eval-time IIFE, parameterized. buildGeometry fills the live STRETCH from it on every load; backup/restore (app4's packGeometry) builds a non-active pack's geometry from it without touching the live one (F6). Beta 1.144 (Package C, DA-02/C1): the builder runs PER RUN (stitchRuns) - each run is cut at the junctions ITS OWN line meets (other streets' vertices from ALL their runs; a street never cuts itself), the street's parts are the runs' parts concatenated in run order, and total is the SUM over runs, so a disconnected street is tracked whole: marking, totals and pace all see every metre that was saved. line/cum keep the first run (the principal line) for the readers that need a single line (fly-to centres); runs carries {line, cum, total, parts} per run for the consumers that must see them all (coverage samples, the paint engine). For a single-run street every field is exactly the pre-1.144 value.
-  /** @type {StretchMap} */ const out = Object.create(null); // Beta 1.254 (O-02): name-keyed by assignment - a plain object would swallow a '__proto__' street into its prototype and read totals back off Object.prototype
+/** @type {StretchMap} */ const STRETCH = Object.create(null); // null-prototype like ROADS: buildGeometry refills it by Object.assign from street-name keys
+// the stretch builder: pure, per-run - a disconnected street is tracked whole by marking, totals and pace
+/** @param {RoadsMap} roads @returns {StretchMap} */ function computeStretches(roads) {
+  // name-keyed by assignment: a plain object swallows a '__proto__' street into its prototype
+  /** @type {StretchMap} */ const out = Object.create(null);
   const runsOf = Object.create(null), totals = Object.create(null);
   for (const n of Object.keys(roads)) {
     const runs = stitchRuns(n, roads).map(L => { const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i])); return { line: L, cum, total: cum[cum.length - 1], parts: null }; });
@@ -437,7 +328,7 @@ const tapLast = {};
     const parts = [];
     for (const run of runsOf[n]) {
       const cuts = [];
-      // Beta 1.152 (NV round, NV2): bounding-box prefilter, mirroring crStreetParts (create-pick.js). A foreign vertex outside this run's bbox grown by the margin projects more than 4 m from every segment of the run - the bbox uses the same flat-earth axes as projOnLine's metre space, and the margin is the same 12 m crStreetParts uses - so skipping it cannot change the cuts, and finishJunctionCuts sorts the survivors: the output is identical (parity pinned by selftest-nv1152 digests). Without it this loop is the full street-x-vertex cross product (490,000 projections measured on a 50-street x 200-point grid, 5.2 s).
+      // bbox prefilter: a vertex outside the box is >4 m from every segment, so skipping changes no cuts
       let bw = Infinity, bs = Infinity, be = -Infinity, bn = -Infinity;
       for (const p of run.line) { if (p[0] < bs) bs = p[0]; if (p[0] > bn) bn = p[0]; if (p[1] < bw) bw = p[1]; if (p[1] > be) be = p[1]; }
       const mLat = 12 / MLAT, mLng = 12 / MLNG;
@@ -453,7 +344,8 @@ const tapLast = {};
   }
   return out;
 }
-/** @param {RoadsMap} roads @returns {RouteBox | null} */ function computeRouteBox(roads) { // the roads' bounding box, or null for an empty pack (no route baked in: pre-load there is no box at all)
+// the roads' bounding box, or null for an empty pack (pre-load there is no box at all)
+/** @param {RoadsMap} roads @returns {RouteBox | null} */ function computeRouteBox(roads) {
   let w = 1e9, s = 1e9, e = -1e9, n = -1e9, any = false;
   for (const nm of Object.keys(roads)) for (const seg of roads[nm]) for (const p of seg) { any = true; w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); }
   return any ? { w, s, e, n } : null;
@@ -463,13 +355,14 @@ const names = STREETNAMES; // the paint engine's name for the street list
 
 // ===== STATE =====
 const STREETSET = new Set();
-/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) { // Beta 1.117 (F1): ALL route geometry is (re)built HERE, per load, from the pack - nothing route-shaped is computed at script eval any more. The live containers (ROADS/REFERENCE/STRETCH/STREETNAMES/STREETSET/PRIMARIES/SPOT, app2's routeBox, app3's SAMPLES) are refilled IN PLACE, never rebound, so references captured earlier (GL_HOST's plain entries above all) stay valid. Runs BEFORE loadRouteState: the state sanitizers filter against this geometry. buildSamples (app3) and the paint engine's rebuild (GLP.rebuildRoute, called by loadRoute) complete the per-load rebuild.
+// geometry rebuilds here per load: containers refill in place (references stay valid); runs before loadRouteState
+/** @param {RoutePack} pack @returns {void} */ function buildGeometry(pack) {
   const roads = (pack && pack.roads) || {}, reference = (pack && pack.reference) || {};
   for (const k of Object.keys(ROADS)) delete ROADS[k]; Object.assign(ROADS, roads);
   for (const k of Object.keys(REFERENCE)) delete REFERENCE[k]; Object.assign(REFERENCE, reference);
   const built = computeStretches(ROADS);
   for (const k of Object.keys(STRETCH)) delete STRETCH[k]; Object.assign(STRETCH, built);
-  const endsIn = (pack && pack.ends) || {}; // Beta 1.259: the pack's boundary-end records ride onto the stretch table the paint engine reads (H.STRETCH) - a street with no boundary ends simply has no ends entry, and the engine treats every end as a natural end
+  const endsIn = (pack && pack.ends) || {}; // boundary ends ride onto the stretch table: a street with none has no entry, every end natural
   for (const n of Object.keys(endsIn)) if (STRETCH[n] && Array.isArray(endsIn[n]) && endsIn[n].length) STRETCH[n].ends = endsIn[n];
   STREETNAMES.length = 0; for (const n of Object.keys(ROADS)) STREETNAMES.push(n);
   STREETSET.clear(); for (const n of STREETNAMES) STREETSET.add(n);
@@ -479,21 +372,17 @@ const STREETSET = new Set();
   routeBox = computeRouteBox(ROADS);
   buildSamples();
 }
-// Beta 1.76: state loads when a route is CHOSEN, not at script eval - before
-// that, the globals below sit at their empty defaults and nothing route-shaped
-// is read, drawn, or offered. loadRoute (app4) resolves the pack, this loads
-// its slot. The load body is the pre-1.76 eval-time block VERBATIM (same
-// sanitizers, same order), wrapped.
+// state loads at pick time, not eval: before, nothing route-shaped is read, drawn or offered
 let doneSet = new Set(), doneTimes = {}, doneVia = {}, notes = {}, history = [], runStart = 0, trail = [], trailSessions = [], coveredIdx = {}, pieces = {}, pieceTimes = {};
-const HIST = { // Beta 1.272 (architecture programme #2): the history repository - the ONE owner of the clean-history record's load, projection, append, delete, identified-finish rollback and serialisation. The `history` binding above stays the public view (the projection every reader consumes); the A-05 raw/view correspondence below is private to this object, and every writer persists through it - no caller hand-builds the merge or touches the snapshot again. The A-04/A-05/B1 semantics are moved, not reinterpreted; their comments ride with the code.
-  _rawList: null, _rawView: null, // 2026-11-15 (denylist fix round, A-05): the load-time history snapshot - _rawList is the raw stored array (the second parse in loadFrom), _rawView runs parallel to it: the view entry each raw entry produced at load, or null when the sanitizer dropped it. Writers persist forWrite(...), never the bare view: a load-time strip is a view, never a write (the rule dropPhantom honours for its rollback write).
-  /** @param {string} text @returns {HistoryEntry[]} */ loadFrom(text) { // the load half: parses the stored text TWICE (Beta 1.170, Carbon fix round Phase 2, A-04: the sanitizer below mutates the surviving entries in place, so the reconciliation at the end of the load needs its own untouched copy of the stored array - the raw parse returned here), sanitizes into the view, and records the A-05 snapshot as it goes
+const HIST = { // the history repository: the one owner of the record's load, projection, append, delete, rollback and serialisation
+  _rawList: null, _rawView: null, // snapshot: _rawList the raw array, _rawView[i] its view entry or null; writers persist forWrite(...), never the view
+  // the load parses the text twice (the sanitizer mutates survivors): sanitizes into the view, records the snapshot
+  /** @param {string} text @returns {HistoryEntry[]} */ loadFrom(text) {
     const parsed = parseJ(text, []);
     const raw = parseJ(text, []);
-    // History (production): chronological (oldest first); items is a street->time MAP (legacy array entries migrate to it).
-    // Sanitized at load: real entries only, real streets only, times null or parseable - anything else is dropped, never crashes.
+    // chronological (oldest first); items is a street->time map; sanitized at load: real entries/streets only, rest dropped
     const list = Array.isArray(parsed) ? parsed : [];
-    // 2026-11-15 (A-05): the sanitizer runs as ONE indexed pass over the parsed array - the same predicates and the same items rewrite as the filter/map/filter it replaces, in the same order - and records the A-05 snapshot as it goes: _rawList is the raw parse (the same text parsed twice, so index i is the same entry in both), _rawView[i] is the view entry raw entry i produced, or null when the pass dropped it. The view the user works with is unchanged; the snapshot is what lets the writers keep the strip a view (forWrite).
+    // one indexed pass (same predicates, same order) recording the snapshot as it goes
     this._rawList = Array.isArray(raw) ? raw : [];
     this._rawView = [];
     const _view = [];
@@ -510,35 +399,42 @@ const HIST = { // Beta 1.272 (architecture programme #2): the history repository
       if (v) _view.push(v);
     }
     history = _view;
-    // Beta 1.167 (B1): NO load cap (through 1.166 this line trimmed a planted oversize history to the writers' 10 with the linear capHistoryList). History is retained whole now; the sanitizer above is linear in the stored size, so a planted oversize array costs one linear pass and is bounded by the storage quota itself - and the quadratic trim such an array used to threaten no longer exists (appended).
+    // no cap: history is retained whole, and the sanitizer is linear, so an oversize array costs one pass
     return raw;
   },
   /** @returns {HistoryEntry[]} */ rawList() { return Array.isArray(this._rawList) ? this._rawList : []; }, // the raw parse reconcileInterruptedFinish judges (A-04) - the same array loadFrom returned
-  /** @param {HistoryEntry[]} list @returns {HistoryEntry[]} */ forWrite(list) { // 2026-11-15 (A-05): the array a history writer may persist. Raw entries the sanitizer dropped ride back verbatim (invisible in the view, undeletable from it, still storage's); surviving entries are written in their RAW form - entries are never mutated after load (deletes splice the array, finishes append), so raw is the stored truth and the strip never becomes permanent; entries appended since load ride at the end, in view order. A surviving entry missing from `list` was deleted by the user this session and stays deleted. No snapshot (no load ran for this slot, or the route was unloaded): the list is the whole truth and is written as-is.
+  // what writers persist: dropped raw entries ride back verbatim (a strip is a view, never a write)
+  /** @param {HistoryEntry[]} list @returns {HistoryEntry[]} */ forWrite(list) {
     if (!this._rawList || !this._rawView) return list;
     const alive = new Set(list); const seen = new Set(); const out = [];
     for (let i = 0; i < this._rawList.length; i++) { const v = this._rawView[i]; if (v == null) { out.push(this._rawList[i]); continue; } seen.add(v); if (alive.has(v)) out.push(this._rawList[i]); }
     for (const h of list) if (!seen.has(h)) out.push(h);
     return out;
   },
-  /** @param {HistoryEntry[]} [list] @returns {string} */ serialise(list) { return JSON.stringify(this.forWrite(list === undefined ? history : list)); }, // the one serialised form every history writer persists (the finish archive + its undo, the recovery export, the ordinary save, the delete save)
-  /** @returns {boolean} */ save() { return lsSet(LS.hist, this.serialise()); }, // Beta 1.63 (audit F04): the delete-clean handler branches on this. Beta 1.167 (B1): no trim on the way out - history is written whole, however long it grows
-  /** @param {HistoryEntry} entry @returns {HistoryEntry[]} */ appended(entry) { return [...history, entry]; }, // Beta 1.167 (run/pace fix round, B1 - Andrew's requirement, run/pace audit RP-03/RP-01): THE HISTORY CAP IS GONE. Through 1.166 the archive was capped at 10 cleans per route - trimHistory (save), trimHistoryForFinish (finish) and capHistoryList (load + app4's restore) enforced one eviction rule (oldest non-full first, else oldest overall) at four points, and clean #11 silently erased an older clean; an interrupted finish at the cap could lose the evicted clean for good even though the finish itself rolled back. All four points are retired together: this append never drops, save writes history whole, loadFrom above keeps everything its (linear) sanitizer passes, and app4's pushField stores a backup's history whole. The 1.152 NV round's crafted-oversize protection (NV4) is re-homed, not lost: the quadratic trim it defended against no longer exists, every remaining history consumer is linear (the load sanitizer, the save stringify, the pace render, the backup scan), and an oversize planted value is bounded by localStorage's own quota and the restore's verified write set. Retention is fixture-proven in tests/browser/selftest-history.mjs, the cap's absence in selftest-nv1152.mjs, and both at page level in drive177/drive186.
+  // the one serialised form every history writer persists
+  /** @param {HistoryEntry[]} [list] @returns {string} */ serialise(list) { return JSON.stringify(this.forWrite(list === undefined ? history : list)); },
+  // the delete handler branches on this; no trim on the way out: history writes whole
+  /** @returns {boolean} */ save() { return lsSet(LS.hist, this.serialise()); },
+  // the history cap is gone: appends never drop, saves write history whole, load keeps what its sanitizer passes
+  /** @param {HistoryEntry} entry @returns {HistoryEntry[]} */ appended(entry) { return [...history, entry]; },
   /** @param {number} i @returns {void} */ deleteAt(i) { history.splice(i, 1); }, // the delete-clean mutation (app3) - the save that persists it is the caller's (the handler branches on save()'s result)
   /** @param {HistoryEntry[]} list @returns {void} */ replaceView(list) { history = list; }, // the finish commit (app3): the transaction has already persisted this list through serialise; the view adopts it whole
   /** @param {*} sig @param {*} rawLast @param {*} last @param {number} lastMs @returns {boolean} */ dropPhantom(sig, rawLast, last, lastMs) { // reconcileInterruptedFinish's verified rollback, under the repository's roof: storage loses the signature entry only (when the signature came from the raw array, everything else storage holds stays byte-for-byte - a load-time strip is a view, never a write); memory drops the phantom too when the sanitized tail IS that entry (same run identity), and needs no drop when the sanitizer already removed it
     const rawList = this.rawList();
     const src = (sig === rawLast && rawLast !== null) ? rawList : history;
-    if (!txSet(LS.hist, JSON.stringify(src === rawList ? src.slice(0, -1) : this.forWrite(src.slice(0, -1)))).ok) return false; // Beta 1.250 (cross-audit fix round, N-03): the FALLBACK branch (raw tail not an entry object, so the signature stands in the sanitized view) writes the forWrite merge like every other history writer (A-05): the phantom, a surviving entry missing from the slice, stays deleted; the dropped raw entries ride back verbatim
-    if (src === rawList) { this._rawList.pop(); this._rawView.pop(); } // 2026-11-15 (A-05): the A-05 snapshot pops in step with the raw array this write just shortened, so a later ordinary save cannot resurrect the phantom from the snapshot
+    // the fallback branch writes the forWrite merge like every writer: the phantom stays deleted, dropped entries ride back
+    if (!txSet(LS.hist, JSON.stringify(src === rawList ? src.slice(0, -1) : this.forWrite(src.slice(0, -1)))).ok) return false;
+    if (src === rawList) { this._rawList.pop(); this._rawView.pop(); } // the snapshot pops with the shortened raw array, so a later save cannot resurrect the phantom
     if (last && last.runId && +last.runId === lastMs) history = history.slice(0, -1);
     return true;
   },
-  /** @returns {void} */ unload() { history = []; this._rawList = null; this._rawView = null; }, // 2026-11-15 (A-05): unloadRouteToBoot (app5) calls this when it empties the route state - the snapshot dies with the route it describes, and a stale one must never merge into another route's slot. A call, not a foreign write: app5 never assigns app1's bindings directly (the foreign-write census discipline).
+  // called at unload: the snapshot dies with its route and must never merge into another route's slot
+  /** @returns {void} */ unload() { history = []; this._rawList = null; this._rawView = null; },
 };
 /** @returns {StorageOutcome} */ function saveStart() { const ok = runStart ? lsSet(LS.start, String(runStart)) : lsDel(LS.start); if (ok) markClean('start'); else markDirty('start'); return ok ? storeOk() : storeFail('start', true); } // Beta 1.57: reports its result like every other write, for the saveAll contract. Beta 1.275 (architecture #3): the flag itself is PERSIST's now (below) - this writer arms/clears it through the doorway like every other file; its retry rationale (1.92 F05: a stale start key must never resurrect a finished run) lives in the PERSIST header
 /** @param {string} n @returns {boolean} */ function streetComplete(n) { const p = pieces[n]; if (!Array.isArray(p)) return doneSet.has(n); return p.every(v => v === 3); }
-/** @param {*} raw @param {number} count @returns {PieceTimePair[]} */ function sanitizePieceTimes(raw, count) { // Beta 1.64 (audit F07): only [stringOrNull, stringOrNull] pairs survive - a nested string used to reach applyPiece and throw under strict mode. Accepts the array shape the app writes and the numeric-keyed object a JSON round-trip of a sparse structure can produce. Beta 1.70 (audit A06): indexes are bounded by the street's real stretch count - a corrupt key like 10000 used to inflate a sparse array to that length (~50 KB of nulls per street, worse for larger keys).
+// only [stringOrNull, stringOrNull] pairs survive; indexes are bounded by the street's real stretch count
+/** @param {*} raw @param {number} count @returns {PieceTimePair[]} */ function sanitizePieceTimes(raw, count) {
   /** @type {(pr: *) => PieceTimePair} */ const pair = pr => Array.isArray(pr) ? [typeof pr[0] === 'string' ? pr[0] : null, typeof pr[1] === 'string' ? pr[1] : null] : [null, null];
   const lim = Number.isInteger(count) && count > 0 ? count : 0;
   const out = [];
@@ -548,20 +444,7 @@ const HIST = { // Beta 1.272 (architecture programme #2): the history repository
 }
 
 // ===== THE ROUTE BOARD MODULE (Arch-2, 2026-11-19) =====
-// The board (pieces, pieceTimes, doneSet, doneTimes, doneVia, coveredIdx -
-// declared above) has ONE owner: this module. Emptying, capture, restore,
-// serialise, load and the field rules live here and nowhere else; the other
-// parts call these operations instead of reassigning the bindings or
-// rebuilding the snapshot shape by hand (through Arch-1 the empty reset was
-// written out in five places, the snapshot literal in six, and the field
-// rules twice - as load repair below and as validateSnap's reject rules).
-// Two semantics stay DISTINCT by design, over one shared set of per-field
-// rules (sanitizePieceTimes, the 0..3 side clamp, the parseable-stamp
-// standard): load REPAIRS a stored board into the closest honest state;
-// validateSnap REJECTS a snapshot whole on any violation. Storage keys and
-// formats are untouched - every string this module produces is byte-identical
-// to the hand-built string it replaces.
-function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a persisted cancel snapshot is DATA FROM STORAGE, not trusted state - it earns application only by passing the same structural rules the loader enforces (every street present at its true stretch count, side values 0..3 only, stamp pairs of null-or-parseable strings, known street names everywhere, coverage indexes inside the street's samples). 1.94 checked only the stamp and the object-ness of two fields, then assigned the stored structures raw: an injected {Velmar:[99]} became the live board and was saved onward, destroying a valid mark. Any violation rejects the WHOLE snapshot (never a partial application); the caller falls back to the stamp journal. Returns a normalized deep copy, or null. Beta 1.117 (F6): the geometry it validates against is a parameter (G = {set, names, stretch, samples}) defaulting to the LIVE route's - backup/restore pass the TARGET pack's geometry (app4's packGeometry), so a snapshot belonging to a non-active route is judged by its own streets, not the open one's.
+function validateSnap(raw, expectAt, G) { // a cancel snapshot is untrusted: it applies by passing the loader's rules whole; any violation rejects it
   const set = G ? G.set : STREETSET, names = G ? G.names : STREETNAMES, stretch = G ? G.stretch : STRETCH, samples = G ? G.samples : SAMPLES;
   try {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -583,13 +466,14 @@ function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a
       pieces[n] = arr.slice();
       const tn = T[n];
       if (tn !== undefined && (!tn || typeof tn !== 'object')) return null; // a stamp record that is not a structure at all rejects the snapshot
-      pieceTimes[n] = sanitizePieceTimes(tn, stretch[n].parts.length); // the LOADER'S OWN sanitizer is the shape authority (it produces the array form the live state carries, accepting the numeric-keyed object form too) - the first 1.95 draft hand-rolled an object-only assumption and rejected every genuine snapshot; strictness lives in the structural checks around this call, not in a parallel shape
+      pieceTimes[n] = sanitizePieceTimes(tn, stretch[n].parts.length); // the loader's sanitizer is the shape authority: strictness lives in the checks around this call
     }
-    for (const n of names) { for (const pr of pieceTimes[n]) { if ((pr[0] !== null && isNaN(Date.parse(pr[0]))) || (pr[1] !== null && isNaN(Date.parse(pr[1])))) return null; } } // Beta 1.96 (SR-195-04): the sanitizer keeps any STRING stamp; the loader's standard for time values is a parseable date, so an unparseable stamp rejects the snapshot like an unparseable completion time below
+    // the sanitizer keeps any string stamp; the loader's standard is parseable, so an unparseable stamp rejects
+    for (const n of names) { for (const pr of pieceTimes[n]) { if ((pr[0] !== null && isNaN(Date.parse(pr[0]))) || (pr[1] !== null && isNaN(Date.parse(pr[1])))) return null; } }
     const done = [];
     for (const d of D) { if (typeof d !== 'string' || !set.has(d)) return null; if (!done.includes(d)) done.push(d); }
     const times = {}, via = {};
-    for (const k of Object.keys(TM)) { if (!set.has(k) || typeof TM[k] !== 'string' || isNaN(Date.parse(TM[k]))) return null; times[k] = TM[k]; } // Beta 1.96 (deep audit SR-195-04): the VALUE must be a real date too - the loader itself deletes completion times that fail Date.parse (app1), so a snapshot carrying one asserts a state the loader would not honour
+    for (const k of Object.keys(TM)) { if (!set.has(k) || typeof TM[k] !== 'string' || isNaN(Date.parse(TM[k]))) return null; times[k] = TM[k]; } // the value must be a real date too (the loader deletes times failing Date.parse)
     for (const k of Object.keys(V)) { if (!set.has(k) || typeof V[k] !== 'string') return null; via[k] = V[k]; }
     const cov = {};
     for (const k of Object.keys(C)) {
@@ -604,35 +488,43 @@ function validateSnap(raw, expectAt, G) { // Beta 1.95 (deep audit SR-194-03): a
 const BOARD = {
   /** @returns {{pieces: *, pieceTimes: *, doneSet: *, doneTimes: *, doneVia: *, coveredIdx: *}} */ state() { return { pieces, pieceTimes, doneSet, doneTimes, doneVia, coveredIdx }; }, // the live bindings as one object - GL_HOST's pieces getter reads through this, so the engine always sees the current binding after a restore or reset
   validate: validateSnap, // the reject-semantics entry, under the module's roof (the global function above keeps the drives' compatibility surface)
-  /** @returns {*} */ capture() { // the pre-Start snapshot (startClean, app3): pieces/pieceTimes/cov deep-copied, done array-copied, times/via shallow-copied - the copy depths are the semantics Cancel relies on, kept exactly
+  // the pre-Start snapshot (deep pieces/pieceTimes/cov, array done, shallow times/via): the copy depths are Cancel's semantics
+  /** @returns {*} */ capture() {
     return { pieces: JSON.parse(JSON.stringify(pieces)), pieceTimes: JSON.parse(JSON.stringify(pieceTimes)), done: [...doneSet], times: { ...doneTimes }, via: { ...doneVia }, cov: JSON.parse(JSON.stringify(coveredIdx)) };
   },
-  /** @param {*} snap @param {number} at @returns {*} */ snapshotObject(snap, at) { // the one snapshot-object shape ({at, pieces, pieceTimes, done, times, via, cov}, key order fixed): REFERENCES into the source, no copy - snapForExport and the backup builders return exactly this
+  // the one snapshot shape ({at, pieces, pieceTimes, done, times, via, cov}, key order fixed): references, no copy
+  /** @param {*} snap @param {number} at @returns {*} */ snapshotObject(snap, at) {
     return { at, pieces: snap.pieces, pieceTimes: snap.pieceTimes, done: snap.done, times: snap.times, via: snap.via, cov: snap.cov };
   },
   /** @param {*} snap @param {number} at @returns {string} */ serialiseSnap(snap, at) { return JSON.stringify(BOARD.snapshotObject(snap, at)); }, // saveSnap's persisted string and the restore's re-serialised snapshot
-  /** @param {*} snap @returns {void} */ restore(snap) { // apply a normalized snapshot whole (cancelStart, both branches): the six bindings are replaced from the snapshot, done re-set from its array
+  // apply a normalized snapshot whole: the six bindings replace from it, done re-set from its array
+  /** @param {*} snap @returns {void} */ restore(snap) {
     pieces = snap.pieces; pieceTimes = snap.pieceTimes; doneSet = new Set(snap.done); doneTimes = snap.times; doneVia = snap.via; coveredIdx = snap.cov;
   },
-  /** @returns {void} */ rederive() { // THE board invariant, one home: doneSet is derived from pieces, and times/via are pruned to the streets that are complete. loadSides' tail and cancelStart's journal fallback both land here.
+  // the board invariant, one home: doneSet derives from pieces; times/via prune to complete streets
+  /** @returns {void} */ rederive() {
     doneSet = new Set(STREETNAMES.filter(streetComplete));
     for (const k of Object.keys(doneTimes)) if (!doneSet.has(k)) delete doneTimes[k];
     for (const k of Object.keys(doneVia)) if (!doneSet.has(k)) delete doneVia[k];
   },
-  /** @param {number} startMs @returns {void} */ revertRunMarks(startMs) { // cancelStart's journal fallback, whole: revert ONLY sides stamped at or after the run's start (anything older is pre-Start progress and is not this run's to erase), re-derive, and drop coverage - it cannot be attributed without a snapshot, and unlike hand marks it is GPS-derived and re-earns itself as he drives; drive143 C1 holds this line
+  // the fallback: revert only sides stamped at/after the run's start, re-derive, drop coverage (it re-earns)
+  /** @param {number} startMs @returns {void} */ revertRunMarks(startMs) {
     for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= startMs) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= startMs) { P[i] &= ~2; st[1] = null; } } }
     BOARD.rederive();
     coveredIdx = {};
   },
-  /** @returns {void} */ zeroMarks() { // the in-place empty (Clear, Finish): pieces zeroed per street - the pieces object itself is KEPT, only its per-street arrays are replaced - and the completion/coverage bindings rebound empty. The run's own state (notes, runStart, suggestions) is the caller's to clear.
+  // the in-place empty (Clear, Finish): the pieces object is KEPT, only its per-street arrays replaced
+  /** @returns {void} */ zeroMarks() {
     for (const n of STREETNAMES) { pieces[n] = STRETCH[n].parts.map(() => 0); pieceTimes[n] = {}; }
     doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {};
   },
-  /** @returns {void} */ emptyBoard() { // the rebind empty (unloadRouteToBoot): all six bindings replaced with the eval empties - pieces/pieceTimes become {} and their identity is dropped, unlike zeroMarks. Notes/history/run state are the caller's.
+  // the rebind empty (unload): all six bindings replaced, identity dropped - unlike zeroMarks' in-place empty
+  /** @returns {void} */ emptyBoard() {
     doneSet = new Set(); doneTimes = {}; doneVia = {}; coveredIdx = {}; pieces = {}; pieceTimes = {};
   },
   /** @returns {void} */ clearNotesAndCoverage() { notes = {}; coveredIdx = {}; }, // completeFinishCleanup's board part: a committed finish's leftover notes/coverage clear once its verified writes land
-  /** @returns {{sides: string, done: string, times: string, via: string, cov: string}} */ serialiseLive() { // the live board's stored strings, one construction: saveAll writes them as the primary save and the recovery export reads them verbatim
+  // the board's stored strings, one construction: saveAll writes them, the recovery export reads them verbatim
+  /** @returns {{sides: string, done: string, times: string, via: string, cov: string}} */ serialiseLive() {
     return { sides: JSON.stringify({ p: pieces, t: pieceTimes }), done: JSON.stringify([...doneSet]), times: JSON.stringify(doneTimes), via: JSON.stringify(doneVia), cov: JSON.stringify(coveredIdx) };
   },
   /** @returns {string} */ serialiseCov() { return JSON.stringify(coveredIdx); }, // PERSIST.flush's throttled coverage write
@@ -649,12 +541,14 @@ const BOARD = {
     pieces[name][idx] = now;
     if (!pieceTimes[name][idx]) pieceTimes[name][idx] = [null, null];
     pieceTimes[name][idx][side] = on ? new Date().toISOString() : null;
-    if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; return { completed: name, uncompleted: false }; } // Beta 1.111: the exact false-to-true completion flip - the wrapper fires onStreetComplete on this report
+    // the exact false-to-true completion flip: the wrapper fires onStreetComplete on this report
+    if (streetComplete(name) && !doneSet.has(name)) { doneSet.add(name); doneTimes[name] = new Date().toISOString(); doneVia[name] = 'sides'; return { completed: name, uncompleted: false }; }
     if (!streetComplete(name) && doneSet.has(name)) { doneSet.delete(name); delete doneTimes[name]; delete doneVia[name]; return { completed: null, uncompleted: true }; }
     return { completed: null, uncompleted: false };
   },
-  /** @param {string} name @param {string} via @param {string} at @returns {{flipped: boolean}} */ completeStreet(name, via, at) { // Beta 1.274 (programme #1): markDone's mutation - whole street done; sides already marked keep their real times, the rest inherit the completion moment. NO feedback, NO finish: the caller fires both, in the old order.
-    const wasComplete = streetComplete(name); // Beta 1.111: the feedback fires only on a real false-to-true flip, which this reports
+  // whole street done: marked sides keep their times, the rest inherit the completion moment; no feedback here
+  /** @param {string} name @param {string} via @param {string} at @returns {{flipped: boolean}} */ completeStreet(name, via, at) {
+    const wasComplete = streetComplete(name); // the feedback fires only on a real false-to-true flip, which this reports
     pieces[name] = STRETCH[name].parts.map(() => 3);
     const mts = at || new Date().toISOString();
     const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
@@ -662,34 +556,37 @@ const BOARD = {
     doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
     return { flipped: !wasComplete };
   },
-  /** @param {string} name @returns {void} */ clearStreet(name) { // Beta 1.274 (programme #1): markUndone's mutation - the street zeroed whole, its completion record dropped
+  /** @param {string} name @returns {void} */ clearStreet(name) { // markUndone's mutation: the street zeroed whole, its completion record dropped
     pieces[name] = STRETCH[name].parts.map(() => 0);
     pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
     doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
   },
   /** @returns {void} */ loadDoneMeta() { // loadRouteState segment 1 (repair): the stored done set and its times/via, per-field sanitized
     const _doneRaw = parseJ(lsGet(LS.done), []);
-    doneSet = new Set(Array.isArray(_doneRaw) ? _doneRaw.filter(n => typeof n === 'string' && STREETSET.has(n)) : []); // audit D2: a non-array value (legacy object, number) made new Set() throw and killed the boot; loadSides re-derives this from pieces below regardless
+    doneSet = new Set(Array.isArray(_doneRaw) ? _doneRaw.filter(n => typeof n === 'string' && STREETSET.has(n)) : []); // a non-array (legacy object, number) made new Set() throw, killing the boot; loadSides re-derives this anyway
     doneTimes = parseJ(lsGet(LS.times), {});
-    if (!doneTimes || typeof doneTimes !== 'object' || Array.isArray(doneTimes)) doneTimes = {}; // Beta 1.64 (audit F07): normalize BEFORE the cleanup loop below - a stored JSON string made its `delete` throw under strict mode and killed the boot
+    if (!doneTimes || typeof doneTimes !== 'object' || Array.isArray(doneTimes)) doneTimes = {}; // normalize before the cleanup loop: a JSON string's `delete` threw under strict mode, killing the boot
     for (const k of Object.keys(doneTimes)) { if (typeof doneTimes[k] !== 'string' || isNaN(Date.parse(doneTimes[k]))) delete doneTimes[k]; }
     doneVia = parseJ(lsGet(LS.via), {});
     if (!doneVia || typeof doneVia !== 'object' || Array.isArray(doneVia)) doneVia = {};
-    for (const k of Object.keys(doneVia)) { if (typeof doneVia[k] !== 'string') delete doneVia[k]; } // 2026-11-15 (load sanitizer round, A-01): via values get the doneTimes treatment above - the app writes only strings here ('gps'/'tap'/'sides'; validateSnap enforces the same string standard on cancel snapshots), so a non-string value can only arrive via a crafted restore or planted storage; every consumer compares === 'gps', and an unchecked value would otherwise be re-saved verbatim and ride backups
+    for (const k of Object.keys(doneVia)) { if (typeof doneVia[k] !== 'string') delete doneVia[k]; } // via values get doneTimes treatment: only strings are written here, and an unchecked non-string would be re-saved and ride backups
   },
   /** @returns {void} */ loadCoverage() { // loadRouteState segment 2 (repair): the stored coverage indexes, bounded to the street's real samples
     coveredIdx = parseJ(lsGet(LS.cov), {});
     if (!coveredIdx || typeof coveredIdx !== 'object' || Array.isArray(coveredIdx)) coveredIdx = {};
-    for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); } // audit D1: was upper-bound only - negatives, fractions and text values survived and each inflated the coverage count. Beta 1.76: this pass used to sit at script eval in app3, over the state the old eval-time load had just parsed; now that state loads on route pick, the pass lives here, over the data it just loaded (the eval-time copy saw an empty object and sanitized nothing).
+    // negatives, fractions and text survived an upper-bound-only pass and inflated coverage; the pass lives here now
+    for (const n of Object.keys(coveredIdx)) { if (!SAMPLES[n] || !Array.isArray(coveredIdx[n])) { delete coveredIdx[n]; continue; } coveredIdx[n] = coveredIdx[n].filter(i => Number.isInteger(i) && i >= 0 && i < SAMPLES[n].length); }
   },
-  /** @returns {void} */ loadSides() { // loadRouteState segment 3 (repair): the stored sides become the live board - values clamped to the 0..3 the app writes, a missing street derived from the done set, complete streets' done-times inherited into their side stamps, and times/via pruned to complete streets (the rederive invariant, applied after inheritance)
+  // repair: stored sides become the live board (clamped 0..3, missing derived from done, times/via pruned)
+  /** @returns {void} */ loadSides() {
     pieces = {}; pieceTimes = {};
     const raw = parseJ(lsGet(LS.sides), null);
     let P = null, T = {};
     if (raw && typeof raw === 'object') { if (raw.p) { P = raw.p; T = raw.t || {}; } else P = raw; }
     for (const n of STREETNAMES) {
       const count = STRETCH[n].parts.length;
-      let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].map(v => (v === 1 || v === 2 || v === 3) ? v : 0) : null; // audit G3: normalize side values to the 0..3 the app writes - a crafted 99 otherwise counted sides via bitwise reads while streetComplete (===3) disagreed
+      // normalize sides to the 0..3 the app writes: a crafted 99 counted via bitwise reads while streetComplete disagreed
+      let arr = (P && Array.isArray(P[n]) && P[n].length === count) ? P[n].map(v => (v === 1 || v === 2 || v === 3) ? v : 0) : null;
       if (!arr) arr = new Array(count).fill(doneSet.has(n) ? 3 : 0);
       pieces[n] = arr;
       pieceTimes[n] = sanitizePieceTimes(T && T[n], STRETCH[n].parts.length);
@@ -697,7 +594,7 @@ const BOARD = {
     // complete streets inherit their done-time on every side; doneSet is derived from pieces
     doneSet = new Set(STREETNAMES.filter(streetComplete));
     for (const n of STREETNAMES) {
-      if (streetComplete(n) && doneTimes[n]) { // Beta 1.169 (Carbon fix round, A-03): the done-time inheritance fills MISSING stamps, not only wholly-empty maps - through 1.168 a partially-recorded street (one stretch stamped, the next not) kept its holes, and liveWorkM read the unstamped stretches as never worked, undercounting the run's side-metres. A recorded stamp is never overwritten; a missing one inherits the street's done time exactly as the empty-map case always has.
+      if (streetComplete(n) && doneTimes[n]) { // inheritance fills missing stamps, not only empty maps: holes read as never worked and undercounted the run
         const full = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]);
         if (!Object.keys(pieceTimes[n]).length) pieceTimes[n] = full;
         else { const T2 = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }
@@ -707,75 +604,60 @@ const BOARD = {
     for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
   },
 };
-let routeLoaded = false, activeRoute = null; // Beta 1.76: set by loadRoute (app4) once a pack is chosen; app2's paint/render gates read them
+let routeLoaded = false, activeRoute = null; // set by loadRoute (app4) once a pack is chosen; app2's paint/render gates read them
 /** @param {string} id @returns {void} */ function loadRouteState(id) {
   LS = migrateLegacyRoute(id) ? { ...routeKeys(id), ...LS_GLOBAL } : { ...LEGACY_KEYS, ...LS_GLOBAL };
 BOARD.loadDoneMeta(); // Arch-2: the board's load-repair lives in the module (BOARD.loadDoneMeta / loadCoverage / loadSides)
 notes = parseJ(lsGet(LS.notes), {});
-// Notes model (production): {street: [{k:'note', at, text} | {k:'car'|'hazard'|'missed'|'salt', at}]} - normalize at load:
-// a non-array value (e.g. a legacy string) is dropped, entries keep only object shapes with a string kind,
-// a string text when one is present, and a parseable date string at when one is present (2026-11-15, A-02 -
-// an object text rendered '[object Object]' in note lines and a bad at rendered 'NaN:NaN AM' flag times).
+// notes normalize at load: non-arrays dropped; entries keep object shapes, string kinds and parseable dates only
 if (!notes || typeof notes !== 'object' || Array.isArray(notes)) notes = {};
 Object.keys(notes).forEach(n => { if (!STREETSET.has(n) || !Array.isArray(notes[n])) delete notes[n]; else notes[n] = notes[n].filter(f => f && typeof f === 'object' && typeof f.k === 'string' && (f.text === undefined || typeof f.text === 'string') && (f.at === undefined || (typeof f.at === 'string' && !isNaN(Date.parse(f.at))))); });
-const rawHistory = HIST.loadFrom(lsGet(LS.hist)); // Beta 1.272 (#2): the repository parses, sanitizes and snapshots; the raw parse it returns is reconcileInterruptedFinish's judge (A-04)
+const rawHistory = HIST.loadFrom(lsGet(LS.hist)); // the repository parses, sanitizes and snapshots; the raw parse it returns is reconcileInterruptedFinish's judge
 // Run start (production): epoch milliseconds, stored as a bare digit string (NOT JSON).
 runStart = 0;
-try { const s = lsGet(LS.start); runStart = (typeof s === 'string' && /^\d+$/.test(s) && isFinite(+s) && +s >= 946684800000 && +s <= 4102444800000) ? +s : 0; } catch (e) { runStart = 0; } // Beta 1.150 (security-audit fix round, finding restore-start-scalar-unvalidated, loader half): the stored start is parsed as strictly as the restore now validates it - a digit string inside the epoch-ms band. The old '+lsGet(...) || 0' coerced a crafted '1' into a live phantom run (and 'Infinity' into an endless one) whose Cancel wiped the route; every other epoch this loader accepts is band-checked the same way (trail sessions and trail points, below)
+// the start parses strictly (digit string, epoch-ms band): a crafted '1' once became a phantom run
+try { const s = lsGet(LS.start); runStart = (typeof s === 'string' && /^\d+$/.test(s) && isFinite(+s) && +s >= 946684800000 && +s <= 4102444800000) ? +s : 0; } catch (e) { runStart = 0; }
 trail = parseJ(lsGet(LS.trail), []);
-trailSessions = parseJ(lsGet(LS.sess), []); // Beta 1.71 (audit B02): the epoch-second start of each clean that recorded trail points - the session identity the flat trail never carried, so exports can split cleans exactly instead of guessing from gaps. Pre-1.71 trails simply have no markers and keep the gap heuristic.
+trailSessions = parseJ(lsGet(LS.sess), []); // each clean's epoch-second start (for cleans that recorded points): the session identity exports split cleans by
 trailSessions = Array.isArray(trailSessions) ? [...new Set(trailSessions.filter(t => Number.isFinite(t) && t >= 946684800 && t <= 4102444800))].sort((a, b) => a - b) : [];
-if (trailSessions.length > TRAIL_MAX) trailSessions = trailSessions.slice(trailSessions.length - TRAIL_MAX); // Beta 1.152 (NV round, NV4): no writer cap exists for session markers (one is appended per clean run start, noteSessionStart in app3) - the load bounds them at the trail's own cap, keeping the newest (the list is sorted ascending here). Every consumer is linear (the day list, the load-notice count), so this is a storage bound, sized to the structure it describes.
+if (trailSessions.length > TRAIL_MAX) trailSessions = trailSessions.slice(trailSessions.length - TRAIL_MAX); // no cap for session markers (one per clean start): load bounds them at the trail's cap, newest kept
 // Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
 trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
 if (trail.length > TRAIL_MAX) trail = trail.slice(trail.length - TRAIL_MAX);
 const trailBeforeWindow = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailBeforeWindow) markDirty('trail'); if (trailBeforeWindow > 0 && !trail.length && !runStart && trailSessions.length) { trailSessions = []; markDirty('sess'); } // Beta 1.193 (trail redesign): the window binds at load like everywhere else - a 1.190-era resident trail (every clean, up to the old point cap) is cut to the live run's last 60 minutes on the first 1.191 boot, and with no live run it empties: the fallback has no run to protect. runStart was parsed above (line order is load-bearing: the start record is read before the trail for exactly this). The binding is STORED, not just in memory: a shortened trail is marked dirty so the next flush writes the windowed value (a backup reads storage raw - it must never carry points the window forbids), and when the window empties a trail that EXISTED with no live run, its session markers go with it - markers never outlive their trail (the C-01 pair rule, applied at load; a live run keeps its markers, its own start among them). The clear is scoped to the window's own act (trailBeforeWindow > 0): markers stored with NO trail at all are not the window's business - the migration and restore layers govern those (C-01/C06), and clearing them here would eat records those layers legitimately carry (the slot migration's copied sess field - drive145 N12d caught exactly that in this round's first gate). // Beta 1.152 (NV round, NV4): the writer caps the trail at TRAIL_MAX by dropping the OLDEST points (recordFix, app3) - the load keeps the same end of the same cap, so a planted slot cannot resurrect an unbounded trail.
 BOARD.loadCoverage();
 BOARD.loadSides();
-  reconcileInterruptedFinish(rawHistory); // Beta 1.102 (Phase 4, CG-196-04): resolve a finish that died between its gates before anything renders this state. Beta 1.170 (A-04): it judges the RAW stored array, not the sanitized one above
-  completeFinishCleanup(); // Beta 1.141 (Package A, DA-10): complete a committed finish's metadata cleanup if its writes failed and a reload outlived the in-memory retry
+  reconcileInterruptedFinish(rawHistory); // resolve a finish that died between gates, before rendering; judged on raw, not the sanitized array
+  completeFinishCleanup(); // complete a committed finish's metadata cleanup if its writes failed and a reload outlived the in-memory retry
 }
-/** @param {HistoryEntry[]} rawHistory @returns {void} */ function reconcileInterruptedFinish(rawHistory) { // a finish killed mid-transaction runs no rollback; its two harmful prefixes share one signature in EXISTING records - the newest archive entry belongs to the run still marked active (its runId === the stored start; a later run's start is a later millisecond, so no live state collides). Board still marked: the archive write was the only gate that landed - remove that entry (verified) and the run resumes intact. Board already cleared: the finish effectively happened - delete the start key (verified) and it stands committed. No signature: nothing to do. An under-3 finish writes no archive, so its prefixes look exactly like a fresh empty run - coherent as one, left alone. Beta 1.104 (round 103, CG-103-02): the signature key is the entry's runId, never startedAt - startedAt is the real work start and predates the stored start whenever a street was marked before Start was pressed, which used to defeat both branches; entries written before 1.104 carry no runId and are never reconciled (missing identity = no signature). Beta 1.146 (census C1): the NO-RUN finish (marked board, never Started) gets the parallel signature below - its entry's runId is the finish's own finclean marker time (finishRun stamps it), so a kill between the archive and sides gates is resolvable exactly the same way: marker run 0 + entry runId === marker at + the board still equalling the entry's snapshot removes the phantom entry (verified write first; the marker is cleared only after that removal verifies, so a failed removal leaves the full signature for the next boot); an empty board means that finish completed and its entry stands.
-  // Beta 1.170 (Carbon fix round Phase 2, A-04): the signature is judged on the RAW newest entry and a rollback writes the raw array minus its tail. Through 1.169 both read the load-SANITIZED array, with two consequences: a newest entry the sanitizer dropped (a pack edit stripped every street it named) hid its interrupted finish from reconciliation entirely - the run start stayed live over a finish that had in fact archived - and a rollback that did fire wrote the sanitized array back, persisting the sanitizer's strips over entries storage was still holding raw.
+// signature: the entry's runId === stored start - marked board, entry removed; cleared board, finish stands
+/** @param {HistoryEntry[]} rawHistory @returns {void} */ function reconcileInterruptedFinish(rawHistory) {
+  // judged on the raw newest entry; a rollback writes the raw array minus its tail
   const rawList = Array.isArray(rawHistory) ? rawHistory : [];
   const rawLast = rawList.length ? rawList[rawList.length - 1] : null;
   const last = history.length ? history[history.length - 1] : null;
   if (!last && !rawLast) return;
-  const sig = (rawLast && typeof rawLast === 'object' && !Array.isArray(rawLast)) ? rawLast : last; // a raw tail that is not an entry object can carry no run identity - the sanitized tail stands in for it
-  const lastMs = sig && sig.runId ? (+sig.runId || 0) : 0; // Beta 1.104 (CG-103-02): the entry's run identity; an entry without one yields 0 and can never match a run start. Beta 1.146: in the no-run branch below this same value must equal the finclean marker's at
+  const sig = (rawLast && typeof rawLast === 'object' && !Array.isArray(rawLast)) ? rawLast : last; // a raw tail that is no entry object carries no identity: the sanitized tail stands in
+  const lastMs = sig && sig.runId ? (+sig.runId || 0) : 0; // the entry's identity (none yields 0); in the no-run branch it must equal the finclean marker's at
   const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
   if (runStart) { const act = finishReconcileAction(runStart, lastMs, boardEmpty); if (act === 'rollback') { HIST.dropPhantom(sig, rawLast, last, lastMs); } else if (act === 'complete') { if (txDel(LS.start).ok) runStart = 0; } return; }
   const marker = parseJ(lsGet(LS.finclean), null); const markerRun = marker && typeof marker === 'object' && !Array.isArray(marker) ? marker.run : null; const markerAt = marker && typeof marker === 'object' ? (+marker.at || 0) : 0; const boardMatch = !boardEmpty && finishBoardMatch(sig, pieces, pieceTimes, STREETNAMES);
   if (finishReconcileNoRunAction(markerRun, markerAt, lastMs, boardEmpty, boardMatch) === 'rollback') { if (HIST.dropPhantom(sig, rawLast, last, lastMs)) txDel(LS.finclean); }
 }
-/** @returns {void} */ function completeFinishCleanup() { // Beta 1.141 (Package A, DA-10): finishRun's transaction writes the slot's finclean record as its first step, so a COMMITTED finish whose post-commit metadata writes then failed (notes/coverage refuse; the primaryDirty retry is in-memory and dies with the page) leaves a DURABLE obligation behind. This completes it at load. Guards, all required: the obligation exists; no run is live (a live run owns notes/coverage - its data is never touched); the loaded board is the cleared board a committed finish leaves (a restored or cancelled live board is non-empty and untouchable). The cleanup is two verified writes of the same '{}' saveAll writes for a finished board; only when BOTH verify do the in-memory copies clear and the obligation delete. Any failure leaves the obligation (and the loaded state, which then matches storage) for the next load - idempotent, safe on every load, a single read on a clean slot.
+// a committed finish with failed metadata writes leaves a durable obligation: completed here at load, guarded and idempotent
+/** @returns {void} */ function completeFinishCleanup() {
   if (runStart) return;
   if (lsGet(LS.finclean) === null) return;
   if (!STREETNAMES.every(n => pieces[n].every(v => v === 0))) return;
   if (!txSet(LS.notes, '{}').ok) return;
   if (!txSet(LS.cov, '{}').ok) return;
-  BOARD.clearNotesAndCoverage(); // Beta 1.271: the suggestion set this line also reset is gone with its banner
+  BOARD.clearNotesAndCoverage();
   txDel(LS.finclean);
 }
-// ===== DAY/NIGHT (Beta 1.77, Andrew): the theme follows the sun by default.
-// Sunrise and sunset are computed on the device (the standard NOAA
-// approximation - good to a few minutes, no network, works offline) for the
-// best position known: the last GPS fix, else the route's own centre. The
-// Settings row is a session OVERRIDE: it holds until the next sunrise or
-// sunset after it was set (a timer and every return to the front re-check),
-// or until the app is fully closed - a fresh app open always starts
-// automatic. A reload inside the session (the Update flow, a crash) keeps
-// the override: sessionStorage carries the session marker, and the stored
-// override carries its own expiry, so nothing stale outlives its boundary.
+// ===== DAY/NIGHT ===== theme follows the sun (computed on-device, offline); the override holds until the next sun event
 let themeOverride = null, themeOverrideUntil = 0; // null = automatic
 /** @param {number} ms @param {number} lat @param {number} lng @returns {SunTimes} */ function sunTimes(ms, lat, lng) { // the sun events of the position-local day containing ms, as epoch ms
-  // The date is taken in the position's own solar frame (from its longitude),
-  // never the device's timezone - the answer is a physical instant and must
-  // not move with the clock's zone. The raw UTC hour the formula gives is
-  // normalized into the position-local day's span: at far longitudes the
-  // event's UTC clock reading can sit on the neighbouring date (a June
-  // sunset in Ontario reads 01:03 UTC the NEXT day), and clamping it into
-  // the same date lands it a day early - drive145 N18/N19 are the guards.
+  // date is the position's solar frame (its longitude), never the device's zone: the instant is physical
   const shifted = new Date(ms + lng * 240000), y = shifted.getUTCFullYear(), mo = shifted.getUTCMonth(), da = shifted.getUTCDate();
   const rad = Math.PI / 180, N = Math.floor((Date.UTC(y, mo, da) - Date.UTC(y, 0, 0)) / 86400000), lngHour = lng / 15;
   const dayStart = Date.UTC(y, mo, da) - lng * 240000;
@@ -794,13 +676,7 @@ let themeOverride = null, themeOverrideUntil = 0; // null = automatic
     return cand;
   };
   const rise = one(true), set = one(false);
-  // issue #180: when NEITHER event exists the day is polar, and which kind
-  // matters - through this fix autoNightAt read the missing pair as day, so
-  // a polar night wore the day theme. The discriminator is the same cosH
-  // `one` judges by, evaluated at midday: > 1 the sun never rises (polar
-  // night), < -1 it never sets (polar day). Unreachable inside the app's
-  // Ontario bounds (the sun always rises and sets there); the function is
-  // general, so its answer is correct for every position it can be given.
+  // when neither event exists the day is polar: midday cosH discriminates (>1 never rises, <-1 never sets)
   let /** @type {'day' | 'night' | null} */ polar = null;
   if (rise == null && set == null) {
     const t = N + (12 - lngHour) / 24, M = 0.9856 * t - 3.289;
@@ -829,29 +705,21 @@ let themeOverride = null, themeOverrideUntil = 0; // null = automatic
   if (!continuing) { if (stored != null) { lsDel(LS.night); lsDel(LS.nightExp); } return; } // the app was fully closed since: automatic
   if (stored === '1' || stored === '0') {
     if (exp && Date.now() >= exp) { lsDel(LS.night); lsDel(LS.nightExp); return; } // its boundary passed while the app was away
-    themeOverride = stored === '1'; themeOverrideUntil = (exp && isFinite(exp)) ? exp : nextSunBoundary(Date.now()); // Beta 1.92 (audit F01): a non-finite expiry (missing, corrupt, Infinity) recomputes the boundary instead of crashing or sticking forever
+    themeOverride = stored === '1'; themeOverrideUntil = (exp && isFinite(exp)) ? exp : nextSunBoundary(Date.now()); // a non-finite expiry (missing, corrupt, Infinity) recomputes the boundary instead of crashing or sticking forever
   }
 })();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') themeTick(); });
 /** @returns {number} */ function workDoneM() { let s = 0; for (const n of STREETNAMES) { const p = pieces[n]; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); if (p[i] & 1) s += L; if (p[i] & 2) s += L; }); } return s; }
-/** @returns {number} */ function liveWorkM() { // Beta 1.93 (follow-up audit R06): the RUN's work only - sides stamped at or after Start. workDoneM counts the whole board, so marks made before Start used to inflate the live rate (real progress, wrong clock).
+// the run's work only (stamped at/after Start): pre-Start marks would otherwise inflate the live rate
+/** @returns {number} */ function liveWorkM() {
   if (!runStart) return 0; let s = 0;
   for (const n of STREETNAMES) { const p = pieces[n], T = pieceTimes[n] || {}; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((p[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) s += L; if ((p[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) s += L; }); }
   return s; }
 /** @returns {number} */ function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].total * 2; return s; }
-// Beta 1.57 (Phase 2 storage integrity, external audit Section 7): saveAll has a
-// failure CONTRACT now. The sides record is the AUTHORITY for completion - the
-// boot block re-derives the done set from it and prunes times/via against it -
-// so it is written FIRST: if it fails, the save stops and the previous coherent
-// state survives whole. Every other write is checked too; the first failing
-// record is named in the returned result's failedKey. Callers that warn go
-// through saveAllWarned (app2), which raises one warning per failure episode;
-// the finish transaction calls saveAll directly and does its own gated
-// writes and messaging. (Beta 1.101, Phase 3: the old global failure key, the
-// quiet toggle and the warned flag are retired - outcomes travel in the
-// returned result, and messaging lives in the app layer.)
-/** @returns {StorageOutcome} */ function saveAll() { // Beta 1.101 (Phase 3 / C2): returns the storage-outcome result - the first failing record is named in failedKey and a retry is armed via the primary flag. No toast here: storage never speaks to the user (saveAllWarned in app2 owns the warning). Beta 1.275 (architecture #3): the flag and the fence are PERSIST's (below) - the retry rationale (1.94 SR-193-05: a failed metadata write retries on the heartbeat instead of waiting for an incidental save) lives in the PERSIST header.
-  if (PERSIST.fenced()) return storeFail('restoring', false); // Beta 1.147 (hypothesis H1, CONFIRMED): while a restore's reload is pending the in-memory board is still the PRE-restore one, so any save here would resurrect it over the restored records - fenced exactly like PERSIST.flush: no write, and NO primary arm, so no retry ever fires against the restored data. Callers branch on the outcome object as for any failed save.
+// the sides record is the authority for completion, so it writes first: on failure the earlier coherent state survives
+// returns the result (failedKey names the first failure; the primary flag arms a retry); storage never speaks
+/** @returns {StorageOutcome} */ function saveAll() {
+  if (PERSIST.fenced()) return storeFail('restoring', false); // while a restore pends, memory holds the pre-restore board: a save would resurrect it - fenced
   let failedKey = null;
   const ser = BOARD.serialiseLive(); // Arch-2: the board's stored strings are built once, in the module
   if (!lsSet(LS.sides, ser.sides)) failedKey = 'sides';
@@ -860,41 +728,16 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
     if (!lsSet(LS.times, ser.times) && !failedKey) failedKey = 'times';
     if (!lsSet(LS.via, ser.via) && !failedKey) failedKey = 'via';
     if (!lsSet(LS.notes, JSON.stringify(notes)) && !failedKey) failedKey = 'notes';
-    if (!lsSet(LS.hist, HIST.serialise()) && !failedKey) failedKey = 'history'; // 2026-11-15 (A-05): the ordinary save writes the merge through the repository (Beta 1.272), never the bare view - the load strip stays a view
+    if (!lsSet(LS.hist, HIST.serialise()) && !failedKey) failedKey = 'history'; // the save writes the merge through the repository, never the bare view: the load strip stays a view
     if (!saveStart().ok && !failedKey) failedKey = 'start';
     if (!lsSet(LS.cov, ser.cov) && !failedKey) failedKey = 'coverage';
   }
   if (failedKey) { markDirty('primary'); return storeFail(failedKey, true); }
   markClean('primary');
-  if (lsGet(LS.finclean) !== null) lsDel(LS.finclean); // Beta 1.141 (Package A, DA-10): a fully landed primary save discharges the finish-cleanup obligation - the stored notes/coverage ARE the in-memory ones now, whoever's they are; the obligation only ever outlives FAILED saves
+  if (lsGet(LS.finclean) !== null) lsDel(LS.finclean); // a landed save discharges the cleanup obligation: stored notes/coverage are the in-memory ones now
   return storeOk();
 }
-// PERSIST (Beta 1.275, architecture #3): the persistence scheduling owner. Everything
-// about WHEN buffered state reaches storage lives here and nowhere else: the seven
-// dirty flags (trail, sess, snap, start, aux, primary, fixlog), the three throttle
-// windows (trail, coverage, fix log), the restore write fence, and the flush walk
-// itself. Through 1.274 these were scattered bindings and a hand-scheduled flushAux
-// that discovered its late writers (app3's saveFixLog, saveSnap, persistRunDist,
-// bankRunDistMirror) through per-line typeof probes; the probes are now the step
-// table's one lateFn resolution, the fence has one owner (saveAll and the flush both
-// consult it - the duplication the scan charged), and app4 raises/lowers the fence
-// through fenceUp/fenceDown instead of writing this file's binding.
-// The disciplines the flags carry, unchanged: a flag clears ONLY when its write
-// actually lands, so a failed write is retried by the next flush instead of silently
-// dropping data (trail/sess: 1.73 C04/C05; start: 1.92 F05 - a stale start key must
-// never resurrect a finished run; snap: 1.94 SR-193-02; primary: 1.94 SR-193-05).
-// Production model: the trail JSON is the big write (~250 KB at cap) - at most every
-// TRAIL_FLUSH_MS while recording, always when forced (page hide/close); the fix log
-// rides the trail's cadence (1.189); coverage is throttled to COV_SAVE_MS on
-// unforced flushes (1.135/1.136 - acceptFix flushes on EVERY fix, and the window
-// starts only on a SUCCESSFUL write; forced flushes always write, the 15 s heartbeat
-// is the backstop, and saveAll writes coverage unconditionally on a primary save).
-// The fence: while a restore is mid-flight, flushes are refused and saveAll returns
-// its fenced outcome, so the restore's reload cannot clobber the restored data
-// (1.147 H1; the fence rises before the restore's snapshot, 1.186 P1 - app4's policy
-// of when to raise/lower it and what to re-arm stays app4's).
-// (The episode-warning state is NOT persistence state - it is app-layer messaging
-// state and lives in app2 with saveAllWarned.)
+// PERSIST, the scheduling owner: a flag clears only when its write lands; late writers resolve by name at flush time
 /** @param {string} name @returns {Function|null} */ function lateFn(name) { const f = globalThis[name]; return typeof f === 'function' ? f : null; } // the step table's one late-writer resolution: app3 loads after app1, so its writers are resolved by name at flush time (and a partial load simply skips the step, exactly what the old typeof probes did)
 const PERSIST = {
   flags: { trail: false, sess: false, snap: false, start: false, aux: false, primary: false, fixlog: false },
@@ -913,46 +756,31 @@ const PERSIST = {
     if (this.flags.trail && (force || Date.now() - this.windows.trail > TRAIL_FLUSH_MS) && saveTrail().ok) { this.flags.trail = false; this.windows.trail = Date.now(); }
     if (this.flags.sess && saveSess().ok) this.flags.sess = false;
     const saveFixLogFn = lateFn('saveFixLog');
-    if (this.flags.fixlog && saveFixLogFn && (force || Date.now() - this.windows.fixlog > TRAIL_FLUSH_MS) && saveFixLogFn().ok) { this.flags.fixlog = false; this.windows.fixlog = Date.now(); } // Beta 1.189: the fix log flushes on the trail's cadence (its JSON is the same size family - re-stringifying it per fix is out); forced flushes always write, so a backup or page death never leaves it behind
-    if (this.flags.start) saveStart(); // Beta 1.92 (audit F05): saveStart re-arms the flag itself on failure
+    // the fix log flushes on the trail's cadence (re-stringifying it per fix is out); forced flushes always write
+    if (this.flags.fixlog && saveFixLogFn && (force || Date.now() - this.windows.fixlog > TRAIL_FLUSH_MS) && saveFixLogFn().ok) { this.flags.fixlog = false; this.windows.fixlog = Date.now(); }
+    if (this.flags.start) saveStart(); // saveStart re-arms the flag itself on failure
     const saveSnapFn = lateFn('saveSnap');
-    if (this.flags.snap && saveSnapFn) saveSnapFn(); // Beta 1.94 (SR-193-02): the cancel snapshot retries on the same heartbeat (saveSnap lives in app3 beside runSnap and manages its own flag through the doorway)
+    if (this.flags.snap && saveSnapFn) saveSnapFn(); // the cancel snapshot retries on the same heartbeat (saveSnap, app3, manages its own flag via the doorway)
     const persistRunDistFn = lateFn('persistRunDist');
-    if (force && runStart && persistRunDistFn) persistRunDistFn(true); // Beta 1.186 (storage fix round, P2): a FORCED flush is the page's last word (pagehide, visibility hidden, the route switch's pre-flush), so the run-distance counter banks with it. Beta 1.193 (counter hardening): the counter banks on every recorded fix, so this forced bank is a formality kept for the page-death path. The runStart gate matters: with no run in flight there is no counter to bank, and an ungated call would mint the zero record into the outgoing route's slot on every route switch - drive184's field-for-field round-trip caught exactly that.
+    if (force && runStart && persistRunDistFn) persistRunDistFn(true); // a forced flush is the page's last word: the counter banks with it, gated on a live run
     const bankMirrorFn = lateFn('bankRunDistMirror');
-    if (runStart && bankMirrorFn) bankMirrorFn(); // Beta 1.193 (counter hardening): the counter's SECOND copy (LS.rundist2) is written only from this flush path - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so the two records fail independently: a lost or clobbered primary (the 1.186 species) leaves the mirror intact and vice versa. It is coherent with the trail flushed beside it - both lag together, and a forced flush lands both.
-    if (this.flags.primary) saveAll(); // Beta 1.94 (SR-193-05): a failed primary save retries here - saveAll clears the flag itself when a save lands whole
+    if (runStart && bankMirrorFn) bankMirrorFn(); // the second copy writes only from this flush path (a different writer/cadence), so the records fail independently
+    if (this.flags.primary) saveAll(); // a failed primary save retries here: saveAll clears the flag itself when a save lands whole
   },
 };
-// Dirty-flag access (Beta 1.101, Phase 3 / C2): code in app3/app4 arms, clears and
-// reads the flags ONLY through these three functions, so the retry machinery has one
-// doorway. Beta 1.275: the doorway delegates to PERSIST, the flags' owner.
+// dirty-flag access: app3/app4 touch the flags only through these three functions, the retry machinery's one doorway
 /** @param {string} kind @returns {void} */ function markDirty(kind) { PERSIST.markDirty(kind); }
 /** @param {string} kind @returns {void} */ function markClean(kind) { PERSIST.markClean(kind); }
 /** @param {string} kind @returns {boolean} */ function writePending(kind) { return PERSIST.writePending(kind); }
 /** @returns {StorageOutcome} */ function saveTrail() { const ok = lsSet(LS.trail, JSON.stringify(trail)); return ok ? storeOk() : storeFail('trail', true); }
 /** @returns {StorageOutcome} */ function saveSess() { const ok = lsSet(LS.sess, JSON.stringify(trailSessions)); return ok ? storeOk() : storeFail('sess', true); }
-/** @param {boolean} [force] @returns {void} */ function flushAux(force) { PERSIST.flush(force); } // Beta 1.275 (architecture #3): the published flush handle - the walk itself is PERSIST.flush (above), the scheduling owner. This one-line delegation stays because the handle is public surface: drives call flushAux(true) in page context to force the page-death flush, exactly as they did when the walk lived here.
-setInterval(() => { PERSIST.flush(false); themeTick(); }, 15000); // Beta 1.77: the same 15 s heartbeat also walks the day/night cycle across its boundaries
+// the published flush handle (the walk is PERSIST.flush): drives force the page-death flush through this delegation
+/** @param {boolean} [force] @returns {void} */ function flushAux(force) { PERSIST.flush(force); }
+setInterval(() => { PERSIST.flush(false); themeTick(); }, 15000); // the same 15 s heartbeat also walks the day/night cycle across its boundaries
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') PERSIST.flush(true); });
 window.addEventListener('pagehide', () => PERSIST.flush(true));
 
-// Beta 1.103 (architecture Phase 6, C5): the paint engine's host. The engine
-// (parts/engine.js) reads NOTHING from the app directly any more - every app
-// value, helper, callback and piece of live state it consumes arrives
-// through this one object (the engine aliases it as H; GLP.init(map, host)
-// adopts the same object). Plain entries are the values themselves;
-// group (c) - state the app REBINDS (pieces on load/restore, the
-// selection on every tap, the active route on load) - is exposed through
-// getters so the engine always reads the CURRENT binding, exactly as its
-// old free-global reads behaved. glUnifyLabels is also behind a getter: it
-// is declared in app2.js, after this part, and the getter resolves it at
-// call time. Built here, at the end of app1.js, because the engine
-// evaluates immediately after this part in the assembled page. Beta 1.117:
-// the plain entries are the LIVE containers (PRIMARIES/STRETCH/names)
-// - buildGeometry refills them in place per load, so the engine's captured
-// references stay valid across a switch and GLP.rebuildRoute re-reads them.
-// Guarded by tests/browser/selftest-engine-surface.mjs (the frozen list).
+// the engine's host: it reads nothing directly; everything arrives through this object (getters for rebound state)
 const GL_HOST = {
   MLAT, MLNG, PRIMARIES, SPOT, STRETCH, ROADS, names, jDistM, ptSegM, isNight,
   get pieces() { return BOARD.state().pieces; }, // Arch-2: read through the board module, so the engine sees the current binding after any restore/reset

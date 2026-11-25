@@ -12397,6 +12397,1405 @@
    "kind": "machinery-exempt",
    "reason": "Machinery gate round (queue 7a+7b + approval policy file): no parts/ surface changes; the round changes build/CI machinery, docs and the vendored registry only.",
    "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "comment-trims-phase4",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCityPrepare",
+     "crFragmentPairItems",
+     "renderDraft",
+     "crSyncClear",
+     "glUnifyLabels",
+     "syncViewport",
+     "startGps",
+     "cornerTouchSlices"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/engine.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:cornerTouchSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cornerTouchSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crFragmentPairItems:parts/create-pick.js:crSearchResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFragmentPairItems() is called from crSearchResolve in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectClear",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectClear in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crSearchInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crSearchInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCancelSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCancelSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:document:visibilitychange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from document:visibilitychange in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from step in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from top-level in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:scroll",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport scroll handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:pageshow",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window pageshow handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:visibilitychange",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document visibilitychange handler in parts/app5.js touches syncViewport without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches renderDraft without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "74fc6e3af56fbebe19f4e351419354821bfb7f647bff2f9be75844be38bd274c",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "f147ba9c6d793f8bb57d339339ec972c06a4e25aec45b6d3ac9711ba1d57cefb",
+    "parts/app4.js": "d8c7c24b77577a1aec12589136af00217e95e7cdcba8a4d888c38ec699b3608e",
+    "parts/app5.js": "6e06b64cc20479949137889d57ec290baf803b23d81c392cb794b748536218e3",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "a620b2bd9d6cb1c883b9c206757e874b9a4d0d9054579bfadc19abb7580aadcf",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-phase4-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCityPrepare",
+     "crFragmentPairItems",
+     "renderDraft",
+     "crSyncClear",
+     "glUnifyLabels",
+     "syncViewport",
+     "startGps",
+     "cornerTouchSlices"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/engine.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:cornerTouchSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cornerTouchSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crFragmentPairItems:parts/create-pick.js:crSearchResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFragmentPairItems() is called from crSearchResolve in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectClear",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectClear in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crSearchInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crSearchInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCancelSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCancelSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:document:visibilitychange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from document:visibilitychange in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from step in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from top-level in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:scroll",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport scroll handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:pageshow",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window pageshow handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:visibilitychange",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document visibilitychange handler in parts/app5.js touches syncViewport without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches renderDraft without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "dcd6b5d0acbddfd047fbd634a7961013f3ca709a916c474820bbdf69085f582e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "f147ba9c6d793f8bb57d339339ec972c06a4e25aec45b6d3ac9711ba1d57cefb",
+    "parts/app4.js": "d8c7c24b77577a1aec12589136af00217e95e7cdcba8a4d888c38ec699b3608e",
+    "parts/app5.js": "248183728b8089b4b85d137010b4140e9cd365a5f4640b29fe887c720845e8c8",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-phase4-head",
+   "kind": "app",
+   "anchors": {
+    "functions": [],
+    "elements": [
+     "snowCv"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "theme:snowCv",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #snowCv has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in parts/head.html; the #snowCv day rule and the absence of a night rule are stylesheet code, byte-identical before/after (comment-blanked skeleton identical)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44",
+    "parts/app5.js": "72465ffdcbbe74a946fb5508cabb8d353913fa3d1a761d7f2e562bf237198ca9",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "e4a00051eab5a4af59b71909b4a6627f53e720b28dc17dc34635db949f746d7c",
+    "parts/create-citydata.js": "aff6d5e1dbe6f6c9158982fbad7a326cbb946a80c60042d33e679a5a47ea4c0e",
+    "parts/create-fetch.js": "60abb28dd4ca71be3850f3e0c3e9f2bab69978cb79100db4c0859ce078f97ec3",
+    "parts/create-packs.js": "885979dfc65276f4000147b5c049761611e8d28b0700da99f0fc260432887b41",
+    "parts/create-pick.js": "59a0d853703b11d0e4d3035fad2c07da6b260d1e10d0633417bcd497bf3e555f",
+    "parts/create-save.js": "ad39720727f43d397e72443c92955c5a35d530f03e3219b2182c9ee7c062e52d",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-phase4-create",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCityPrepare",
+     "crFragmentPairItems",
+     "renderDraft",
+     "crSyncClear"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crFragmentPairItems:parts/create-pick.js:crSearchResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFragmentPairItems() is called from crSearchResolve in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectClear",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectClear in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crSearchInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crSearchInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCancelSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCancelSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches renderDraft without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8a7a79900d00640a3f98df6f65605d2ba4e334f8bc2e48fafc98ad4eb008eb3b",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de",
+    "parts/app3.js": "dfd3a706d0d0e84eb709c44dde737281b7fe111d44f8a9a59914622dceea0fda",
+    "parts/app4.js": "f2f948203ff0dc69d9145393632f33de218c7c853f2f41b3671e19eeddd17b44",
+    "parts/app5.js": "72465ffdcbbe74a946fb5508cabb8d353913fa3d1a761d7f2e562bf237198ca9",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-phase4-app",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "glUnifyLabels",
+     "syncViewport",
+     "startGps"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:document:visibilitychange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from document:visibilitychange in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from step in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from top-level in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:scroll",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport scroll handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:pageshow",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window pageshow handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:visibilitychange",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document visibilitychange handler in parts/app5.js touches syncViewport without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "dcd6b5d0acbddfd047fbd634a7961013f3ca709a916c474820bbdf69085f582e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "f147ba9c6d793f8bb57d339339ec972c06a4e25aec45b6d3ac9711ba1d57cefb",
+    "parts/app4.js": "d8c7c24b77577a1aec12589136af00217e95e7cdcba8a4d888c38ec699b3608e",
+    "parts/app5.js": "248183728b8089b4b85d137010b4140e9cd365a5f4640b29fe887c720845e8c8",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-phase4-r3",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCityPrepare",
+     "crFragmentPairItems",
+     "renderDraft",
+     "crSyncClear",
+     "glUnifyLabels",
+     "syncViewport",
+     "startGps",
+     "cornerTouchSlices"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/engine.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:cornerTouchSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cornerTouchSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crFragmentPairItems:parts/create-pick.js:crSearchResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFragmentPairItems() is called from crSearchResolve in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectClear",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectClear in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crSearchInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crSearchInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCancelSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCancelSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:document:visibilitychange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from document:visibilitychange in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from step in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from top-level in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:scroll",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport scroll handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:pageshow",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window pageshow handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:visibilitychange",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document visibilitychange handler in parts/app5.js touches syncViewport without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches renderDraft without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "176522a3c84957b8d7a5fe9d6c77a67bba5c7605470a0f47252ff6515798795d",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "df3920db911d213671d8df425f1ad3d2b09d2ef58953c0fdf8a2a24d30d316c1",
+    "parts/app4.js": "16ca791b685bc470afa86effb4fca104a3c0323de1fa9760076e7c81437bfffc",
+    "parts/app5.js": "248183728b8089b4b85d137010b4140e9cd365a5f4640b29fe887c720845e8c8",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-phase4-r4",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crCityPrepare",
+     "crFragmentPairItems",
+     "renderDraft",
+     "crSyncClear",
+     "glUnifyLabels",
+     "syncViewport",
+     "startGps",
+     "cornerTouchSlices"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/engine.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:cornerTouchSlices:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cornerTouchSlices() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crCityPrepare:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityPrepare() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crFragmentPairItems:parts/create-pick.js:crSearchResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crFragmentPairItems() is called from crSearchResolve in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectClear",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectClear in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crIsectSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crIsectSet in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:crSearchInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from crSearchInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:crSyncClear:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSyncClear() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCancelSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCancelSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crSbWhole:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crSbWhole:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:crToggleSector",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from crToggleSector in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:renderDraft:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderDraft() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:document:visibilitychange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from document:visibilitychange in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from step in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from top-level in parts/app5.js",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:scroll",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport scroll handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:pageshow",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window pageshow handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window resize handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:visibilitychange",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document visibilitychange handler in parts/app5.js touches syncViewport without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches renderDraft without dismissing it",
+     "status": "covered",
+     "note": "comment-trims round: only comment text changed in this seat's function; per-part comment-blanked skeletons and the assembled bundle skeleton are identical before/after, so this sibling path's code is byte-identical and its behaviour cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "5ca4f37b317525cf91a9847ca17d11ed33fab5862c2e693b1d803d78ee8da5eb",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "366d373998ba48511ec65fed412fb96d175bf1e4929c6eeeb72f0a238fae0570",
+    "parts/app4.js": "583ae807652926946670b066141fb6dd1f142f5ca114a069a1979ad6bf1ef4a9",
+    "parts/app5.js": "248183728b8089b4b85d137010b4140e9cd365a5f4640b29fe887c720845e8c8",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 comment-trims"
   }
  ]
 }

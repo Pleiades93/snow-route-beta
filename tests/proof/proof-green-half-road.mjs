@@ -429,7 +429,7 @@ check('R7: the glow is one custom shader layer fed by the writer, blur stack gon
 // and the glow sync - the 1.223 active flags live in the source features, so
 // the close must rebuild them or the street stays vibrant.
 check('R7: the draft render syncs the glow, and the sector close puts it out explicitly',
-  pick.includes('syncCrGlow(); // Beta 1.208: the trim glow tracks the draft') && pick.includes('crSectorReset(); renderDraft(); syncCrGlow();'));
+  pick.includes('syncCrGlow(); // the trim glow tracks the draft') && pick.includes('crSectorReset(); renderDraft(); syncCrGlow();'));
 
 console.log(failed === 0 ? 'ALL CHECKS PASS' : failed + ' CHECK(S) FAILED');
 process.exit(failed === 0 ? 0 : 1);
