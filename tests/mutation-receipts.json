@@ -12523,6 +12523,21 @@
    "red": "scanner at 45c83233 run on a scratch root whose proof-neg.mjs guards a.indexOf('write();') > a.indexOf('anchor') with a.indexOf('anchor') > -10 and 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F24 pins the shape in-suite; full suite 116/116 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r9",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "cc3f846fca8b0fecebef7ee1f91d1bedda28d4870b0200f8a59629870df422b8",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner collects indexOf calls by regex over raw text, so call-shaped text inside a needle string becomes a phantom operand; and it reads only the first literal of a concatenated needle, so a prefix guard clears the whole pin",
+   "red": "scanner at ecb5b68c run on a scratch root whose proof-neg.mjs pins a.indexOf(\"foo.indexOf('bar')\") > a.indexOf('anchor') with 'anchor' absent, and b.includes('an') && b.indexOf('write();') > b.indexOf('an' + 'chor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings for either shape",
+   "green": "fixed scanner flags both on the same scratch file (line 4 and line 5, needle 'anchor'); fixtures F25-F27 pin the shapes in-suite; full suite 119/119 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

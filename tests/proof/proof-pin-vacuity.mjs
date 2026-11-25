@@ -15,7 +15,6 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
 const LIT = String.raw`('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")`;
-const INC = new RegExp(String.raw`\.includes\(\s*(` + LIT + String.raw`)\s*\)`, 'g');
 
 function checkStatements(text) {
   const out = [];
@@ -50,48 +49,81 @@ const unquote = (tok) => (tok.length >= 2 && (tok[0] === "'" || tok[0] === '"') 
 
 function scanText(text) {
   const consts = constLiterals(text);
-  const resolve = (tok) => unquote(consts[tok] || tok);
   const negatedBefore = (stmt, idx) => {
     let b = idx - 1;
     while (b >= 0 && /[\w$.]/.test(stmt[b])) b--;
     while (b >= 0 && (stmt[b] === ' ' || stmt[b] === '(')) b--;
     return stmt[b] === '!';
   };
+  const callEnd = (stmt, p) => {
+    let depth = 1, j = p, instr = null, esc = false, bounded = false;
+    for (; j < stmt.length; j++) {
+      const c = stmt[j];
+      if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; }
+      else if (c === "'" || c === '"' || c === '`') instr = c;
+      else if (c === '(') depth++;
+      else if (c === ')') { depth--; if (!depth) break; }
+      else if (c === ',' && depth === 1) bounded = true;
+    }
+    return [j, bounded];
+  };
+  const parseNeedle = (stmt, p) => {
+    const vals = [], toks = [];
+    let q = p;
+    for (;;) {
+      while (q < stmt.length && /\s/.test(stmt[q])) q++;
+      const tk = new RegExp('^(?:' + LIT + '|[A-Za-z_$][\\w$]*)').exec(stmt.slice(q));
+      if (!tk) return null;
+      toks.push(tk[0]);
+      if (tk[0][0] === "'" || tk[0][0] === '"') vals.push(unquote(tk[0]));
+      else if (consts[tk[0]] !== undefined) vals.push(unquote(consts[tk[0]]));
+      else vals.push(null);
+      q += tk[0].length;
+      let r = q;
+      while (r < stmt.length && /\s/.test(stmt[r])) r++;
+      if (stmt[r] !== '+') { q = r; break; }
+      q = r + 1;
+    }
+    if (toks.length === 1) return [vals[0] === null ? toks[0] : vals[0], q];
+    return [vals.every((v) => v !== null) ? vals.join('') : toks.join(' + '), q];
+  };
   const findings = [];
   for (const [off, stmt] of checkStatements(text)) {
     const calls = [];
-    const occ = /\.indexOf\(/g;
-    let m;
-    while ((m = occ.exec(stmt)) !== null) {
-      let p = m.index + m[0].length;
-      while (/\s/.test(stmt[p])) p++;
-      const nm = new RegExp('^(?:' + LIT + '|[A-Za-z_$][\\w$]*)').exec(stmt.slice(p));
-      if (!nm) continue;
-      let depth = 1, j = p + nm[0].length, instr = null, esc = false, bounded = false;
-      for (; j < stmt.length; j++) {
-        const c = stmt[j];
-        if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; }
-        else if (c === "'" || c === '"' || c === '`') instr = c;
-        else if (c === '(') depth++;
-        else if (c === ')') { depth--; if (!depth) break; }
-        else if (c === ',' && depth === 1) bounded = true;
+    const incNeedles = [];
+    let i = 0, instr = null, esc = false;
+    while (i < stmt.length) {
+      const c = stmt[i];
+      if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; i++; continue; }
+      if (c === "'" || c === '"' || c === '`') { instr = c; i++; continue; }
+      if (c === '/' && stmt[i + 1] === '/') { while (i < stmt.length && stmt[i] !== '\n') i++; continue; }
+      if (c === '/' && stmt[i + 1] === '*') { const e = stmt.indexOf('*/', i + 2); i = e < 0 ? stmt.length : e + 2; continue; }
+      if (stmt.startsWith('.indexOf(', i)) {
+        const pn = parseNeedle(stmt, i + 9);
+        if (!pn) { i += 9; continue; }
+        const [close, bounded] = callEnd(stmt, pn[1]);
+        calls.push([i, close + 1, pn[0], bounded]);
+        i = close + 1;
+        continue;
       }
-      calls.push([m.index, j + 1, resolve(nm[0]), bounded]);
+      if (stmt.startsWith('.includes(', i)) {
+        const pn = parseNeedle(stmt, i + 10);
+        if (!pn) { i += 10; continue; }
+        const [close] = callEnd(stmt, pn[1]);
+        const after = stmt.slice(close + 1).trimStart();
+        if (!negatedBefore(stmt, i) && !/^(===?\s*false|!==?\s*true)/.test(after)) incNeedles.push(pn[0]);
+        i = close + 1;
+        continue;
+      }
+      i++;
     }
     if (calls.length < 2) continue;
-    const guardNeedles = new Set();
+    const guardNeedles = new Set(incNeedles);
     const boundedGuardNeedles = new Set();
     for (const c of calls) {
       if (!/^\s*(>\s*-1(?![\d.])|>=\s*0(?![\d.]))/.test(stmt.slice(c[1]))) continue;
       if (negatedBefore(stmt, c[0])) continue;
       (c[3] ? boundedGuardNeedles : guardNeedles).add(c[2]);
-    }
-    INC.lastIndex = 0;
-    while ((m = INC.exec(stmt)) !== null) {
-      if (negatedBefore(stmt, m.index)) continue;
-      const after = stmt.slice(m.index + m[0].length).trimStart();
-      if (/^(===?\s*false|!==?\s*true)/.test(after)) continue;
-      guardNeedles.add(unquote(m[1]));
     }
     const guarded = (n) => { for (const g of guardNeedles) if (n === g || g.includes(n)) return true; return false; };
     const hasOr = stmt.includes('||');
@@ -156,6 +188,9 @@ const FIXTURES = [
   ['F22 a bounded left of < is flagged', `check('x', a.indexOf('gone', 3) < a.indexOf('here'));`, 1],
   ['F23 a needle wrapped onto its own line is still a pin', "check('x', a.indexOf('write();') > a.indexOf(\n'anchor'));", 1],
   ['F24 a > -10 clause is not a presence guard', `check('x', a.indexOf('anchor') > -10 && a.indexOf('write();') > a.indexOf('anchor'));`, 1],
+  ['F25 indexOf text inside a needle is not an operand', `check('x', a.indexOf("foo.indexOf('bar')") > a.indexOf('anchor'));`, 1],
+  ['F26 a concatenated needle resolves whole', `check('x', a.includes('an') && a.indexOf('write();') > a.indexOf('an' + 'chor'));`, 1],
+  ['F27 a guard on the whole concatenated needle clears it', `check('x', a.includes('anchor') && a.indexOf('write();') > a.indexOf('an' + 'chor'));`, 0],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
