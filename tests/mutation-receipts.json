@@ -11903,6 +11903,791 @@
    "red": "local 2026-11-25: proof-glyph-assets FAIL C3 (7 pass, 1 fail) with the mutation applied",
    "green": "local 2026-11-25: proof-glyph-assets 8 pass, 0 fail on the final tree",
    "issued": "2026-11-25 glyph-extraction phase 5 (re-observation after the pr-limits line wraps)"
+  },
+  {
+   "id": "correct-pin-vacuity",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "b8d1a8be76f3928bd756596eef3abf9ef3b716580a64cf840882dfed164714dd",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "tests/proof/proof-1263.mjs check 6 reverted to its historical form: the anchor needle restored to 'LABEL RULE (Andrew, 1.294)' (absent from parts/app2.js) and the presence guard removed - the exact shape that passed vacuously until the trims round",
+   "red": "local 2026-11-25: proof-pin-vacuity FAIL twice (flags proof-1263.mjs line 97, needle 'LABEL RULE (Andrew, 1.294)'); proof-1263 itself PASSED under the mutation - the vacuity demonstrated",
+   "green": "local 2026-11-25: proof-pin-vacuity 102 pass 0 fail and proof-1263 13 pass 0 fail on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-1263-anchor-guard",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "parts/app2.js: the anchor comment 'LABEL RULE: titles name the route below 15' renamed to 'below 16' - the guarded check 6 must now fail instead of passing on indexOf -1",
+   "red": "local 2026-11-25: proof-1263 FAIL check 6 only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-1263 13 pass 0 fail on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-1226-switch-guard",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1226.mjs": "c5ab317f3e3807453abe5e21f1a55e21a50a13015348cc938eb209ed108330a3",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5"
+   },
+   "mutation": "parts/head.html: the first '.m-switch { appearance: none;' renamed to '.m-switchX {' - check 1d's ordering anchor removed",
+   "red": "local 2026-11-25: proof-1226 FAIL check 1d only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-1226 all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-1233-b2b-repin",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "d886c7c35e8cff3ab3438bbfc93e43d34f066530fcdb57938b0a1cbbb2500f7e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "parts/app2.js: the routeCheck stamp line in routeRowEl moved above the routeRowShell build line - B2b's appended-last ordering inverted (the old B2b anchor 'b.appendChild(del);' no longer exists: Delete moved to the dropdown card at the row split, and the unguarded pin had passed vacuously on indexOf -1)",
+   "red": "local 2026-11-25: proof-1233 FAIL check B2b only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-1233 all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-1236-e2-repin",
+   "check": "tests/proof/proof-1236.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1236.mjs": "1c82e2fca47c98f65ba8a3f24a7be555446f16c81d2e2846cc5871c5a3a1a4c6",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js exitCreate: the crResetSearch(); and crIsectClear(); lines swapped - E2's teardown ordering inverted (the old E2 anchor 'crSearchSeq++;' left exitCreate when the bump moved into crResetSearch at the Arch-3 split, and the unguarded pin had passed vacuously on indexOf -1)",
+   "red": "local 2026-11-25: proof-1236 FAIL check E2 only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-1236 all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-city-search-1a-guard",
+   "check": "tests/proof/proof-city-search-owner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-city-search-owner.mjs": "824db3bb43071222d3342682e182cf6fb6cb07dbc6f30963f62001b11c062efb",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js: the city-search state declaration line moved to below the crResetCitySearch definition - check 1a's beside-the-state ordering inverted",
+   "red": "local 2026-11-25: proof-city-search-owner FAIL check 1a (plus its downstream body checks 4b-5), observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-city-search-owner all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-prep-begin-1-guard",
+   "check": "tests/proof/proof-prep-begin-owner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-prep-begin-owner.mjs": "a58ad93d0191c1ff353a05c6c32d3acf067bd8c60708983620b6da934527daa4",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36"
+   },
+   "mutation": "parts/create-fetch.js: the crSetPrepState definition renamed to crSetPrepStateX - check 1's ordering anchor removed",
+   "red": "local 2026-11-25: proof-prep-begin-owner FAIL check 1 only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-prep-begin-owner all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-owner",
+   "check": "tests/browser/extract-fn.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-pack-expect",
+   "check": "tests/browser/pack-expect.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/pack-expect.mjs": "7a3352817a41319032aca04630fc6a4a0a3325a75bae80253fc95d4696aa75f6",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-judging-fixtures",
+   "check": "tests/browser/selftest-judging-fixtures.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-judging-fixtures.mjs": "fed69b0357d3c195319254cf999a16a680dee5785fbfd7a6d94b45ac523cc71e",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-trail-segments",
+   "check": "tests/browser/selftest-trail-segments.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-trail-segments.mjs": "8f910133fb0c48d0af47ebfc8786c1c57dd53a77dda96061a9a937038a9ccfcd",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-nv1152",
+   "check": "tests/browser/selftest-nv1152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-nv1152.mjs": "145689b456d29d9f4dee114b298d518862bf73583366d238e0765f3fad47c983",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-packfields",
+   "check": "tests/browser/selftest-packfields.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-packfields.mjs": "3227e072516727c0f0c715f006d42b9394b4089e4730676347aa2c8e52329c97",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-history",
+   "check": "tests/browser/selftest-history.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-history.mjs": "20da853f91313e2604ad2973bc31a8e01e168832fd16477a98aee21832ae9ee9",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-store-result",
+   "check": "tests/browser/selftest-store-result.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-store-result.mjs": "80714dc523a702e9845b114c6351dba8316f01b9b1d2ec4a4ed83f520e687e53",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-tx",
+   "check": "tests/browser/selftest-tx.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-tx.mjs": "0601bafc8183723840927596f141cb656d79b68a7f10fc8b04845fbe67526ceb",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-board",
+   "check": "tests/browser/selftest-board.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-board.mjs": "754500c9b484fefcca29b21b8b2177794a731636e8fee8085d6799f4090964e0",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-gps-package",
+   "check": "tests/browser/selftest-gps-package.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-gps-package.mjs": "f6caf0beb43d4921704728701681782a9dde7aa8676574dc1d05427fabadd47f",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-pr23-fixes",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "841b8caca0f1c1bce16d928369e707f33140273678848515733ff5a015696da3",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-1226-switch-guard-r2",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1226.mjs": "94f8957a67dab0b1763c09e3e3d1124afcb7ca36865d6187e81222816585e7a4",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5"
+   },
+   "mutation": "parts/head.html: the first '.m-switch { appearance: none;' renamed to '.m-switchX {' - check 1d's ordering anchor removed (r2: same replay on the final wrapped check text)",
+   "red": "local 2026-11-25: proof-1226 FAIL check 1d only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-1226 all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-1233-b2b-repin-r2",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "a24b91a9d798894fab7242f7c5346759743470b54959f98c2d366ef5b9abe6e5",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "parts/app2.js: the routeCheck stamp line in routeRowEl moved above the routeRowShell build line - B2b's appended-last ordering inverted (r2: same replay on the final wrapped check text)",
+   "red": "local 2026-11-25: proof-1233 FAIL check B2b only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-1233 all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-1236-e2-repin-r2",
+   "check": "tests/proof/proof-1236.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1236.mjs": "c099059cb50322b7176b15d69bc8771a8322114da40ccb02aab3c9f85942488b",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js exitCreate: the crResetSearch(); and crIsectClear(); lines swapped - E2's teardown ordering inverted (r2: same replay on the final wrapped check text)",
+   "red": "local 2026-11-25: proof-1236 FAIL check E2 only, observed twice with the mutation applied",
+   "green": "local 2026-11-25: proof-1236 all pass on the final tree",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-tx-r2",
+   "check": "tests/browser/selftest-tx.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-tx.mjs": "34875b9d652e63ebeb617d6e1af7cd41982152199a05013c8a8dbcc8bf8c7b5e",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-pr23-fixes-r2",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "12807eb31a293b043b7af7a01a2222cd51f34313c1ada536b3aa6e17821e79f8",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-extract-store-result-r2",
+   "check": "tests/browser/selftest-store-result.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-store-result.mjs": "dfb50b63763cf109997483b1a7f835e68f899ebaed9d9b80afa2653809f68dc4",
+    "tests/browser/extract-fn.mjs": "d2080695056dae508f9994421a4bb08b21b1f4038415dee1a5c14324c5a8450b"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
+   "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
+   "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-pin-vacuity-r2",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "6e93a8a5f0b0c4c807e788cda15cc1eaa807ed3313411143ff6d6d3235c24857",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner counts a negated or inverted includes() as a presence guard (the INC loop without the negation and inversion rejection)",
+   "red": "branch scanner at 980fabc3 run on a scratch root whose proof-neg.mjs pins S.indexOf('a()') < S.indexOf('b()') behind !S.includes('a()') || and behind S.includes('a()') === false ||: the scan check for proof-neg.mjs PASSED - both vacuous pins unflagged (only the scratch suite-size check failed)",
+   "green": "fixed scanner on the same scratch root flags both pins (line 3 negated, line 4 inverted, needle 'a()'); fixture table F11/F12 pin the shapes in-suite; full suite 104/104 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-owner-r2",
+   "check": "tests/browser/extract-fn.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-pack-expect-r2",
+   "check": "tests/browser/pack-expect.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/pack-expect.mjs": "7a3352817a41319032aca04630fc6a4a0a3325a75bae80253fc95d4696aa75f6",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-judging-fixtures-r2",
+   "check": "tests/browser/selftest-judging-fixtures.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-judging-fixtures.mjs": "fed69b0357d3c195319254cf999a16a680dee5785fbfd7a6d94b45ac523cc71e",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-trail-segments-r2",
+   "check": "tests/browser/selftest-trail-segments.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-trail-segments.mjs": "8f910133fb0c48d0af47ebfc8786c1c57dd53a77dda96061a9a937038a9ccfcd",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-nv1152-r2",
+   "check": "tests/browser/selftest-nv1152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-nv1152.mjs": "145689b456d29d9f4dee114b298d518862bf73583366d238e0765f3fad47c983",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-packfields-r2",
+   "check": "tests/browser/selftest-packfields.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-packfields.mjs": "3227e072516727c0f0c715f006d42b9394b4089e4730676347aa2c8e52329c97",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-history-r2",
+   "check": "tests/browser/selftest-history.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-history.mjs": "20da853f91313e2604ad2973bc31a8e01e168832fd16477a98aee21832ae9ee9",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-board-r2",
+   "check": "tests/browser/selftest-board.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-board.mjs": "754500c9b484fefcca29b21b8b2177794a731636e8fee8085d6799f4090964e0",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-gps-package-r2",
+   "check": "tests/browser/selftest-gps-package.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-gps-package.mjs": "f6caf0beb43d4921704728701681782a9dde7aa8676574dc1d05427fabadd47f",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-tx-r3",
+   "check": "tests/browser/selftest-tx.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-tx.mjs": "34875b9d652e63ebeb617d6e1af7cd41982152199a05013c8a8dbcc8bf8c7b5e",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-pr23-fixes-r3",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "12807eb31a293b043b7af7a01a2222cd51f34313c1ada536b3aa6e17821e79f8",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-store-result-r3",
+   "check": "tests/browser/selftest-store-result.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-store-result.mjs": "dfb50b63763cf109997483b1a7f835e68f899ebaed9d9b80afa2653809f68dc4",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r3",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "1131237a6b3b2d0f2698c100e7d2e167661bee765b62c294937a2bcd95c2a014",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner populates the safe-side set from non-strict (<=, >=) comparisons too, so two absent needles in a mutual non-strict pair exempt each other (-1 <= -1 is true)",
+   "red": "scanner at 0382ab44 run on a scratch root whose proof-neg.mjs checks a.indexOf('left') <= a.indexOf('right') && a.indexOf('right') <= a.indexOf('left') against a = 'write();' (both needles absent): the scan check for proof-neg.mjs PASSED - no findings, the vacuous pair was certified",
+   "green": "fixed scanner flags both needles on the same scratch file (line 3, ops <=, needles 'left' and 'right'); fixtures F13 (mutual non-strict flagged x2) and F14 (mutual strict still guards) pin the correction in-suite; full suite 106/106 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r4",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "2999cb9dace74a945c494b14879d3b84de5469daef1ae3dede684ec91d89f878",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner's between-operands pattern rejects parentheses, so an ordering pin with a parenthesized operand is silently skipped instead of checked",
+   "red": "scanner at 654b1104 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > (a.indexOf('anchor')) and (a.indexOf('gone')) < a.indexOf('here') with the vacuous needles absent: the scan check for proof-neg.mjs PASSED - no findings for either shape",
+   "green": "fixed scanner flags both on the same scratch file (line 3 needle 'anchor' via >, line 4 needle 'gone' via <); fixtures F15/F16 pin the shapes in-suite; full suite 108/108 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r5",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "6cf7123114ccfd265a03053345e9c3b34634bdc418f92c1409f3df676a587e02",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner reads a negated comparison at face value: its safe-side operand enters the safe set although the negation is true exactly when that operand is absent, and a negated indexOf presence guard counts as a guard",
+   "red": "scanner at 8bff288e run on a scratch root whose proof-neg.mjs checks !(a.indexOf('left') < a.indexOf('right')) && a.indexOf('right') < a.indexOf('left') with a = 'left' ('right' absent, the check passes on nothing): the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (needle 'right', ops '>=,<' - the negated comparison read under its flipped operator); fixtures F17/F18/F19 pin the negated shapes in-suite; full suite 111/111 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-1227-bounded-guard",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js: the crIsectClear(); call inside the crClear handler (the occurrence each bounded pin searches for from the listener bound) renamed to crIsectClear( ); - the bounded search finds no call there",
+   "red": "the strengthened check fails (proof-1227 5b 27/28, proof-1236 E3 23/24, proof-1243 check 18 18/19 - in each file only the strengthened check fails)",
+   "green": "part restored byte-exact: proof-1227 28/28, proof-1236 24/24, proof-1243 19/19",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-1236-bounded-guard",
+   "check": "tests/proof/proof-1236.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js: the crIsectClear(); call inside the crClear handler (the occurrence each bounded pin searches for from the listener bound) renamed to crIsectClear( ); - the bounded search finds no call there",
+   "red": "the strengthened check fails (proof-1227 5b 27/28, proof-1236 E3 23/24, proof-1243 check 18 18/19 - in each file only the strengthened check fails)",
+   "green": "part restored byte-exact: proof-1227 28/28, proof-1236 24/24, proof-1243 19/19",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-1243-bounded-guard",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js: the crIsectClear(); call inside the crClear handler (the occurrence each bounded pin searches for from the listener bound) renamed to crIsectClear( ); - the bounded search finds no call there",
+   "red": "the strengthened check fails (proof-1227 5b 27/28, proof-1236 E3 23/24, proof-1243 check 18 18/19 - in each file only the strengthened check fails)",
+   "green": "part restored byte-exact: proof-1227 28/28, proof-1236 24/24, proof-1243 19/19",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r6",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "dcc2521625efebf0094c9d953ec81ad3e9ce0641a74ec5803180fd2e64d58a65",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner treats a bounded indexOf(needle, offset) operand like an unbounded one, so a plain presence guard clears a pin whose bounded search returns -1 although the needle exists before the bound",
+   "red": "scanner at c3931ef2 on Codex's example (a.includes('anchor') && a.indexOf('write();') > a.indexOf('anchor', 10) with the anchor before the bound): no findings; the fixed scanner's first run also flagged three live pins of the same shape (proof-1227 5b, proof-1236 E3, proof-1243 check 18)",
+   "green": "fixed scanner flags the example (fixture F20), clears only on an identical bounded guard (F21), flags a bounded left of < (F22); the three live pins strengthened with bounded guard clauses; full suite 114/114",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r7",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "4af1c16ac78d438e694dd78ac04fd763ffd7d26e636af774539606376472370c",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner skips only spaces before an indexOf needle, so a needle wrapped onto its own line fails the needle parse and the operand is silently dropped from the scan",
+   "red": "scanner at e76948cf run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(newline 'anchor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F23 pins the wrapped-needle shape in-suite; full suite 115/115 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r8",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "d6f687a1c7e6e295d4ae70358813057dd5f9082c48cdc52d0c73af38ed62d697",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's presence-guard pattern prefix-matches, so a clause indexOf(n) > -10 (true even when the needle is absent) is accepted as a presence guard",
+   "red": "scanner at 45c83233 run on a scratch root whose proof-neg.mjs guards a.indexOf('write();') > a.indexOf('anchor') with a.indexOf('anchor') > -10 and 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F24 pins the shape in-suite; full suite 116/116 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r9",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "cc3f846fca8b0fecebef7ee1f91d1bedda28d4870b0200f8a59629870df422b8",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner collects indexOf calls by regex over raw text, so call-shaped text inside a needle string becomes a phantom operand; and it reads only the first literal of a concatenated needle, so a prefix guard clears the whole pin",
+   "red": "scanner at ecb5b68c run on a scratch root whose proof-neg.mjs pins a.indexOf(\"foo.indexOf('bar')\") > a.indexOf('anchor') with 'anchor' absent, and b.includes('an') && b.indexOf('write();') > b.indexOf('an' + 'chor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings for either shape",
+   "green": "fixed scanner flags both on the same scratch file (line 4 and line 5, needle 'anchor'); fixtures F25-F27 pin the shapes in-suite; full suite 119/119 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r10",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "97d1c524b44235fdc063f8286fce04045ecd2374c5a1253295884441cc425dfb",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's statement balancing and operand parsing ignore comment syntax, so a comment between ordering operands (carrying a parenthesis) truncates the statement and the pin is never analyzed",
+   "red": "scanner at 03623d59 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') /* ) */ > a.indexOf('anchor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixtures F28 (comment between operands) and F29 (comment-like text inside a string stays a string) pin the shapes in-suite; full suite 121/121 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r11",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "a71197d849790143b20cd0e7e7f6eb6477c7dc4925c4d929abb32b1e3916b88a",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner returns an unresolved identifier's name as its needle, so a literal guard whose text equals the name certifies a pin that actually searches for the identifier's runtime value",
+   "red": "scanner at e75782a8 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(needle) guarded by a.includes('needle'), with needle a var holding 'anchor' (absent from the source): the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 4, needle shown as 'needle'); fixtures F30 (name collision flagged) and F31 (same-identifier guard still clears) pin the shapes in-suite; full suite 123/123 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r12",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "7c43d107fd0d6a83b5304bdbad552b0db2aa85606bc1b8c361beeb5a3ac6d350",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner applies literal substring matching to tagged identifier needles (a longer identifier's tag contains a shorter one's), and resolves const declarations out of commented-out code",
+   "red": "scanner at cd952f89 on two scratch roots: (A) a.includes(needleLong) guarding a.indexOf(needle) with needle='anchor' absent - no findings; (B) a commented-out // const needle = 'present'; resolving a var needle pin - no findings",
+   "green": "fixed scanner flags both scratch pins (needle shown as 'needle'); fixtures F32/F33 pin the shapes in-suite; full suite 125/125 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r13",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "f7e6798ea538ef0a94cdc4b85cde847d1d75f8a8c4a1a2e2d51f87f60104f1b2",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner compares literal needles by source spelling instead of runtime value (escapes undecoded), and resolves const identifiers file-wide regardless of scope, so an unrelated scope's const certifies a pin",
+   "red": "scanner at 1212919a on two scratch roots: (A) a.includes('\\n') guarding a.indexOf('n') pin with a holding a newline then write(); (no letter n) - no findings; (B) const needle = 'present' inside an unrelated function resolving a var needle = 'anchor' pin - no findings",
+   "green": "fixed scanner flags both scratch pins; fixtures F34 (escapes decoded) and F35 (nested const does not resolve) pin the shapes in-suite; full suite 127/127 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r14",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "93ef1ccb736429604a96f3d6f5bb271ad89032cec1f11937b84d447ee64fd0ce",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner matches the exact text .indexOf( so an operand written with whitespace before the parenthesis (valid formatting) is silently dropped from the scan",
+   "red": "scanner at 81a53857 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf ('anchor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F36 pins the shape in-suite; full suite 128/128 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r15",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "649dacd4bcaa8d3fa7e5ff932d3c9858108348e57c67d84cc72126f00faf2acc",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's needle parser accepts only quoted literals and identifiers, so a template-literal needle returns null and its operand is silently dropped from the scan",
+   "red": "scanner at 4ec644ac run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf() with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F37 pins the shape in-suite; full suite 129/129 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r16",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "649dacd4bcaa8d3fa7e5ff932d3c9858108348e57c67d84cc72126f00faf2acc",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's needle parser accepts only quoted literals and identifiers, so a template-literal needle returns null and its operand is silently dropped from the scan",
+   "red": "scanner at 4ec644ac run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(anchor-as-template-literal) with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings (supersedes r15, whose red text lost the needle to shell quoting)",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F37 pins the shape in-suite; full suite 129/129 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r17",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "48952853b27e91ef42e0504cbe37319fdee86bb73a7538867877a53006e3c489",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "a needle identifier resolving to an interpolated template literal is treated as the template's source spelling, bypassing the interpolation check applied to inline templates",
+   "red": "scanner at 3341ec8c run on a scratch root whose proof-neg.mjs resolves needle from const needle = an-plus-interpolated-suffix and pins it behind a matching includes guard: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 5); fixture F38 pins the shape in-suite; full suite 130/130 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r18",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "f16aed42ce4d75d69d3d0160acb73c944261988108203d7fe2005a9c1ebf6343",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's statement balancing, comment blanking and collection walk do not recognize regex literals, so a parenthesis or quote inside a regex truncates the statement or corrupts string tracking and the pin escapes the scan",
+   "red": "scanner at da2da9a1 run on a scratch root whose proof-neg.mjs checks a regex character class holding a closing parenthesis before pinning an absent anchor: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixtures F39 (regex literal) and F40 (division is not a regex) pin both sides in-suite; full suite 132/132 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r19",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "e14e15e1ec142708284430973b4be129962da8b9a4fd638c8df88def8e973297",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "constant resolution does not skip regex literals, so declaration-shaped text inside a regex registers a phantom top-level const that certifies a pin",
+   "red": "scanner at 7d1893d8 run on a scratch root whose proof-neg.mjs hides a const declaration inside a regex literal and pins an identifier declared with var: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 5); fixture F41 pins the shape in-suite; full suite 133/133 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

@@ -17,17 +17,11 @@
 // loudly. State-dependent functions receive their state through factory
 // `let` bindings plus a setter, exactly like that file's trail pattern.
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 
 const app1 = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
 const app3 = readFileSync(new URL('../../parts/app3.js', import.meta.url), 'utf8');
 
-function extract(src, sig) {
-  const i = src.indexOf(sig);
-  if (i < 0) throw new Error('extraction failed: ' + sig + ' not found');
-  let depth = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}') { depth--; if (!depth) return src.slice(i, j + 1); } }
-  throw new Error('extraction failed: unbalanced ' + sig);
-}
 const mline = app1.match(/const MLAT = [0-9]+, MLNG = [0-9]+/)[0];
 const covline = app1.match(/const COV_SAMPLE_M = [0-9]+/)[0];
 const factory = new Function(`
@@ -35,27 +29,27 @@ const factory = new Function(`
   ${covline};
   let ROADS = {}, STREETNAMES = [], STREETSET = new Set(), STRETCH = {}, SAMPLES = {};
   let history = [], runStart = 0, pieces = {}, pieceTimes = {};
-  ${extract(app1, 'function distM(')}
-  ${extract(app1, 'function segLenM(')}
-  ${extract(app1, 'function stitchRuns(')}
-  ${extract(app1, 'function projOnLine(')}
-  ${extract(app1, 'function sliceLine(')}
-  ${extract(app1, 'function finishJunctionCuts(')}
-  ${extract(app1, 'function computeStretches(')}
-  ${extract(app1, 'function sanitizePieceTimes(')}
-  ${extract(app1, 'function workDoneM(')}
-  ${extract(app1, 'function liveWorkM(')}
-  ${extract(app1, 'function totalWorkM(')}
-  ${extract(app1, 'function fmtDur(')}
-  ${extract(app1, 'function fmtClock(')}
-  ${extract(app3, 'function samplesFor(')}
-  ${extract(app1, 'function validateSnap(')} // Arch-2: validateSnap lives in app1's board module now; the extraction follows it, the judged cases are unchanged
-  ${extract(app3, 'const CLEAN = {')} // Arch-6 (Beta 1.278): the archived-clean measures live in the CLEAN owner now; the doorways extracted below delegate to it - the judged cases are unchanged
-  ${extract(app3, 'function cleanCount(')}
-  ${extract(app3, 'function refRun(')}
-  ${extract(app3, 'function cleanWorkM(')}
-  ${extract(app3, 'function workRateMh(')}
-  ${extract(app3, 'function paceInfo(')}
+  ${extractFn(app1, 'function distM(')}
+  ${extractFn(app1, 'function segLenM(')}
+  ${extractFn(app1, 'function stitchRuns(')}
+  ${extractFn(app1, 'function projOnLine(')}
+  ${extractFn(app1, 'function sliceLine(')}
+  ${extractFn(app1, 'function finishJunctionCuts(')}
+  ${extractFn(app1, 'function computeStretches(')}
+  ${extractFn(app1, 'function sanitizePieceTimes(')}
+  ${extractFn(app1, 'function workDoneM(')}
+  ${extractFn(app1, 'function liveWorkM(')}
+  ${extractFn(app1, 'function totalWorkM(')}
+  ${extractFn(app1, 'function fmtDur(')}
+  ${extractFn(app1, 'function fmtClock(')}
+  ${extractFn(app3, 'function samplesFor(')}
+  ${extractFn(app1, 'function validateSnap(')} // Arch-2: validateSnap lives in app1's board module now; the extraction follows it, the judged cases are unchanged
+  ${extractFn(app3, 'const CLEAN = {')} // Arch-6 (Beta 1.278): the archived-clean measures live in the CLEAN owner now; the doorways extracted below delegate to it - the judged cases are unchanged
+  ${extractFn(app3, 'function cleanCount(')}
+  ${extractFn(app3, 'function refRun(')}
+  ${extractFn(app3, 'function cleanWorkM(')}
+  ${extractFn(app3, 'function workRateMh(')}
+  ${extractFn(app3, 'function paceInfo(')}
   return { distM, segLenM, stitchRuns, projOnLine, sliceLine, finishJunctionCuts, computeStretches,
     sanitizePieceTimes, workDoneM, liveWorkM, totalWorkM, fmtDur, fmtClock,
     samplesFor, validateSnap, refRun, cleanWorkM, workRateMh, paceInfo,

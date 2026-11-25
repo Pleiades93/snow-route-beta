@@ -26,16 +26,10 @@
 // lenient-cleaner contract. The fixtures file is NOT edited: its values
 // stay what the pristine 1.130 code produced.
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 const app1src = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
 const createSrc = readFileSync(new URL('../../parts/create-packs.js', import.meta.url), 'utf8'); // Beta 1.134: normalizePack lived in create.js since the app4 split; Tranche 3 B1: normalizePack now lives in create-packs.js
 const cases = JSON.parse(readFileSync(new URL('./fixtures/packfields-cases.json', import.meta.url), 'utf8'));
-function extract(src, name) {
-  const i = src.indexOf('function ' + name + '(');
-  if (i < 0) throw new Error(name + ' not found');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
-  return src.slice(i, j + 1);
-}
 function constArray(src, name) { // the literal of `const NAME = [ ... ];`
   const i = src.indexOf('const ' + name + ' =');
   if (i < 0) throw new Error(name + ' not found');
@@ -50,7 +44,7 @@ function constNum(src, name) { // the value of a numeric const (Beta 1.136: the 
   if (!m) throw new Error(name + ' not found');
   return Number(m[1]);
 }
-const JUDGED = extract(app1src, 'distM') + '\n' + extract(app1src, 'computeRouteBox') + '\n' + extract(createSrc, 'normalizePack');
+const JUDGED = extractFn(app1src, 'function distM(') + '\n' + extractFn(app1src, 'function computeRouteBox(') + '\n' + extractFn(createSrc, 'function normalizePack(');
 // /correct Phase 3 round (d) (class C4 generalized): the cap list is DERIVED
 // from the judged code, never hand-kept. Through Beta 1.259 this was a
 // literal list of the caps the sandbox must receive; a cap the validator

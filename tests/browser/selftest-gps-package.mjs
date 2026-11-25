@@ -27,15 +27,9 @@
 // a tighter 28 m accuracy gate (median/p90/tail all flat-to-worse). The last
 // is pinned below: GPS_ACCURACY_M stays 65.
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 const app1 = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
 const app3 = readFileSync(new URL('../../parts/app3.js', import.meta.url), 'utf8');
-function extractFrom(src, name) {
-  const i = src.indexOf('function ' + name + '(');
-  if (i < 0) throw new Error(name + ' not found');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
-  return src.slice(i, j + 1);
-}
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 const near = (a, b, eps) => Math.abs(a - b) <= eps;
@@ -50,10 +44,10 @@ if (!/const HEAD_Q = 400;/.test(headQLine)) throw new Error('HEAD_Q pin: the shi
 const headFactory = new Function(`
   let smHeading = null, lastHeadFixAt = 0, lastHeadFixPerf = 0, followPaused = false;
   let headF = null;
-  ${extractFrom(app3, 'headDelta')}
+  ${extractFn(app3, 'function headDelta(')}
   ${headQLine}
-  ${extractFrom(app3, 'headSigma')}
-  ${extractFrom(app3, 'updateHeading')}
+  ${extractFn(app3, 'function headSigma(')}
+  ${extractFn(app3, 'function updateHeading(')}
   return { updateHeading, get: () => smHeading, getF: () => headF, reset: () => { smHeading = null; lastHeadFixAt = 0; lastHeadFixPerf = 0; headF = null; } };
 `)();
 const herr = (z) => Math.abs(((((headFactory.get() - z + 180) % 360) + 360) % 360) - 180);

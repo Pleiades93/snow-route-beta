@@ -107,7 +107,9 @@ check('B1g: the tallest meta still fits - the pair leading is tightened', head.i
 
 // ---------- B2: the disc check ----------
 check('B2a: the badge build is gone from app2 (no visible loaded text is built; fix round 1: the words survive only as the check alt)', !app2.includes('routeBadge') && !app2.includes('routeNameRow') && !app2.includes("textContent = 'Currently loaded'"));
-check('B2b: the loaded row is stamped with the disc check, tab mode only, after Delete', app2.includes("ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck);") && app2.indexOf("ck.className = 'routeCheck'") > app2.indexOf('b.appendChild(del);'));
+check('B2b: the loaded row is stamped with the disc check, tab mode only, appended last in its builder (premise update: Delete moved to the dropdown card when the row split - the stamp orders after the shell build)',
+  app2.includes("ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck);") && app2.includes("routeRowShell('div', p.name") &&
+  app2.indexOf("ck.className = 'routeCheck'") > app2.indexOf("routeRowShell('div', p.name"));
 check('B2e (fix round 1): the loaded state has exactly one accessible name - the check alt - and no visible loaded text returns', (app2.match(/ck\.alt = 'Currently loaded';/g) || []).length === 1 && !app2.includes("ck.alt = '';") && !head.includes('Currently loaded'));
 check('B2c: the badge CSS is gone and the check stands at 25px', !head.includes('.routeBadge') && !head.includes('.routeNameRow') && head.includes('#routeMenu .routeCheck { width: 25px; height: 25px; flex: none; }'));
 check('B2d: a loaded created route needs no extra clearance - the :has(.routeDel) rules retired with the in-row Delete (Beta 1.271: Delete lives in the dropdown; the check alone fits the base rule)', !head.includes('.routeRow:has(> .routeDel)') && !head.includes('padding-right: 157px') && !head.includes('padding-right: 122px') && head.includes('#routeMenu .routeMeta { position: absolute;'));

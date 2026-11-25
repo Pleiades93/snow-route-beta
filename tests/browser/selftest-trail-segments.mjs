@@ -11,27 +11,21 @@
 // Any behavioural drift - a moved constant, a reordered walk, a changed
 // boundary - fails here in under a second.
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 
 const app1 = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
 const app3 = readFileSync(new URL('../../parts/app3.js', import.meta.url), 'utf8');
 const app4 = readFileSync(new URL('../../parts/app4.js', import.meta.url), 'utf8');
 const golden = JSON.parse(readFileSync(new URL('./fixtures/trail-golden.json', import.meta.url), 'utf8'));
 
-function extract(src, sig) {
-  const i = src.indexOf(sig);
-  if (i < 0) throw new Error('extraction failed: ' + sig + ' not found');
-  let depth = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}') { depth--; if (!depth) return src.slice(i, j + 1); } }
-  throw new Error('extraction failed: unbalanced ' + sig);
-}
 const mline = app1.match(/const MLAT = [0-9]+, MLNG = [0-9]+/)[0];
 const factory = new Function(`
   ${mline};
   let trail = [], trailSessions = [];
-  ${extract(app1, 'function distM(')}
-  ${extract(app1, 'function trailSegments(')}
-  ${extract(app3, 'function trailKm(')}
-  ${extract(app4, 'function buildGpx(')}
+  ${extractFn(app1, 'function distM(')}
+  ${extractFn(app1, 'function trailSegments(')}
+  ${extractFn(app3, 'function trailKm(')}
+  ${extractFn(app4, 'function buildGpx(')}
   return { trailSegments, trailKm, buildGpx, set: (t, s) => { trail = t; trailSessions = s; } };
 `);
 const A = factory();

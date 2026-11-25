@@ -96,6 +96,7 @@ check("5: the '-route' clone layers are removed at the top of the label pass and
 // ---------- (6) THE NAMED EXCEPTION: R1 ----------
 check("6: R1 symbol-spacing is owned in glUnifyLabels at the top of the road branch, value 250 (Beta 1.294 premise update: Andrew re-picked the repetition on 2026-11-24; the write now covers the originals and the handover clones)",
   app2.includes("setL(L.id, 'symbol-spacing', 250);") &&
+  app2.includes('LABEL RULE: titles name the route below 15') &&
   app2.indexOf("setL(L.id, 'symbol-spacing', 250);") > app2.indexOf('LABEL RULE: titles name the route below 15'));
 
 // ---------- (7) the heal is retired ----------

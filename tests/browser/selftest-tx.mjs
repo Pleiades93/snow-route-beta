@@ -18,14 +18,8 @@
 // contract (a failing step whose failure carries no failKind is treated as
 // 'verify' and IS undone) - each is marked inline.
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 const src = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
-function extract(name) {
-  const i = src.indexOf('function ' + name + '(');
-  if (i < 0) throw new Error(name + ' not found in app1.js');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
-  return src.slice(i, j + 1);
-}
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 // ---- fake storage: modes per case ----
@@ -57,7 +51,14 @@ function makeFake(mode) {
 function build(mode) {
   const f = makeFake(mode);
   const api = new Function('lsSet', 'lsDel', 'lsGet', 'rawRead', 'RAW_READ_FAILED',
-    extract('storeOk') + '\n' + extract('storeFail') + '\n' + extract('txSet') + '\n' + extract('txDel') + '\n' + extract('runTx') + '\n' + extract('finishReconcileAction') + '\n' + extract('finishBoardMatch') + '\n' + extract('finishReconcileNoRunAction') + '\nreturn { txSet, txDel, runTx, finishReconcileAction, finishBoardMatch, finishReconcileNoRunAction };')(f.lsSet, f.lsDel, f.lsGet, f.rawRead, f.RAW_READ_FAILED);
+    extractFn(src, 'function storeOk(') + '\n' +
+    extractFn(src, 'function storeFail(') + '\n' +
+    extractFn(src, 'function txSet(') + '\n' +
+    extractFn(src, 'function txDel(') + '\n' +
+    extractFn(src, 'function runTx(') + '\n' +
+    extractFn(src, 'function finishReconcileAction(') + '\n' +
+    extractFn(src, 'function finishBoardMatch(') + '\n' +
+    extractFn(src, 'function finishReconcileNoRunAction(') + '\n' + '\nreturn { txSet, txDel, runTx, finishReconcileAction, finishBoardMatch, finishReconcileNoRunAction };')(f.lsSet, f.lsDel, f.lsGet, f.rawRead, f.RAW_READ_FAILED);
   return { f, api };
 }
 // ---- txSet / txDel verification semantics ----

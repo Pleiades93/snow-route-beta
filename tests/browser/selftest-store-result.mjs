@@ -4,15 +4,10 @@
 // storeOk/storeFail from parts/app1.js by balanced-brace extraction (same method
 // as selftest-trail-segments.mjs).
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 const src = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
-function extract(name) {
-  const i = src.indexOf('function ' + name + '(');
-  if (i < 0) throw new Error(name + ' not found in app1.js');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
-  return src.slice(i, j + 1);
-}
-const { storeOk, storeFail } = new Function(extract('storeOk') + '\n' + extract('storeFail') + '\nreturn { storeOk, storeFail };')();
+const { storeOk, storeFail } = new Function(
+  extractFn(src, 'function storeOk(') + '\n' + extractFn(src, 'function storeFail(') + '\nreturn { storeOk, storeFail };')();
 const F = JSON.parse(readFileSync(new URL('./fixtures/store-result.json', import.meta.url), 'utf8'));
 const val = v => v === 'UNDEF' ? undefined : v;
 let pass = 0, fail = 0;
