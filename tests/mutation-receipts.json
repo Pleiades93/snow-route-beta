@@ -12228,6 +12228,20 @@
    "red": "local 2026-11-25: with the neuter applied, this check FAILed in two full runs (all 11 extract-fn consumers failed together)",
    "green": "local 2026-11-25: all pass on the final tree with the owner restored byte-exact",
    "issued": "2026-11-25 correct-block5"
+  },
+  {
+   "id": "correct-pin-vacuity-r2",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "6e93a8a5f0b0c4c807e788cda15cc1eaa807ed3313411143ff6d6d3235c24857",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner counts a negated or inverted includes() as a presence guard (the INC loop without the negation and inversion rejection)",
+   "red": "branch scanner at 980fabc3 run on a scratch root whose proof-neg.mjs pins S.indexOf('a()') < S.indexOf('b()') behind !S.includes('a()') || and behind S.includes('a()') === false ||: the scan check for proof-neg.mjs PASSED - both vacuous pins unflagged (only the scratch suite-size check failed)",
+   "green": "fixed scanner on the same scratch root flags both pins (line 3 negated, line 4 inverted, needle 'a()'); fixture table F11/F12 pin the shapes in-suite; full suite 104/104 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

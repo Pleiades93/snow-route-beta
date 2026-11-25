@@ -1,16 +1,11 @@
 // proof-pin-vacuity.mjs - /correct block 5 (fix_id: correct-pin-vacuity).
-// An ordering pin `a.indexOf(x) > a.indexOf(y)` passes vacuously when
-// y is absent: indexOf gives -1 and any position beats -1. Proof-1263's
-// anchor needle (a comment in app2) drifted exactly this way and the
-// check passed on nothing until the trims round re-pinned it.
-// This proof scans every live proof for that shape: in a direct
-// indexOf ordering comparison, the needle on the vacuous side (left
-// of < or <=, right of > or >=) must be presence-guarded in the same
-// check - by indexOf(n) > -1 / >= 0, by an includes() whose needle
-// is or contains it, or by also standing on a safe side (no ||).
-// Section 1 proves the scanner on synthetic statements; section 2
-// scans the suite. This file is exempt from its own scan: a parser
-// cannot reliably parse its own parser source.
+// An ordering pin passes vacuously when its anchor needle is absent:
+// indexOf gives -1, and any real position beats -1.
+// This proof scans every live proof for that shape: the needle on the
+// vacuous side of an ordering comparison must be presence-guarded in
+// the same check (indexOf(n) > -1, or a non-negated includes() of it).
+// This file is exempt from its own scan: a parser cannot reliably
+// parse its own parser source.
 import { readFileSync, readdirSync } from 'node:fs';
 
 const root = new URL('../../', import.meta.url);
@@ -69,7 +64,15 @@ function scanText(text) {
     IDX_GUARD.lastIndex = 0;
     while ((m = IDX_GUARD.exec(stmt)) !== null) guardNeedles.add(resolve(m[1]));
     INC.lastIndex = 0;
-    while ((m = INC.exec(stmt)) !== null) guardNeedles.add(unquote(m[1]));
+    while ((m = INC.exec(stmt)) !== null) {
+      let b = m.index - 1;
+      while (b >= 0 && /[\w$.]/.test(stmt[b])) b--;
+      while (b >= 0 && (stmt[b] === ' ' || stmt[b] === '(')) b--;
+      if (stmt[b] === '!') continue;
+      const after = stmt.slice(m.index + m[0].length).trimStart();
+      if (/^(===?\s*false|!==?\s*true)/.test(after)) continue;
+      guardNeedles.add(unquote(m[1]));
+    }
     const guarded = (n) => { for (const g of guardNeedles) if (n === g || g.includes(n)) return true; return false; };
     const hasOr = stmt.includes('||');
     const vacuous = new Map();
@@ -110,6 +113,8 @@ const FIXTURES = [
   ['F8 a longer includes needle guards its substring', `check('x', a.includes("crPrepState === 'ready') return { label: '' };") && a.indexOf("crPrepState === 'ready')") < a.indexOf('zoom'));`, 0],
   ['F9 a const needle resolves and its guard counts', `const CLIP = 'clip guard';\ncheck('x', a.indexOf(CLIP) > -1 && a.indexOf(CLIP) < a.indexOf('boundary'));`, 0],
   ['F10 a const needle unguarded is flagged', `const CLIP = 'clip guard';\ncheck('x', a.indexOf('boundary') > a.indexOf(CLIP));`, 1],
+  ['F11 a negated includes is not a guard', `check('x', !a.includes('clip guard') || a.indexOf('clip guard') < a.indexOf('boundary'));`, 1],
+  ['F12 an inverted includes is not a guard', `check('x', a.includes('clip guard') === false || a.indexOf('clip guard') < a.indexOf('boundary'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
