@@ -64,7 +64,7 @@ function scanText(text) {
     let m;
     while ((m = occ.exec(stmt)) !== null) {
       let p = m.index + m[0].length;
-      while (stmt[p] === ' ') p++;
+      while (/\s/.test(stmt[p])) p++;
       const nm = new RegExp('^(?:' + LIT + '|[A-Za-z_$][\\w$]*)').exec(stmt.slice(p));
       if (!nm) continue;
       let depth = 1, j = p + nm[0].length, instr = null, esc = false, bounded = false;
@@ -154,6 +154,7 @@ const FIXTURES = [
   ['F20 a bounded search is not cleared by a plain includes', `check('x', a.includes('anchor') && a.indexOf('write();') > a.indexOf('anchor', 10));`, 1],
   ['F21 a bounded guard clears its bounded pin', `check('x', a.indexOf('anchor', 10) > -1 && a.indexOf('write();') > a.indexOf('anchor', 10));`, 0],
   ['F22 a bounded left of < is flagged', `check('x', a.indexOf('gone', 3) < a.indexOf('here'));`, 1],
+  ['F23 a needle wrapped onto its own line is still a pin', "check('x', a.indexOf('write();') > a.indexOf(\n'anchor'));", 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
