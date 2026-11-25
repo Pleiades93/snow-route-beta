@@ -10873,6 +10873,63 @@
    "red": "proof-1265 check 3 failed on both runs (5 passed, 1 failed) (2026-11-24 local)",
    "green": "proof-1265 6/6 on the reverted, consolidated and comment-compressed trees (2026-11-24 local; suite 90/90)",
    "issued": "2026-11-24 label-handover-1294 gatefix2"
+  },
+  {
+   "id": "labelhandover-1294-drive219-fade-gatefix3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "997b084c34ad963a3c791323c8f86570021788938e227b9a480e1b5494cae66f",
+    "tests/browser/harness.mjs": "25dd9cca6a220ef20ed6bfcf9d0b1b6ec1067cdd0c2407e110a7ef34b33334a0",
+    "parts/engine.js": "8aaff8552e2d0a59930bcbd96faabab4d6eeb039713c6fc6d9ffaf1a4acc696d",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de"
+   },
+   "mutation": "parts/engine.js title spec restored to the Beta 1.293 form: the 15-16 fade stops and maxzoom 16 removed (assembled before the runs)",
+   "red": "drive219 failed on both runs: V2 (titles never sampled mid-fade, 0 samples; clones still faded) and V3 (2 title names rendered at zoom 17) - 36/38 and 35/38 (the second run also flickered F1, the known load-sensitive lane) (2026-11-24 local)",
+   "green": "drive219 38/38 on the reverted tree (2026-11-24 local, three runs). Three Codex gate fixes followed, all behaviour-identical (clone-normalization consolidation; comment compression; the harness title-switch helpers sharing one core). drive219 could not be re-run to completion locally after the VM restart (300 s cap hit identically on pre-consolidation bytes, A/B verified); the PR gate grades it",
+   "issued": "2026-11-24 label-handover-1294 gatefix3"
+  },
+  {
+   "id": "labelhandover-1294-drive130-clones-gatefix3",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive130.mjs": "bd80872f693d243ff80b150ede42d8a670fdf8b44dfb7b7b95de25e6c8411fb3",
+    "tests/browser/harness.mjs": "25dd9cca6a220ef20ed6bfcf9d0b1b6ec1067cdd0c2407e110a7ef34b33334a0",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de"
+   },
+   "mutation": "parts/app2.js clone creation disabled in glUnifyLabels (the handover build gated off), so no clone layers are ever built (assembled before the runs)",
+   "red": "drive130 8/11 on both runs: L3 (clones false/false), L7 (no clone names at zoom 17.5, settle never reached) and L9 (no night clone) failed (2026-11-24 local)",
+   "green": "drive130 11/11 on the reverted final tree and on the consolidated tree (2026-11-24 local); gatefix2/gatefix3 changes are comment-length and a harness helper refactor (drive130 does not call the title-switch helpers)",
+   "issued": "2026-11-24 label-handover-1294 gatefix3"
+  },
+  {
+   "id": "labelhandover-1294-drive214-spacing-gatefix3",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive214.mjs": "7a02ca010288c3e7ce6a2d9c52bb8119f2b62c69f253006c426bffde6b72c958",
+    "tests/browser/harness.mjs": "25dd9cca6a220ef20ed6bfcf9d0b1b6ec1067cdd0c2407e110a7ef34b33334a0",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de"
+   },
+   "mutation": "parts/app2.js symbol-spacing write restored to 500 (assembled before the runs)",
+   "red": "drive214 24/26 on both runs: F3 (spacing read 500/500) and F4 (major stayed 500 after the excursion) failed (2026-11-24 local)",
+   "green": "drive214 26/26 on the reverted final tree and on the consolidated tree (2026-11-24 local); gatefix2/gatefix3 changes are comment-length and a harness helper refactor (drive214 does not call the title-switch helpers)",
+   "issued": "2026-11-24 label-handover-1294 gatefix3"
+  },
+  {
+   "id": "labelhandover-1294-drive131-historical-gatefix3",
+   "check": "tests/browser/drive131.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive131.mjs": "b5ff7b5ca34935dc8fb9444f4acd5fc58cddcdefc8de551cf764c35bec1debbe",
+    "tests/browser/harness.mjs": "25dd9cca6a220ef20ed6bfcf9d0b1b6ec1067cdd0c2407e110a7ef34b33334a0",
+    "parts/app2.js": "824123ea68af97ced3da88d2cb80f90a2160c9bb715983bc0de6e68f2b2b32de"
+   },
+   "mutation": "Beta 1.294 premise re-point: the handover clones are built again, so W4 asserts titles present AND the clone present (was: clones retired); no other check changed",
+   "red": "no red run of this drive: the clone-presence claim is mutation-graded on drive130 (labelhandover-1294-drive130-clones-gatefix3) and drive219 N4",
+   "green": "drive131 5/5 locally on the final tree (2026-11-24); the gate fixes did not touch W4's surfaces",
+   "issued": "2026-11-24 label-handover-1294 gatefix3"
   }
  ]
 }

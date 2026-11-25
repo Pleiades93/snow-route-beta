@@ -244,20 +244,24 @@ export async function pinDayTheme(ev) {
 }
 
 // Titles ship ON behind the flags.js switch (Beta 1.294); these set the switch either way, restacking when a route is already loaded.
-export async function forceRouteTitlesOn(ev, poll) {
-  const loaded = await ev(`(() => { ROUTE_TITLES_ON = true; return typeof routeLoaded !== 'undefined' && routeLoaded === true && !!window.map; })()`);
-  if (!loaded) return true; // no stack exists yet: the coming route load builds it with the flag on
+async function forceRouteTitles(ev, poll, on, settled, what) {
+  const loaded = await ev(`(() => { ROUTE_TITLES_ON = ${on}; return typeof routeLoaded !== 'undefined' && routeLoaded === true && !!window.map; })()`);
+  if (!loaded) return true; // no stack exists yet: the coming route load builds it with the flag as set
   await ev(`(() => { setBasemap(); return true; })()`);
-  if (!await poll(`!!(window.map && map.getLayer && map.getLayer('streetnamespt1') && map.isStyleLoaded())`, 45000)) throw new Error('forceRouteTitlesOn: the titles never appeared on the basemap restack');
+  if (!await poll(settled, 45000)) throw new Error(what);
   return true;
 }
 
+export async function forceRouteTitlesOn(ev, poll) {
+  return forceRouteTitles(ev, poll, true,
+    `!!(window.map && map.getLayer && map.getLayer('streetnamespt1') && map.isStyleLoaded())`,
+    'forceRouteTitlesOn: the titles never appeared on the basemap restack');
+}
+
 export async function forceRouteTitlesOff(ev, poll) {
-  const loaded = await ev(`(() => { ROUTE_TITLES_ON = false; return typeof routeLoaded !== 'undefined' && routeLoaded === true && !!window.map; })()`);
-  if (!loaded) return true; // no stack exists yet: the coming route load builds it with the flag off
-  await ev(`(() => { setBasemap(); return true; })()`);
-  if (!await poll(`!!(window.map && map.getLayer && !map.getLayer('streetnamespt1') && !map.getLayer('roads_labels_major-route') && map.isStyleLoaded())`, 45000)) throw new Error('forceRouteTitlesOff: the titles or clones never left on the basemap restack');
-  return true;
+  return forceRouteTitles(ev, poll, false,
+    `!!(window.map && map.getLayer && !map.getLayer('streetnamespt1') && !map.getLayer('roads_labels_major-route') && map.isStyleLoaded())`,
+    'forceRouteTitlesOff: the titles or clones never left on the basemap restack');
 }
 
 // T4/T7 (Tranche 4): scoped per-scenario reset. Deletes exactly the keys
