@@ -20,11 +20,20 @@
 // samples, each sample an array of placed title names (drive216's
 // sampler records one sample every 50 ms). Returns the phase report
 // drive216 grades: { samples, before, after, dropped }.
+//
+// A sample may instead be { t: [names], ok: bool } - the sampler's
+// style-loaded flag (7c, from the 1.293 P6 investigation: a setStyle
+// rebuild blanks the whole map, titles included, and that blackout is
+// no evidence about the title system). Unloaded samples leave the
+// judged stream entirely: they neither convict nor acquit, and the
+// before/after ends are the first and last LOADED samples. The report
+// gains `loaded`, the judged stream's length.
 export const DROP_RUN = 3;
 
 export function judgeTitleDrops(win) {
-  const before = new Set(win[0] || []), after = new Set(win[win.length - 1] || []);
+  const stream = win.filter(s => Array.isArray(s) || s.ok === true).map(s => Array.isArray(s) ? s : s.t);
+  const before = new Set(stream[0] || []), after = new Set(stream[stream.length - 1] || []);
   const both = [...before].filter(n => after.has(n));
-  const dropped = both.filter(n => { let run = 0; for (const sm of win) { run = sm.includes(n) ? 0 : run + 1; if (run >= DROP_RUN) return true; } return false; });
-  return { samples: win.length, before: before.size, after: after.size, dropped };
+  const dropped = both.filter(n => { let run = 0; for (const sm of stream) { run = sm.includes(n) ? 0 : run + 1; if (run >= DROP_RUN) return true; } return false; });
+  return { samples: win.length, loaded: stream.length, before: before.size, after: after.size, dropped };
 }
