@@ -88,10 +88,7 @@ if ('serviceWorker' in navigator) {
       const probe = new AbortController();
       const timeout = setTimeout(() => probe.abort(), 1500);
       try {
-        const response = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store', signal: probe.signal });
-        if (!response.ok) return;
-        const match = (await response.text()).match(/id="ver">([^<]+)</);
-        const served = parseVerLabel(match && match[1]);
+        const served = parseVerLabel(await probeServedVer(probe.signal));
         const running = parseVerLabel($('ver').textContent);
         if (served && running && (served[0] > running[0] || (served[0] === running[0] && served[1] > running[1]))) {
           sessionStorage.setItem(reloadKey, '1');

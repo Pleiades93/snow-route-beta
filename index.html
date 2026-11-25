@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-ZYAF6Q3Va/BL1Apnp4HWTuSSdnAF8niBwE4ujnKCj5rl3MBGd2EH+O/i/lLTTHTk' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-67q7QMPmgh2aCJP7nLmLFL6NNbCzjyfTU/RiMdssE/Wnrx8hwSs2aDRKABfZJy4n' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-xZGneEPLDy9I1w26zrPXt4pbqRMGTH20IVKk/Gc///FGI5Hiwl0KfS0JNycgvfn5' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-67q7QMPmgh2aCJP7nLmLFL6NNbCzjyfTU/RiMdssE/Wnrx8hwSs2aDRKABfZJy4n' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -6441,16 +6441,19 @@ let updState = ''; // state: '' unchecked this session, 'ok' current, 'avail' ne
 let storagePersist = null; // the persist() answer, recorded: true exempt, false refused, null no answer; read at pane open, never persisted
 // the version ordering the update check compares by - two numeric components, nothing else parses
 function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; }
+// the one version probe: the worker answers updprobe from the network itself, never its cached shell
+async function probeServedVer(signal) {
+  const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store', signal });
+  if (!r.ok) return null;
+  const m = (await r.text()).match(/id="ver">([^<]+)</);
+  return m ? m[1].trim() : null;
+}
 $('updBtn').addEventListener('click', async ev => {
   if (!tapGuard('updBtn', ev)) return;
   const updDone = () => { showSetPane('setStatusPane'); renderStatus(true); }; // the toasts are cut (Andrew's keep-list), so a finished check lands on the version row, rendered fresh
   try {
     if (navigator.serviceWorker) { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); }
-    const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store' }); // the probe's updprobe marker makes the worker answer from the network itself, never its cached shell
-    if (!r.ok) { updState = 'fail'; updDone(); return; }
-    const html = await r.text();
-    const m = html.match(/id="ver">([^<]+)</);
-    const served = m && m[1].trim();
+    const served = await probeServedVer();
     const mine = $('ver').textContent.trim();
     if (!served) { updState = 'fail'; updDone(); return; }
     if (served === mine) { updState = 'ok'; updDone(); return; }
@@ -6872,10 +6875,7 @@ if ('serviceWorker' in navigator) {
       const probe = new AbortController();
       const timeout = setTimeout(() => probe.abort(), 1500);
       try {
-        const response = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store', signal: probe.signal });
-        if (!response.ok) return;
-        const match = (await response.text()).match(/id="ver">([^<]+)</);
-        const served = parseVerLabel(match && match[1]);
+        const served = parseVerLabel(await probeServedVer(probe.signal));
         const running = parseVerLabel($('ver').textContent);
         if (served && running && (served[0] > running[0] || (served[0] === running[0] && served[1] > running[1]))) {
           sessionStorage.setItem(reloadKey, '1');
