@@ -1138,6 +1138,68 @@ with tempfile.TemporaryDirectory() as td:
     check("receipts: a changed checks workflow named by a current receipt passes the gate",
           run_receipts(wf, [".github/workflows/checks.yml"]), 0)
 
-total = 79
+# ------------------------------------------------------- PR limit judge
+def run_limits(root, base, labels=""):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-pr-limits.py"),
+                           str(root), "--base", base, "--labels", labels],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+def git_repo(base, commits):
+    """A real git repo: an initial commit, then one commit per
+    (message, {path: text}) entry. Returns (repo, base_sha)."""
+    base.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
+
+    def g(*args):
+        proc = subprocess.run(["git", "-C", str(base)] + list(args),
+                              capture_output=True, text=True, env=env,
+                              timeout=60)
+        assert proc.returncode == 0, proc.stderr
+
+    g("init", "-q")
+    g("config", "user.email", "fixture@example.invalid")
+    g("config", "user.name", "gate fixture")
+    w(base / "seed.txt", "seed\n")
+    g("add", "-A")
+    g("commit", "-q", "-m", "seed")
+    base_sha = subprocess.run(["git", "-C", str(base), "rev-parse", "HEAD"],
+                              capture_output=True, text=True,
+                              env=env).stdout.strip()
+    for message, files in commits:
+        for rel, text in files.items():
+            w(base / rel, text)
+        g("add", "-A")
+        g("commit", "-q", "-m", message)
+    return base, base_sha
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    big = "\n".join(f"line {i}" for i in range(301)) + "\n"
+    repo, b = git_repo(t / "oversize", [("big", {"parts/big.js": big})])
+    check("pr-limits: a commit over the product-line limit is refused",
+          run_limits(repo, b), 1)
+    check("pr-limits: the large-change label allows the same commit",
+          run_limits(repo, b, labels="large-change"), 0)
+    repo, b = git_repo(t / "clean", [("small", {"parts/a.js": "one\n"})])
+    check("pr-limits: a small clean commit passes",
+          run_limits(repo, b), 0)
+    long_comment = "# " + " ".join(["word"] * 21) + "\n"
+    repo, b = git_repo(t / "comment", [("c", {"scripts/x.py": long_comment})])
+    check("pr-limits: an added comment over the word limit is refused",
+          run_limits(repo, b), 1)
+    repo, b = git_repo(t / "longline", [("c", {"scripts/x.py": "x" * 241 + "\n"})])
+    check("pr-limits: an added line over the char limit is refused",
+          run_limits(repo, b), 1)
+    repo, b = git_repo(t / "rootfile", [("c", {"stray.txt": "hi\n"})])
+    check("pr-limits: a new root file outside the allowlist is refused",
+          run_limits(repo, b), 1)
+    repo, b = git_repo(t / "exempt", [("c", {"index.html": "x" * 300 + "\n"})])
+    check("pr-limits: a generated file's long line is exempt",
+          run_limits(repo, b), 0)
+
+total = 91
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

@@ -33,12 +33,12 @@ The detailed storage format and restore rules are documented in `docs/STORAGE-SC
 | File | What it is |
 |---|---|
 | `parts/` | **The canonical application source — the only place the app itself is edited** (since Beta 1.94). Seventeen part files (markup/CSS, route data, the four core app parts, route creation in six, the paint engine, the snow layer, the generated basemap styles) that `scripts/assemble.py` concatenates into the single-file page, in the order listed in `docs/ARCHITECTURE.md`. |
-| `src/tracker-source.html` | **Generated** by `scripts/assemble.py` from `parts/`; untracked in git. Never hand-edit — `scripts/build-pages.py` builds from the parts in memory and fails if `index.html` differs from what they assemble to. |
+| `src/tracker-source.html` | **Generated** by `scripts/assemble.py` from `parts/`; untracked in git. Never hand-edit - the build works from the parts in memory. |
 | `src/sw.js` | The authored service worker source (offline open + tile caching). Edited here; copied to the root by the build. |
 | `index.html` | **Generated** deployable build: the source plus its stamped Content-Security-Policy. This is what GitHub Pages serves. Never hand-edit. |
 | `sw.js` | **Generated** copy of `src/sw.js`. Must sit beside `index.html` on an https host. Never hand-edit. |
 | `scripts/assemble.py` | Concatenates `parts/` into `src/tracker-source.html` (byte-exact recipe; `--check` compares a fresh build in a temp file against the generated copy). |
-| `scripts/build-pages.py` | The repository-owned build: generates `index.html` from the parts (in memory, via `scripts/assemble.py`) + `sw.js` from `src/`, and runs the assembly, parity, CSP, integrity and version gates. Standard library only. |
+| `scripts/build-pages.py` | The repository-owned build: generates `index.html` from the parts (in memory, via `scripts/assemble.py`) + `sw.js` from `src/`, and runs the build gates. Standard library only. |
 | `scripts/release-op.py` | The one local release operation (architecture #22): derives the README counts, assembles the page, stamps and writes `index.html` + `sw.js`, then re-runs the three `--check` forms as verification — the build half of a release as a single command. |
 | `scripts/release.py` | The release bookkeeping generator (Beta 1.133): derives the battery counts quoted in this README from the suite itself and rewrites them — the counts are generated, never hand-kept — and prints the release checklist (generated steps vs editorial ones). The build fails if the README disagrees with its derivation. |
 | `scripts/csp_stamp.py` | Computes the Content-Security-Policy the build stamps into the page. |

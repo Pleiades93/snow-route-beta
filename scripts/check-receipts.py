@@ -82,6 +82,7 @@ CHECK_PATTERNS = [
 # receipt requirement as a change to the check itself.
 JUDGE_PATHS = {
     "scripts/push.py",
+    "scripts/check-pr-limits.py",
     "scripts/check-receipts.py",
     "scripts/check-census.py",
     "scripts/check-mirrors.py",

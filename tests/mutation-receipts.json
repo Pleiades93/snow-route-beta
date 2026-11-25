@@ -10983,6 +10983,45 @@
    "red": "gate fixtures 78 pass / 1 fail, twice: 'ci wiring: the Receipts step refuses a changed check with no mutation receipt' got exit 0, want 1; independently, removing the selftest-whatsnew step failed check-mirrors wiring, twice",
    "green": "gate fixtures all pass and check-mirrors PASS on the restored tree",
    "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-pr-limits-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    "scripts/check-pr-limits.py": "fb90adff0e29bcf64ebb2a618d121e413faa7ddf2e9d5b45db322128a2b6b58d"
+   },
+   "mutation": "check-pr-limits.py SIZE_LIMIT raised from 300 to 1000000000 (the size judge neutered)",
+   "red": "gate fixtures 90 pass / 1 fail, twice: 'pr-limits: a commit over the product-line limit is refused' got exit 0, want 1",
+   "green": "gate fixtures 91/91 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    "scripts/check-receipts.py": "182ff6242db008d427e3e37dc96d40442e906aad14327de2b4b18df639a8e012"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths",
+   "red": "gate fixtures 82 pass / 9 fail, twice: every receipts-gate case got exit 0, want 1",
+   "green": "gate fixtures 91/91 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    ".github/workflows/checks.yml": "560cb68ede05cfe7164b8aa318efb3f29dfec3f2c4388088634ac78ea5986e0d"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), on the commit-2 workflow content",
+   "red": "gate fixtures 90 pass / 1 fail, twice: 'ci wiring: the Receipts step refuses a changed check with no mutation receipt' got exit 0, want 1",
+   "green": "gate fixtures 91/91 and check-mirrors PASS on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
   }
  ]
 }

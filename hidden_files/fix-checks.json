@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "b9bb11ae770c6c001c188b94bb112f4a35c4f7edb1998bb2357ac146cf570f35",
+  "canonical_registry_sha256": "bf48083435241ba09366e9ac6c0158b94588b2d6493cfce44c118112d19b6728",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1524,
-   "included": 1494,
+   "canonical": 1526,
+   "included": 1496,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13301,6 +13301,24 @@
    "fix_id": "machinery-gate-phase3",
    "id": "machinery-gate-push-derived",
    "pattern": "DERIVED_FOR_PARTS = [\"index.html\"]",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "scripts/check-pr-limits.py",
+   "fix": "Machinery gate round (queue 7b): the PR limit judge exists and carries the large-change label rule - the label is applied by Andrew or the lead only, never by a builder.",
+   "fix_id": "machinery-gate-ci-limits",
+   "id": "machinery-gate-pr-limits",
+   "pattern": "large-change",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "scripts/sync-guidelines.py",
+   "fix": "Machinery gate round (queue 7b): the vendored Codex review guidelines in AGENTS.md are pinned to GUIDELINES_CANONICAL by the sync check in CI.",
+   "fix_id": "machinery-gate-ci-limits",
+   "id": "machinery-gate-guidelines-sync",
+   "pattern": "GUIDELINES_CANONICAL",
    "type": "grep_present"
   }
  ]

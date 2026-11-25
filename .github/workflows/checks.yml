@@ -186,6 +186,12 @@ jobs:
           # Keep both sides of a rename, as in push.py's blob-map comparison.
           git diff --name-only --no-renames -z "$BASE_SHA" HEAD -- > "$changed_files"
           echo "CHANGED_FILES=$changed_files" >> "$GITHUB_ENV"
+      - name: PR limits (size, comment, line and root rules; warn-only scope and fix-up rules)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: python3 scripts/check-pr-limits.py . --base "$BASE_SHA" --labels "$PR_LABELS"
       - name: Receipts gate (refuse changed checks without current mutation receipts, class N1)
         env:
           EVENT: ${{ github.event_name }}
@@ -212,6 +218,8 @@ jobs:
           fi
       - name: Mirrors gate (refuse drift from mirror sources, class C4)
         run: python3 scripts/check-mirrors.py .
+      - name: Guidelines sync (vendored Codex review guidelines match their canonical copy)
+        run: python3 scripts/sync-guidelines.py --check
       - name: Registry gate (repo-pinned fix-checks subset, issue #178)
         run: |
           python3 -m pip install --quiet pillow
