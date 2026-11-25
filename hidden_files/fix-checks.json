@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "507a28188e2c5b1498fbf29331b93091a631ba2000b34067a7e72ecede4008aa",
+  "canonical_registry_sha256": "0c9e15c73c67616db8be68c88ace57aa131995da0ceb95cd6477b69e17203ed4",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1545,
-   "included": 1515,
+   "canonical": 1546,
+   "included": 1516,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13490,6 +13490,15 @@
    "fix_id": "gps-gap-banner",
    "id": "gps-gap-banner-after-finish",
    "pattern": "if (finished && finished.gpsGap) showBanner('GPS gap in this clean'",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app5.js",
+   "fix": "Round 1 (spin-out 6d-3): the startup version check reloads at most once per session - its guard key lives in app5.js beside the registration.",
+   "fix_id": "startup-version-check",
+   "id": "startup-version-check-guard",
+   "pattern": "snowroute.bootUpdateReloaded",
    "type": "grep_present"
   }
  ]

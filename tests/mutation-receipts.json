@@ -12733,6 +12733,62 @@
    "red": "drive225 12/13 - G5 (banner wording) fails on the mutated tree, observed 2026-11-25 on the wrapped drive file; the same mutation on the pre-wrap file failed G5 twice (12/13) and the stamp-removal mutation failed G4+G5 (11/13)",
    "green": "drive225 13/13 on the restored wrapped tree, observed 2026-11-25",
    "issued": "2026-11-25 spinout-round1 fix push"
+  },
+  {
+   "id": "startup-1295-proof-1274",
+   "check": "tests/proof/proof-1274.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1274.mjs": "6d1c33bc63360ebe2c26c9ef0a3a5c7485afc4aaa13592caf76cb9f48373345c",
+    "parts/app5.js": "2c5f1928f051f48e5769a7015ecc20df3a9f22b349dbb63e4ada8ce4d51120f9"
+   },
+   "mutation": "n/a - historical receipt: the guarded code (the boot version check in parts/app5.js) does not exist on the base tree",
+   "red": "proof-1274 on the pristine Beta 1.294 tree (4938a13a): 10 of 10 checks FAIL, observed twice 2026-11-25",
+   "green": "proof-1274 10/10 PASS on the fixed tree; full suite 94/94 via scripts/run-proofs.py",
+   "issued": "2026-11-25 spinout-round1"
+  },
+  {
+   "id": "gpsgap-1295-drive225-banner-r3",
+   "check": "tests/browser/drive225.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive225.mjs": "c096a2721f8505672db7afe9f2cd4bf8e464dd1445387b0131ce40e8b249cacb",
+    "parts/app3.js": "43c26d0dc8c7e9c146efcd0ff19a6fd2683601d75aaddf0f5032db2a6f998c62",
+    "parts/app1.js": "e15dab6473e68b68d417c59ac9b16fd5bf0aedc66e798d2b08cef82e6fda3762",
+    "parts/head.html": "fb1541ca1236b4617f7476a8570a840ff40db261ddeb22cc99e899b938045b26"
+   },
+   "mutation": "finYes banner call removed from parts/app3.js (drive file refactored per Codex review: shared __bannerFace helper for both theme checks, header shortened; behaviour identical)",
+   "red": "drive225 12/13 - G5 fails on the mutated tree, observed 2026-11-25 on the refactored drive; earlier observations on pre-refactor bytes: G5 fail twice, stamp-removal G4+G5 fail once",
+   "green": "drive225 13/13 on the restored refactored tree, observed 2026-11-25",
+   "issued": "2026-11-25 spinout-round1 codex fix push"
+  },
+  {
+   "id": "gpsgap-1295-proof-1273-r2",
+   "check": "tests/proof/proof-1273.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1273.mjs": "63cd5ef7a1b793bc9e3405f33e3807360bf1a1339cb4f4742a45f26695dde5fb",
+    "parts/app3.js": "43c26d0dc8c7e9c146efcd0ff19a6fd2683601d75aaddf0f5032db2a6f998c62",
+    "parts/app1.js": "e15dab6473e68b68d417c59ac9b16fd5bf0aedc66e798d2b08cef82e6fda3762",
+    "parts/head.html": "fb1541ca1236b4617f7476a8570a840ff40db261ddeb22cc99e899b938045b26"
+   },
+   "mutation": "n/a - historical receipt: the guarded seams do not exist on the base tree (proof header shortened per Codex review; checks unchanged)",
+   "red": "proof-1273 on the pristine Beta 1.294 tree (4938a13a): 11 of 13 checks FAIL, observed twice 2026-11-25 with the final file",
+   "green": "proof-1273 13/13 PASS on the fixed tree; full suite 94/94 via scripts/run-proofs.py",
+   "issued": "2026-11-25 spinout-round1 codex fix push"
+  },
+  {
+   "id": "startup-1295-proof-1274-r2",
+   "check": "tests/proof/proof-1274.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1274.mjs": "647e87c8bf192c2cc886e348205b02997835c27ce82314833730ba27d1639f7e",
+    "parts/app5.js": "2c5f1928f051f48e5769a7015ecc20df3a9f22b349dbb63e4ada8ce4d51120f9"
+   },
+   "mutation": "n/a - historical receipt: the guarded boot check does not exist on the base tree (proof header shortened per Codex review; checks unchanged)",
+   "red": "proof-1274 on the pristine Beta 1.294 tree (4938a13a): 10 of 10 checks FAIL, observed twice 2026-11-25 with the final file",
+   "green": "proof-1274 10/10 PASS on the fixed tree; full suite 94/94 via scripts/run-proofs.py",
+   "issued": "2026-11-25 spinout-round1 codex fix push"
   }
  ]
 }
