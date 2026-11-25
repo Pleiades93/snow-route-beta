@@ -8,23 +8,11 @@
 // ABSENT from the shipped sources (a re-introduced cap fails here, in plain
 // Node, before any CI run consumes it). Page-level proof: drive177/drive186.
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 const src = readFileSync(new URL('../../parts/app1.js', import.meta.url), 'utf8');
 const src3 = readFileSync(new URL('../../parts/app3.js', import.meta.url), 'utf8');
 const src4 = readFileSync(new URL('../../parts/app4.js', import.meta.url), 'utf8');
-function extract(name) {
-  const i = src.indexOf('function ' + name + '(');
-  if (i < 0) throw new Error(name + ' not found in app1.js');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
-  return src.slice(i, j + 1);
-}
-function extractObj(name) {
-  const i = src.indexOf('const ' + name + ' = {');
-  if (i < 0) throw new Error(name + ' not found in app1.js');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
-  return src.slice(i, j + 1) + ';';
-}
+function extractObj(name) { return extractFn(src, 'const ' + name + ' = {') + ';'; }
 // Beta 1.272 (architecture programme #2): the append lives in the HIST
 // repository as HIST.appended(entry), reading the ambient view binding -
 // the adapter below keeps this fixture's (list, entry) shape over it.

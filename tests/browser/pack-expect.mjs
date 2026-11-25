@@ -24,6 +24,7 @@
 // it stays literal by design, as the canary that fails loudly if the
 // pack data itself drifts (deriving it would derive the tripwire away).
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 import vm from 'node:vm';
 
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
@@ -31,24 +32,17 @@ const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 const { ROUTE_PACKS } = vm.runInNewContext(read('../../parts/data.js') + '\n;({ ROUTE_PACKS })');
 export const PACK_COUNT = ROUTE_PACKS.length;
 
-function extract(src, sig) {
-  const i = src.indexOf(sig);
-  if (i < 0) throw new Error('pack-expect: extraction failed: ' + sig + ' not found in parts/app1.js');
-  let depth = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') depth++; else if (src[j] === '}') { depth--; if (!depth) return src.slice(i, j + 1); } }
-  throw new Error('pack-expect: extraction failed: unbalanced ' + sig);
-}
 const app1 = read('../../parts/app1.js');
 const mline = app1.match(/const MLAT = [0-9]+, MLNG = [0-9]+/)[0];
 const geom = new Function(`
   ${mline};
-  ${extract(app1, 'function distM(')}
-  ${extract(app1, 'function segLenM(')}
-  ${extract(app1, 'function stitchRuns(')}
-  ${extract(app1, 'function projOnLine(')}
-  ${extract(app1, 'function sliceLine(')}
-  ${extract(app1, 'function finishJunctionCuts(')}
-  ${extract(app1, 'function computeStretches(')}
+  ${extractFn(app1, 'function distM(')}
+  ${extractFn(app1, 'function segLenM(')}
+  ${extractFn(app1, 'function stitchRuns(')}
+  ${extractFn(app1, 'function projOnLine(')}
+  ${extractFn(app1, 'function sliceLine(')}
+  ${extractFn(app1, 'function finishJunctionCuts(')}
+  ${extractFn(app1, 'function computeStretches(')}
   return { computeStretches };
 `)();
 

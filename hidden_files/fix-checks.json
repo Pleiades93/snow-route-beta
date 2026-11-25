@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "919a41a3e061abc8238a88e73e48ff5f454ee0283d35521c43d4183596a92ef8",
+  "canonical_registry_sha256": "6535b37c98faba161c26b474aa56eb0c3d1d9dc7320dbf2c92dc49ccfe17cf40",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1539,
-   "included": 1509,
+   "canonical": 1542,
+   "included": 1512,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -11787,7 +11787,7 @@
    "fix": "/correct Phase 3 round (d): the packfields selftest's validator-cap roster is DERIVED from the judged source spans (every PACK_* identifier the extracted functions reference), not hand-kept - the hand list's failure shape was demonstrated: a new cap referenced by normalizePack died in the old selftest with ReferenceError because the mirror list never heard of it. The P1/P2 field lists and P3 cap VALUES stay literal product pins by design. If this probe fails, the roster is hand-maintained again - restore the derivation.",
    "fix_id": "correct-phase3d-c4",
    "id": "correct-phase3d-packfields-derived",
-   "pattern": "const JUDGED = extract(app1src, 'distM')",
+   "pattern": "const JUDGED = extractFn(app1src, 'function distM(')",
    "type": "grep_present"
   },
   {
@@ -13437,6 +13437,33 @@
    "id": "correct-pin-vacuity-scanner",
    "pattern": "no unguarded ordering pin in ",
    "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/extract-fn.mjs",
+   "fix": "/correct block 5 (test suite only): balanced-brace extraction from parts has ONE owner - tests/browser/extract-fn.mjs - after the same algorithm was found cloned in 11 tests/browser files (plus a dead copy in selftest-history). If this probe fails, the shared extractor was removed - restore it and rewire the consumers; never re-clone the algorithm into a selftest.",
+   "fix_id": "correct-extract-owner",
+   "id": "correct-extract-owner",
+   "pattern": "export function extractFn(src, sig)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/selftest-judging-fixtures.mjs",
+   "fix": "/correct block 5: selftest-judging-fixtures must not grow its own extraction clone again - it imports extractFn from tests/browser/extract-fn.mjs (the one owner). Companion to probe correct-extract-owner.",
+   "fix_id": "correct-extract-owner",
+   "id": "correct-extract-no-clone-judging",
+   "pattern": "function extract(src, sig)",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/pack-expect.mjs",
+   "fix": "/correct block 5: pack-expect must not grow its own extraction clone again - it imports extractFn from tests/browser/extract-fn.mjs (the one owner). Companion to probe correct-extract-owner.",
+   "fix_id": "correct-extract-owner",
+   "id": "correct-extract-no-clone-pack-expect",
+   "pattern": "function extract(src, sig)",
+   "type": "grep_absent"
   }
  ]
 }

@@ -19,6 +19,7 @@
 //
 // Run: node tests/browser/selftest-nv1152.mjs [--child-nv3b]
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -35,12 +36,6 @@ const dataJs = read('parts/data.js');
 let pass = 0, fail = 0;
 const ok = (name, cond) => { if (cond === true) { pass++; } else { fail++; console.log('FAIL', name); } };
 
-function extract(src, marker) {
-  const i = src.indexOf(marker); if (i < 0) throw new Error('marker missing: ' + marker);
-  let j = src.indexOf('{', i), d = 0, k = j;
-  for (; k < src.length; k++) { const c = src[k]; if (c === '{') d++; else if (c === '}') { d--; if (!d) { k++; break; } } }
-  return src.slice(i, k);
-}
 const constLine = (src, name) => { const m = src.match(new RegExp('const ' + name + ' = [^;]+;')); return m ? m[0] : ''; };
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 
@@ -52,15 +47,15 @@ const FIVEW = fiveWCx.__RP.find(p => p.id === '5w');
 // ============================ NV3b child mode ============================
 if (process.argv.includes('--child-nv3b')) {
   const api = new Function('GL_STYLES', 'computeRouteBox', 'distM', 'PACK_TILES_MAX', `
-    ${extract(app4, 'function tileNums(')}
-    ${extract(app4, 'function packTileEnum(')}
-    ${extract(app4, 'function packTileUrls(')}
+    ${extractFn(app4, 'function tileNums(')}
+    ${extractFn(app4, 'function packTileEnum(')}
+    ${extractFn(app4, 'function packTileUrls(')}
     return { packTileUrls };`); // Beta 1.254 (#10): packTileUrls consumes the shared enumerator now - the extraction carries it too, or the child evals a dangling reference
   const cx = {}; vm.runInNewContext(pmstyles + '\n;globalThis.__GS = { day: PM_DAY, night: PM_NIGHT };', cx, { filename: 'pmstyles.js' });
   cx.GL_STYLES = cx.__GS;
   const g = new Function('MLAT', 'MLNG', `
-    ${extract(app1, 'function distM(')}
-    ${extract(app1, 'function computeRouteBox(')}
+    ${extractFn(app1, 'function distM(')}
+    ${extractFn(app1, 'function computeRouteBox(')}
     return { distM, computeRouteBox };`)(111320, 80386);
   const tilesConst = (app1.match(/const PACK_TILES_MAX = (\d+);/) || [])[1];
   const out = api(cx.GL_STYLES, g.computeRouteBox, g.distM, tilesConst ? Number(tilesConst) : undefined)
@@ -74,13 +69,13 @@ function stretchesApi() {
   const counter = { n: 0 };
   // Build the pieces in one scope so computeStretches sees the counting wrapper.
   const scope = new Function('MLAT', 'MLNG', 'counter', `
-    ${extract(app1, 'function distM(')}
-    ${extract(app1, 'function stitchRuns(')}
-    ${extract(app1, 'function projOnLine(').replace('function projOnLine(', 'function __projReal(')}
+    ${extractFn(app1, 'function distM(')}
+    ${extractFn(app1, 'function stitchRuns(')}
+    ${extractFn(app1, 'function projOnLine(').replace('function projOnLine(', 'function __projReal(')}
     function projOnLine(line, cum, p) { counter.n++; return __projReal(line, cum, p); }
-    ${extract(app1, 'function sliceLine(')}
-    ${extract(app1, 'function finishJunctionCuts(')}
-    ${extract(app1, 'function computeStretches(')}
+    ${extractFn(app1, 'function sliceLine(')}
+    ${extractFn(app1, 'function finishJunctionCuts(')}
+    ${extractFn(app1, 'function computeStretches(')}
     return { computeStretches };`)(111320, 80386, counter);
   return { computeStretches: scope.computeStretches, counter };
 }
@@ -137,9 +132,9 @@ const packConsts = ['PACK_NAME_MAX', 'PACK_AREA_MAX', 'PACK_TILENAME_MAX', 'PACK
   .map(n => constLine(app1, n)).filter(Boolean).join('\n');
 const npApi = new Function('MLAT', 'MLNG', `
   ${packConsts}
-  ${extract(app1, 'function distM(')}
-  ${extract(app1, 'function computeRouteBox(')}
-  ${extract(createPacks, 'function normalizePack(')}
+  ${extractFn(app1, 'function distM(')}
+  ${extractFn(app1, 'function computeRouteBox(')}
+  ${extractFn(createPacks, 'function normalizePack(')}
   return { normalizePack };`)(111320, 80386);
 const normalizePack = npApi.normalizePack;
 const smallRoads = { A: [[[43.0, -79.0], [43.001, -79.001]]] };
@@ -158,8 +153,8 @@ ok('NV1/NV3a control: the shipped Route 5W pack still validates', normalizePack(
 // excludes them). Take Toronto streets by length, stitch each into runs,
 // accumulate up to the 300-street cap while the 150,000-point cap allows.
 const stitchApi = new Function('MLAT', 'MLNG', `
-  ${extract(app1, 'function distM(')}
-  ${extract(app1, 'function stitchRuns(')}
+  ${extractFn(app1, 'function distM(')}
+  ${extractFn(app1, 'function stitchRuns(')}
   return { stitchRuns };`)(111320, 80386);
 const tor = JSON.parse(read('packs/toronto.json'));
 const torStreets = Object.entries(tor.streets).map(([n, g]) => {
@@ -180,16 +175,16 @@ ok('NV1/NV3a control: the worst legitimate pack still validates', normalizePack(
 
 // ============================ NV3b: tile enumeration ============================
 const app4Api = new Function('GL_STYLES', 'computeRouteBox', 'distM', 'ROUTE_PACKS', 'PACK_TILES_MAX', `
-  ${extract(app4, 'function tileNums(')}
-  ${extract(app4, 'function packTileEnum(')}
-  ${extract(app4, 'function packTileUrls(')}
-  ${extract(app4, 'function preloadUrlList(')}
+  ${extractFn(app4, 'function tileNums(')}
+  ${extractFn(app4, 'function packTileEnum(')}
+  ${extractFn(app4, 'function packTileUrls(')}
+  ${extractFn(app4, 'function preloadUrlList(')}
   return { packTileUrls, preloadUrlList };`); // Beta 1.254 (#10): both views consume packTileEnum - the extraction carries it too
 const pmCx = {}; vm.runInNewContext(pmstyles + '\n;globalThis.__GS = { day: PM_DAY, night: PM_NIGHT };', pmCx, { filename: 'pmstyles.js' });
   pmCx.GL_STYLES = pmCx.__GS;
 const gApi = new Function('MLAT', 'MLNG', `
-  ${extract(app1, 'function distM(')}
-  ${extract(app1, 'function computeRouteBox(')}
+  ${extractFn(app1, 'function distM(')}
+  ${extractFn(app1, 'function computeRouteBox(')}
   return { distM, computeRouteBox };`)(111320, 80386);
 const tilesConst2 = (app1.match(/const PACK_TILES_MAX = (\d+);/) || [])[1];
 const enumApi = app4Api(pmCx.GL_STYLES, gApi.computeRouteBox, gApi.distM, [FIVEW], tilesConst2 ? Number(tilesConst2) : undefined);

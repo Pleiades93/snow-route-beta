@@ -10,16 +10,10 @@
 // until the selector itself was retired with the tiers (testing-efficiency
 // rollout, 2026-11-23) - the fix's subject no longer exists to regress.
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 const app3 = readFileSync(new URL('../../parts/app3.js', import.meta.url), 'utf8');
 const packs = readFileSync(new URL('../../parts/create-packs.js', import.meta.url), 'utf8');
 const eng = readFileSync(new URL('../../parts/engine.js', import.meta.url), 'utf8');
-function extractFrom(src, name) {
-  const i = src.indexOf('function ' + name + '(');
-  if (i < 0) throw new Error(name + ' not found');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) break; } }
-  return src.slice(i, j + 1);
-}
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 
@@ -29,15 +23,8 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
 // Beta 1.278 (architecture #6): cleanWorkM is a doorway - the measure lives
 // in the CLEAN owner as workM - so the extraction takes the owner with it;
 // the judged cases are unchanged.
-function extractBlock(src, sig) {
-  const i = src.indexOf(sig);
-  if (i < 0) throw new Error(sig + ' not found');
-  let d = 0, j = src.indexOf('{', i);
-  for (; j < src.length; j++) { if (src[j] === '{') d++; else if (src[j] === '}') { d--; if (!d) return src.slice(i, j + 1); } }
-  throw new Error('unbalanced ' + sig);
-}
 const cleanWorkM = new Function('STRETCH', 'STREETNAMES', 'segLenM',
-  extractBlock(app3, 'const CLEAN = {') + '\n' + extractFrom(app3, 'cleanWorkM') + '\nreturn cleanWorkM;')(
+  extractFn(app3, 'const CLEAN = {') + '\n' + extractFn(app3, 'function cleanWorkM(') + '\nreturn cleanWorkM;')(
   { Alpha: { total: 200, parts: ['a1'] }, Beta: { total: 500, parts: ['b1'] } },
   ['Alpha', 'Beta'],
   p => ({ a1: 200, b1: 500 }[p]));
@@ -54,7 +41,7 @@ t('W5 null-time street WITH a sides entry prices by its bits, not the fallback',
 // smoothed heading (app3 updateHeading) accumulates headDelta(sm, hdg) * 0.35
 // and is never normalized; past ~540 deg of accumulation the pre-fix formula
 // returned -321.4 deg for a true +38.6 deg step (a -112 deg map jerk) ----
-const headDelta = new Function(extractFrom(app3, 'headDelta') + '\nreturn headDelta;')();
+const headDelta = new Function(extractFn(app3, 'function headDelta(') + '\nreturn headDelta;')();
 const refDelta = (a, b) => Math.atan2(Math.sin((b - a) * Math.PI / 180), Math.cos((b - a) * Math.PI / 180)) * 180 / Math.PI;
 t('H1 accumulated heading: headDelta(691.4, 10) is +38.6, in range',
   Math.abs(headDelta(691.4, 10) - 38.6) < 0.05 && headDelta(691.4, 10) > -180 && headDelta(691.4, 10) <= 180);
@@ -80,8 +67,12 @@ t('H4 ordinary headings unchanged', headDelta(350, 10) === 20 && headDelta(10, 3
 // ---- Bug 4: uniqueRouteId - an id held only by the user-pack cache (a stored
 // pack that failed normalization, so it never entered ROUTE_PACKS) must not be
 // re-minted: the save would overwrite that route's stored record ----
+// Beta 1.271: uniqueRouteId also consults SHIPPED_PACK_IDS (shipped ids
+// stay reserved even while tombstoned off ROUTE_PACKS) - the isolated eval
+// must be handed the set or the extraction throws ReferenceError, as CI's
+// build-and-test showed on the fix's first head
 const mkUnique = (routePacks, cache, shipped) => new Function('ROUTE_PACKS', 'userPackCache', 'SHIPPED_PACK_IDS',
-  extractFrom(packs, 'uniqueRouteId') + '\nreturn uniqueRouteId;')(routePacks, cache, shipped || new Set(['5w'])); // Beta 1.271: uniqueRouteId also consults SHIPPED_PACK_IDS (shipped ids stay reserved even while tombstoned off ROUTE_PACKS) - the isolated eval must be handed the set or the extraction throws ReferenceError, as CI's build-and-test showed on the fix's first head
+  extractFn(packs, 'function uniqueRouteId(') + '\nreturn uniqueRouteId;')(routePacks, cache, shipped || new Set(['5w']));
 t('R1 cache-held id is not re-minted', mkUnique([], { 'my-route': {} })('My Route') === 'my-route-2');
 t('R2 shipped-id collision still suffixes', mkUnique([{ id: 'my-route' }], {})('My Route') === 'my-route-2');
 t('R3 shipped + cache collisions walk to -3', mkUnique([{ id: 'my-route' }], { 'my-route-2': {} })('My Route') === 'my-route-3');
@@ -116,7 +107,7 @@ const topoSrc = eng.slice(eng.indexOf('const TOPO = {'), eng.indexOf('\n};', eng
 const TOPO = new Function(topoSrc + '\nreturn TOPO;')();
 TOPO.seat('Crosser', [{ start: 0, end: 2 }]);
 const mkScan = names => new Function('H', 'GEO', 'CORRIDOR', 'n', 'TOPO',
-  xyLine + '\n' + extractFrom(eng, 'segCross') + '\n' + extractFrom(eng, 'lineHit') +
+  xyLine + '\n' + extractFn(eng, 'function segCross(') + '\n' + extractFn(eng, 'function lineHit(') +
   '\nreturn function scan(run, J, skip) {\n' + scanBlock + '\nreturn crosses;\n};')(
   { MLAT: 1, MLNG: 1, names, pieces: { Crosser: [1], Self: [3] }, jDistM, ptSegM },
   { Crosser: { cuts: [[0, 2]], stitched: [[0, 0], [1, 1], [2, 2]], off0: [[-6, -6], [6, 6]], off1: [[-6, -6], [6, 6]] } },
@@ -130,7 +121,7 @@ const JV = { V: [0, 0] };
   t('S2 crossing street first: crossing seen (the order the pre-fix code happened to get right)',
     crosses === true && skip.size === 0); }
 { const far = new Function('H', 'GEO', 'CORRIDOR', 'n', 'TOPO',
-    xyLine + '\n' + extractFrom(eng, 'segCross') + '\n' + extractFrom(eng, 'lineHit') +
+    xyLine + '\n' + extractFn(eng, 'function segCross(') + '\n' + extractFn(eng, 'function lineHit(') +
     '\nreturn function scan(run, J, skip) {\n' + scanBlock + '\nreturn crosses;\n};')(
     { MLAT: 1, MLNG: 1, names: ['Self', 'Crosser'], pieces: { Crosser: [1], Self: [3] }, jDistM, ptSegM },
     { Crosser: { cuts: [[0, 2]], stitched: [[0, 0], [1, 1], [2, 2]], off0: [[40, 40], [50, 50]], off1: [[40, 40], [50, 50]] } },

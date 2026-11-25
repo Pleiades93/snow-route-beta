@@ -7,18 +7,12 @@
 // honest board, and the structural pins hold the other parts off the raw
 // representation (no snapshot literal, no board rebinding outside app1).
 import { readFileSync } from 'node:fs';
+import { extractFn } from './extract-fn.mjs';
 import vm from 'node:vm';
 
 const read = p => readFileSync(new URL('../../parts/' + p, import.meta.url), 'utf8');
 const app1 = read('app1.js'), app3 = read('app3.js'), app4 = read('app4.js'), app5 = read('app5.js');
 
-function extractFn(src, name) {
-  const i = src.indexOf('function ' + name + '(');
-  if (i < 0) throw new Error(name + ' not found');
-  let d = 0, j = src.indexOf('{', i), k = j;
-  for (;; k++) { const c = src[k]; if (c === '{') d++; else if (c === '}') { d--; if (!d) break; } }
-  return src.slice(i, k + 1);
-}
 
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
@@ -35,7 +29,7 @@ const GEO = `
 const modStart = app1.indexOf('// ===== THE ROUTE BOARD MODULE');
 const modEnd = app1.indexOf('let routeLoaded = false', modStart);
 if (modStart < 0 || modEnd < 0) throw new Error('board module not found in parts/app1.js');
-const moduleCode = GEO + extractFn(app1, 'sanitizePieceTimes') + '\n' + extractFn(app1, 'streetComplete') + '\n' + app1.slice(modStart, modEnd);
+const moduleCode = GEO + extractFn(app1, 'function sanitizePieceTimes(') + '\n' + extractFn(app1, 'function streetComplete(') + '\n' + app1.slice(modStart, modEnd);
 
 function makeCtx(extra = '') {
   const ctx = vm.createContext({ console });
