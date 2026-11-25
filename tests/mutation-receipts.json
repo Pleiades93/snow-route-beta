@@ -10957,6 +10957,344 @@
    "red": "e2e-offline on base app code with the final test file (41/47): E26 setup cen null; E26a re-weighs all 892 entries (blobs 892, no recognition); E26b2/E26c2 fail identically; E26d fails through the real boot path (healed false, flag null - the caller guard means the boot never migrates a recordless pack). Earlier pair on the pre-review test file: RED twice (42/47, 41/47), GREEN 46/47",
    "green": "e2e-offline on the final fixed tree: 46/47 with every E26 check passing, E26d now grading the boot path itself (recordless pack, page reload, boot migration heals the gap and earns the flag). The sole local failure, E19 flag null, also fails on the unmodified base tree locally (four mutation runs) - a local verify race; CI passed E19 on this PR's first head",
    "issued": "2026-11-24 spinout-partial-pack-r2"
+  },
+  {
+   "id": "machinery-gate-push-judges-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "ec1f83a705951c146d52209aa6fa2cf37dcb302bf2d98c6b5e33fd005cf06cfd",
+    "scripts/push.py": "a5d14ba7cecdd9dc30bf19a3a30243a1947e622cd77d2955de2dc8901b75516b"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled (GENERATED_NEVER_PUSHED guard neutered)",
+   "red": "gate fixtures 78 pass / 1 fail, twice: 'push: the generated assembled source is refused as an entry' got exit 0, want 1",
+   "green": "gate fixtures all pass on the restored tree (84 PASS lines, 0 FAIL)",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "ec1f83a705951c146d52209aa6fa2cf37dcb302bf2d98c6b5e33fd005cf06cfd",
+    ".github/workflows/checks.yml": "406a313f07dfbcae5e7fa2e44ce5576980b2c37a3f57e0dc724802b0c60db110"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true)",
+   "red": "gate fixtures 78 pass / 1 fail, twice: 'ci wiring: the Receipts step refuses a changed check with no mutation receipt' got exit 0, want 1; independently, removing the selftest-whatsnew step failed check-mirrors wiring, twice",
+   "green": "gate fixtures all pass and check-mirrors PASS on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-pr-limits-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    "scripts/check-pr-limits.py": "fb90adff0e29bcf64ebb2a618d121e413faa7ddf2e9d5b45db322128a2b6b58d"
+   },
+   "mutation": "check-pr-limits.py SIZE_LIMIT raised from 300 to 1000000000 (the size judge neutered)",
+   "red": "gate fixtures 90 pass / 1 fail, twice: 'pr-limits: a commit over the product-line limit is refused' got exit 0, want 1",
+   "green": "gate fixtures 91/91 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    "scripts/check-receipts.py": "182ff6242db008d427e3e37dc96d40442e906aad14327de2b4b18df639a8e012"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths",
+   "red": "gate fixtures 82 pass / 9 fail, twice: every receipts-gate case got exit 0, want 1",
+   "green": "gate fixtures 91/91 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    ".github/workflows/checks.yml": "560cb68ede05cfe7164b8aa318efb3f29dfec3f2c4388088634ac78ea5986e0d"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), on the commit-2 workflow content",
+   "red": "gate fixtures 90 pass / 1 fail, twice: 'ci wiring: the Receipts step refuses a changed check with no mutation receipt' got exit 0, want 1",
+   "green": "gate fixtures 91/91 and check-mirrors PASS on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-push-judges-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    "scripts/push.py": "a5d14ba7cecdd9dc30bf19a3a30243a1947e622cd77d2955de2dc8901b75516b"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled (GENERATED_NEVER_PUSHED guard neutered), replayed on the final commit-2 fixture suite",
+   "red": "gate fixtures 90 pass / 1 fail, twice: 'push: the generated assembled source is refused as an entry' got exit 0, want 1",
+   "green": "gate fixtures 91/91 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-push-judges-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "fceb747dd511220736f85352b3cb9b88ef7163e8662e59081343a267fd3de820",
+    "scripts/push.py": "392a9f769614ee3c90fa75076db103d2e70d22bc50f50ff7b2d4ce57a6769346"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled (GENERATED_NEVER_PUSHED guard neutered), replayed on the final 92-case fixture suite",
+   "red": "gate fixtures 91 pass / 1 fail, twice: the gensrc refusal case got exit 0, want 1",
+   "green": "gate fixtures 92/92 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-pr-limits-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "fceb747dd511220736f85352b3cb9b88ef7163e8662e59081343a267fd3de820",
+    "scripts/check-pr-limits.py": "a91dd5f608bf4ab54cb931bdbf8c4a767fcb49c7186132208456736dd29e6e31"
+   },
+   "mutation": "check-pr-limits.py SIZE_LIMIT raised from 300 to 1000000000, replayed after the ancestry fix",
+   "red": "gate fixtures 90 pass / 2 fail, twice: both the full-history and the shallow-checkout oversize cases got exit 0, want 1",
+   "green": "gate fixtures 92/92 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "fceb747dd511220736f85352b3cb9b88ef7163e8662e59081343a267fd3de820",
+    "scripts/check-receipts.py": "182ff6242db008d427e3e37dc96d40442e906aad14327de2b4b18df639a8e012"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths, replayed on the final suite",
+   "red": "gate fixtures 83 pass / 9 fail, twice: every receipts-gate case got exit 0, want 1",
+   "green": "gate fixtures 92/92 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "fceb747dd511220736f85352b3cb9b88ef7163e8662e59081343a267fd3de820",
+    ".github/workflows/checks.yml": "560cb68ede05cfe7164b8aa318efb3f29dfec3f2c4388088634ac78ea5986e0d"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), replayed on the final suite",
+   "red": "gate fixtures 91 pass / 1 fail, twice: the ci-wiring Receipts-step case got exit 0, want 1",
+   "green": "gate fixtures 92/92 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-push-judges-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "67fcf0cbd87f743366f22faf773120488fb58699ed7ab76cb7693304cb9fb53a",
+    "scripts/push.py": "392a9f769614ee3c90fa75076db103d2e70d22bc50f50ff7b2d4ce57a6769346"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled, replayed on the final 93-case suite",
+   "red": "gate fixtures 92 pass / 1 fail, twice: the gensrc refusal case got exit 0, want 1",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-pr-limits-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "67fcf0cbd87f743366f22faf773120488fb58699ed7ab76cb7693304cb9fb53a",
+    "scripts/check-pr-limits.py": "a91dd5f608bf4ab54cb931bdbf8c4a767fcb49c7186132208456736dd29e6e31"
+   },
+   "mutation": "check-pr-limits.py SIZE_LIMIT raised to 1000000000, and separately its ancestry fetch disabled, replayed on the final 93-case suite",
+   "red": "SIZE_LIMIT neuter: 91 pass / 2 fail, twice (both oversize cases pass blind). Fetch disabled: 91 pass / 2 fail - the shallow size case loses its diagnostic assertion and the labelled control is refused, exactly Codex P1's falsification on PR #211",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "67fcf0cbd87f743366f22faf773120488fb58699ed7ab76cb7693304cb9fb53a",
+    "scripts/check-receipts.py": "182ff6242db008d427e3e37dc96d40442e906aad14327de2b4b18df639a8e012"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths, replayed on the final 93-case suite",
+   "red": "gate fixtures 84 pass / 9 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "67fcf0cbd87f743366f22faf773120488fb58699ed7ab76cb7693304cb9fb53a",
+    ".github/workflows/checks.yml": "560cb68ede05cfe7164b8aa318efb3f29dfec3f2c4388088634ac78ea5986e0d"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), replayed on the final 93-case suite",
+   "red": "gate fixtures 92 pass / 1 fail, twice: the ci-wiring Receipts-step case got exit 0, want 1",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-push-judges-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "c3656109f9f4324f3d7d9deb22538d0f21ebcff8ade787428ff5e02423a53d82",
+    "scripts/push.py": "392a9f769614ee3c90fa75076db103d2e70d22bc50f50ff7b2d4ce57a6769346"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled, replayed on the final 93-case suite after the fixture dedupe fix",
+   "red": "gate fixtures 92 pass / 1 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-pr-limits-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "c3656109f9f4324f3d7d9deb22538d0f21ebcff8ade787428ff5e02423a53d82",
+    "scripts/check-pr-limits.py": "a91dd5f608bf4ab54cb931bdbf8c4a767fcb49c7186132208456736dd29e6e31"
+   },
+   "mutation": "check-pr-limits.py SIZE_LIMIT raised to 1000000000, replayed on the final 93-case suite",
+   "red": "gate fixtures 91 pass / 2 fail, twice: both oversize cases pass blind",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "c3656109f9f4324f3d7d9deb22538d0f21ebcff8ade787428ff5e02423a53d82",
+    "scripts/check-receipts.py": "182ff6242db008d427e3e37dc96d40442e906aad14327de2b4b18df639a8e012"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths, replayed on the final 93-case suite",
+   "red": "gate fixtures 84 pass / 9 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "c3656109f9f4324f3d7d9deb22538d0f21ebcff8ade787428ff5e02423a53d82",
+    ".github/workflows/checks.yml": "560cb68ede05cfe7164b8aa318efb3f29dfec3f2c4388088634ac78ea5986e0d"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), replayed on the final 93-case suite",
+   "red": "gate fixtures 92 pass / 1 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-push-judges-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "dc96298774beac53bb72ba99f2483e852da1bf7d66de207cb34d21cc6ff79f3f",
+    "scripts/push.py": "392a9f769614ee3c90fa75076db103d2e70d22bc50f50ff7b2d4ce57a6769346"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled, replayed on the final 93-case suite after the comment trims",
+   "red": "gate fixtures 92 pass / 1 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-pr-limits-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "dc96298774beac53bb72ba99f2483e852da1bf7d66de207cb34d21cc6ff79f3f",
+    "scripts/check-pr-limits.py": "bca021be41ade08b35321950717e2a0a3b39101a6bb7830953ce286172bfd9af"
+   },
+   "mutation": "check-pr-limits.py SIZE_LIMIT raised to 1000000000, replayed on the final 93-case suite",
+   "red": "gate fixtures 91 pass / 2 fail, twice: both oversize cases pass blind",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "dc96298774beac53bb72ba99f2483e852da1bf7d66de207cb34d21cc6ff79f3f",
+    "scripts/check-receipts.py": "182ff6242db008d427e3e37dc96d40442e906aad14327de2b4b18df639a8e012"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths, replayed on the final 93-case suite",
+   "red": "gate fixtures 84 pass / 9 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "dc96298774beac53bb72ba99f2483e852da1bf7d66de207cb34d21cc6ff79f3f",
+    ".github/workflows/checks.yml": "560cb68ede05cfe7164b8aa318efb3f29dfec3f2c4388088634ac78ea5986e0d"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), replayed on the final 93-case suite",
+   "red": "gate fixtures 92 pass / 1 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-push-judges-r7",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f33d7bbe9bf8f68f5d8502ebea7b1bbc066b3e6f36de6e50d4eddab2cb77c9db",
+    "scripts/push.py": "392a9f769614ee3c90fa75076db103d2e70d22bc50f50ff7b2d4ce57a6769346"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled, replayed on the final 93-case suite after the stub index-comparison fix",
+   "red": "gate fixtures 92 pass / 1 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-pr-limits-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f33d7bbe9bf8f68f5d8502ebea7b1bbc066b3e6f36de6e50d4eddab2cb77c9db",
+    "scripts/check-pr-limits.py": "bca021be41ade08b35321950717e2a0a3b39101a6bb7830953ce286172bfd9af"
+   },
+   "mutation": "check-pr-limits.py SIZE_LIMIT raised to 1000000000, replayed on the final 93-case suite",
+   "red": "gate fixtures 91 pass / 2 fail, twice: both oversize cases pass blind",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-receipts-judge-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f33d7bbe9bf8f68f5d8502ebea7b1bbc066b3e6f36de6e50d4eddab2cb77c9db",
+    "scripts/check-receipts.py": "182ff6242db008d427e3e37dc96d40442e906aad14327de2b4b18df639a8e012"
+   },
+   "mutation": "check-receipts.py trigger_paths neutered to return no paths, replayed on the final 93-case suite",
+   "red": "gate fixtures 84 pass / 9 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r7",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f33d7bbe9bf8f68f5d8502ebea7b1bbc066b3e6f36de6e50d4eddab2cb77c9db",
+    ".github/workflows/checks.yml": "560cb68ede05cfe7164b8aa318efb3f29dfec3f2c4388088634ac78ea5986e0d"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true), replayed on the final 93-case suite",
+   "red": "gate fixtures 92 pass / 1 fail, twice",
+   "green": "gate fixtures 93/93 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
   }
  ]
 }

@@ -46,9 +46,13 @@ turn every discovered bug into a permanent regression test.
 
 **Source layout (Beta 1.94, audit F-02).** The app is edited in `parts/`
 only. After editing a part, run `python3 scripts/assemble.py`, then
-`python3 scripts/build-pages.py`; the build FAILS if
-`src/tracker-source.html` is not exactly what the parts assemble to, so a
-hand-edit of the generated file (or a forgotten assembly) cannot ship.
+`python3 scripts/build-pages.py`; the build FAILS if the committed
+`index.html` is not exactly what the parts assemble to, so a hand-edit
+of a generated file (or a forgotten assembly) cannot ship. The
+assembled `src/tracker-source.html` is generated and untracked
+(machinery gate round, 2026-11-24): `build-pages.py` builds from
+`parts/` in memory, CI generates the file before the test jobs, and
+`scripts/push.py` refuses it as a push entry.
 `parts/pmstyles.js` is itself generated — regenerate it with
 `scripts/genstyles.mjs`, never hand-edit it. The generator's
 `@protomaps/basemaps` dependency is PINNED exactly
@@ -118,8 +122,8 @@ fallbacks have been tried.
 files goes through `scripts/push.py` (`push <root> --branch B --message
 M <repo-relative path>...`): it refuses basename-only entries (the
 helper's basename default scattered five pushes to the repo root), it
-refuses a parts/ push that does not carry the fresh derived artifacts
-(src/tracker-source.html, index.html), and it verifies the PUSHED
+refuses a parts/ push that does not carry the fresh derived artifact
+(index.html), and it verifies the PUSHED
 tree's blobs against the local files after the transport push. A
 `plan` run validates the set without touching the network. Do not push
 through the helper directly — the discipline it cannot enforce is the
@@ -195,6 +199,12 @@ that can be derived is derived instead (the fixture rosters in
 round (a); the packfields cap list in this round); the rest are
 checked on every push, against the prospective tree like the
 other gates.
+
+**Approval policy.** The merge and approval rules (who may
+approve what, the large-change label, when a Beta bump is carried)
+are consolidated in `docs/APPROVAL-POLICY.md` — approval only; the
+gate's checks stay in §3 and in `checks.yml`, and the policy file
+never restates them.
 
 ## 2. Per-change report (required with every merge)
 

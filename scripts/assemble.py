@@ -5,9 +5,11 @@ The canonical app source is parts/ - seventeen files, concatenated in a
 fixed order into src/tracker-source.html, which scripts/build-pages.py then
 stamps (CSP) and publishes as index.html. tracker-source.html is a
 GENERATED file: never hand-edit it; edit the part and re-run this script.
+It is generated and untracked; build-pages.py builds from parts/ in
+memory instead of reading it.
 
     python3 scripts/assemble.py            # write src/tracker-source.html
-    python3 scripts/assemble.py --check    # fail if src/ is not what parts/ builds
+    python3 scripts/assemble.py --check    # fail if the generated copy is stale
 
 Recipe (byte-exact, the standing assembly since Beta 1.0's first build):
 head.html, then '<script>', then data.js, app1.js, engine.js, pmstyles.js,
@@ -145,7 +147,11 @@ def main() -> int:
     data = build()
     digest = hashlib.sha256(data).hexdigest()
     if "--check" in sys.argv:
-        if not OUT.is_file() or OUT.read_bytes() != data:
+        if not OUT.is_file():
+            print("assemble --check: FAIL - src/tracker-source.html "
+                  "is not generated yet (run scripts/assemble.py)")
+            return 1
+        if OUT.read_bytes() != data:
             print("assemble --check: FAIL - src/tracker-source.html is not "
                   "what parts/ assembles to (edit parts/, not the output)")
             return 1

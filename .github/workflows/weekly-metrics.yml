@@ -1,0 +1,19 @@
+# Weekly repo metrics (machinery gate round, queue 7b): the job
+# fails when a target in scripts/weekly-metrics.py is missed.
+name: weekly-metrics
+on:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+      - name: Weekly metrics (targets in scripts/weekly-metrics.py)
+        run: python3 scripts/weekly-metrics.py .

@@ -209,6 +209,14 @@ with tempfile.TemporaryDirectory() as td:
                    ["./parts/app3.js"]), 1)
     check("push: a ./-spelled basename is refused like the plain basename",
           run_push(push_tree(t / "dotbase", files=["parts/app3.js"]), ["./app3.js"]), 1)
+    gensrc = push_tree(t / "gensrc", files=["src/tracker-source.html",
+                                            "index.html",
+                                            "scripts/build-pages.py"])
+    w(gensrc / "scripts/build-pages.py", "import sys; sys.exit(0)\n")
+    check("push: the generated assembled source is refused as an entry",
+          run_push(gensrc, ["src/tracker-source.html", "index.html"]), 1)
+    check("push: the same tree without the generated source passes plan",
+          run_push(gensrc, ["index.html"]), 0)
 
 # Push-mode judging (freshness, prospective tree, blob verification)
 # runs against a MOCK helper: a module whose api() serves a canned
@@ -225,14 +233,11 @@ from pathlib import Path
 root = Path.cwd()
 parts = sorted(p for p in (root / "parts").glob("*") if p.is_file()) if (root / "parts").exists() else []
 expect = "".join(p.read_text() for p in parts)
-tracker = root / "src" / "tracker-source.html"
-if not tracker.exists() or tracker.read_text() != expect:
-    print("ASSEMBLY FAIL (fixture stub)"); sys.exit(1)
 cl = (root / "CHANGELOG.md").read_text() if (root / "CHANGELOG.md").exists() else ""
 m = re.search(r"## Beta (\\S+)", cl)
 idx = (root / "index.html").read_text() if (root / "index.html").exists() else ""
-if m and ("Beta " + m.group(1)) not in idx:
-    print("VERSION FAIL (fixture stub)"); sys.exit(1)
+if m is None or idx != "shell Beta " + m.group(1) + " " + expect:
+    print("CHECK FAIL (fixture stub)"); sys.exit(1)
 sys.exit(0)
 '''
 STUB_BUILD_PAGES_IMPORTING = """import csp_stamp
@@ -323,19 +328,19 @@ with tempfile.TemporaryDirectory() as td:
     stale = push_tree2(t / "stale", parts={"a.js": "A2", "b.js": "B"}, changelog="## Beta 1.0\n",
                        tracker="AB", index="shell Beta 1.0 AB")
     check("push plan: a parts push whose derived artifacts are stale is refused (freshness)",
-          run_push(t / "stale", ["parts/a.js", "src/tracker-source.html", "index.html"]), 1)
+          run_push(t / "stale", ["parts/a.js", "index.html"]), 1)
     fresh = push_tree2(t / "fresh", parts={"a.js": "A2", "b.js": "B"}, changelog="## Beta 1.0\n",
                        tracker="A2B", index="shell Beta 1.0 A2B")
     check("push plan: a parts push with fresh derived artifacts passes",
-          run_push(t / "fresh", ["parts/a.js", "src/tracker-source.html", "index.html"]), 0)
+          run_push(t / "fresh", ["parts/a.js", "index.html"]), 0)
     omit = push_tree2(t / "omit", parts={"a.js": "A2", "b.js": "B2"}, changelog="## Beta 1.0\n",
                       tracker="A2B2", index="shell Beta 1.0 A2B2",
                       branch_parts={"a.js": "A", "b.js": "B"})
     check("push: omitting a differing assembly input is refused (prospective tree)",
-          run_push(t / "omit", ["parts/a.js", "src/tracker-source.html", "index.html"],
+          run_push(t / "omit", ["parts/a.js", "index.html"],
                    mode="push", env_extra=omit), 1)
     check("push: the full differing set pushes and verifies against the mock branch",
-          run_push(t / "omit", ["parts/a.js", "parts/b.js", "src/tracker-source.html", "index.html"],
+          run_push(t / "omit", ["parts/a.js", "parts/b.js", "index.html"],
                    mode="push", env_extra=omit), 0)
     bump = push_tree2(t / "bump", parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 2.0\n",
                       tracker="AB", index="shell Beta 1.0 AB")
@@ -627,22 +632,21 @@ with tempfile.TemporaryDirectory() as td:
     w(t / "nocensus" / "scripts" / "check-receipts.py",
       (ROOT / "scripts" / "check-receipts.py").read_text())
     check("push: a parts change with no sibling census is refused (census gate)",
-          run_push(t / "nocensus", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
-                                    "index.html"],
+          run_push(t / "nocensus", ["parts/a.js", "parts/b.js", "index.html"],
                    mode="push", env_extra=no_census), 1)
     full = census_tree("censusok")
     check("push: a parts change with a current, fully-marked census pushes",
-          run_push(t / "censusok", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+          run_push(t / "censusok", ["parts/a.js", "parts/b.js",
                                     "index.html", "tests/sibling-census.json"],
                    mode="push", env_extra=full), 0)
     omitted = census_tree("censusomit", omit_door=True)
     check("push: a hand-typed census omitting a derived door row is refused (re-derivation)",
-          run_push(t / "censusomit", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+          run_push(t / "censusomit", ["parts/a.js", "parts/b.js",
                                       "index.html", "tests/sibling-census.json"],
                    mode="push", env_extra=omitted), 1)
     unmarked = census_tree("censusunmarked", leave_unmarked=True)
     check("push: a census leaving a derived row unmarked is refused",
-          run_push(t / "censusunmarked", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+          run_push(t / "censusunmarked", ["parts/a.js", "parts/b.js",
                                           "index.html", "tests/sibling-census.json"],
                    mode="push", env_extra=unmarked), 1)
     # Machinery-only: local parts identical to the branch's (no
@@ -1131,6 +1135,104 @@ with tempfile.TemporaryDirectory() as td:
     check("receipts: a changed checks workflow named by a current receipt passes the gate",
           run_receipts(wf, [".github/workflows/checks.yml"]), 0)
 
-total = 79
+# ------------------------------------------------------- PR limit judge
+def run_limits(root, base, labels=""):
+    return run_limits_out(root, base, labels)[0]
+
+
+def run_limits_out(root, base, labels=""):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-pr-limits.py"),
+                           str(root), "--base", base, "--labels", labels],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def git_repo(base, commits):
+    """A real git repo: an initial commit, then one commit per
+    (message, {path: text}) entry. Returns (repo, base_sha)."""
+    base.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
+
+    def g(*args):
+        proc = subprocess.run(["git", "-C", str(base)] + list(args),
+                              capture_output=True, text=True, env=env,
+                              timeout=60)
+        assert proc.returncode == 0, proc.stderr
+
+    g("init", "-q")
+    g("config", "user.email", "fixture@example.invalid")
+    g("config", "user.name", "gate fixture")
+    w(base / "seed.txt", "seed\n")
+    g("add", "-A")
+    g("commit", "-q", "-m", "seed")
+    base_sha = subprocess.run(["git", "-C", str(base), "rev-parse", "HEAD"],
+                              capture_output=True, text=True,
+                              env=env).stdout.strip()
+    for message, files in commits:
+        for rel, text in files.items():
+            w(base / rel, text)
+        g("add", "-A")
+        g("commit", "-q", "-m", message)
+    return base, base_sha
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    big = "\n".join(f"line {i}" for i in range(301)) + "\n"
+    repo, b = git_repo(t / "oversize", [("big", {"parts/big.js": big})])
+    check("pr-limits: a commit over the product-line limit is refused",
+          run_limits(repo, b), 1)
+    check("pr-limits: the large-change label allows the same commit",
+          run_limits(repo, b, labels="large-change"), 0)
+    repo, b = git_repo(t / "clean", [("small", {"parts/a.js": "one\n"})])
+    check("pr-limits: a small clean commit passes",
+          run_limits(repo, b), 0)
+    long_comment = "# " + " ".join(["word"] * 21) + "\n"
+    repo, b = git_repo(t / "comment", [("c", {"scripts/x.py": long_comment})])
+    check("pr-limits: an added comment over the word limit is refused",
+          run_limits(repo, b), 1)
+    repo, b = git_repo(t / "longline", [("c", {"scripts/x.py": "x" * 241 + "\n"})])
+    check("pr-limits: an added line over the char limit is refused",
+          run_limits(repo, b), 1)
+    repo, b = git_repo(t / "rootfile", [("c", {"stray.txt": "hi\n"})])
+    check("pr-limits: a new root file outside the allowlist is refused",
+          run_limits(repo, b), 1)
+    repo, b = git_repo(t / "exempt", [("c", {"index.html": "x" * 300 + "\n"})])
+    check("pr-limits: a generated file's long line is exempt",
+          run_limits(repo, b), 0)
+    # Fetch shallow ancestry so the size rule sees the product commit.
+    src, b = git_repo(t / "mergesrc", [])
+    genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
+
+    def sgit(*a):
+        proc = subprocess.run(["git", "-C", str(src)] + list(a),
+                              capture_output=True, text=True, env=genv,
+                              timeout=60)
+        assert proc.returncode == 0, proc.stderr
+
+    default_branch = subprocess.run(
+        ["git", "-C", str(src), "branch", "--show-current"],
+        capture_output=True, text=True, env=genv).stdout.strip()
+    sgit("checkout", "-q", "-b", "feat")
+    w(src / "parts/big.js", big)
+    sgit("add", "-A")
+    sgit("commit", "-q", "-m", "big")
+    sgit("checkout", "-q", default_branch)
+    sgit("merge", "-q", "--no-ff", "feat", "-m", "merge feat")
+    clone = t / "shallowclone"
+    proc = subprocess.run(["git", "clone", "--depth=1",
+                           f"file://{src}", str(clone)],
+                          capture_output=True, text=True, env=genv,
+                          timeout=60)
+    assert proc.returncode == 0, proc.stderr
+    # Assert the size diagnostic and labelled control because ancestry refusal also exits 1.
+    rc, out = run_limits_out(clone, b)
+    check("pr-limits: a shallow (CI-shaped) checkout still judges "
+          "the size rule",
+          1 if (rc == 1 and "adds 301 product lines" in out) else 0, 1)
+    check("pr-limits: the labelled control passes in the same "
+          "shallow checkout", run_limits(clone, b, "large-change"), 0)
+
+total = 93
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
