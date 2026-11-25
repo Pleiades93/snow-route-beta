@@ -36,6 +36,8 @@
 // drive). Fail-first baseline: on the Beta 1.262 tree checks 2, 3, 4, 7,
 // 8 and 9 fail (cap present, band split present, heal present, hook
 // absent, residue absent).
+// Beta 1.294 premise update: the handover caps the titles at 16 with
+// the spec fade (check 2), rebuilds the clones (check 5), R1 at 250 (6).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -65,9 +67,10 @@ check('1: the labelpts source is created once from LABELPTS in addStack (never r
   engine.includes("const id = 'streetnamespt' + t;") &&
   engine.includes('function nudgeFifth()') && engine.includes('function assignTiers()'));
 
-// ---------- (2) NO cap - the titles name route streets at every zoom ----------
-check('2: the title layers carry NO maxzoom - the addLayer spec is the pre-1.258 form (minzoom from PT_MIN, then the filter)',
-  engine.includes('minzoom: PT_MIN[t - 1], filter:') && !engine.includes('maxzoom: 15'));
+// ---------- (2) the cap - Beta 1.294 handover (was: NO cap, pre-1.294) ----------
+check('2: the title layers are capped at maxzoom 16 and fade out across 15-16 in the spec (Beta 1.294 premise update: the handover supersedes the restored no-cap form)',
+  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 16, filter:') &&
+  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0]"));
 
 // ---------- (3) the exclusion restored at every zoom; the split deleted ----------
 check("3: glUnifyLabels sets the pre-1.258 exclusion (stock kind filter AND name not in ROUTE_TILE_NAMES) on the originals under the blanket 13-24 zoom range, with the day readability paint - and no '-pre15' band exists anywhere in parts (Beta 1.265 premise update: the exclusion literal is now built once as exclF and applied under the create-mode condition - outside create mode the computed filter is this same shape; proof-1265 pins the condition)",
@@ -84,14 +87,16 @@ check("4: the 1.259 priority lane stays deleted - no lane layer id, no 'route-la
   !app2.includes('roads_labels_minor-priority') && !engine.includes('roads_labels_minor-priority') &&
   !app2.includes("'route-labels'") && !engine.includes("'route-labels'"));
 
-// ---------- (5) the '-route' clone removal rides again (the 1.208 retirement guard) ----------
-check("5: the retired '-route' clone layers are removed, never rebuilt (the Beta 1.208 guard at the top of the label pass)",
-  app2.includes("const cloneId = baseId + '-route';") && app2.includes('if (m.getLayer(cloneId))'));
+// ---------- (5) the '-route' clones: removed every pass, rebuilt only for the handover ----------
+check("5: the '-route' clone layers are removed at the top of the label pass and rebuilt only in the handover state, route names only (Beta 1.294 premise update: the 1.208 retirement is superseded by the handover)",
+  app2.includes("const cloneId = baseId + '-route';") && app2.includes('if (m.getLayer(cloneId))') &&
+  app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") &&
+  app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];"));
 
 // ---------- (6) THE NAMED EXCEPTION: R1 ----------
-check("6: R1 symbol-spacing 500 is owned in glUnifyLabels, inside the restored exclusion branch (the revert's one named exception)",
-  app2.includes("setL(L.id, 'symbol-spacing', 500);") &&
-  app2.indexOf("setL(L.id, 'symbol-spacing', 500);") > app2.indexOf('LABEL RULE (Andrew, Beta 1.40; revised Beta 1.208)'));
+check("6: R1 symbol-spacing is owned in glUnifyLabels at the top of the road branch, value 250 (Beta 1.294 premise update: Andrew re-picked the repetition on 2026-11-24; the write now covers the originals and the handover clones)",
+  app2.includes("setL(L.id, 'symbol-spacing', 250);") &&
+  app2.indexOf("setL(L.id, 'symbol-spacing', 250);") > app2.indexOf('LABEL RULE (Andrew, 1.294)'));
 
 // ---------- (7) the heal is retired ----------
 check('7: the standing heal is gone - no armTitleHeal, no titleCamSig, no init call in the engine',

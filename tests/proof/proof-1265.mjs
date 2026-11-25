@@ -44,9 +44,12 @@ check('2: the exclusion clause is built exactly once (the exclF literal) and rea
   exclBuilds === 1 && setFilterCalls === 1 && app2.includes("const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];"));
 
 // ---------- (3) no forked label layers ----------
-check('3: no part forks the road-label layers for create mode (no addLayer of a roads_labels clone anywhere in parts) - the same two layers carry both states',
-  !/addLayer\(\{[^}]*id: 'roads_labels/.test(app2) && !/addLayer\(\{[^}]*id: 'roads_labels/.test(createPick) &&
-  !app2.includes("roads_labels_major-create") && !app2.includes("roads_labels_minor-create"));
+// Beta 1.294 re-scope: the claim is create mode's own fork (the 1.264
+// baseline). The handover clones are a separate non-create mechanism.
+check('3: create mode forks no label layer of its own (no -create clone ids anywhere, create-pick adds no road-label layer) - the handover clones are a separate non-create mechanism',
+  !/addLayer\(\{[^}]*id: 'roads_labels/.test(createPick) &&
+  !app2.includes("roads_labels_major-create") && !app2.includes("roads_labels_minor-create") &&
+  !createPick.includes("roads_labels_major-create") && !createPick.includes("roads_labels_minor-create"));
 
 // ---------- (4) the backdrop re-runs the label pass on the flip ----------
 const bdStart = createPick.indexOf('function crSetBackdrop(on) {');
