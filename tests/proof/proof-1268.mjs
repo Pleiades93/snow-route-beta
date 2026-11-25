@@ -55,9 +55,9 @@ check('1: WIDTH_K is defined exactly once, as 1.3',
   (eng.match(/const WIDTH_K = [\d.]+;/g) || []).length === 1 && eng.includes('const WIDTH_K = 1.3;'));
 
 check('2: the pin block at WIDTH_K names ROAD_WIDTH_K, the 1.20 ratio and the re-measure rule',
-  eng.includes('ROAD_WIDTH_K = 1.5, unchanged since 1.181') &&
-  eng.includes('renders 1.20x the basemap road') &&
-  eng.includes('the ratio must be re-measured'));
+  eng.includes('ROAD_WIDTH_K (genstyles)') &&
+  eng.includes('and 1.20 ratio are a decision') &&
+  eng.includes('re-measure the ratio if either constant changes'));
 
 check('3: ROAD_WIDTH_K is still 1.5 in scripts/genstyles.mjs (the basemap did not move)',
   gen.includes('const ROAD_WIDTH_K = 1.5;'));
