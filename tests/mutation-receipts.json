@@ -11514,6 +11514,18 @@
    "red": "drive152 5/8: K2a failed:0 done:4 with the grid proven uncached (uncached true); the historical shape also reproduced locally via cache resurrection (fromCache true at K2a) before the wipe fix",
    "green": "drive152 8/8 on the final tree (comment-trimmed jEnterUncached block; the uncached-entry and live-cell fixes unchanged in behaviour)",
    "issued": "2026-11-25 test-reliability-7c"
+  },
+  {
+   "id": "drive125-p2-ladder-settle-r3",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive125.mjs": "30ce47edec62699091918d006434449325273ab15a6136df1417ccccab40d335"
+   },
+   "mutation": "the pre-7c P2 read map.getStyle().layers immediately after the night setStyle rebuild: layers seated before their zoom ranges are applied, so the ladder read back empty",
+   "red": "flake-log.md: P2 {\"sub\":{},\"loc\":{}} signature, documented count 4 burns; and PR #212 gate attempt 3, shard 4: P2 failed with the same {} signature (plus a restack 'Style is not done loading' exception) against the first 7c poll, whose terminal shape a second rebuild could still unseat",
+   "green": "drive125 28/28 locally, twice, on the strengthened poll (settled ladder values plus the completed restack - the centres source present) before the read",
+   "issued": "2026-11-25 test-reliability-7c"
   }
  ]
 }

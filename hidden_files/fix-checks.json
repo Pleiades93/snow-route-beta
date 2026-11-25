@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "9a2cf3e384aeab615aac96adea07cd6e095288ff5957157fd356cbc100e8b992",
+  "canonical_registry_sha256": "4f29aad4d7425df7b4f33e245b9739b0cd082dcbb5997a6decbc0fcea33e7b3e",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -13405,10 +13405,10 @@
   {
    "added": "2026-11-25",
    "file": "tests/browser/drive125.mjs",
-   "fix": "Test reliability round (7c): drive125 P2 polls the terminal layer shape (numeric zoom ranges seated) after the night setStyle rebuild before reading the place ladder.",
+   "fix": "Test reliability round (7c): drive125 P2 polls the settled night ladder (values seated and the swap restack complete) before reading - the first terminal-shape poll still raced a second rebuild in CI (shard 4, PR #212 attempt 3).",
    "fix_id": "drive125-p2-settle",
    "id": "drive125-p2-terminal-poll",
-   "pattern": "seats layers before applying their zoom ranges",
+   "pattern": "restack rebuilds the style before the retune lands",
    "type": "grep_present"
   }
  ]
