@@ -1199,7 +1199,36 @@ with tempfile.TemporaryDirectory() as td:
     repo, b = git_repo(t / "exempt", [("c", {"index.html": "x" * 300 + "\n"})])
     check("pr-limits: a generated file's long line is exempt",
           run_limits(repo, b), 0)
+    # The CI shape: a depth-1 clone holds only the merge commit, so
+    # the judge must fetch ancestry before enumerating commits, or
+    # the size rule passes blind (Codex P1 on PR #211).
+    src, b = git_repo(t / "mergesrc", [])
+    genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
 
-total = 91
+    def sgit(*a):
+        proc = subprocess.run(["git", "-C", str(src)] + list(a),
+                              capture_output=True, text=True, env=genv,
+                              timeout=60)
+        assert proc.returncode == 0, proc.stderr
+
+    default_branch = subprocess.run(
+        ["git", "-C", str(src), "branch", "--show-current"],
+        capture_output=True, text=True, env=genv).stdout.strip()
+    sgit("checkout", "-q", "-b", "feat")
+    w(src / "parts/big.js", big)
+    sgit("add", "-A")
+    sgit("commit", "-q", "-m", "big")
+    sgit("checkout", "-q", default_branch)
+    sgit("merge", "-q", "--no-ff", "feat", "-m", "merge feat")
+    clone = t / "shallowclone"
+    proc = subprocess.run(["git", "clone", "--depth=1",
+                           f"file://{src}", str(clone)],
+                          capture_output=True, text=True, env=genv,
+                          timeout=60)
+    assert proc.returncode == 0, proc.stderr
+    check("pr-limits: a shallow (CI-shaped) checkout still judges "
+          "the size rule", run_limits(clone, b), 1)
+
+total = 92
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

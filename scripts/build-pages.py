@@ -8,11 +8,8 @@ change to the source:
   1. a Content-Security-Policy <meta> stamped by scripts/csp_stamp.py, whose
      script/style hashes are computed from the bundle itself
 and copies src/sw.js to sw.js. It then verifies:
-  * assembly - the bundle is built from parts/ in memory by
-               scripts/assemble.py (Beta 1.94, audit F-02: parts/ is the
-               canonical source; since the machinery gate round,
-               2026-11-24, the assembled src/tracker-source.html is
-               generated and untracked, never read back)
+  * assembly - build the bundle from canonical parts/ in memory
+               (scripts/assemble.py; Beta 1.94, audit F-02)
   * parity  - stripping the stamp reproduces the source byte-for-byte
   * SEC-10a - the service worker's CORE integrity hashes and URLs equal the
               deployed page tags' (the two copies of the SRI data cannot drift)

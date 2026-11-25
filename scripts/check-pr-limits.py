@@ -108,6 +108,47 @@ def commit_list(root, base):
     return [ln.strip() for ln in out.splitlines() if ln.strip()]
 
 
+def real_parents(root, sha):
+    """The commit's recorded parents (cat-file ignores shallow
+    grafts, which make a merged head look like a root commit)."""
+    out = git(root, "cat-file", "-p", sha)
+    return [ln.split()[1] for ln in out.splitlines()
+            if ln.startswith("parent ")]
+
+
+def is_shallow(root):
+    out = git(root, "rev-parse", "--is-shallow-repository")
+    return out.strip() == "true"
+
+
+def ensure_ancestry(root, base):
+    """The commits to judge, fetched when the checkout is shallow.
+
+    A shallow PR checkout holds only the merge commit, grafted to
+    look parentless: enumerating it would pass the size rule
+    blind. Deepen the head's ancestry first; afterwards, a range
+    that still holds no non-merge commit while the diff is
+    non-empty is refused, never judged blind.
+    """
+    if is_shallow(root):
+        head = git(root, "rev-parse", "HEAD").strip()
+        for fetch_args in (["fetch", "--no-tags", "--depth=1000",
+                            "origin", head],
+                           ["fetch", "--no-tags", "--depth=1000",
+                            "origin"]):
+            subprocess.run(["git", "-C", str(root)] + fetch_args,
+                           capture_output=True, text=True, timeout=600)
+            if not is_shallow(root):
+                break
+    commits = commit_list(root, base)
+    diff = git(root, "diff", "--name-only", f"{base}..HEAD").strip()
+    if diff and all(len(real_parents(root, sha)) >= 2
+                    for sha in commits):
+        raise SystemExit("pr-limits: PR ancestry unavailable - "
+                         "refusing to judge blind")
+    return commits
+
+
 def commit_files(root, sha):
     """(changed paths, added paths, added product lines) for a commit."""
     out = git(root, "diff-tree", "--no-commit-id", "--name-status",
@@ -174,11 +215,11 @@ def main():
     ensure_base(root, args.base)
     errors, warnings = [], []
 
-    commits = commit_list(root, args.base)
+    commits = ensure_ancestry(root, args.base)
     prev_files = None
     for sha in commits:
         subject = git(root, "log", "-1", "--format=%s", sha).strip()
-        parents = git(root, "log", "-1", "--format=%P", sha).split()
+        parents = real_parents(root, sha)
         changed, added, product = commit_files(root, sha)
         if len(parents) < 2 and product > SIZE_LIMIT:
             if LARGE_LABEL in labels:
