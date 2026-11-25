@@ -14299,6 +14299,349 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-25 spinout-round1"
+  },
+  {
+   "id": "spinout-round1-gps-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "showBanner",
+     "toast",
+     "finishRun",
+     "buildSnap",
+     "startGps",
+     "performReset"
+    ],
+    "elements": [
+     "banner",
+     "finYes",
+     "toast"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:buildSnap:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildSnap() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "the gpsGap stamp lands inside buildSnap on the finish path; drive225 G4 and proof-1273 check 4"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "the handler reads finishRun's return and fires the banner only after it; drive225 G4/G5 and the drive118 finish paths"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "performReset ignores the new return value; the battery finish path is unchanged (drives 118/136/162 exercise it)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "the banner's only caller this round; drive225 grades it end to end"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:gpsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from gpsBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the watchdog block inside startGps gained the gap stamp; restarts verified by drive207 (6/6), drive148 (42/42) and drive225; this entry path is otherwise unaffected"
+    },
+    {
+     "id": "caller:startGps:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "the watchdog block inside startGps gained the gap stamp; restarts verified by drive207 (6/6), drive148 (42/42) and drive225; this entry path is otherwise unaffected"
+    },
+    {
+     "id": "caller:startGps:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startGps() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "the watchdog block inside startGps gained the gap stamp; restarts verified by drive207 (6/6), drive148 (42/42) and drive225; this entry path is otherwise unaffected"
+    },
+    {
+     "id": "caller:toast:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app2.js:finishChangeMarked",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from finishChangeMarked in parts/app2.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:clearAllMarks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from clearAllMarks in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:gpsError",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from gpsError in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:noteYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from noteYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:clearTrailAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from clearTrailAll in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:doRestore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from doRestore in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:finishPlan",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from finishPlan in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:pushField",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from pushField in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from row:click in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:shareRecovery",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from shareRecovery in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:stDel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from stDel:click in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:swAwake:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from swAwake:click in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:swChime:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from swChime:click in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:swVib:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from swVib:click in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:updBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from updBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app4.js:xFile:change",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from xFile:change in parts/app4.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/create-pick.js:crPendStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from crPendStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/create-pick.js:map:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from map:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "caller:toast:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - toast() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "toast() and its contract are unchanged this round; the banner is a separate owner and no caller migrated (that is Round 2's scope)"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:click",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map click handler in parts/create-pick.js touches toast without dismissing it",
+     "status": "na",
+     "note": "derived via the toast anchor's create-pick caller; no gesture path is touched by this round"
+    },
+    {
+     "id": "theme:banner",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #banner has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "both faces measured in drive225: G7 day (white card) and G9 night (dark card), headline contrast >= 4.5 in each"
+    },
+    {
+     "id": "theme:finYes",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #finYes has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "finYes markup and theme face unchanged; only its handler body changed"
+    },
+    {
+     "id": "theme:toast",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #toast has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "toast style and faces unchanged this round"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "e15dab6473e68b68d417c59ac9b16fd5bf0aedc66e798d2b08cef82e6fda3762",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "43c26d0dc8c7e9c146efcd0ff19a6fd2683601d75aaddf0f5032db2a6f998c62",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "parts/app5.js": "248183728b8089b4b85d137010b4140e9cd365a5f4640b29fe887c720845e8c8",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "f596b620870c48fd6a655173ca3a06945605dfdc5fc2b483bb98dec37ef82824",
+    "parts/head.html": "fb1541ca1236b4617f7476a8570a840ff40db261ddeb22cc99e899b938045b26",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 spinout-round1 fix push"
   }
  ]
 }
