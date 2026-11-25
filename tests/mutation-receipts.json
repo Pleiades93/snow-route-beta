@@ -12658,6 +12658,21 @@
    "red": "scanner at 3341ec8c run on a scratch root whose proof-neg.mjs resolves needle from const needle = an-plus-interpolated-suffix and pins it behind a matching includes guard: the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 5); fixture F38 pins the shape in-suite; full suite 130/130 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r18",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "f16aed42ce4d75d69d3d0160acb73c944261988108203d7fe2005a9c1ebf6343",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's statement balancing, comment blanking and collection walk do not recognize regex literals, so a parenthesis or quote inside a regex truncates the statement or corrupts string tracking and the pin escapes the scan",
+   "red": "scanner at da2da9a1 run on a scratch root whose proof-neg.mjs checks a regex character class holding a closing parenthesis before pinning an absent anchor: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixtures F39 (regex literal) and F40 (division is not a regex) pin both sides in-suite; full suite 132/132 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

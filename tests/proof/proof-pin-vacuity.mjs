@@ -31,6 +31,7 @@ function checkStatements(text) {
       } else if (c === "'" || c === '"' || c === '`') instr = c;
       else if (c === '/' && text[j + 1] === '/') { while (j < text.length && text[j] !== '\n') j++; }
       else if (c === '/' && text[j + 1] === '*') { const e = text.indexOf('*/', j + 2); j = e < 0 ? text.length : e + 1; }
+      else if (c === '/') { const re = regexAt(text, j); if (re > 0) j = re - 1; }
       else if (c === '(') depth++;
       else if (c === ')') { depth--; if (!depth) break; }
     }
@@ -38,6 +39,31 @@ function checkStatements(text) {
   }
   return out;
 }
+
+// End of the regex literal starting at i, or -1 when the slash divides.
+const regexAt = (text, i) => {
+  let j = i - 1;
+  while (j >= 0 && /\s/.test(text[j])) j--;
+  if (j >= 0) {
+    const pc = text[j];
+    if (/[\w$]/.test(pc)) {
+      let k = j;
+      while (k >= 0 && /[\w$]/.test(text[k])) k--;
+      if (!/^(return|typeof|instanceof|in|of|new|delete|void|case|do|else|yield|await|throw)$/.test(text.slice(k + 1, j + 1))) return -1;
+    } else if (pc === ')' || pc === ']' || pc === "'" || pc === '"' || pc === '`') return -1;
+  }
+  let q = i + 1, inClass = false;
+  while (q < text.length) {
+    const c = text[q];
+    if (c === '\\') { q += 2; continue; }
+    if (c === '[') inClass = true;
+    else if (c === ']') inClass = false;
+    else if (c === '/' && !inClass) { q++; while (q < text.length && /[a-z]/i.test(text[q])) q++; return q; }
+    else if (c === '\n') return -1;
+    q++;
+  }
+  return -1;
+};
 
 function blankComments(text) {
   const out = text.split('');
@@ -48,6 +74,7 @@ function blankComments(text) {
     if (c === "'" || c === '"' || c === '`') { instr = c; continue; }
     if (c === '/' && text[k + 1] === '/') { while (k < text.length && text[k] !== '\n') { out[k] = ' '; k++; } k--; continue; }
     if (c === '/' && text[k + 1] === '*') { const e = text.indexOf('*/', k + 2); const end = e < 0 ? text.length : e + 2; for (; k < end; k++) if (text[k] !== '\n') out[k] = ' '; k--; continue; }
+    if (c === '/') { const re = regexAt(text, k); if (re > 0) { k = re - 1; continue; } }
   }
   return out.join('');
 }
@@ -146,6 +173,7 @@ function scanText(text) {
       if (c === "'" || c === '"' || c === '`') { instr = c; i++; continue; }
       if (c === '/' && stmt[i + 1] === '/') { while (i < stmt.length && stmt[i] !== '\n') i++; continue; }
       if (c === '/' && stmt[i + 1] === '*') { const e = stmt.indexOf('*/', i + 2); i = e < 0 ? stmt.length : e + 2; continue; }
+      if (c === '/') { const re = regexAt(stmt, i); if (re > 0) { i = re; continue; } }
       const idxAt = methodAt('.indexOf', i);
       if (idxAt > 0) {
         const pn = parseNeedle(stmt, idxAt);
@@ -252,6 +280,8 @@ const FIXTURES = [
   ['F36 whitespace before the parenthesis keeps the operand', `check('x', a.indexOf('write();') > a.indexOf ('anchor'));`, 1],
   ['F37 a template-literal needle is an operand', "check('x', a.indexOf('write();') > a.indexOf(`anchor`));", 1],
   ['F38 an interpolated const template stays unresolved', "const suffix = 'chor';\nconst needle = `an${suffix}`;\ncheck('x', a.includes('an${suffix}') && a.indexOf('write();') > a.indexOf(needle));", 1],
+  ['F39 a regex literal does not break the statement', `check('x', /[)]/.test(')') && a.indexOf('write();') > a.indexOf('anchor'));`, 1],
+  ['F40 division is not read as a regex', `check('x', a.length / 2 > 0 && a.indexOf('write();') > a.indexOf('anchor'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
