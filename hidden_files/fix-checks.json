@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "340ff7da00a5b11edbb4475df3d46b1ccfaf4e87a64c5f8205fd33ffb610b0a6",
+  "canonical_registry_sha256": "844a6cef90e67a7c2898e9c7066cd03d192cce8642c6926f60afbe03739b403f",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1536,
-   "included": 1506,
+   "canonical": 1538,
+   "included": 1508,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -8726,8 +8726,8 @@
   },
   {
    "added": "2026-11-17",
-   "file": "parts/app4.js",
-   "fix": "Beta 1.225 (PR #103, merge 97cb7974; rollback: revert the merge -> Beta 1.224 at 33fe6225). The Routes tab icon is Journey (Icons8 glyph-neue sGNEMWKG3WcQ) with the Glyph set's treatment; this probe pins a mid-payload slice of the DAY WebP (1,666 B, sha256 12daed8f...) in GLYPH_ICONS.routes.",
+   "file": "index.html",
+   "fix": "Beta 1.225 (PR #103, merge 97cb7974; rollback: revert the merge -> Beta 1.224 at 33fe6225). The Routes tab icon is Journey (Icons8 glyph-neue sGNEMWKG3WcQ) with the Glyph set's treatment; this probe pins a mid-payload slice of the DAY WebP (1,666 B, sha256 12daed8f...) in GLYPH_ICONS.routes. [Re-pinned 2026-11-25, glyph-extraction phase 5: the payload's source home is now assets/glyphs/icons-routes-d.webp, inlined into the shipped bundle at assembly; the probe reads index.html, where the same slice stands verbatim. Claim unchanged.]",
    "fix_id": "routes-icon-journey-1225",
    "id": "journey1225-routes-day",
    "pattern": "lIMCtW3HG+n5maTWqLbtnk3tjm3btm3btu0eY2x2x3ac6v/fCYD//f/rkMie",
@@ -8735,8 +8735,8 @@
   },
   {
    "added": "2026-11-17",
-   "file": "parts/app4.js",
-   "fix": "Beta 1.225 (PR #103, merge 97cb7974). The Routes tab icon's NIGHT WebP (1,666 B, sha256 0dffb6f1...) mid-payload slice in GLYPH_ICONS.routes.",
+   "file": "index.html",
+   "fix": "Beta 1.225 (PR #103, merge 97cb7974). The Routes tab icon's NIGHT WebP (1,666 B, sha256 0dffb6f1...) mid-payload slice in GLYPH_ICONS.routes. [Re-pinned 2026-11-25, glyph-extraction phase 5: the payload's source home is now assets/glyphs/icons-routes-n.webp, inlined into the shipped bundle at assembly; the probe reads index.html, where the same slice stands verbatim. Claim unchanged.]",
    "fix_id": "routes-icon-journey-1225",
    "id": "journey1225-routes-night",
    "pattern": "v/8UqG073kjPzyS1RrVt92xqd2zbtm3btm33GGOzO7bjVP//TgD87/8/Dons",
@@ -13409,6 +13409,24 @@
    "fix_id": "drive125-p2-settle",
    "id": "drive125-p2-terminal-poll",
    "pattern": "restack rebuilds the style before the retune lands",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "scripts/assemble.py",
+   "fix": "Glyph-extraction phase 5 (efficiency block 4): app4's 52 glyph payloads live as files under assets/glyphs/ and the assembler inlines each file's exact bytes at its @@GLYPH:<stem>@@ token at assembly time - the shipped bundle is byte-identical and the app never fetches artwork at runtime. This probe pins the resolver's seat; proof-glyph-assets pins the whole chain. Rollback: revert the round's merge.",
+   "fix_id": "glyph-extraction-phase5",
+   "id": "glyph-assets-resolver",
+   "pattern": "def resolve_glyphs",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app4.js",
+   "fix": "Glyph-extraction phase 5 (efficiency block 4): the glyph maps in app4 carry assembly tokens, not payloads - this probe pins the first token's seat (GLYPH_ICONS gps day). The payload bytes are pinned by proof-icon-glyph-1221 and proof-glyph-assets. Rollback: revert the round's merge.",
+   "fix_id": "glyph-extraction-phase5",
+   "id": "glyph-assets-tokens-in-app4",
+   "pattern": "@@GLYPH:icons-gps-d@@",
    "type": "grep_present"
   }
  ]

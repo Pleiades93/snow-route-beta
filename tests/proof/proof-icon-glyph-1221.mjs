@@ -43,7 +43,9 @@ function check(name, cond, detail) {
   if (cond) { pass++; console.log('  PASS ' + name); }
   else { fail++; console.log('  FAIL ' + name + (detail ? '  [' + detail + ']' : '')); }
 }
-const app4 = readFileSync('parts/app4.js', 'utf8');
+// Phase 5 re-pin: app4 reads resolve @@GLYPH tokens from assets/glyphs; payload claims and sha pins unchanged.
+const resolveGlyphs = (s) => s.replace(/@@GLYPH:([a-z0-9-]+)@@/g, (m, stem) => readFileSync('assets/glyphs/' + stem + '.webp').toString('base64'));
+const app4 = resolveGlyphs(readFileSync('parts/app4.js', 'utf8'));
 const app1 = readFileSync('parts/app1.js', 'utf8');
 const head = readFileSync('parts/head.html', 'utf8');
 const sha = b => createHash('sha256').update(b).digest('hex');

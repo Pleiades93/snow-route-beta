@@ -13796,6 +13796,166 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "glyph-extraction-phase5",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "renderIcons",
+     "routeRowEl"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app4.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:renderIcons:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:stopGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from stopGps in parts/app3.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:routeRowEl:parts/app2.js:renderRouteLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeRowEl() is called from renderRouteLists in parts/app2.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "5ca4f37b317525cf91a9847ca17d11ed33fab5862c2e693b1d803d78ee8da5eb",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "366d373998ba48511ec65fed412fb96d175bf1e4929c6eeeb72f0a238fae0570",
+    "parts/app4.js": "2b6fb47594a63107d06fa3dc1ba947fdeaf7fddf3ece519ad7732d64fd0d6077",
+    "parts/app5.js": "248183728b8089b4b85d137010b4140e9cd365a5f4640b29fe887c720845e8c8",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 glyph-extraction phase 5"
+  },
+  {
+   "id": "glyph-extraction-phase5-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "renderIcons",
+     "routeRowEl"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app4.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:renderIcons:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:stopGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from stopGps in parts/app3.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    },
+    {
+     "id": "caller:routeRowEl:parts/app2.js:renderRouteLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeRowEl() is called from renderRouteLists in parts/app2.js",
+     "status": "covered",
+     "note": "glyph-extraction round: this caller re-stamps icons from the glyph maps, whose values are byte-identical in the shipped bundle (index.html sha256 5ca5e01e55af... before == after the token swap; per-glyph table in the round's work folder), so the artwork this path renders cannot have changed"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "5ca4f37b317525cf91a9847ca17d11ed33fab5862c2e693b1d803d78ee8da5eb",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017",
+    "parts/app3.js": "366d373998ba48511ec65fed412fb96d175bf1e4929c6eeeb72f0a238fae0570",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "parts/app5.js": "248183728b8089b4b85d137010b4140e9cd365a5f4640b29fe887c720845e8c8",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "94713f15b291e0529f4952939cb6289901c11942c457e906273b8163a3af7a63",
+    "parts/create-citydata.js": "f71c1e827456a82a4d9f280bbd82c1202d704f397ada3a68f31ddc341d7ef4e3",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3",
+    "parts/create-save.js": "94869b3d50f8db435f64306a7debd5ef82f289b4f559ed26970c676aad53b109",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "efd7046673421ea4adfadfa7ded6466fde2a92240fe2f4755539c1ac6908cbe9",
+    "parts/head.html": "0184ad8f575bb8628d03ecc06f8fc5cf935a804de4402e66e613919814b6e4c5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 glyph-extraction phase 5 (re-issue after the pr-limits line wraps)"
   }
  ]
 }

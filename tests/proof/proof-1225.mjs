@@ -13,7 +13,9 @@ import { createHash } from 'node:crypto';
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const parts = (p) => read('parts/' + p);
-const app1 = parts('app1.js'), app2 = parts('app2.js'), app3 = parts('app3.js'), app4 = parts('app4.js');
+// Phase 5 re-pin: app4 reads resolve @@GLYPH tokens from assets/glyphs; payload claims and sha pins unchanged.
+const resolveGlyphs = (s) => s.replace(/@@GLYPH:([a-z0-9-]+)@@/g, (m, stem) => readFileSync(new URL('assets/glyphs/' + stem + '.webp', root)).toString('base64'));
+const app1 = parts('app1.js'), app2 = parts('app2.js'), app3 = parts('app3.js'), app4 = resolveGlyphs(parts('app4.js'));
 const pick = parts('create-pick.js'), cache = parts('create-cache.js'), citydata = parts('create-citydata.js');
 const save = parts('create-save.js');
 const allParts = [app1, app2, app3, app4, pick, cache, citydata, save].join('\n');

@@ -44,6 +44,14 @@ foreground rendering (web/icons/foreground-transparent-512.png),
 already 512x512 as shipped. icon-512.png remains the PWA / manifest icon; it is no
 longer the splash source.
 
+Glyph extraction: parts/app4.js carries the token @@GLYPH:<stem>@@
+where each glyph payload belongs (the data:image/webp;base64, prefix
+stays in the source, the splash pattern above); build() inlines the
+exact bytes of assets/glyphs/<stem>.webp at assembly time, so the
+shipped bundle is byte-identical and the app never fetches artwork
+at runtime. Tokens and asset files must agree one-to-one or the
+build fails.
+
 Release stamp (Arch-1, 2026-11-18): the version number lives in exactly
 one place - the CHANGELOG.md top entry (`## Beta X.Y`). head.html
 carries the placeholder token @@VERSION@@ in the #ver label and
@@ -87,6 +95,43 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 
 FLAGS = ROOT / "flags.js"
 
+GLYPH_DIR = ROOT / "assets" / "glyphs"
+GLYPH_TOKEN_RE = re.compile(rb"@@GLYPH:([a-z0-9-]+)@@")
+GLYPH_MEDIATYPES = {".webp": b"image/webp"}
+
+
+def resolve_glyphs(data: bytes) -> bytes:
+    """Inline app4's glyph payloads from assets/glyphs at assembly time."""
+    stems = [m.group(1).decode() for m in GLYPH_TOKEN_RE.finditer(data)]
+    files = {}
+    if GLYPH_DIR.is_dir():
+        for p in GLYPH_DIR.iterdir():
+            if p.is_file():
+                files[p.stem] = p
+    if len(stems) != len(set(stems)) or set(stems) != set(files):
+        raise SystemExit(
+            "assemble: app4.js glyph tokens and assets/glyphs disagree "
+            f"({len(stems)} tokens, {len(set(stems))} unique, "
+            f"{len(files)} asset files) - every token names one asset "
+            "file and every asset file is referenced exactly once")
+    def repl(m: "re.Match[bytes]") -> bytes:
+        p = files[m.group(1).decode()]
+        mediatype = GLYPH_MEDIATYPES.get(p.suffix)
+        if mediatype is None:
+            raise SystemExit(
+                f"assemble: no mediatype for glyph asset {p.name}")
+        prefix = b"data:" + mediatype + b";base64,"
+        if data[m.start() - len(prefix):m.start()] != prefix:
+            raise SystemExit(
+                "assemble: glyph token @@GLYPH:"
+                f"{m.group(1).decode()}@@ is not preceded by its "
+                f"{prefix.decode()} prefix in parts/app4.js")
+        return base64.b64encode(p.read_bytes())
+    out = GLYPH_TOKEN_RE.sub(repl, data)
+    if b"@@GLYPH:" in out:
+        raise SystemExit("assemble: an unresolved glyph token survived")
+    return out
+
 
 def release_version() -> bytes:
     """The one home of the version number: the CHANGELOG top entry."""
@@ -123,6 +168,8 @@ def build() -> bytes:
                     "(the release stamp is inlined from CHANGELOG.md at "
                     "assembly time)")
             data = data.replace(VERSION_TOKEN, version)
+        if name == "app4.js":
+            data = resolve_glyphs(data)
         if name == "whatsnew.js":
             if data.count(VERSION_TOKEN) != 1:
                 raise SystemExit(

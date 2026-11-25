@@ -11733,6 +11733,176 @@
    "red": "PR #213 checks run 45580187655: pr-limits error 'tests/proof/proof-1232.mjs: added line of 360 chars (limit 240)'",
    "green": "split form: proof-1232 27 pass, 0 fail; local pr-limits replication over the full PR diff reports 0 line-length and 0 comment-word violations",
    "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "glyph-phase5-proof-1227",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "7fe0a9e819fc2e2aee1a87f520e23c1e90843ce0975772ca32657f1aa8f7cae1",
+    "parts/app4.js": "2b6fb47594a63107d06fa3dc1ba947fdeaf7fddf3ece519ad7732d64fd0d6077",
+    "assets/glyphs/create-search-d.webp": "07bdd5ecdb9fc3ba24c97ad6d685cf8ca6c0180c6171830b98e3d58ff916a822"
+   },
+   "mutation": "assets/glyphs/create-search-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_CREATE search day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-1227 FAIL 6b (27/28) with the mutation applied",
+   "green": "local 2026-11-25: proof-1227 28/28 on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5"
+  },
+  {
+   "id": "glyph-phase5-proof-icon-glyph-1221",
+   "check": "tests/proof/proof-icon-glyph-1221.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-icon-glyph-1221.mjs": "f6b18d20abffa7c78adced1a46391b13ce7406661197ede5aa9507ee4c2e6b06",
+    "parts/app4.js": "2b6fb47594a63107d06fa3dc1ba947fdeaf7fddf3ece519ad7732d64fd0d6077",
+    "assets/glyphs/icons-gps-d.webp": "b9b6a2f3f6d751198194f5765d7e869bcea86a088caa5981032a8286198dc7f7"
+   },
+   "mutation": "assets/glyphs/icons-gps-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_ICONS gps day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-icon-glyph-1221 FAIL A GLYPH_ICONS[0] byte-for-byte (119 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-icon-glyph-1221 120 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5"
+  },
+  {
+   "id": "glyph-phase5-proof-1225",
+   "check": "tests/proof/proof-1225.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1225.mjs": "8db9b57827e00b2fe05a8c7df8f54a3d24ac59a28af8f631d9a943574deb137d",
+    "parts/app4.js": "2b6fb47594a63107d06fa3dc1ba947fdeaf7fddf3ece519ad7732d64fd0d6077",
+    "assets/glyphs/icons-routes-d.webp": "12daed8f399b941e5a3a08be518e3a0b23b2796614f311807c78162376e30ab3"
+   },
+   "mutation": "assets/glyphs/icons-routes-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_ICONS routes day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-1225 FAIL 1b (16/17) with the mutation applied",
+   "green": "local 2026-11-25: proof-1225 17/17 on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5"
+  },
+  {
+   "id": "glyph-phase5-proof-1233",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "7360b47a441dc75646b9de895dbf4dc782f485de16e5996a4c85a704e3c2907b",
+    "parts/app4.js": "2b6fb47594a63107d06fa3dc1ba947fdeaf7fddf3ece519ad7732d64fd0d6077",
+    "assets/glyphs/menu-check.webp": "a629ee0b2959ea4604e566af0f2def1ffc5aeb18653b2407fc65a4b02ee9c9fb"
+   },
+   "mutation": "assets/glyphs/menu-check.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_MENU check payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-1233 FAIL B2e (38 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-1233 39 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5"
+  },
+  {
+   "id": "glyph-phase5-proof-shader-glow-round",
+   "check": "tests/proof/proof-shader-glow-round.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-shader-glow-round.mjs": "8a0d257bec4ed3c5eea1512c80ccd66809626847397cc43eb2bd235f87089da9",
+    "parts/app4.js": "2b6fb47594a63107d06fa3dc1ba947fdeaf7fddf3ece519ad7732d64fd0d6077",
+    "assets/glyphs/icons-streets-d.webp": "c5afd163544bcf2e85ddfa49cbe20c3e0dee5ded3c4813bd82aaaaff67050b85"
+   },
+   "mutation": "assets/glyphs/icons-streets-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_ICONS streets day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-shader-glow-round FAIL I Streets (27 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-shader-glow-round 28 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5"
+  },
+  {
+   "id": "glyph-phase5-proof-glyph-assets",
+   "check": "tests/proof/proof-glyph-assets.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-glyph-assets.mjs": "66171ed72f2722e5791fcba714ae9d2f470e744ae4cb2d66e7b6566a9f7745a9",
+    "parts/app4.js": "2b6fb47594a63107d06fa3dc1ba947fdeaf7fddf3ece519ad7732d64fd0d6077",
+    "scripts/assemble.py": "55a35dcbf9540b6b6da62c12edbca5fc796b164bb46d6c0b5b55cb898b31f637",
+    "assets/glyphs/create-search-d.webp": "07bdd5ecdb9fc3ba24c97ad6d685cf8ca6c0180c6171830b98e3d58ff916a822"
+   },
+   "mutation": "assets/glyphs/create-search-d.webp: byte at offset 100 flipped (XOR 0xFF); the shipped page no longer carries the asset's exact data URL",
+   "red": "local 2026-11-25: proof-glyph-assets FAIL C3 (7 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-glyph-assets 8 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5"
+  },
+  {
+   "id": "glyph-phase5-proof-1227-r2",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "7fe0a9e819fc2e2aee1a87f520e23c1e90843ce0975772ca32657f1aa8f7cae1",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "assets/glyphs/create-search-d.webp": "07bdd5ecdb9fc3ba24c97ad6d685cf8ca6c0180c6171830b98e3d58ff916a822"
+   },
+   "mutation": "assets/glyphs/create-search-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_CREATE search day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-1227 FAIL 6b (27/28) with the mutation applied",
+   "green": "local 2026-11-25: proof-1227 28/28 on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5 (re-observation after the pr-limits line wraps)"
+  },
+  {
+   "id": "glyph-phase5-proof-icon-glyph-1221-r2",
+   "check": "tests/proof/proof-icon-glyph-1221.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-icon-glyph-1221.mjs": "f6b18d20abffa7c78adced1a46391b13ce7406661197ede5aa9507ee4c2e6b06",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "assets/glyphs/icons-gps-d.webp": "b9b6a2f3f6d751198194f5765d7e869bcea86a088caa5981032a8286198dc7f7"
+   },
+   "mutation": "assets/glyphs/icons-gps-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_ICONS gps day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-icon-glyph-1221 FAIL A GLYPH_ICONS[0] byte-for-byte (119 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-icon-glyph-1221 120 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5 (re-observation after the pr-limits line wraps)"
+  },
+  {
+   "id": "glyph-phase5-proof-1225-r2",
+   "check": "tests/proof/proof-1225.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1225.mjs": "8db9b57827e00b2fe05a8c7df8f54a3d24ac59a28af8f631d9a943574deb137d",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "assets/glyphs/icons-routes-d.webp": "12daed8f399b941e5a3a08be518e3a0b23b2796614f311807c78162376e30ab3"
+   },
+   "mutation": "assets/glyphs/icons-routes-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_ICONS routes day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-1225 FAIL 1b (16/17) with the mutation applied",
+   "green": "local 2026-11-25: proof-1225 17/17 on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5 (re-observation after the pr-limits line wraps)"
+  },
+  {
+   "id": "glyph-phase5-proof-1233-r2",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "7360b47a441dc75646b9de895dbf4dc782f485de16e5996a4c85a704e3c2907b",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "assets/glyphs/menu-check.webp": "a629ee0b2959ea4604e566af0f2def1ffc5aeb18653b2407fc65a4b02ee9c9fb"
+   },
+   "mutation": "assets/glyphs/menu-check.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_MENU check payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-1233 FAIL B2e (38 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-1233 39 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5 (re-observation after the pr-limits line wraps)"
+  },
+  {
+   "id": "glyph-phase5-proof-shader-glow-round-r2",
+   "check": "tests/proof/proof-shader-glow-round.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-shader-glow-round.mjs": "8a0d257bec4ed3c5eea1512c80ccd66809626847397cc43eb2bd235f87089da9",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "assets/glyphs/icons-streets-d.webp": "c5afd163544bcf2e85ddfa49cbe20c3e0dee5ded3c4813bd82aaaaff67050b85"
+   },
+   "mutation": "assets/glyphs/icons-streets-d.webp: byte at offset 100 flipped (XOR 0xFF); the resolved GLYPH_ICONS streets day payload no longer matches its byte pin",
+   "red": "local 2026-11-25: proof-shader-glow-round FAIL I Streets (27 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-shader-glow-round 28 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5 (re-observation after the pr-limits line wraps)"
+  },
+  {
+   "id": "glyph-phase5-proof-glyph-assets-r2",
+   "check": "tests/proof/proof-glyph-assets.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-glyph-assets.mjs": "66171ed72f2722e5791fcba714ae9d2f470e744ae4cb2d66e7b6566a9f7745a9",
+    "parts/app4.js": "2b32929d9c6b5d90cede13011140ad0478c1a2af4314acea41fae86ed96380ae",
+    "scripts/assemble.py": "55a35dcbf9540b6b6da62c12edbca5fc796b164bb46d6c0b5b55cb898b31f637",
+    "assets/glyphs/create-search-d.webp": "07bdd5ecdb9fc3ba24c97ad6d685cf8ca6c0180c6171830b98e3d58ff916a822"
+   },
+   "mutation": "assets/glyphs/create-search-d.webp: byte at offset 100 flipped (XOR 0xFF); the shipped page no longer carries the asset's exact data URL",
+   "red": "local 2026-11-25: proof-glyph-assets FAIL C3 (7 pass, 1 fail) with the mutation applied",
+   "green": "local 2026-11-25: proof-glyph-assets 8 pass, 0 fail on the final tree",
+   "issued": "2026-11-25 glyph-extraction phase 5 (re-observation after the pr-limits line wraps)"
   }
  ]
 }
