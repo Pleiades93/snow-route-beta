@@ -14,7 +14,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
-const LIT = String.raw`('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")`;
+const LIT = String.raw`('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|` + '`(?:[^`\\\\]|\\\\.)*`' + String.raw`)`;
 
 function checkStatements(text) {
   const out = [];
@@ -55,7 +55,7 @@ function blankComments(text) {
 function constLiterals(text) {
   const d = {};
   const clean = blankComments(text);
-  const re = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")\s*;/y;
+  const re = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)\s*;/y;
   let depth = 0, instr = null, esc = false;
   for (let k = 0; k < clean.length; k++) {
     const c = clean[k];
@@ -73,7 +73,7 @@ function constLiterals(text) {
 }
 
 const unquote = (tok) => {
-  if (!(tok.length >= 2 && (tok[0] === "'" || tok[0] === '"') && tok[tok.length - 1] === tok[0])) return tok;
+  if (!(tok.length >= 2 && (tok[0] === "'" || tok[0] === '"' || tok[0] === '`') && tok[tok.length - 1] === tok[0])) return tok;
   return tok.slice(1, -1).replace(/\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|u\{[0-9a-fA-F]+\}|.)/g, (s, e) => {
     if (e[0] === 'x') return String.fromCharCode(parseInt(e.slice(1), 16));
     if (e[0] === 'u' && e[1] === '{') return String.fromCodePoint(parseInt(e.slice(2, -1), 16));
@@ -105,13 +105,14 @@ function scanText(text) {
   };
   const parseNeedle = (stmt, p) => {
     const vals = [], toks = [];
-    let q = p;
+    let q = p, expr = false;
     for (;;) {
       while (q < stmt.length && /\s/.test(stmt[q])) q++;
       const tk = new RegExp('^(?:' + LIT + '|[A-Za-z_$][\\w$]*)').exec(stmt.slice(q));
       if (!tk) return null;
       toks.push(tk[0]);
-      if (tk[0][0] === "'" || tk[0][0] === '"') vals.push(unquote(tk[0]));
+      if (tk[0][0] === '`' && tk[0].includes('${')) { vals.push(null); expr = true; }
+      else if (tk[0][0] === "'" || tk[0][0] === '"' || tk[0][0] === '`') vals.push(unquote(tk[0]));
       else if (consts[tk[0]] !== undefined) vals.push(unquote(consts[tk[0]]));
       else vals.push(null);
       q += tk[0].length;
@@ -120,7 +121,7 @@ function scanText(text) {
       if (stmt[r] !== '+') { q = r; break; }
       q = r + 1;
     }
-    if (toks.length === 1) return [vals[0] === null ? '\u0001id:' + toks[0] : vals[0], q];
+    if (toks.length === 1) return [vals[0] !== null ? vals[0] : (expr ? '\u0001raw:' + toks[0] : '\u0001id:' + toks[0]), q];
     return [vals.every((v) => v !== null) ? vals.join('') : '\u0001raw:' + toks.join(' + '), q];
   };
   const findings = [];
@@ -245,6 +246,7 @@ const FIXTURES = [
   ['F34 an escape in a guard is decoded before comparing', "check('x', a.includes('\\n') && a.indexOf('write();') > a.indexOf('n'));", 1],
   ['F35 a const inside another scope does not resolve', "function unused() { const needle = 'present'; }\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
   ['F36 whitespace before the parenthesis keeps the operand', `check('x', a.indexOf('write();') > a.indexOf ('anchor'));`, 1],
+  ['F37 a template-literal needle is an operand', "check('x', a.indexOf('write();') > a.indexOf(`anchor`));", 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
