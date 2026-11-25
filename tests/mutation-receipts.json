@@ -12598,6 +12598,21 @@
    "red": "scanner at 1212919a on two scratch roots: (A) a.includes('\\n') guarding a.indexOf('n') pin with a holding a newline then write(); (no letter n) - no findings; (B) const needle = 'present' inside an unrelated function resolving a var needle = 'anchor' pin - no findings",
    "green": "fixed scanner flags both scratch pins; fixtures F34 (escapes decoded) and F35 (nested const does not resolve) pin the shapes in-suite; full suite 127/127 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r14",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "93ef1ccb736429604a96f3d6f5bb271ad89032cec1f11937b84d447ee64fd0ce",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner matches the exact text .indexOf( so an operand written with whitespace before the parenthesis (valid formatting) is silently dropped from the scan",
+   "red": "scanner at 81a53857 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf ('anchor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F36 pins the shape in-suite; full suite 128/128 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

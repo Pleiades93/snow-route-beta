@@ -128,6 +128,12 @@ function scanText(text) {
     const stmt = blankComments(rawStmt);
     const calls = [];
     const incNeedles = [];
+    const methodAt = (name, at) => {
+      if (!stmt.startsWith(name, at)) return -1;
+      let p = at + name.length;
+      while (p < stmt.length && /\s/.test(stmt[p])) p++;
+      return stmt[p] === '(' ? p + 1 : -1;
+    };
     let i = 0, instr = null, esc = false;
     while (i < stmt.length) {
       const c = stmt[i];
@@ -135,17 +141,19 @@ function scanText(text) {
       if (c === "'" || c === '"' || c === '`') { instr = c; i++; continue; }
       if (c === '/' && stmt[i + 1] === '/') { while (i < stmt.length && stmt[i] !== '\n') i++; continue; }
       if (c === '/' && stmt[i + 1] === '*') { const e = stmt.indexOf('*/', i + 2); i = e < 0 ? stmt.length : e + 2; continue; }
-      if (stmt.startsWith('.indexOf(', i)) {
-        const pn = parseNeedle(stmt, i + 9);
-        if (!pn) { i += 9; continue; }
+      const idxAt = methodAt('.indexOf', i);
+      if (idxAt > 0) {
+        const pn = parseNeedle(stmt, idxAt);
+        if (!pn) { i = idxAt; continue; }
         const [close, bounded] = callEnd(stmt, pn[1]);
         calls.push([i, close + 1, pn[0], bounded]);
         i = close + 1;
         continue;
       }
-      if (stmt.startsWith('.includes(', i)) {
-        const pn = parseNeedle(stmt, i + 10);
-        if (!pn) { i += 10; continue; }
+      const incAt = methodAt('.includes', i);
+      if (incAt > 0) {
+        const pn = parseNeedle(stmt, incAt);
+        if (!pn) { i = incAt; continue; }
         const [close] = callEnd(stmt, pn[1]);
         const after = stmt.slice(close + 1).trimStart();
         if (!negatedBefore(stmt, i) && !/^(===?\s*false|!==?\s*true)/.test(after)) incNeedles.push(pn[0]);
@@ -236,6 +244,7 @@ const FIXTURES = [
   ['F33 a commented-out const does not resolve', "// const needle = 'present';\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
   ['F34 an escape in a guard is decoded before comparing', "check('x', a.includes('\\n') && a.indexOf('write();') > a.indexOf('n'));", 1],
   ['F35 a const inside another scope does not resolve', "function unused() { const needle = 'present'; }\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
+  ['F36 whitespace before the parenthesis keeps the operand', `check('x', a.indexOf('write();') > a.indexOf ('anchor'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
