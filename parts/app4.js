@@ -838,7 +838,8 @@ const GLYPH_ICONS = {
   sun: { d: 'data:image/webp;base64,@@GLYPH:icons-sun-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-sun-n@@' },
   centre: { d: 'data:image/webp;base64,@@GLYPH:icons-centre-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-centre-n@@' }
 };
-const GLYPH_GPS_STATES = { vd: 'data:image/webp;base64,@@GLYPH:gps-states-vd@@', vn: 'data:image/webp;base64,@@GLYPH:gps-states-vn@@', rd: 'data:image/webp;base64,@@GLYPH:gps-states-rd@@', rn: 'data:image/webp;base64,@@GLYPH:gps-states-rn@@' };
+const GLYPH_GPS_STATES = { vd: 'data:image/webp;base64,@@GLYPH:gps-states-vd@@', vn: 'data:image/webp;base64,@@GLYPH:gps-states-vn@@',
+  rd: 'data:image/webp;base64,@@GLYPH:gps-states-rd@@', rn: 'data:image/webp;base64,@@GLYPH:gps-states-rn@@' };
 // the Glyph extras: the same alpha-mask fills, for pin/note and the seven Pace stat glyphs
 const GLYPH_EXTRAS = {
   pin: { d: 'data:image/webp;base64,@@GLYPH:extras-pin-d@@', n: 'data:image/webp;base64,@@GLYPH:extras-pin-n@@' },
@@ -862,7 +863,8 @@ const GLYPH_PACE_ICONS = {
   gauge: { d: 'data:image/webp;base64,@@GLYPH:pace-gauge-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-gauge-n@@' },
   trail: { d: 'data:image/webp;base64,@@GLYPH:pace-trail-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-trail-n@@' }
 };
-const GLYPH_X = { corner: 'data:image/webp;base64,@@GLYPH:x-corner@@', bottom: 'data:image/webp;base64,@@GLYPH:x-bottom@@' }; // Beta 1.219: the close ✕ for this pack - the 'cancel' glyph (a ✕ knocked out of a filled disc) as mask fills: the corner job in the close red #E63A2E (a functional colour, the Locate red/green precedent - it overrides the set's black/white discipline for this one glyph), the bottom job in white (the knocked-out ✕ shows the blue menu through the disc)
+const GLYPH_X = { corner: 'data:image/webp;base64,@@GLYPH:x-corner@@',
+  bottom: 'data:image/webp;base64,@@GLYPH:x-bottom@@' }; // One ✕ image, two placements; mask-position picks the placement.
 // ===== THE ICON SET ===== Glyph Neue is the one set: ten icons, Locate faces, extras, Pace glyphs
 const MASK_PACKS = { // one row stands: the Glyph set's artwork maps, read by renderIcons from here
   glyph: { icons: GLYPH_ICONS, states: GLYPH_GPS_STATES, extras: GLYPH_EXTRAS, pace: GLYPH_PACE_ICONS, x: GLYPH_X }
