@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "22c74fc1a261a11bc19d16e9c56555476ef2b8dbefb5d0af70a43cdfa5cfd059",
+  "canonical_registry_sha256": "a39f103147d48282ca495b18e49900295011dadc575edda6e338b24b44bae06a",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1519,
-   "included": 1489,
+   "canonical": 1522,
+   "included": 1492,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -1289,6 +1289,33 @@
    "fix": "The migration has a FAST PATH (Beta 1.96, SR-195-03): the earned flag is read back and believed only with a cheap census agreeing \u2014 1.95 wrote the flag and never read it, so every boot re-ran the full ~1,800-match verification sweep. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-packmig-fast-path",
    "pattern": "return { ok: true, skipped: true, fast: true };",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app5.js",
+   "fix": "#180 spin-out 1: a partial pack that earns the migration flag persists a census of itself (manifest fingerprint, key-set fingerprint, count, measured bytes); a complete pack deletes the census, and a pass whose byte accounting is inexact persists nothing.",
+   "fix_id": "partial-pack-census",
+   "id": "packmig-partial-census",
+   "pattern": "const PACKMIG_CENSUS_KEY = 'snowroute.v5.packmigcensus';",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app5.js",
+   "fix": "#180 spin-out 1: an unchanged partial pack is recognized from its persisted census and skipped with zero byte-weigh reads; a healable gap or any key-set change falls through to the full pass.",
+   "fix_id": "partial-pack-census",
+   "id": "packmig-partial-recognition",
+   "pattern": "return { ok: true, skipped: true, fast: true, partial: true };",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "parts/app5.js",
+   "fix": "#180 spin-out 1: the recordless migration gate (interrupted first download) proceeds only when the pack is non-empty and every stored key is a manifest href - a deleted route's recordless pack, which holds off-manifest keys, is still left alone.",
+   "fix_id": "partial-pack-census",
+   "id": "packmig-recordless-gate",
+   "pattern": "gk.every(rq => want.has(rq.url))",
    "type": "grep_present"
   },
   {

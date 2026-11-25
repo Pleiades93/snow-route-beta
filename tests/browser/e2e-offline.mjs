@@ -449,6 +449,47 @@ try {
   ok('E22 a healthy migrated pack takes the fast path on the next migration call: skipped, zero cache matches (Beta 1.96, SR-195-03) | heal ' + JSON.stringify(heal) + ' ' + JSON.stringify(e22), heal.ok === true && e22.ok === true && e22.skipped === true && e22.matches === 0);
 } catch (e) { ok('E22 pack migration fast path (Beta 1.96, SR-195-03) | threw ' + String(e).slice(0, 150), false); }
 
+// E26 (#180 spin-out, partial-pack migration census): a partial pack can
+// earn the completion flag (its missing files exist in neither cache), but
+// the fast path demands the manifest's exact count, so through 1.294 every
+// boot re-ran the full pass - the byte-weigh loop over every stored entry
+// included. migratePack now persists a census of the partial pack its full
+// pass leaves behind (key-set fingerprint, count, measured bytes) and
+// recognizes an unchanged partial pack from it: no weighing, only a
+// browsing-cache probe of the missing files (a healable gap still earns
+// the full pass). The same round's gate change: a recordless pack whose
+// every key is a manifest URL is an interrupted first download (its record
+// is written last) and migrates; a recordless pack holding off-manifest
+// keys is a deleted route's leftover and stays skipped, untouched.
+try {
+  const pick26 = baseKeys.filter(u => u.includes('tiles.basemaps.cartocdn.com')).slice(20, 25); // 5 real manifest tiles
+  const countedMig = async () => JSON.parse(await ev2(`(async () => { window.__blobN = 0; window.__realBlob = Response.prototype.blob; Response.prototype.blob = function (...a) { window.__blobN++; return window.__realBlob.apply(this, a); }; const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); const out = { ok: !!(r && r.ok), skipped: !!(r && r.skipped), fast: !!(r && r.fast), partial: !!(r && r.partial), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig'), blobs: window.__blobN }; Response.prototype.blob = window.__realBlob; return JSON.stringify(out); })()`));
+  await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const st = await caches.open('e26-stash-v1'); for (const u of ${JSON.stringify(pick26)}) { const r = await oc.match(u); if (r) await st.put(u, r); } return true; })()`); // stash the five so the section can restore the exact state E25 expects
+  const setup26 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); for (const u of ${JSON.stringify(pick26)}) { await oc.delete(u); await tc.delete(u); } localStorage.removeItem('snowroute.v5.packmig'); localStorage.removeItem('snowroute.v5.packmigcensus'); const r = await migratePack(); const cen = localStorage.getItem('snowroute.v5.packmigcensus'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig'), cen: cen ? JSON.parse(cen) : null }); })()`));
+  ok('E26 setup: a real partial pack (5 manifest tiles deleted from both caches) earns the flag and persists its census | ' + JSON.stringify(setup26), setup26.ok === true && setup26.n === OFFLINE_FIXTURE.count - 5 && setup26.flag === FIX_FP && !!setup26.cen && setup26.cen.fp === FIX_FP && setup26.cen.n === OFFLINE_FIXTURE.count - 5 && setup26.cen.bytes > 0);
+  const a26 = await countedMig();
+  ok('E26a an unchanged partial pack is recognized from its census: skipped as partial with ZERO byte-weigh reads | ' + JSON.stringify(a26), a26.ok === true && a26.skipped === true && a26.partial === true && a26.blobs === 0 && a26.n === OFFLINE_FIXTURE.count - 5);
+  await ev2(`(async () => { const st = await caches.open('e26-stash-v1'); const tc = await caches.open('snowroute-tiles-v1'); const r = await st.match(${JSON.stringify(pick26[0])}); if (r) await tc.put(${JSON.stringify(pick26[0])}, r); return true; })()`); // one missing file becomes healable
+  const b26 = await countedMig();
+  const b26healed = await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); return !!(await oc.match(${JSON.stringify(pick26[0])})); })()`);
+  ok('E26b a healable gap earns the full pass (weighing resumes) and heals from the browsing cache | ' + JSON.stringify(b26) + ' healed ' + b26healed, b26.ok === true && b26.partial === false && b26.blobs > 0 && b26.n === OFFLINE_FIXTURE.count - 4 && b26healed === true);
+  const b26r = await countedMig();
+  ok('E26b2 recognition is re-earned after the heal: the new partial state is recognized with zero reads | ' + JSON.stringify(b26r), b26r.ok === true && b26r.partial === true && b26r.blobs === 0 && b26r.n === OFFLINE_FIXTURE.count - 4);
+  const victim26 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); const tc = await caches.open('snowroute-tiles-v1'); const st = await caches.open('e26-stash-v1'); const ks = (await oc.keys()).map(r => r.url).filter(u => u.includes('tiles.basemaps.cartocdn.com')); let v = null; for (const u of ks) { if (!(await tc.match(u))) { v = u; break; } } if (v) { const r = await oc.match(v); if (r) await st.put(v, r); await oc.delete(v); } return JSON.stringify(v); })()`)); // a pack-only entry is removed (stashed first, for the restore)
+  const c26 = await countedMig();
+  ok('E26c a removal earns the full pass (the persisted census no longer matches the live set) | victim ' + victim26 + ' ' + JSON.stringify(c26), !!victim26 && c26.ok === true && c26.partial === false && c26.blobs > 0 && c26.n === OFFLINE_FIXTURE.count - 5);
+  const c26r = await countedMig();
+  ok('E26c2 recognition is re-earned after the removal | ' + JSON.stringify(c26r), c26r.ok === true && c26r.partial === true && c26r.blobs === 0 && c26r.n === OFFLINE_FIXTURE.count - 5);
+  const savedRec26 = await ev2(`localStorage.getItem(LS.pre)`);
+  const d26 = JSON.parse(await ev2(`(async () => { for (const p of ROUTE_PACKS) localStorage.removeItem(routeKeys(p.id).pre); localStorage.removeItem('snowroute.v5.packmig'); localStorage.removeItem('snowroute.v5.packmigcensus'); const st = await caches.open('e26-stash-v1'); const tc = await caches.open('snowroute-tiles-v1'); const r0 = await st.match(${JSON.stringify(pick26[1])}); if (r0) await tc.put(${JSON.stringify(pick26[1])}, r0); const r = await migratePack(); const oc = await caches.open('snowroute-offline-v1'); return JSON.stringify({ ok: !!(r && r.ok), skipped: !!(r && r.skipped), healed: !!(await oc.match(${JSON.stringify(pick26[1])})), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig') }); })()`));
+  ok('E26d a recordless all-manifest partial pack still migrates: the healable gap is healed and the flag is earned (the interrupted first download) | ' + JSON.stringify(d26), d26.ok === true && d26.skipped === false && d26.healed === true && d26.n === OFFLINE_FIXTURE.count - 4 && d26.flag === FIX_FP);
+  const junk26 = 'https://tiles.basemaps.cartocdn.com/junk/e26-leftover';
+  const e26 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); await oc.put(${JSON.stringify(junk26)}, new Response('x')); localStorage.removeItem('snowroute.v5.packmig'); localStorage.removeItem('snowroute.v5.packmigcensus'); const before = (await oc.keys()).length; const r = await migratePack(); const ks = (await oc.keys()).map(k => k.url); return JSON.stringify({ skipped: !!(r && r.skipped), junkKept: ks.includes(${JSON.stringify(junk26)}), n: ks.length, before }); })()`));
+  ok('E26e a recordless pack holding an off-manifest entry is left alone: the skip stands and the entry survives (the deleted-route contract) | ' + JSON.stringify(e26), e26.skipped === true && e26.junkKept === true && e26.n === e26.before);
+  const restored26 = JSON.parse(await ev2(`(async () => { const oc = await caches.open('snowroute-offline-v1'); await oc.delete(${JSON.stringify(junk26)}); const st = await caches.open('e26-stash-v1'); for (const u of ${JSON.stringify(pick26.concat([victim26]))}) { if (u && !(await oc.match(u))) { const r = await st.match(u); if (r) await oc.put(u, r); } } if (${JSON.stringify(savedRec26)}) localStorage.setItem(LS.pre, ${JSON.stringify(savedRec26)}); localStorage.removeItem('snowroute.v5.packmig'); localStorage.removeItem('snowroute.v5.packmigcensus'); const r = await migratePack(); await caches.delete('e26-stash-v1'); return JSON.stringify({ ok: !!(r && r.ok), n: (await oc.keys()).length, flag: localStorage.getItem('snowroute.v5.packmig'), cen: localStorage.getItem('snowroute.v5.packmigcensus'), rec: anyPreloadRecord() }); })()`));
+  ok('E26 restore: the full pack is rebuilt, the record is back, the flag is earned and no census remains (the state E25 expects) | ' + JSON.stringify(restored26), restored26.ok === true && restored26.n === OFFLINE_FIXTURE.count && restored26.flag === FIX_FP && restored26.cen === null && restored26.rec === true);
+} catch (e) { ok('E26 partial-pack migration census recognition (#180 spin-out) | threw ' + String(e).slice(0, 150), false); }
+
 // E23 (Beta 1.143, DA-07): the boot pack migration must capture its manifest
 // AFTER created packs register. Through 1.142 the migration fired during
 // app4's evaluation - before create.js ran mergeUserPacks - so its manifest

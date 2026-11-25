@@ -17,7 +17,7 @@
   "totals": {
     "expressions": 22,
     "member": 31,
-    "storage": 49,
+    "storage": 50,
     "idb": 2,
     "byFile": {
       "app1.js": {
@@ -739,6 +739,13 @@
       "file": "app5.js",
       "fn": "deleteRoute",
       "name": "storage:USERPACKS_KEY",
+      "owner": "app1.js",
+      "occ": 1
+    },
+    {
+      "file": "app5.js",
+      "fn": "migratePack",
+      "name": "storage:PACKMIG_CENSUS_KEY",
       "owner": "app1.js",
       "occ": 1
     },

@@ -10930,6 +10930,19 @@
    "red": "no red run of this drive: the clone-presence claim is mutation-graded on drive130 (labelhandover-1294-drive130-clones-gatefix3) and drive219 N4",
    "green": "drive131 5/5 locally on the final tree (2026-11-24); the gate fixes did not touch W4's surfaces",
    "issued": "2026-11-24 label-handover-1294 gatefix3"
+  },
+  {
+   "id": "partial-pack-census-e26",
+   "check": "tests/browser/e2e-offline.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/e2e-offline.mjs": "6ada38ad1004590c037764091e109eea4ffb94fa1f266bffa567c56b834c33b7",
+    "parts/app5.js": "72465ffdcbbe74a946fb5508cabb8d353913fa3d1a761d7f2e562bf237198ca9"
+   },
+   "mutation": "parts/app5.js reverted to the Beta 1.294 base (census persistence, partial-pack recognition and the recordless gate exception removed; the E26 section kept)",
+   "red": "e2e-offline on base app code, twice (42/47, 41/47): E26 setup cen null; E26a re-weighs all 892 entries (blobs 892, no partial recognition); E26b2/E26c2 fail identically; E26d skipped with flag null (the recordless gate)",
+   "green": "e2e-offline on the fixed tree: every E26 check passes (setup census fp v1:897:mm56ak n 892 bytes 25138476; E26a recognition with 0 blob reads; E26b heal blobs 893; E26d recordless migrates and heals; restore full 897, flag set, census null). The sole local failure, E19 flag null, also fails on the unmodified base tree locally (mutation run 2) - a local verify race, not this change",
+   "issued": "2026-11-24 spinout-partial-pack"
   }
  ]
 }

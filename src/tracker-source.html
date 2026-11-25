@@ -7912,37 +7912,63 @@ if ('serviceWorker' in navigator) {
 // clean their browsing duplicates up). Best-effort: a failed copy retries on the next
 // boot, and a fresh Download offline maps always rebuilds the pack cache directly.
 const PACKMIG_KEY = 'snowroute.v5.packmig';
+const PACKMIG_CENSUS_KEY = 'snowroute.v5.packmigcensus'; // the partial-pack recognition record migratePack persists (see its recognition path)
 let packWriteChain = Promise.resolve(); async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let release; const held = new Promise(res => { release = res; }); let acquired; const acq = new Promise(res => { acquired = res; }); let lockFailed = false; const done = navigator.locks.request('snowroute-pack-write', async () => { acquired(); await held; }); done.catch(() => { lockFailed = true; acquired(); }); await acq; if (!lockFailed) return release; } let release; const held = new Promise(res => { release = res; }); const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return release; } // Beta 1.183 (Codex P2, PR #21): the pack has TWO writers - this download (the xPre handler above) and migratePack's boot heal - and ONE deleter, the Status pane's stDel, which takes the same turn since the C-02 fix (2026-11-15): it weighs nothing and writes nothing, but deleting the cache under a writer strands that writer's writes in a detached cache it can still confirm against - and a byte budget is only SHARED if they take turns: each writer censuses the pack when its own turn starts, so serialized writers see each other's finished writes in their census and account against the true total; two writers holding independent snapshots could each pass the cap check and together overshoot it. A turn is held for the writer's whole run and released in its finally. The turn is a WEB LOCK (navigator.locks) whenever the platform offers one: the lock is origin-wide, so two tabs of this app writing the same shared pack cache serialize as well - a per-page chain alone could not do that (Codex P2, PR #21) - and where Web Locks do not exist (older engines) the in-page promise chain is the fallback and the budget is shared within the page only. Either way a dead page takes its turn with it (the platform releases a Web Lock when its holder's context dies; the chain is page memory), so no stale lock can persist.
 function packMigFingerprint(list) { // Beta 1.96 (deep audit SR-195-03): the pack-migration completion flag stops being the constant '1' and becomes a fingerprint of the manifest it certifies - a stored flag is believable only for the exact manifest it was earned on (a styles update changes tile/glyph URLs, hence the list, hence the fingerprint, and the full pass runs again). djb2 over the joined list: deterministic, dependency-free, cheap at 897 entries.
   let h = 0; const s = list.join('\n');
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
   return 'v1:' + list.length + ':' + (h >>> 0).toString(36);
 }
+function packCensusFingerprint(urls) { return packMigFingerprint([...urls].sort()); } // a stored pack's key-set fingerprint: the manifest fingerprint of the sorted set, so set equality is one string compare
 function anyPreloadRecord() { // Beta 1.170 (Carbon fix round Phase 2, C-03): was a pack EVER downloaded on this device, under ANY route? The two callers below used to read only the ACTIVE route's preload record (LS names whichever route is active - at boot, the eval-time default), so a pack downloaded under another route alone never earned its migration/heal pass. Every route's own record is the honest test; the manifest migratePack heals against is already the union over all packs (preloadUrlList).
   return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(p.id).pre), null));
 }
 async function migratePack() { let migRelease = () => {}; // Beta 1.95 (deep audit SR-194-05/06): the one-time move of a pre-1.94 pack from the browsing cache into the protected pack cache, under an honest contract. 1.94 copied EVERY browsing-cache key (any stray the map had ever fetched came along) through per-file catch-alls, then set the completion flag unconditionally - a partial copy was marked complete and never retried. Now: only the deterministic preload manifest (preloadUrlList) is migrated; non-manifest entries already in the pack cache are pruned, so the pack is exactly the manifest; the completion flag is set only after VERIFYING that everything that exists in either cache is present in the pack cache; any failed copy leaves the flag unset and the next boot retries (the function is idempotent). Returns a status object so the test battery can drive it directly.
   try {
     migRelease = await takePackWriteTurn(); if (!('caches' in window)) return { ok: false, why: 'nocache' };
-    if (!anyPreloadRecord()) return { ok: true, skipped: true }; // no pack was ever downloaded on this install (Beta 1.170, C-03: under any route - see anyPreloadRecord)
     const list = preloadUrlList();
     const fp = packMigFingerprint(list);
-    if (lsGet(PACKMIG_KEY) === fp) { try { const ocF = await caches.open('snowroute-offline-v1'); if ((await ocF.keys()).length === list.length) return { ok: true, skipped: true, fast: true }; } catch (e) { /* a census that cannot run proves nothing - fall through to the full pass */ } } // Beta 1.96 (SR-195-03): the FAST PATH - 1.95 wrote the completion flag and never read it, so every boot with a preload record re-ran the full ~1,800-match verification sweep. The flag is now read, and believed only with a cheap census agreeing (exactly the manifest's count in the pack); any doubt - flag absent or stale, count off - runs the full pass below, which also HEALS a shrunken pack from the browsing cache
     const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); // stored cache keys are URL-normalized (the glyph ranges' 'Noto Sans Regular' is stored %20-encoded) - the prune below must compare like with like, or it deletes the pack's own glyphs (the first CI run of 1.95 did exactly that: pack 897 -> 641)
+    if (!anyPreloadRecord()) { // no pack was ever downloaded on this install (Beta 1.170, C-03: under any route - see anyPreloadRecord)
+      let evidence = false; // Record gate exception: an all-manifest recordless pack is an interrupted first download; off-manifest keys are a deleted route's leftover
+      try { const ocG = await caches.open('snowroute-offline-v1'); const gk = await ocG.keys(); evidence = gk.length > 0 && gk.every(rq => want.has(rq.url)); } catch (e) {}
+      if (!evidence) return { ok: true, skipped: true };
+    }
+    if (lsGet(PACKMIG_KEY) === fp) { try { const ocF = await caches.open('snowroute-offline-v1'); if ((await ocF.keys()).length === list.length) return { ok: true, skipped: true, fast: true }; } catch (e) { /* a census that cannot run proves nothing - fall through to the full pass */ } } // Beta 1.96 (SR-195-03): the FAST PATH - 1.95 wrote the completion flag and never read it, so every boot with a preload record re-ran the full ~1,800-match verification sweep. The flag is now read, and believed only with a cheap census agreeing (exactly the manifest's count in the pack); any doubt - flag absent or stale, count off - runs the full pass below, which also HEALS a shrunken pack from the browsing cache
+    if (lsGet(PACKMIG_KEY) === fp) { // Recognition: census and key set unchanged, nothing healable waiting - the partial pack skips without weighing a byte
+      const cen = parseJ(lsGet(PACKMIG_CENSUS_KEY), null);
+      if (cen && cen.fp === fp && cen.n < list.length) {
+        try {
+          const ocR = await caches.open('snowroute-offline-v1'); const rk = await ocR.keys(); const rUrls = rk.map(r => r.url);
+          if (rk.length === cen.n && cen.set === packCensusFingerprint(rUrls)) {
+            const have = new Set(rUrls); const tcR = await caches.open('snowroute-tiles-v1'); let healable = false;
+            for (const u of list) { let h = u; try { h = new URL(u).href; } catch (e) {} if (!have.has(h) && (await tcR.match(u))) { healable = true; break; } }
+            if (!healable) return { ok: true, skipped: true, fast: true, partial: true };
+          }
+        } catch (e) { /* a census that cannot run proves nothing - fall through to the full pass */ }
+      }
+    }
     const oc = await caches.open('snowroute-offline-v1');
     const tc = await caches.open('snowroute-tiles-v1');
     let pruneOk = true;
     for (const rq of await oc.keys()) { if (!want.has(rq.url)) { try { await oc.delete(rq.url); } catch (e) { pruneOk = false; /* a stray that will not delete is inert - the pack still serves the manifest; Beta 1.96 (SR-195-07): the failure is REPORTED in the status now, not swallowed - copies are the readiness question, the prune is maintenance */ } } } // Beta 1.183 (Codex P2, PR #21): the prune runs FIRST - obsolete entries counted toward the heal budget below could refuse every copy and return before this loop ever ran, leaving their space unreclaimable on every boot; freed space counts toward the budget
-    let failed = 0, migBytes = 0; try { for (const req of await oc.keys()) { try { const r0 = await oc.match(req); if (r0) migBytes += (await r0.blob()).size; } catch (e) {} } } catch (e) {} // Beta 1.183 (Codex P2, PR #21): the pack budget binds this door too - migratePack is the pack's second write path (the boot heal), so after the prune above it weighs what remains and counts a copy that would cross OFFLINE_PACK_CAP_BYTES as failed (the flag stays unset and the next boot retries, exactly like a failed copy); a copy whose size cannot be read proceeds unweighed, the download path's own rule
+    let failed = 0, migBytes = 0, unweighed = false; try { for (const req of await oc.keys()) { try { const r0 = await oc.match(req); if (r0) migBytes += (await r0.blob()).size; } catch (e) {} } } catch (e) {} // Beta 1.183 (Codex P2, PR #21): the pack budget binds this door too - migratePack is the pack's second write path (the boot heal), so after the prune above it weighs what remains and counts a copy that would cross OFFLINE_PACK_CAP_BYTES as failed (the flag stays unset and the next boot retries, exactly like a failed copy); a copy whose size cannot be read proceeds unweighed, the download path's own rule
     for (const u of list) {
       if (await oc.match(u)) continue;
       const hit = await tc.match(u);
       if (!hit) continue; // exists in neither cache - nothing to migrate (a re-download rebuilds the pack directly)
-      let hSz = -1; try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++; else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; } catch (e) { failed++; } }
+      let hSz = -1; try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++; else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; else unweighed = true; } catch (e) { failed++; } }
     }
     if (failed > 0) return { ok: false, failed };
     for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
     const flagOk = lsSet(PACKMIG_KEY, fp); // Beta 1.96 (SR-195-07): the flag write is CHECKED - the fast path believes this flag, so a migration whose flag could not be persisted is not complete and must not report ok
+    if (flagOk) { // A still-partial pack persists its census for recognition; a completed pack deletes it; an unweighed copy persists nothing
+      try {
+        const fk = await oc.keys();
+        if (fk.length >= list.length) lsDel(PACKMIG_CENSUS_KEY);
+        else if (!unweighed) lsSet(PACKMIG_CENSUS_KEY, JSON.stringify({ fp, set: packCensusFingerprint(fk.map(r => r.url)), n: fk.length, bytes: migBytes }));
+      } catch (e) {}
+    }
     return { ok: flagOk, flag: flagOk ? fp : null, pruneOk };
   } catch (e) { return { ok: false, why: String((e && e.message) || e) }; } finally { migRelease(); }
 }
