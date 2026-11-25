@@ -115,13 +115,13 @@ await settle();
 // ---------- throttled pass (6x CPU): the heal's blackout stretched to seconds here ----------
 await send('Emulation.setCPUThrottlingRate', { rate: 6 }, S);
 await mark('tpan0');
-await ev(`(() => { map.panBy([120, 40], { duration: 800 }); return true; })()`);
+await ev(`(() => { map.panBy([120, 40], { duration: 2400 }); return true; })()`); // 2400 not 800: under 6x throttle the 50 ms sampler starved to the floor (7c, P7 samples 5)
 await settle(); await mark('tpan1');
 const tpan = await phaseReport('tpan0', 'tpan1');
-ok('P7 throttled (6x CPU) pan: no title drops | samples ' + tpan.samples + ', before ' + tpan.before + ', after ' + tpan.after + ', dropped: ' + JSON.stringify(tpan.dropped),
+ok('P7 throttled (6x CPU) pan: no title drops | samples ' + tpan.samples + ', loaded ' + tpan.loaded + ', before ' + tpan.before + ', after ' + tpan.after + ', dropped: ' + JSON.stringify(tpan.dropped),
   tpan.samples > 5 && tpan.loaded >= 3 && tpan.dropped.length === 0);
 await mark('tzoom0');
-await ev(`(() => { map.zoomTo(14.6, { duration: 900 }); return true; })()`);
+await ev(`(() => { map.zoomTo(14.6, { duration: 2400 }); return true; })()`); // same starvation shape as P7: a longer window, the same endpoints and floors
 await settle(); await mark('tzoom1');
 const tzoom = await phaseReport('tzoom0', 'tzoom1');
 ok('P8 throttled (6x CPU) zoom: no title drops | samples ' + tzoom.samples + ', dropped: ' + JSON.stringify(tzoom.dropped),
