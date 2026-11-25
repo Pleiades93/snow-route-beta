@@ -39,11 +39,25 @@ function checkStatements(text) {
   return out;
 }
 
+function blankComments(text) {
+  const out = text.split('');
+  let instr = null, esc = false;
+  for (let k = 0; k < text.length; k++) {
+    const c = text[k];
+    if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; continue; }
+    if (c === "'" || c === '"' || c === '`') { instr = c; continue; }
+    if (c === '/' && text[k + 1] === '/') { while (k < text.length && text[k] !== '\n') { out[k] = ' '; k++; } k--; continue; }
+    if (c === '/' && text[k + 1] === '*') { const e = text.indexOf('*/', k + 2); const end = e < 0 ? text.length : e + 2; for (; k < end; k++) if (text[k] !== '\n') out[k] = ' '; k--; continue; }
+  }
+  return out.join('');
+}
+
 function constLiterals(text) {
   const d = {};
   const re = new RegExp(String.raw`\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*(` + LIT + String.raw`)\s*;`, 'g');
   let m;
-  while ((m = re.exec(text)) !== null) d[m[1]] = m[2];
+  const clean = blankComments(text);
+  while ((m = re.exec(clean)) !== null) d[m[1]] = m[2];
   return d;
 }
 
@@ -89,18 +103,6 @@ function scanText(text) {
     if (toks.length === 1) return [vals[0] === null ? '\u0001id:' + toks[0] : vals[0], q];
     return [vals.every((v) => v !== null) ? vals.join('') : '\u0001raw:' + toks.join(' + '), q];
   };
-  const blankComments = (stmt) => {
-    const out = stmt.split('');
-    let instr = null, esc = false;
-    for (let k = 0; k < stmt.length; k++) {
-      const c = stmt[k];
-      if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; continue; }
-      if (c === "'" || c === '"' || c === '`') { instr = c; continue; }
-      if (c === '/' && stmt[k + 1] === '/') { while (k < stmt.length && stmt[k] !== '\n') { out[k] = ' '; k++; } k--; continue; }
-      if (c === '/' && stmt[k + 1] === '*') { const e = stmt.indexOf('*/', k + 2); const end = e < 0 ? stmt.length : e + 2; for (; k < end; k++) if (stmt[k] !== '\n') out[k] = ' '; k--; continue; }
-    }
-    return out.join('');
-  };
   const findings = [];
   for (const [off, rawStmt] of checkStatements(text)) {
     const stmt = blankComments(rawStmt);
@@ -140,7 +142,7 @@ function scanText(text) {
       if (negatedBefore(stmt, c[0])) continue;
       (c[3] ? boundedGuardNeedles : guardNeedles).add(c[2]);
     }
-    const guarded = (n) => { for (const g of guardNeedles) if (n === g || g.includes(n)) return true; return false; };
+    const guarded = (n) => { for (const g of guardNeedles) { if (n === g) return true; if (n[0] !== '\u0001' && g[0] !== '\u0001' && g.includes(n)) return true; } return false; };
     const hasOr = stmt.includes('||');
     const vacuous = new Map();
     const safe = new Set();
@@ -210,6 +212,8 @@ const FIXTURES = [
   ['F29 comment text inside a string is not a comment', `check('x // not a comment', a.indexOf('write();') > a.indexOf('anchor'));`, 1],
   ['F30 an unresolved identifier is not its name', `check('x', a.includes('needle') && a.indexOf('write();') > a.indexOf(needle));`, 1],
   ['F31 a guard on the same identifier clears it', `check('x', a.indexOf(V) > -1 && a.indexOf('write();') > a.indexOf(V));`, 0],
+  ['F32 an identifier guard does not clear a prefix identifier', `check('x', a.includes(needleLong) && a.indexOf('write();') > a.indexOf(needle));`, 1],
+  ['F33 a commented-out const does not resolve', "// const needle = 'present';\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;

@@ -12568,6 +12568,21 @@
    "red": "scanner at e75782a8 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(needle) guarded by a.includes('needle'), with needle a var holding 'anchor' (absent from the source): the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 4, needle shown as 'needle'); fixtures F30 (name collision flagged) and F31 (same-identifier guard still clears) pin the shapes in-suite; full suite 123/123 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r12",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "7c43d107fd0d6a83b5304bdbad552b0db2aa85606bc1b8c361beeb5a3ac6d350",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner applies literal substring matching to tagged identifier needles (a longer identifier's tag contains a shorter one's), and resolves const declarations out of commented-out code",
+   "red": "scanner at cd952f89 on two scratch roots: (A) a.includes(needleLong) guarding a.indexOf(needle) with needle='anchor' absent - no findings; (B) a commented-out // const needle = 'present'; resolving a var needle pin - no findings",
+   "green": "fixed scanner flags both scratch pins (needle shown as 'needle'); fixtures F32/F33 pin the shapes in-suite; full suite 125/125 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
