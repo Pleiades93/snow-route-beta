@@ -1146,6 +1146,13 @@ def run_limits(root, base, labels=""):
     return proc.returncode
 
 
+def run_limits_out(root, base, labels=""):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-pr-limits.py"),
+                           str(root), "--base", base, "--labels", labels],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode, proc.stdout + proc.stderr
+
+
 def git_repo(base, commits):
     """A real git repo: an initial commit, then one commit per
     (message, {path: text}) entry. Returns (repo, base_sha)."""
@@ -1226,9 +1233,17 @@ with tempfile.TemporaryDirectory() as td:
                           capture_output=True, text=True, env=genv,
                           timeout=60)
     assert proc.returncode == 0, proc.stderr
+    # Exit 1 alone cannot tell the size verdict from the
+    # ancestry-refusal verdict (both exit 1): assert the size
+    # diagnostic, and use the labelled control on the same clone -
+    # broken ancestry refuses it too, a working size rule allows it.
+    rc, out = run_limits_out(clone, b)
     check("pr-limits: a shallow (CI-shaped) checkout still judges "
-          "the size rule", run_limits(clone, b), 1)
+          "the size rule",
+          1 if (rc == 1 and "adds 301 product lines" in out) else 0, 1)
+    check("pr-limits: the labelled control passes in the same "
+          "shallow checkout", run_limits(clone, b, "large-change"), 0)
 
-total = 92
+total = 93
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
