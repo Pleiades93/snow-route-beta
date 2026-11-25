@@ -41,7 +41,7 @@ await ev(`(() => {
     try {
       const seen = new Set();
       for (const f of map.queryRenderedFeatures({ layers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
-      window.__pres.samples.push([...seen]);
+      window.__pres.samples.push({ t: [...seen], ok: map.isStyleLoaded() }); // the style flag rides each sample: a setStyle blackout is not title evidence (7c)
     } catch (e) {}
   }, 50);
   return true;
@@ -52,20 +52,22 @@ const settle = async () => { await poll(`!!(window.map && map.loaded() && !map.i
 // dropped = absent from 3+ consecutive samples) - extracted under
 // docs/TESTING.md rule 1 and proven by selftest-title-drop.mjs; this
 // drive only fetches the phase's sample window and hands it to the judge.
-const phaseReport = async (fromMark, toMark) => {
+const phaseReport = async (fromMark, toMark, opts) => {
   const win = await J(`(() => {
     const P = window.__pres;
     const a = P.marks.find(m => m.name === '${fromMark}').at, b = P.marks.find(m => m.name === '${toMark}').at;
     return P.samples.slice(a, b + 1);
   })()`);
-  return judgeTitleDrops(Array.isArray(win) ? win : []);
+  return judgeTitleDrops(Array.isArray(win) ? win : [], opts);
 };
 
 // ---------- baseline: the boot placement, stable ----------
 await settle();
 await sleep(3000); // the pick flight's one re-place (and its 2.5 s backstop) land inside this window - grading starts after it
-const stableBase = await poll(`(() => { const P = window.__pres; if (P.samples.length < 20) return false; const last = JSON.stringify([...P.samples[P.samples.length - 1]].sort()); return P.samples.slice(-6).every(sm => JSON.stringify([...sm].sort()) === last) && P.samples[P.samples.length - 1].length >= 30; })()`, 60000);
-const baseCount = await J(`(() => window.__pres.samples[window.__pres.samples.length - 1].length)()`);
+const stableBase = await poll(`(() => { const P = window.__pres; if (P.samples.length < 20) return false;
+  const last = JSON.stringify([...P.samples[P.samples.length - 1].t].sort());
+  return P.samples.slice(-6).every(sm => JSON.stringify([...sm.t].sort()) === last) && P.samples[P.samples.length - 1].t.length >= 30; })()`, 60000);
+const baseCount = await J(`(() => window.__pres.samples[window.__pres.samples.length - 1].t.length)()`);
 ok('P1 the boot placement settles stable with the old system\'s home character: ' + baseCount + ' titles placed (33 of 34 expected - Tina Place is the known absentee), stable across 6 consecutive samples (stability poll: ' + stableBase + ')',
   stableBase === true && baseCount >= 30);
 
@@ -75,7 +77,7 @@ await ev(`(() => { map.panBy([140, 60], { duration: 800 }); return true; })()`);
 await settle(); await mark('pan1');
 const pan = await phaseReport('pan0', 'pan1');
 ok('P2 pan: no title drops during the gesture or its settle | samples ' + pan.samples + ', before ' + pan.before + ', after ' + pan.after + ', dropped: ' + JSON.stringify(pan.dropped),
-  pan.samples > 5 && pan.dropped.length === 0);
+  pan.samples > 5 && pan.loaded >= 3 && pan.dropped.length === 0);
 await ev(`(() => { map.panBy([-140, -60], { duration: 800 }); return true; })()`);
 await settle();
 
@@ -84,52 +86,52 @@ await ev(`(() => { map.zoomTo(15.7, { duration: 900 }); return true; })()`);
 await settle(); await mark('zoom1');
 const zoomUp = await phaseReport('zoom0', 'zoom1');
 ok('P3 zoom through 15: no title drops | samples ' + zoomUp.samples + ', before ' + zoomUp.before + ', after ' + zoomUp.after + ', dropped: ' + JSON.stringify(zoomUp.dropped),
-  zoomUp.samples > 5 && zoomUp.dropped.length === 0);
+  zoomUp.samples > 5 && zoomUp.loaded >= 3 && zoomUp.dropped.length === 0);
 await mark('zoom2');
 await ev(`(() => { map.zoomTo(13.98, { duration: 900 }); return true; })()`);
 await settle(); await mark('zoom3');
 const zoomDown = await phaseReport('zoom2', 'zoom3');
 ok('P4 zoom back down through 15: no title drops | samples ' + zoomDown.samples + ', dropped: ' + JSON.stringify(zoomDown.dropped),
-  zoomDown.samples > 5 && zoomDown.dropped.length === 0);
+  zoomDown.samples > 5 && zoomDown.loaded >= 3 && zoomDown.dropped.length === 0);
 
 await mark('rot0');
 await ev(`(() => { map.rotateTo(30, { duration: 800 }); return true; })()`);
 await settle(); await mark('rot1');
 const rot = await phaseReport('rot0', 'rot1');
 ok('P5 rotate: no title drops | samples ' + rot.samples + ', dropped: ' + JSON.stringify(rot.dropped),
-  rot.samples > 5 && rot.dropped.length === 0);
+  rot.samples > 5 && rot.loaded >= 3 && rot.dropped.length === 0);
 await ev(`(() => { map.jumpTo({ bearing: 0 }); return true; })()`);
 await settle();
 
 await mark('theme0');
 await ev(`(() => { setThemeOverride(true); applyNight(); setBasemap(); return true; })()`);
 await settle(); await sleep(1200); await mark('theme1');
-const theme = await phaseReport('theme0', 'theme1');
-ok('P6 theme swap to night: no title drops (a theme swap rebuilds the style, not the title source) | samples ' + theme.samples + ', dropped: ' + JSON.stringify(theme.dropped),
-  theme.samples > 5 && theme.dropped.length === 0);
+const theme = await phaseReport('theme0', 'theme1', { loadedOnly: true }); // only the theme swap opts in: its setStyle blackout is not title evidence (7c)
+ok('P6 theme swap to night: no title drops (a theme swap rebuilds the style, not the title source) | samples ' + theme.samples + ', loaded ' + theme.loaded + ', dropped: ' + JSON.stringify(theme.dropped),
+  theme.samples > 5 && theme.loaded >= 3 && theme.dropped.length === 0);
 await ev(`(() => { setThemeOverride(false); applyNight(); setBasemap(); return true; })()`);
 await settle();
 
 // ---------- throttled pass (6x CPU): the heal's blackout stretched to seconds here ----------
 await send('Emulation.setCPUThrottlingRate', { rate: 6 }, S);
 await mark('tpan0');
-await ev(`(() => { map.panBy([120, 40], { duration: 800 }); return true; })()`);
+await ev(`(() => { map.panBy([120, 40], { duration: 2400 }); return true; })()`); // 2400 not 800: under 6x throttle the 50 ms sampler starved to the floor (7c, P7 samples 5)
 await settle(); await mark('tpan1');
 const tpan = await phaseReport('tpan0', 'tpan1');
-ok('P7 throttled (6x CPU) pan: no title drops | samples ' + tpan.samples + ', before ' + tpan.before + ', after ' + tpan.after + ', dropped: ' + JSON.stringify(tpan.dropped),
-  tpan.samples > 5 && tpan.dropped.length === 0);
+ok('P7 throttled (6x CPU) pan: no title drops | samples ' + tpan.samples + ', loaded ' + tpan.loaded + ', before ' + tpan.before + ', after ' + tpan.after + ', dropped: ' + JSON.stringify(tpan.dropped),
+  tpan.samples > 5 && tpan.loaded >= 3 && tpan.dropped.length === 0);
 await mark('tzoom0');
-await ev(`(() => { map.zoomTo(14.6, { duration: 900 }); return true; })()`);
+await ev(`(() => { map.zoomTo(14.6, { duration: 2400 }); return true; })()`); // same starvation shape as P7: a longer window, the same endpoints and floors
 await settle(); await mark('tzoom1');
 const tzoom = await phaseReport('tzoom0', 'tzoom1');
 ok('P8 throttled (6x CPU) zoom: no title drops | samples ' + tzoom.samples + ', dropped: ' + JSON.stringify(tzoom.dropped),
-  tzoom.samples > 5 && tzoom.dropped.length === 0);
+  tzoom.samples > 5 && tzoom.loaded >= 3 && tzoom.dropped.length === 0);
 await send('Emulation.setCPUThrottlingRate', { rate: 1 }, S);
 await ev(`(() => { goHomeView(); return true; })()`);
 await settle();
 
 // ---------- the count at the end matches the baseline's character ----------
-const endCount = await J(`(() => window.__pres.samples[window.__pres.samples.length - 1].length)()`);
+const endCount = await J(`(() => window.__pres.samples[window.__pres.samples.length - 1].t.length)()`);
 ok('P9 after the whole suite the home placement holds the same character: ' + endCount + ' titles placed (baseline ' + baseCount + ')',
   endCount >= 30);
 await ev(`(() => { clearInterval(window.__presTimer); return true; })()`);

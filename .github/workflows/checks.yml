@@ -20,7 +20,10 @@ name: checks
 # + offline-e2e. Quarantined drives (tests/quarantine.json) do not gate
 # tiers A/B until hardened. The FLAKE RULE: classify APP/TEST/FLAKE; a
 # flake gets ONE focused re-run of that drive/family only - whole-battery
-# re-runs are abolished; a second flake quarantines the drive.
+# re-runs are abolished; a second flake quarantines the drive. 7c
+# extension (2026-11-25): a round that burns more than 2 gate attempts
+# on adjudicated flakes owes a harness investigation inside that same
+# round - the flake census and the fix, not another re-run.
 # Every job also carries a timeout-minutes cap (Beta 1.136): through
 # 1.135 a hung job ran to GitHub's 6-hour default before anyone knew.
 # A push to main runs the Tier A core set (the browser-smoke job): the

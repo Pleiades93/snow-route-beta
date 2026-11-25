@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "fac2ed7860e8e1658c224004aad01b550667ede44bc73f416dc3702b09ab5ee8",
+  "canonical_registry_sha256": "4f29aad4d7425df7b4f33e245b9739b0cd082dcbb5997a6decbc0fcea33e7b3e",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1527,
-   "included": 1497,
+   "canonical": 1536,
+   "included": 1506,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13328,6 +13328,87 @@
    "fix_id": "machinery-gate-approval-policy",
    "id": "machinery-gate-approval-policy",
    "pattern": "Approval policy",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/harness.mjs",
+   "fix": "Test reliability round (7c): loadRoutePolled waits for the boot tail (__bootAt) before calling loadRoute - calling it earlier skipped the engine rebuild and drive224 died at buildStreetSlices (8 census sightings).",
+   "fix_id": "flake-224-boot-wait",
+   "id": "flake-224-loadroute-boot-wait",
+   "pattern": "refusing to load a route into a half-booted page",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/title-drop.mjs",
+   "fix": "Test reliability round (7c): the title-drop judge streams only style-loaded samples - a setStyle blackout is not title evidence (the 1.293 P6 flake shape).",
+   "fix_id": "flake-216-loaded-samples",
+   "id": "flake-216-judge-loaded-stream",
+   "pattern": "s.ok === true",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/drive216.mjs",
+   "fix": "Test reliability round (7c): drive216 sampler records the style-loaded flag on every sample for the loaded-stream judge.",
+   "fix_id": "flake-216-loaded-samples",
+   "id": "flake-216-sampler-style-flag",
+   "pattern": "ok: map.isStyleLoaded()",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/proxy-bridge.mjs",
+   "fix": "Test reliability round (7c): ensureProxyBridge reaps one stale-tag bridge by port-owner PID when the pool has no free port and none of ours (per-session credential rotation filled the pool).",
+   "fix_id": "bridge-pool-reap",
+   "id": "bridge-pool-exhaustion-reap",
+   "pattern": "reapBridge",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/drive152.mjs",
+   "fix": "Test reliability round (7c): the K2 refused cell is resolved from the live grid by key, not hard-coded coordinates.",
+   "fix_id": "drive152-k2-integrity",
+   "id": "drive152-k2-live-cell-key",
+   "pattern": "__kFailCellKey = 'r1c1'",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/drive152.mjs",
+   "fix": "Test reliability round (7c): K2 enters through jEnterUncached (re-enter until the grid settles uncached) and jWipe no longer resolves on deleteDatabase onblocked - a cache-restored grid has no fetch to refuse.",
+   "fix_id": "drive152-k2-integrity",
+   "id": "drive152-k2-uncached-entry",
+   "pattern": "jEnterUncached",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "scripts/check-receipts.py",
+   "fix": "Test reliability round (7c): mutation receipts accept claim-span pins {span:[start,end], sha256} beside whole-file pins - fail-closed both ways, gate-fixture proven.",
+   "fix_id": "receipts-claim-spans",
+   "id": "receipts-claim-span-region",
+   "pattern": "def span_region",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "scripts/gate-fixtures/run-fixtures.py",
+   "fix": "Test reliability round (7c): gate fixtures prove span pins both ways (outside edit pushes, inside edit refused, duplicated marker refused).",
+   "fix_id": "receipts-claim-spans",
+   "id": "receipts-claim-span-fixtures",
+   "pattern": "fixture-rcspan",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/drive125.mjs",
+   "fix": "Test reliability round (7c): drive125 P2 polls the settled night ladder (values seated and the swap restack complete) before reading - the first terminal-shape poll still raced a second rebuild in CI (shard 4, PR #212 attempt 3).",
+   "fix_id": "drive125-p2-settle",
+   "id": "drive125-p2-terminal-poll",
+   "pattern": "restack rebuilds the style before the retune lands",
    "type": "grep_present"
   }
  ]

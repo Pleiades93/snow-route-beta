@@ -281,6 +281,10 @@ export async function resetRoute(ev, routeId, extraKeys = []) {
 // splash to be removed, exactly the state pre-1.76 boots ended in.
 // Poll-with-load: keep asking the page to load the route until it reports loaded, instead of racing the parse.
 export async function loadRoutePolled(ev, sleep, settleMs = 600) {
+  // Wait out the boot tail first: loadRoute before bootMap skips the engine rebuild (drive224's 'cuts' race).
+  let booted = false;
+  for (let i = 0; i < 100 && !booted; i++) { booted = await ev(`!!window.__bootAt`); if (!booted) await sleep(300); }
+  if (!booted) throw new Error('loadRoutePolled: the app never booted (__bootAt) within 30s - refusing to load a route into a half-booted page');
   for (let i = 0; i < 40; i++) { await ev(`(function(){ if (typeof routeLoaded !== 'undefined' && !routeLoaded && typeof loadRoute === 'function') { try { loadRoute('5w'); } catch (e) {} } return true; })()`); const rl = await ev(`typeof routeLoaded !== 'undefined' && routeLoaded === true`); if (rl === true) break; await sleep(300); }
   await sleep(settleMs);
 }

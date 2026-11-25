@@ -200,7 +200,9 @@ const installStubJ = `(() => {
   };
   return true;
 })()`;
-const jWipe = async () => { await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache'); rq.onsuccess = () => res(); rq.onerror = () => res(); rq.onblocked = () => res(); } catch (e) { res(); } }); return true; })()`); };
+// No onblocked resolve (7c): a blocked delete left the cache alive and K2's grid came back fromCache, refusal unlanded.
+const jWipe = async () => { await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache');
+  rq.onsuccess = () => res(); rq.onerror = () => res(); } catch (e) { res(); } }); return true; })()`); };
 const jEnter = async () => { await jWipe(); await ev(`openRouteMenu()`); await ev(`document.getElementById('rmCreate').click()`); await ev(`document.getElementById('crDoorManual').click()`); await pickCityVaughan(); };
 const jExitDiscard = async () => { await ev(`document.getElementById('crExit').click()`); await sleep(400); await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`); await sleep(400); };
 const geoCount = async () => await ev(`(window.__geoLog || []).length`);
@@ -251,25 +253,38 @@ await jExitDiscard();
 // failed cell still counts.
 const installStubK = `(() => {
   const prev = window.fetch.bind(window);
-  window.__kFailCell = null; // { s, w } of the ONE grid cell the service refuses, or null
+  window.__kFailCellKey = null; // key of the ONE grid cell the service refuses, or null
   const boxOf = raw => { const m = /\\(([-\\d.]+),([-\\d.]+),([-\\d.]+),([-\\d.]+)\\)/.exec(raw); return m ? { s: +m[1], w: +m[2] } : null; };
   window.fetch = (url, opts) => {
     const u = String(url);
-    if ((u.indexOf('overpass-api.de') >= 0 || u.indexOf('overpass.kumi.systems') >= 0) && window.__kFailCell) {
+    if ((u.indexOf('overpass-api.de') >= 0 || u.indexOf('overpass.kumi.systems') >= 0) && window.__kFailCellKey) {
       const b = boxOf(decodeURIComponent((opts && opts.body) || ''));
-      if (b && Math.abs(b.s - window.__kFailCell.s) < 0.0005 && Math.abs(b.w - window.__kFailCell.w) < 0.0005) return new Promise(res => setTimeout(() => res(new Response('refused by fixture (one cell)', { status: 503 })), 300));
+      const cell = typeof crGrid !== 'undefined' && crGrid && crGrid.cells.find(c => c.key === window.__kFailCellKey); // crGrid is a let-global: window.crGrid never sees it
+      // The box comes from the live grid by key, not hard-coded coordinates (7c).
+      if (b && cell && Math.abs(b.s - cell.box.s) < 0.0005 && Math.abs(b.w - cell.box.w) < 0.0005) return new Promise(res => setTimeout(() => res(new Response('refused by fixture (one cell)', { status: 503 })), 300));
     }
     return prev(url, opts);
   };
   return true;
 })()`;
 await ev(installStubK);
-await ev(`window.__kFailCell = { s: 43.820932, w: -79.56024 }`); // cell r1c1 of the fixture city
-await jEnter();
+await ev(`window.__kFailCellKey = 'r1c1'`); // cell r1c1 of the fixture city
+// K2 needs a truly fetching grid: a cache-restored grid has no fetch to refuse.
+const jEnterUncached = async () => {
+  for (let i = 0; i < 3; i++) {
+    await ev(`window.__kPrevGrid = (typeof crGrid !== 'undefined' ? crGrid : null)`); // judge only the grid THIS entry creates: the last section's grid also reads fromCache
+    await jEnter();
+    await poll(`typeof crGrid !== 'undefined' && !!crGrid && crGrid !== window.__kPrevGrid && (crGrid.fromCache === true || crPrepState !== 'preparing')`, 30000).catch(() => false);
+    if (await ev(`!!(typeof crGrid !== 'undefined' && crGrid && crGrid !== window.__kPrevGrid && !crGrid.fromCache)`)) return true;
+    if (i < 2) await jExitDiscard();
+  }
+  return false;
+};
+const k2Uncached = await jEnterUncached();
 const k2Deg = await poll(`crPrepState === 'degraded'`, 30000).catch(() => false);
 const K2a = await J(`({ failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, done: crGrid ? crGrid.cells.filter(c => c.state === 'done').length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
-ok('K2a (one failed cell) the grid settles DEGRADED with the missing part disclosed ("loaded except 1 part", Retry missing parts offered) | ' + JSON.stringify(K2a),
-  k2Deg === true && K2a.failed === 1 && K2a.done === 3 && K2a.hint.indexOf('loaded except 1 part') >= 0 && K2a.btn === 'Retry missing parts');
+ok('K2a (one failed cell) the grid settles DEGRADED with the missing part disclosed ("loaded except 1 part", Retry missing parts offered) | uncached ' + k2Uncached + ', ' + JSON.stringify(K2a),
+  k2Uncached === true && k2Deg === true && K2a.failed === 1 && K2a.done === 3 && K2a.hint.indexOf('loaded except 1 part') >= 0 && K2a.btn === 'Retry missing parts');
 await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // the fallback box, outside the city - it lands successfully
 const k2Box = await poll(`!!(crCov && crCov.boxes.some(b => 43.9 >= b.s && 43.9 <= b.n && -79.56 >= b.w && -79.56 <= b.e))`, 20000).catch(() => false);
 await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'degraded' && !!crGrid && crGrid.cells.filter(c => c.state === 'failed').length === 1`, 10000); // T4: poll the terminal state K2b asserts (settled DEGRADED with the one failed cell counted)
@@ -283,7 +298,7 @@ await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, devi
 await ev(`crRenderHint()`);
 ok('K2c (button placement, Beta 1.176) in the DEGRADED state - the missing-part wording wraps at these widths (pill heights ' + GK390.pillH + ' / ' + GK430.pillH + ' px) - the Retry-missing-parts button hangs BELOW the pill BY MEASUREMENT: gap > 0 and zero overlap at 390 px (gap ' + GK390.gap + ' px) and 430 px (gap ' + GK430.gap + ' px) | ' + JSON.stringify({ GK390, GK430 }),
   GK390.gap > 0 && GK390.overlap === false && GK430.gap > 0 && GK430.overlap === false);
-await ev(`window.__kFailCell = null`);
+await ev(`window.__kFailCellKey = null`);
 await jExitDiscard();
 // K3 (CG-PF-15): the same city NAME saved under two different bounding
 // boxes (the lookup's answer changed between visits). A save under the

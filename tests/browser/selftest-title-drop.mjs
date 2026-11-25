@@ -14,7 +14,7 @@
 import { judgeTitleDrops, DROP_RUN } from './title-drop.mjs';
 
 const cases = [];
-const T = (name, win, expect) => cases.push({ name, win, expect });
+const T = (name, win, expect, opts) => cases.push({ name, win, expect, opts });
 
 // --- negatives: gaps that must NOT convict ---
 T('stable window, no misses', [['A', 'B'], ['A', 'B'], ['A', 'B']], []);
@@ -33,20 +33,33 @@ T('one title blacked out while another only blips', [['A', 'B'], ['B'], [], ['B'
 T('title gone by the last sample is a placement change, not a drop', [['A'], [], [], [], []], []);
 T('title appearing only from the second sample is not judged', [[], ['A'], [], [], [], ['A']], []);
 
+// --- style-blackout samples (7c): only an opted-in phase exempts them ---
+const L = (t) => ({ t, ok: true }), U = (t) => ({ t, ok: false });
+T('an opted-in blackout alone does not convict (the 1.293 P6 shape)', [L(['A']), U([]), U([]), U([]), U([]), L(['A'])], [], { loadedOnly: true });
+T('the same blackout convicts without the opt-in (a source reload is evidence)', [L(['A']), U([]), U([]), U([]), U([]), L(['A'])], ['A']);
+T('a teardown spanning a blackout still convicts on loaded samples', [L(['A']), L([]), U([]), L([]), L([]), L(['A'])], ['A'], { loadedOnly: true });
+T('a window ending mid-blackout judges from the last loaded sample', [L(['A']), L(['A']), U([])], [], { loadedOnly: true });
+T('a window opening mid-blackout judges from the first loaded sample', [U([]), L(['A']), L(['A'])], [], { loadedOnly: true });
+
 // --- report shape ---
 T('empty window', [], []);
 
 let fails = 0;
 for (const c of cases) {
-  const r = judgeTitleDrops(c.win);
+  const r = judgeTitleDrops(c.win, c.opts);
   const pass = JSON.stringify(r.dropped) === JSON.stringify(c.expect);
   if (!pass) { fails++; console.log('FAIL', c.name, '- dropped', JSON.stringify(r.dropped), 'expected', JSON.stringify(c.expect)); }
   else console.log('PASS', c.name);
 }
 {
   const r = judgeTitleDrops([['A', 'B'], ['B'], ['A', 'B']]);
-  const shapeOk = r.samples === 3 && r.before === 2 && r.after === 2 && Array.isArray(r.dropped);
-  if (!shapeOk) { fails++; console.log('FAIL report shape -', JSON.stringify(r)); } else console.log('PASS report shape {samples, before, after, dropped}');
+  const shapeOk = r.samples === 3 && r.loaded === 3 && r.before === 2 && r.after === 2 && Array.isArray(r.dropped);
+  if (!shapeOk) { fails++; console.log('FAIL report shape -', JSON.stringify(r)); } else console.log('PASS report shape {samples, loaded, before, after, dropped}');
+}
+{
+  const r = judgeTitleDrops([L(['A']), U([]), U([]), L(['A'])], { loadedOnly: true });
+  const shapeOk = r.samples === 4 && r.loaded === 2 && r.before === 1 && r.after === 1;
+  if (!shapeOk) { fails++; console.log('FAIL loaded-stream shape -', JSON.stringify(r)); } else console.log('PASS loaded-stream shape (samples counts the window, loaded the judged stream)');
 }
 if (DROP_RUN !== 3) { fails++; console.log('FAIL DROP_RUN is', DROP_RUN, '- amended decision C fixes it at 3'); }
 else console.log('PASS DROP_RUN == 3 (amended decision C)');

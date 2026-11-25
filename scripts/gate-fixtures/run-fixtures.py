@@ -172,6 +172,17 @@ def issue_receipt(root, rid, check_path, kind, files):
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
+def issue_receipt_span(root, rid, check_path, span_path, start, end):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-receipts.py"), "issue",
+                           str(root), "--id", rid, "--check", check_path,
+                           "--kind", "mutation", "--mutation", "fixture mutation",
+                           "--red", "fixture red", "--green", "fixture green",
+                           "--issued", "gate-fixtures",
+                           "--span", span_path, start, end],
+                          capture_output=True, text=True, timeout=120)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
 def patch_branch(base, rel, text):
     """Set (or, with text=None, remove) the mock branch's blob for a
     path, so a fixture can pose as a branch that holds an older -
@@ -436,6 +447,32 @@ with tempfile.TemporaryDirectory() as td:
     check("push: a check edited after its receipt was issued is refused (stale receipt)",
           run_push(t / "rcstale", ["tests/proof/proof-9001.mjs", "tests/mutation-receipts.json"],
                    mode="push", env_extra=rc_stale), 1)
+    # Claim-span pins (7c): outside edits push, inside edits and duplicated markers refuse.
+    SPAN_PROOF = "header v1\n// CLAIM-BEGIN\nclaim body v1\n// CLAIM-END\nfooter v1\n"
+    rc_span = receipts_tree("rcspan", proof_text=SPAN_PROOF)
+    issue_receipt_span(t / "rcspan", "fixture-rcspan", "tests/proof/proof-9001.mjs",
+                       "tests/proof/proof-9001.mjs", "// CLAIM-BEGIN", "// CLAIM-END")
+    w(t / "rcspan" / "tests" / "proof" / "proof-9001.mjs",
+      "header v1\n// CLAIM-BEGIN\nclaim body v1\n// CLAIM-END\nfooter v2 edited outside the claim\n")
+    check("push: an edit outside a receipt's claim span still pushes (span stays current)",
+          run_push(t / "rcspan", ["tests/proof/proof-9001.mjs", "tests/mutation-receipts.json"],
+                   mode="push", env_extra=rc_span), 0)
+    rc_spanin = receipts_tree("rcspanin", proof_text=SPAN_PROOF)
+    issue_receipt_span(t / "rcspanin", "fixture-rcspanin", "tests/proof/proof-9001.mjs",
+                       "tests/proof/proof-9001.mjs", "// CLAIM-BEGIN", "// CLAIM-END")
+    w(t / "rcspanin" / "tests" / "proof" / "proof-9001.mjs",
+      "header v1\n// CLAIM-BEGIN\nclaim body v2 edited inside the claim\n// CLAIM-END\nfooter v1\n")
+    check("push: an edit inside a receipt's claim span is refused (span went stale)",
+          run_push(t / "rcspanin", ["tests/proof/proof-9001.mjs", "tests/mutation-receipts.json"],
+                   mode="push", env_extra=rc_spanin), 1)
+    rc_spanbrk = receipts_tree("rcspanbrk", proof_text=SPAN_PROOF)
+    issue_receipt_span(t / "rcspanbrk", "fixture-rcspanbrk", "tests/proof/proof-9001.mjs",
+                       "tests/proof/proof-9001.mjs", "// CLAIM-BEGIN", "// CLAIM-END")
+    w(t / "rcspanbrk" / "tests" / "proof" / "proof-9001.mjs",
+      "header v1\n// CLAIM-BEGIN\n// CLAIM-BEGIN\nclaim body v1\n// CLAIM-END\nfooter v1\n")
+    check("push: a duplicated claim-span marker is refused (span broken)",
+          run_push(t / "rcspanbrk", ["tests/proof/proof-9001.mjs", "tests/mutation-receipts.json"],
+                   mode="push", env_extra=rc_spanbrk), 1)
     def judge_tree(name, *, cover_judge):
         env = push_tree2(t / name, parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 1.0\n",
                          tracker="AB", index="shell Beta 1.0 AB")
