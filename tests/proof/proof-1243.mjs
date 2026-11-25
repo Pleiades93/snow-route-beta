@@ -78,6 +78,7 @@ check('17: the dead crSearchCtl machinery is gone (no declaration, no assignment
   !pick.includes('crSearchCtl =') && !pick.includes('crSearchCtl.abort') && !pick.includes('crSearchCtl = null'));
 check('18: the seats keep their own extras (exitCreate still clears the field - through the 1.262 teardown, which owns the emptying literal now; the disc still refocuses)',
   pick.includes("$('crSearchInput').value = ''; crSyncClear();") &&
+  pick.indexOf('crIsectClear();', pick.indexOf("$('crClear').addEventListener")) > -1 &&
   pick.indexOf("$('crSearchInput').focus();", pick.indexOf("$('crClear').addEventListener")) > pick.indexOf('crIsectClear();', pick.indexOf("$('crClear').addEventListener")));
 
 // ---------- the frame ----------

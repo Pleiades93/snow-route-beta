@@ -92,7 +92,12 @@ check('E1: exitCreate clears the street search field and syncs the clear disc, i
 check('E2: the clear sits with the search teardown (after the search close, before the chrome closes; premise update: the sequence bump moved into crResetSearch at the Arch-3 owner split)',
   exitBody.includes('crResetSearch();') && exitBody.indexOf('crResetSearch();') < exitBody.indexOf('crIsectClear();') &&
   exitBody.indexOf('crIsectClear();') < exitBody.indexOf("document.body.classList.remove('creating');"));
-check('E3: the clear-disc path (Beta 1.243, Arch-3: the search close runs through its one owner crResetSearch - the disc still empties the field and refocuses; Beta 1.262: the emptying runs through crIsectClear, the focus still follows it)', pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 900).includes('crResetSearch();') && pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 900).includes('crIsectClear();') && pick.indexOf("$('crSearchInput').focus();", pick.indexOf("$('crClear').addEventListener('click'")) > pick.indexOf('crIsectClear();', pick.indexOf("$('crClear').addEventListener('click'")));
+check('E3: the clear-disc path (Beta 1.243, Arch-3: the search close runs through its one owner ' +
+  'crResetSearch - the disc still empties the field and refocuses; Beta 1.262: the emptying runs through crIsectClear, the focus still follows it)',
+  pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 900).includes('crResetSearch();') &&
+  pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 900).includes('crIsectClear();') &&
+  pick.indexOf('crIsectClear();', pick.indexOf("$('crClear').addEventListener('click'")) > -1 && 
+  pick.indexOf("$('crSearchInput').focus();", pick.indexOf("$('crClear').addEventListener('click'")) > pick.indexOf('crIsectClear();', pick.indexOf("$('crClear').addEventListener('click'")));
 
 
 console.log(`proof-1236: ${pass} pass, ${fail} fail`);

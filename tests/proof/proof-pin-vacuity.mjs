@@ -15,8 +15,6 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
 const LIT = String.raw`('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")`;
-const IDX = new RegExp(String.raw`\.indexOf\(\s*(` + LIT + String.raw`|[A-Za-z_$][\w$]*)\s*(?:,[^)]*)?\)`, 'g');
-const IDX_GUARD = new RegExp(String.raw`\.indexOf\(\s*(` + LIT + String.raw`|[A-Za-z_$][\w$]*)\s*(?:,[^)]*)?\)\s*(?:>\s*-1|>=\s*0)`, 'g');
 const INC = new RegExp(String.raw`\.includes\(\s*(` + LIT + String.raw`)\s*\)`, 'g');
 
 function checkStatements(text) {
@@ -62,15 +60,31 @@ function scanText(text) {
   const findings = [];
   for (const [off, stmt] of checkStatements(text)) {
     const calls = [];
+    const occ = /\.indexOf\(/g;
     let m;
-    IDX.lastIndex = 0;
-    while ((m = IDX.exec(stmt)) !== null) calls.push([m.index, m.index + m[0].length, resolve(m[1])]);
+    while ((m = occ.exec(stmt)) !== null) {
+      let p = m.index + m[0].length;
+      while (stmt[p] === ' ') p++;
+      const nm = new RegExp('^(?:' + LIT + '|[A-Za-z_$][\\w$]*)').exec(stmt.slice(p));
+      if (!nm) continue;
+      let depth = 1, j = p + nm[0].length, instr = null, esc = false, bounded = false;
+      for (; j < stmt.length; j++) {
+        const c = stmt[j];
+        if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; }
+        else if (c === "'" || c === '"' || c === '`') instr = c;
+        else if (c === '(') depth++;
+        else if (c === ')') { depth--; if (!depth) break; }
+        else if (c === ',' && depth === 1) bounded = true;
+      }
+      calls.push([m.index, j + 1, resolve(nm[0]), bounded]);
+    }
     if (calls.length < 2) continue;
     const guardNeedles = new Set();
-    IDX_GUARD.lastIndex = 0;
-    while ((m = IDX_GUARD.exec(stmt)) !== null) {
-      if (negatedBefore(stmt, m.index)) continue;
-      guardNeedles.add(resolve(m[1]));
+    const boundedGuardNeedles = new Set();
+    for (const c of calls) {
+      if (!/^\s*(>\s*-1|>=\s*0)/.test(stmt.slice(c[1]))) continue;
+      if (negatedBefore(stmt, c[0])) continue;
+      (c[3] ? boundedGuardNeedles : guardNeedles).add(c[2]);
     }
     INC.lastIndex = 0;
     while ((m = INC.exec(stmt)) !== null) {
@@ -92,19 +106,25 @@ function scanText(text) {
         ? { '<': '>=', '<=': '>', '>': '<=', '>=': '<' }[rawOp]
         : rawOp;
       if (op === '<' || op === '<=') {
-        if (!vacuous.has(calls[k][2])) vacuous.set(calls[k][2], new Set());
-        vacuous.get(calls[k][2]).add(op);
+        if (!vacuous.has(calls[k][2])) vacuous.set(calls[k][2], { ops: new Set(), bounded: false });
+        vacuous.get(calls[k][2]).ops.add(op);
+        if (calls[k][3]) vacuous.get(calls[k][2]).bounded = true;
         if (op === '<') safe.add(calls[k + 1][2]);
       } else {
-        if (!vacuous.has(calls[k + 1][2])) vacuous.set(calls[k + 1][2], new Set());
-        vacuous.get(calls[k + 1][2]).add(op);
+        if (!vacuous.has(calls[k + 1][2])) vacuous.set(calls[k + 1][2], { ops: new Set(), bounded: false });
+        vacuous.get(calls[k + 1][2]).ops.add(op);
+        if (calls[k + 1][3]) vacuous.get(calls[k + 1][2]).bounded = true;
         if (op === '>') safe.add(calls[k][2]);
       }
     }
-    for (const [needle, ops] of vacuous) {
-      if (guarded(needle)) continue;
-      if (!hasOr && safe.has(needle)) continue;
-      findings.push({ line: text.slice(0, off).split('\n').length, ops: [...ops].join(','), needle: needle.slice(0, 64) });
+    for (const [needle, v] of vacuous) {
+      if (v.bounded) {
+        if (boundedGuardNeedles.has(needle)) continue;
+      } else {
+        if (guarded(needle)) continue;
+        if (!hasOr && safe.has(needle)) continue;
+      }
+      findings.push({ line: text.slice(0, off).split('\n').length, ops: [...v.ops].join(','), needle: needle.slice(0, 64) });
     }
   }
   return findings;
@@ -131,6 +151,9 @@ const FIXTURES = [
   ['F17 a negated comparison lends no safe side', `check('x', !(a.indexOf('left') < a.indexOf('right')) && a.indexOf('right') < a.indexOf('left'));`, 1],
   ['F18 a negated comparison flips its vacuous side', `check('x', !(a.indexOf('left') < a.indexOf('right')));`, 1],
   ['F19 a negated indexOf guard is not a guard', `check('x', !(a.indexOf('gone') > -1) && a.indexOf('gone') < a.indexOf('here'));`, 1],
+  ['F20 a bounded search is not cleared by a plain includes', `check('x', a.includes('anchor') && a.indexOf('write();') > a.indexOf('anchor', 10));`, 1],
+  ['F21 a bounded guard clears its bounded pin', `check('x', a.indexOf('anchor', 10) > -1 && a.indexOf('write();') > a.indexOf('anchor', 10));`, 0],
+  ['F22 a bounded left of < is flagged', `check('x', a.indexOf('gone', 3) < a.indexOf('here'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;

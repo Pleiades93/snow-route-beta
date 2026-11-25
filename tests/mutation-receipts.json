@@ -12439,6 +12439,60 @@
    "red": "scanner at 8bff288e run on a scratch root whose proof-neg.mjs checks !(a.indexOf('left') < a.indexOf('right')) && a.indexOf('right') < a.indexOf('left') with a = 'left' ('right' absent, the check passes on nothing): the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (needle 'right', ops '>=,<' - the negated comparison read under its flipped operator); fixtures F17/F18/F19 pin the negated shapes in-suite; full suite 111/111 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-1227-bounded-guard",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js: the crIsectClear(); call inside the crClear handler (the occurrence each bounded pin searches for from the listener bound) renamed to crIsectClear( ); - the bounded search finds no call there",
+   "red": "the strengthened check fails (proof-1227 5b 27/28, proof-1236 E3 23/24, proof-1243 check 18 18/19 - in each file only the strengthened check fails)",
+   "green": "part restored byte-exact: proof-1227 28/28, proof-1236 24/24, proof-1243 19/19",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-1236-bounded-guard",
+   "check": "tests/proof/proof-1236.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js: the crIsectClear(); call inside the crClear handler (the occurrence each bounded pin searches for from the listener bound) renamed to crIsectClear( ); - the bounded search finds no call there",
+   "red": "the strengthened check fails (proof-1227 5b 27/28, proof-1236 E3 23/24, proof-1243 check 18 18/19 - in each file only the strengthened check fails)",
+   "green": "part restored byte-exact: proof-1227 28/28, proof-1236 24/24, proof-1243 19/19",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-1243-bounded-guard",
+   "check": "tests/proof/proof-1243.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14",
+    "parts/create-pick.js": "53d54b5a9cd8ec1c099a25068821152a4461e9a39adf6a38712370c6417361a3"
+   },
+   "mutation": "parts/create-pick.js: the crIsectClear(); call inside the crClear handler (the occurrence each bounded pin searches for from the listener bound) renamed to crIsectClear( ); - the bounded search finds no call there",
+   "red": "the strengthened check fails (proof-1227 5b 27/28, proof-1236 E3 23/24, proof-1243 check 18 18/19 - in each file only the strengthened check fails)",
+   "green": "part restored byte-exact: proof-1227 28/28, proof-1236 24/24, proof-1243 19/19",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r6",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "dcc2521625efebf0094c9d953ec81ad3e9ce0641a74ec5803180fd2e64d58a65",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner treats a bounded indexOf(needle, offset) operand like an unbounded one, so a plain presence guard clears a pin whose bounded search returns -1 although the needle exists before the bound",
+   "red": "scanner at c3931ef2 on Codex's example (a.includes('anchor') && a.indexOf('write();') > a.indexOf('anchor', 10) with the anchor before the bound): no findings; the fixed scanner's first run also flagged three live pins of the same shape (proof-1227 5b, proof-1236 E3, proof-1243 check 18)",
+   "green": "fixed scanner flags the example (fixture F20), clears only on an identical bounded guard (F21), flags a bounded left of < (F22); the three live pins strengthened with bounded guard clauses; full suite 114/114",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
