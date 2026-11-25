@@ -9,7 +9,9 @@ Snow Route has no server or account system. Its data is stored on the device, wi
 The canonical source is assembled, not hand-written as one file. The
 parts live in the repo's `parts/` folder (Beta 1.94, audit F-02 — they
 previously lived only in the maintainer's tree) and are concatenated by
-`scripts/assemble.py` into `src/tracker-source.html` — exactly one inline
+`scripts/assemble.py` into `src/tracker-source.html` (generated and
+untracked; `scripts/build-pages.py` assembles in memory instead of
+reading it) — exactly one inline
 `<script>` and one inline `<style>` — then `scripts/build-pages.py`
 produces the deployed `index.html` by stamping a Content-Security-Policy
 (see `scripts/csp_stamp.py`) and runs `--check` gates (the source being

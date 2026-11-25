@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "a39f103147d48282ca495b18e49900295011dadc575edda6e338b24b44bae06a",
+  "canonical_registry_sha256": "b9bb11ae770c6c001c188b94bb112f4a35c4f7edb1998bb2357ac146cf570f35",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1522,
-   "included": 1492,
+   "canonical": 1524,
+   "included": 1494,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -1160,9 +1160,9 @@
   {
    "added": "2026-11-04",
    "file": "scripts/build-pages.py",
-   "fix": "The build ASSERTS the committed source is exactly what parts/ assembles to (Beta 1.94, F-02) \u2014 edit the part and re-assemble; a hand-edited assembled file is how parts and page silently diverge.",
+   "fix": "The build ASSERTS the committed source is exactly what parts/ assembles to (Beta 1.94, F-02) \u2014 edit the part and re-assemble; a hand-edited assembled file is how parts and page silently diverge. [Re-pinned 2026-11-24, machinery gate round: build-pages.py now builds the bundle from parts/ in memory, so divergence is structural, and --check still proves committed index.html byte-equals the fresh build.]",
    "id": "beta-parts-assembly-gate",
-   "pattern": "assert assemble.build() == src_text.encode('utf-8')",
+   "pattern": "src_text = assemble.build().decode('utf-8')",
    "type": "grep_present"
   },
   {
@@ -1503,8 +1503,8 @@
   },
   {
    "added": "2026-11-04",
-   "file": "src/tracker-source.html",
-   "fix": "Phase 3 retired saveQuiet from the ASSEMBLED page (the app4 part's seat moved here at the 1.134 split; apply_split retargeted this probe): grep the built source, not a part, or the split hides a regression.",
+   "file": "index.html",
+   "fix": "Phase 3 retired saveQuiet from the ASSEMBLED page (the app4 part's seat moved here at the 1.134 split; apply_split retargeted this probe): grep the built source, not a part, or the split hides a regression. [Re-pinned 2026-11-24, machinery gate round: src/tracker-source.html is generated and untracked; index.html is the tracked shipped assembled output and carries the same bundle.]",
    "id": "phase3-no-savequiet-app4",
    "pattern": "saveQuiet",
    "type": "grep_absent"
@@ -8296,8 +8296,8 @@
   },
   {
    "added": "2026-11-16",
-   "file": "src/tracker-source.html",
-   "fix": "B-05 closure (PR #92, merge 932cfd5b; rollback: revert the merge -> Beta 1.215 at c2c5ce75 exactly). LEFTSIDE in parts/engine.js was written-never-read dead state (Graphify audit round 2026-11-14; Andrew approved removal; whole-repo census: declaration + two write sites + comment mentions, zero reads). The removal deletes the declaration share, both writes and the comment mentions; LEFTBIT - a different, live variable - keeps its declaration, write and read verbatim (its read sits in the block the LEFTSIDE assignment left; that block's other lines are byte-identical by design). Proof tests/proof/proof-leftside-removal-b05.mjs: LEFTSIDE absent from engine + both assembled outputs, LEFTBIT pinned verbatim, and canonical sha256 hashes of all eleven paint sources in two board states identical to the unmodified engine (state A 9000324c..., state B 4dbea0ea...). Gate PR #92: all four contexts SUCCESS, checks run 43888637804 conclusion success; merged tree == tested tree (266 blobs, 0 differing); live page byte-identical (sha256 3d5a15df...), #ver Beta 1.215, no LEFTSIDE. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: LEFTBIT is restored with the titles; the assembled source carries it again)",
+   "file": "index.html",
+   "fix": "[Re-pinned 2026-11-24, machinery gate round: src/tracker-source.html is generated and untracked; index.html is the tracked shipped assembled output and carries the same bundle.] B-05 closure (PR #92, merge 932cfd5b; rollback: revert the merge -> Beta 1.215 at c2c5ce75 exactly). LEFTSIDE in parts/engine.js was written-never-read dead state (Graphify audit round 2026-11-14; Andrew approved removal; whole-repo census: declaration + two write sites + comment mentions, zero reads). The removal deletes the declaration share, both writes and the comment mentions; LEFTBIT - a different, live variable - keeps its declaration, write and read verbatim (its read sits in the block the LEFTSIDE assignment left; that block's other lines are byte-identical by design). Proof tests/proof/proof-leftside-removal-b05.mjs: LEFTSIDE absent from engine + both assembled outputs, LEFTBIT pinned verbatim, and canonical sha256 hashes of all eleven paint sources in two board states identical to the unmodified engine (state A 9000324c..., state B 4dbea0ea...). Gate PR #92: all four contexts SUCCESS, checks run 43888637804 conclusion success; merged tree == tested tree (266 blobs, 0 differing); live page byte-identical (sha256 3d5a15df...), #ver Beta 1.215, no LEFTSIDE. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: LEFTBIT is restored with the titles; the assembled source carries it again)",
    "fix_id": "leftside-removal-b05",
    "id": "leftside-removal-b05-leftbit-absent-src",
    "pattern": "LEFTBIT",
@@ -13283,6 +13283,24 @@
    "fix_id": "label-handover-1294",
    "id": "labelhandover1294-spacing-250",
    "pattern": "setL(L.id, 'symbol-spacing', 250);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": ".gitignore",
+   "fix": "Machinery gate round (queue 7a, Phase 3): src/tracker-source.html is generated and untracked - the .gitignore entry is the mechanical mark; build-pages.py builds from parts/ in memory and CI generates the file before the test jobs.",
+   "fix_id": "machinery-gate-phase3",
+   "id": "machinery-gate-source-untracked",
+   "pattern": "src/tracker-source.html",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-24",
+   "file": "scripts/push.py",
+   "fix": "Machinery gate round (queue 7a, Phase 3): a parts/ push requires only index.html as its derived artifact; the assembled source is generated and refused as a push entry.",
+   "fix_id": "machinery-gate-phase3",
+   "id": "machinery-gate-push-derived",
+   "pattern": "DERIVED_FOR_PARTS = [\"index.html\"]",
    "type": "grep_present"
   }
  ]

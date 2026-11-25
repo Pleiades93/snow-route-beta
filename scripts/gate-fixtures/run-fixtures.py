@@ -209,6 +209,14 @@ with tempfile.TemporaryDirectory() as td:
                    ["./parts/app3.js"]), 1)
     check("push: a ./-spelled basename is refused like the plain basename",
           run_push(push_tree(t / "dotbase", files=["parts/app3.js"]), ["./app3.js"]), 1)
+    gensrc = push_tree(t / "gensrc", files=["src/tracker-source.html",
+                                            "index.html",
+                                            "scripts/build-pages.py"])
+    w(gensrc / "scripts/build-pages.py", "import sys; sys.exit(0)\n")
+    check("push: the generated assembled source is refused as an entry",
+          run_push(gensrc, ["src/tracker-source.html", "index.html"]), 1)
+    check("push: the same tree without the generated source passes plan",
+          run_push(gensrc, ["index.html"]), 0)
 
 # Push-mode judging (freshness, prospective tree, blob verification)
 # runs against a MOCK helper: a module whose api() serves a canned
@@ -323,19 +331,19 @@ with tempfile.TemporaryDirectory() as td:
     stale = push_tree2(t / "stale", parts={"a.js": "A2", "b.js": "B"}, changelog="## Beta 1.0\n",
                        tracker="AB", index="shell Beta 1.0 AB")
     check("push plan: a parts push whose derived artifacts are stale is refused (freshness)",
-          run_push(t / "stale", ["parts/a.js", "src/tracker-source.html", "index.html"]), 1)
+          run_push(t / "stale", ["parts/a.js", "index.html"]), 1)
     fresh = push_tree2(t / "fresh", parts={"a.js": "A2", "b.js": "B"}, changelog="## Beta 1.0\n",
                        tracker="A2B", index="shell Beta 1.0 A2B")
     check("push plan: a parts push with fresh derived artifacts passes",
-          run_push(t / "fresh", ["parts/a.js", "src/tracker-source.html", "index.html"]), 0)
+          run_push(t / "fresh", ["parts/a.js", "index.html"]), 0)
     omit = push_tree2(t / "omit", parts={"a.js": "A2", "b.js": "B2"}, changelog="## Beta 1.0\n",
                       tracker="A2B2", index="shell Beta 1.0 A2B2",
                       branch_parts={"a.js": "A", "b.js": "B"})
     check("push: omitting a differing assembly input is refused (prospective tree)",
-          run_push(t / "omit", ["parts/a.js", "src/tracker-source.html", "index.html"],
+          run_push(t / "omit", ["parts/a.js", "index.html"],
                    mode="push", env_extra=omit), 1)
     check("push: the full differing set pushes and verifies against the mock branch",
-          run_push(t / "omit", ["parts/a.js", "parts/b.js", "src/tracker-source.html", "index.html"],
+          run_push(t / "omit", ["parts/a.js", "parts/b.js", "index.html"],
                    mode="push", env_extra=omit), 0)
     bump = push_tree2(t / "bump", parts={"a.js": "A", "b.js": "B"}, changelog="## Beta 2.0\n",
                       tracker="AB", index="shell Beta 1.0 AB")
@@ -627,22 +635,21 @@ with tempfile.TemporaryDirectory() as td:
     w(t / "nocensus" / "scripts" / "check-receipts.py",
       (ROOT / "scripts" / "check-receipts.py").read_text())
     check("push: a parts change with no sibling census is refused (census gate)",
-          run_push(t / "nocensus", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
-                                    "index.html"],
+          run_push(t / "nocensus", ["parts/a.js", "parts/b.js", "index.html"],
                    mode="push", env_extra=no_census), 1)
     full = census_tree("censusok")
     check("push: a parts change with a current, fully-marked census pushes",
-          run_push(t / "censusok", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+          run_push(t / "censusok", ["parts/a.js", "parts/b.js",
                                     "index.html", "tests/sibling-census.json"],
                    mode="push", env_extra=full), 0)
     omitted = census_tree("censusomit", omit_door=True)
     check("push: a hand-typed census omitting a derived door row is refused (re-derivation)",
-          run_push(t / "censusomit", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+          run_push(t / "censusomit", ["parts/a.js", "parts/b.js",
                                       "index.html", "tests/sibling-census.json"],
                    mode="push", env_extra=omitted), 1)
     unmarked = census_tree("censusunmarked", leave_unmarked=True)
     check("push: a census leaving a derived row unmarked is refused",
-          run_push(t / "censusunmarked", ["parts/a.js", "parts/b.js", "src/tracker-source.html",
+          run_push(t / "censusunmarked", ["parts/a.js", "parts/b.js",
                                           "index.html", "tests/sibling-census.json"],
                    mode="push", env_extra=unmarked), 1)
     # Machinery-only: local parts identical to the branch's (no

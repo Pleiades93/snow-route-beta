@@ -24,7 +24,8 @@ the standing scripts themselves — `scripts/release.py`,
 `scripts/assemble.py`, `scripts/build-pages.py` — so the operation
 cannot drift from them; run one individually only to debug it.
 
-The generated files are never hand-edited: `src/tracker-source.html`,
+The generated files are never hand-edited: `src/tracker-source.html`
+(generated and untracked since the machinery gate round, 2026-11-24),
 `index.html` and the root `sw.js` are outputs. Edit the part (or
 `src/sw.js`) and re-run the operation.
 

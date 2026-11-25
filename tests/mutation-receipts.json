@@ -10957,6 +10957,32 @@
    "red": "e2e-offline on base app code with the final test file (41/47): E26 setup cen null; E26a re-weighs all 892 entries (blobs 892, no recognition); E26b2/E26c2 fail identically; E26d fails through the real boot path (healed false, flag null - the caller guard means the boot never migrates a recordless pack). Earlier pair on the pre-review test file: RED twice (42/47, 41/47), GREEN 46/47",
    "green": "e2e-offline on the final fixed tree: 46/47 with every E26 check passing, E26d now grading the boot path itself (recordless pack, page reload, boot migration heals the gap and earns the flag). The sole local failure, E19 flag null, also fails on the unmodified base tree locally (four mutation runs) - a local verify race; CI passed E19 on this PR's first head",
    "issued": "2026-11-24 spinout-partial-pack-r2"
+  },
+  {
+   "id": "machinery-gate-push-judges-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "ec1f83a705951c146d52209aa6fa2cf37dcb302bf2d98c6b5e33fd005cf06cfd",
+    "scripts/push.py": "a5d14ba7cecdd9dc30bf19a3a30243a1947e622cd77d2955de2dc8901b75516b"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled (GENERATED_NEVER_PUSHED guard neutered)",
+   "red": "gate fixtures 78 pass / 1 fail, twice: 'push: the generated assembled source is refused as an entry' got exit 0, want 1",
+   "green": "gate fixtures all pass on the restored tree (84 PASS lines, 0 FAIL)",
+   "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-ci-wiring-r1",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "ec1f83a705951c146d52209aa6fa2cf37dcb302bf2d98c6b5e33fd005cf06cfd",
+    ".github/workflows/checks.yml": "406a313f07dfbcae5e7fa2e44ce5576980b2c37a3f57e0dc724802b0c60db110"
+   },
+   "mutation": "checks.yml Receipts gate step's command replaced with a no-op (true)",
+   "red": "gate fixtures 78 pass / 1 fail, twice: 'ci wiring: the Receipts step refuses a changed check with no mutation receipt' got exit 0, want 1; independently, removing the selftest-whatsnew step failed check-mirrors wiring, twice",
+   "green": "gate fixtures all pass and check-mirrors PASS on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
   }
  ]
 }

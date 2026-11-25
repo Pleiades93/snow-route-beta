@@ -5,9 +5,12 @@ The canonical app source is parts/ - seventeen files, concatenated in a
 fixed order into src/tracker-source.html, which scripts/build-pages.py then
 stamps (CSP) and publishes as index.html. tracker-source.html is a
 GENERATED file: never hand-edit it; edit the part and re-run this script.
+It is not tracked in git (machinery gate round, 2026-11-24): it is
+generated locally and in CI, and build-pages.py builds from parts/ in
+memory, so nothing downstream reads the tracked copy any more.
 
     python3 scripts/assemble.py            # write src/tracker-source.html
-    python3 scripts/assemble.py --check    # fail if src/ is not what parts/ builds
+    python3 scripts/assemble.py --check    # fail if the generated copy is stale
 
 Recipe (byte-exact, the standing assembly since Beta 1.0's first build):
 head.html, then '<script>', then data.js, app1.js, engine.js, pmstyles.js,
@@ -145,10 +148,23 @@ def main() -> int:
     data = build()
     digest = hashlib.sha256(data).hexdigest()
     if "--check" in sys.argv:
-        if not OUT.is_file() or OUT.read_bytes() != data:
-            print("assemble --check: FAIL - src/tracker-source.html is not "
-                  "what parts/ assembles to (edit parts/, not the output)")
-            return 1
+        # The fresh build goes to a temp file; the on-disk generated
+        # copy must equal it (the copy itself is untracked).
+        import tempfile
+        fd, tmp = tempfile.mkstemp(dir=OUT.parent, suffix=".tmp")
+        try:
+            with open(fd, "wb") as fh:
+                fh.write(data)
+            if not OUT.is_file():
+                print("assemble --check: FAIL - src/tracker-source.html "
+                      "is not generated yet (run scripts/assemble.py)")
+                return 1
+            if pathlib.Path(tmp).read_bytes() != OUT.read_bytes():
+                print("assemble --check: FAIL - src/tracker-source.html is not "
+                      "what parts/ assembles to (edit parts/, not the output)")
+                return 1
+        finally:
+            pathlib.Path(tmp).unlink(missing_ok=True)
         print(f"assemble --check: OK ({len(data)} bytes, sha256 {digest[:12]}...)")
         return 0
     OUT.write_bytes(data)

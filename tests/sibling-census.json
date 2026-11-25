@@ -12391,6 +12391,12 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-24 spinout-partial-pack-r2"
+  },
+  {
+   "id": "machinery-gate-round",
+   "kind": "machinery-exempt",
+   "reason": "Machinery gate round (queue 7a+7b + approval policy file): no parts/ surface changes; the round changes build/CI machinery, docs and the vendored registry only.",
+   "issued": "2026-11-24 machinery-gate"
   }
  ]
 }
