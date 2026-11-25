@@ -12538,6 +12538,21 @@
    "red": "scanner at ecb5b68c run on a scratch root whose proof-neg.mjs pins a.indexOf(\"foo.indexOf('bar')\") > a.indexOf('anchor') with 'anchor' absent, and b.includes('an') && b.indexOf('write();') > b.indexOf('an' + 'chor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings for either shape",
    "green": "fixed scanner flags both on the same scratch file (line 4 and line 5, needle 'anchor'); fixtures F25-F27 pin the shapes in-suite; full suite 119/119 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r10",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "97d1c524b44235fdc063f8286fce04045ecd2374c5a1253295884441cc425dfb",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's statement balancing and operand parsing ignore comment syntax, so a comment between ordering operands (carrying a parenthesis) truncates the statement and the pin is never analyzed",
+   "red": "scanner at 03623d59 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') /* ) */ > a.indexOf('anchor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixtures F28 (comment between operands) and F29 (comment-like text inside a string stays a string) pin the shapes in-suite; full suite 121/121 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

@@ -29,6 +29,8 @@ function checkStatements(text) {
         else if (c === '\\') esc = true;
         else if (c === instr) instr = null;
       } else if (c === "'" || c === '"' || c === '`') instr = c;
+      else if (c === '/' && text[j + 1] === '/') { while (j < text.length && text[j] !== '\n') j++; }
+      else if (c === '/' && text[j + 1] === '*') { const e = text.indexOf('*/', j + 2); j = e < 0 ? text.length : e + 1; }
       else if (c === '(') depth++;
       else if (c === ')') { depth--; if (!depth) break; }
     }
@@ -87,8 +89,21 @@ function scanText(text) {
     if (toks.length === 1) return [vals[0] === null ? toks[0] : vals[0], q];
     return [vals.every((v) => v !== null) ? vals.join('') : toks.join(' + '), q];
   };
+  const blankComments = (stmt) => {
+    const out = stmt.split('');
+    let instr = null, esc = false;
+    for (let k = 0; k < stmt.length; k++) {
+      const c = stmt[k];
+      if (instr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === instr) instr = null; continue; }
+      if (c === "'" || c === '"' || c === '`') { instr = c; continue; }
+      if (c === '/' && stmt[k + 1] === '/') { while (k < stmt.length && stmt[k] !== '\n') { out[k] = ' '; k++; } k--; continue; }
+      if (c === '/' && stmt[k + 1] === '*') { const e = stmt.indexOf('*/', k + 2); const end = e < 0 ? stmt.length : e + 2; for (; k < end; k++) if (stmt[k] !== '\n') out[k] = ' '; k--; continue; }
+    }
+    return out.join('');
+  };
   const findings = [];
-  for (const [off, stmt] of checkStatements(text)) {
+  for (const [off, rawStmt] of checkStatements(text)) {
+    const stmt = blankComments(rawStmt);
     const calls = [];
     const incNeedles = [];
     let i = 0, instr = null, esc = false;
@@ -191,6 +206,8 @@ const FIXTURES = [
   ['F25 indexOf text inside a needle is not an operand', `check('x', a.indexOf("foo.indexOf('bar')") > a.indexOf('anchor'));`, 1],
   ['F26 a concatenated needle resolves whole', `check('x', a.includes('an') && a.indexOf('write();') > a.indexOf('an' + 'chor'));`, 1],
   ['F27 a guard on the whole concatenated needle clears it', `check('x', a.includes('anchor') && a.indexOf('write();') > a.indexOf('an' + 'chor'));`, 0],
+  ['F28 a comment between operands does not hide the pin', `check('x', a.indexOf('write();') /* ) */ > a.indexOf('anchor'));`, 1],
+  ['F29 comment text inside a string is not a comment', `check('x // not a comment', a.indexOf('write();') > a.indexOf('anchor'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
