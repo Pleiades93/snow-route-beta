@@ -11022,6 +11022,19 @@
    "red": "gate fixtures 90 pass / 1 fail, twice: 'ci wiring: the Receipts step refuses a changed check with no mutation receipt' got exit 0, want 1",
    "green": "gate fixtures 91/91 and check-mirrors PASS on the restored tree",
    "issued": "2026-11-24 machinery-gate"
+  },
+  {
+   "id": "machinery-gate-push-judges-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "b184f00fe9f4ec70577c0c7adf3632d6d15a4250d7997be740c8d1adb78bd0bf",
+    "scripts/push.py": "a5d14ba7cecdd9dc30bf19a3a30243a1947e622cd77d2955de2dc8901b75516b"
+   },
+   "mutation": "push.py validate(): the generated-source refusal disabled (GENERATED_NEVER_PUSHED guard neutered), replayed on the final commit-2 fixture suite",
+   "red": "gate fixtures 90 pass / 1 fail, twice: 'push: the generated assembled source is refused as an entry' got exit 0, want 1",
+   "green": "gate fixtures 91/91 on the restored tree",
+   "issued": "2026-11-24 machinery-gate"
   }
  ]
 }
