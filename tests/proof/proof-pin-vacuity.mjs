@@ -113,7 +113,11 @@ function scanText(text) {
       toks.push(tk[0]);
       if (tk[0][0] === '`' && tk[0].includes('${')) { vals.push(null); expr = true; }
       else if (tk[0][0] === "'" || tk[0][0] === '"' || tk[0][0] === '`') vals.push(unquote(tk[0]));
-      else if (consts[tk[0]] !== undefined) vals.push(unquote(consts[tk[0]]));
+      else if (consts[tk[0]] !== undefined) {
+        const ct = consts[tk[0]];
+        if (ct[0] === '`' && ct.includes('${')) { vals.push(null); expr = true; }
+        else vals.push(unquote(ct));
+      }
       else vals.push(null);
       q += tk[0].length;
       let r = q;
@@ -247,6 +251,7 @@ const FIXTURES = [
   ['F35 a const inside another scope does not resolve', "function unused() { const needle = 'present'; }\ncheck('x', a.includes('present') && a.indexOf('write();') > a.indexOf(needle));", 1],
   ['F36 whitespace before the parenthesis keeps the operand', `check('x', a.indexOf('write();') > a.indexOf ('anchor'));`, 1],
   ['F37 a template-literal needle is an operand', "check('x', a.indexOf('write();') > a.indexOf(`anchor`));", 1],
+  ['F38 an interpolated const template stays unresolved', "const suffix = 'chor';\nconst needle = `an${suffix}`;\ncheck('x', a.includes('an${suffix}') && a.indexOf('write();') > a.indexOf(needle));", 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;

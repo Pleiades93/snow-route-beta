@@ -12643,6 +12643,21 @@
    "red": "scanner at 4ec644ac run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(anchor-as-template-literal) with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings (supersedes r15, whose red text lost the needle to shell quoting)",
    "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F37 pins the shape in-suite; full suite 129/129 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r17",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "48952853b27e91ef42e0504cbe37319fdee86bb73a7538867877a53006e3c489",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "a needle identifier resolving to an interpolated template literal is treated as the template's source spelling, bypassing the interpolation check applied to inline templates",
+   "red": "scanner at 3341ec8c run on a scratch root whose proof-neg.mjs resolves needle from const needle = an-plus-interpolated-suffix and pins it behind a matching includes guard: the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 5); fixture F38 pins the shape in-suite; full suite 130/130 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
