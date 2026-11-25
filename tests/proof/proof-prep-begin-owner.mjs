@@ -52,7 +52,7 @@ const line = (src, prefix) => (src.split('\n').find((l) => l.startsWith(prefix))
 // ---------- 1-3: the owner exists, holds the bundle once, and every door calls it ----------
 const beginFn = extractFn(fetchJs, 'function crPrepBegin()');
 check('1: crPrepBegin exists in create-fetch.js, beside the prep state record',
-  !!beginFn && fetchJs.indexOf('function crPrepBegin()') > fetchJs.indexOf('function crSetPrepState('));
+  !!beginFn && fetchJs.includes('function crSetPrepState(') && fetchJs.indexOf('function crPrepBegin()') > fetchJs.indexOf('function crSetPrepState('));
 const BUNDLE = "crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null;";
 check('2: the begin body is exactly the historical bundle (setter + the three clears)',
   beginFn.includes(BUNDLE));

@@ -46,7 +46,7 @@ function extractFn(src, header) {
 // ---------- 1-3: the owner exists, the ritual survives once, every seat calls it ----------
 const ownerFn = extractFn(pick, 'function crResetCitySearch()');
 check('1a: crResetCitySearch exists in create-pick.js, beside the city-search state it closes',
-  !!ownerFn && pick.indexOf('function crResetCitySearch()') > pick.indexOf('let crCityTimer = null, crCitySeq = 0, crCityCtl = null;'));
+  !!ownerFn && pick.includes('let crCityTimer = null, crCitySeq = 0, crCityCtl = null;') && pick.indexOf('function crResetCitySearch()') > pick.indexOf('let crCityTimer = null, crCitySeq = 0, crCityCtl = null;'));
 check('1b: the owner body is the historical ritual (sequence bump, abort + handle drop, debounce clear)',
   ownerFn.includes('crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }')
   && ownerFn.includes('if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }'));

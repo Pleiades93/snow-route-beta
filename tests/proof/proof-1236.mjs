@@ -74,7 +74,9 @@ check('B2: the old run-to-the-foot cap is gone', !head.includes('max-height: cal
 // ---------- C: the synced populate ----------
 check('C1: the card landing exists - 160ms, fade plus a 4px settle, on the class the renderer hangs', head.includes('@keyframes crCardIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }') && head.includes('#createResults.crCardIn { animation: crCardIn 160ms ease-out; }'));
 check('C2: the card landing rests under reduced motion', head.includes('#createResults.crCardIn { animation: none; }'));
-check('C3: the renderer hangs the card landing on fresh populates only, restarted through a reflow after the rows seat', renderBody.includes("if (fresh) { box.classList.remove('crCardIn'); void box.offsetWidth; box.classList.add('crCardIn'); }") && renderBody.indexOf("box.classList.add('crCardIn')") > renderBody.indexOf('place(st.el);'));
+check('C3: the renderer hangs the card landing on fresh populates only, restarted through a reflow after the rows seat',
+  renderBody.includes("if (fresh) { box.classList.remove('crCardIn'); void box.offsetWidth; box.classList.add('crCardIn'); }") && renderBody.includes('place(st.el);') &&
+  renderBody.indexOf("box.classList.add('crCardIn')") > renderBody.indexOf('place(st.el);'));
 check('C4: the stagger gate - only the first 8 rows by list position take an entrance, at 30ms steps', renderBody.includes("if (ei < 8) { el.classList.add('crRowIn'); el.style.animationDelay = (ei * 30) + 'ms'; }") && renderBody.includes("if (ei < 8) { st.el.classList.add('crRowIn'); st.el.style.animationDelay = (ei * 30) + 'ms'; }"));
 check('C5: the old all-rows stagger is gone (no 55ms fresh step, no entering-order counter)', !pick.includes('const stagger = fresh ? 55 : 30;') && !pick.includes('enterIdx'));
 check('C6: a fresh survivor past the eighth has its stale entrance stripped, so it rests present', renderBody.includes("else { st.el.classList.remove('crRowIn'); st.el.style.animationDelay = ''; }"));
@@ -87,7 +89,9 @@ check('D2: the hint wordings keep their text (only the placeholder changed)', pi
 
 // ---------- E: the search text dies with the session ----------
 check('E1: exitCreate clears the street search field and syncs the clear disc, inside the teardown (Beta 1.262: through the POI teardown crIsectClear, which owns the emptying literal)', exitBody.includes('crIsectClear();') && pick.slice(pick.indexOf('function crIsectClear()'), pick.indexOf("$('crClear').addEventListener")).includes("$('crSearchInput').value = ''; crSyncClear();"));
-check('E2: the clear sits with the search teardown (after the sequence bump, before the chrome closes)', exitBody.indexOf('crIsectClear();') > exitBody.indexOf('crSearchSeq++;') && exitBody.indexOf('crIsectClear();') < exitBody.indexOf("document.body.classList.remove('creating');"));
+check('E2: the clear sits with the search teardown (after the search close, before the chrome closes; premise update: the sequence bump moved into crResetSearch at the Arch-3 owner split)',
+  exitBody.includes('crResetSearch();') && exitBody.indexOf('crResetSearch();') < exitBody.indexOf('crIsectClear();') &&
+  exitBody.indexOf('crIsectClear();') < exitBody.indexOf("document.body.classList.remove('creating');"));
 check('E3: the clear-disc path (Beta 1.243, Arch-3: the search close runs through its one owner crResetSearch - the disc still empties the field and refocuses; Beta 1.262: the emptying runs through crIsectClear, the focus still follows it)', pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 900).includes('crResetSearch();') && pick.slice(pick.indexOf("$('crClear').addEventListener('click'"), pick.indexOf("$('crClear').addEventListener('click'") + 900).includes('crIsectClear();') && pick.indexOf("$('crSearchInput').focus();", pick.indexOf("$('crClear').addEventListener('click'")) > pick.indexOf('crIsectClear();', pick.indexOf("$('crClear').addEventListener('click'")));
 
 

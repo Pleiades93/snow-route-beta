@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "844a6cef90e67a7c2898e9c7066cd03d192cce8642c6926f60afbe03739b403f",
+  "canonical_registry_sha256": "919a41a3e061abc8238a88e73e48ff5f454ee0283d35521c43d4183596a92ef8",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1538,
-   "included": 1508,
+   "canonical": 1539,
+   "included": 1509,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13427,6 +13427,15 @@
    "fix_id": "glyph-extraction-phase5",
    "id": "glyph-assets-tokens-in-app4",
    "pattern": "@@GLYPH:icons-gps-d@@",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/proof/proof-pin-vacuity.mjs",
+   "fix": "/correct block 5 (test suite only): an indexOf ordering pin passes vacuously when its anchor needle is absent (indexOf -1) - proof-1263's anchor drifted exactly this way and two more live pins (proof-1233 B2b, proof-1236 E2) were found already vacuous. proof-pin-vacuity scans every live proof and fails on any unguarded ordering pin; the exposed needle must carry a presence guard in the same check. If this probe fails, the scanner proof was removed - restore it; the class returns silently without it.",
+   "fix_id": "correct-pin-vacuity",
+   "id": "correct-pin-vacuity-scanner",
+   "pattern": "no unguarded ordering pin in ",
    "type": "grep_present"
   }
  ]
