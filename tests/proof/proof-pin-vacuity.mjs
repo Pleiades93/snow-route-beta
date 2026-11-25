@@ -85,11 +85,11 @@ function scanText(text) {
       if (op === '<' || op === '<=') {
         if (!vacuous.has(calls[k][2])) vacuous.set(calls[k][2], new Set());
         vacuous.get(calls[k][2]).add(op);
-        safe.add(calls[k + 1][2]);
+        if (op === '<') safe.add(calls[k + 1][2]);
       } else {
         if (!vacuous.has(calls[k + 1][2])) vacuous.set(calls[k + 1][2], new Set());
         vacuous.get(calls[k + 1][2]).add(op);
-        safe.add(calls[k][2]);
+        if (op === '>') safe.add(calls[k][2]);
       }
     }
     for (const [needle, ops] of vacuous) {
@@ -115,6 +115,8 @@ const FIXTURES = [
   ['F10 a const needle unguarded is flagged', `const CLIP = 'clip guard';\ncheck('x', a.indexOf('boundary') > a.indexOf(CLIP));`, 1],
   ['F11 a negated includes is not a guard', `check('x', !a.includes('clip guard') || a.indexOf('clip guard') < a.indexOf('boundary'));`, 1],
   ['F12 an inverted includes is not a guard', `check('x', a.includes('clip guard') === false || a.indexOf('clip guard') < a.indexOf('boundary'));`, 1],
+  ['F13 mutual non-strict pins share no safe side', `check('x', a.indexOf('left') <= a.indexOf('right') && a.indexOf('right') <= a.indexOf('left'));`, 2],
+  ['F14 mutual strict pins guard each other', `check('x', a.indexOf('left') < a.indexOf('right') && a.indexOf('right') < a.indexOf('left'));`, 0],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;

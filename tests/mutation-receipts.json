@@ -12397,6 +12397,20 @@
    "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
    "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r3",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "1131237a6b3b2d0f2698c100e7d2e167661bee765b62c294937a2bcd95c2a014",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner populates the safe-side set from non-strict (<=, >=) comparisons too, so two absent needles in a mutual non-strict pair exempt each other (-1 <= -1 is true)",
+   "red": "scanner at 0382ab44 run on a scratch root whose proof-neg.mjs checks a.indexOf('left') <= a.indexOf('right') && a.indexOf('right') <= a.indexOf('left') against a = 'write();' (both needles absent): the scan check for proof-neg.mjs PASSED - no findings, the vacuous pair was certified",
+   "green": "fixed scanner flags both needles on the same scratch file (line 3, ops <=, needles 'left' and 'right'); fixtures F13 (mutual non-strict flagged x2) and F14 (mutual strict still guards) pin the correction in-suite; full suite 106/106 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
