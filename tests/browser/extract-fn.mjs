@@ -1,6 +1,5 @@
-// Balanced-brace function extraction from source text: the one owner
-// (fix_id: correct-extract-owner). Selftests lift shipped functions out
-// of the parts with this; a local copy is a second place to drift.
+// extract-fn.mjs - the one balanced-brace extractor (fix_id: correct-extract-owner).
+// Share it so selftests cannot drift apart.
 export function extractFn(src, sig) {
   const i = src.indexOf(sig);
   if (i < 0) throw new Error('extract-fn: extraction failed: ' + sig + ' not found');

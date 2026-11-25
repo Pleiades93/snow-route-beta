@@ -12242,6 +12242,161 @@
    "red": "branch scanner at 980fabc3 run on a scratch root whose proof-neg.mjs pins S.indexOf('a()') < S.indexOf('b()') behind !S.includes('a()') || and behind S.includes('a()') === false ||: the scan check for proof-neg.mjs PASSED - both vacuous pins unflagged (only the scratch suite-size check failed)",
    "green": "fixed scanner on the same scratch root flags both pins (line 3 negated, line 4 inverted, needle 'a()'); fixture table F11/F12 pin the shapes in-suite; full suite 104/104 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-owner-r2",
+   "check": "tests/browser/extract-fn.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-pack-expect-r2",
+   "check": "tests/browser/pack-expect.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/pack-expect.mjs": "7a3352817a41319032aca04630fc6a4a0a3325a75bae80253fc95d4696aa75f6",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-judging-fixtures-r2",
+   "check": "tests/browser/selftest-judging-fixtures.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-judging-fixtures.mjs": "fed69b0357d3c195319254cf999a16a680dee5785fbfd7a6d94b45ac523cc71e",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-trail-segments-r2",
+   "check": "tests/browser/selftest-trail-segments.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-trail-segments.mjs": "8f910133fb0c48d0af47ebfc8786c1c57dd53a77dda96061a9a937038a9ccfcd",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-nv1152-r2",
+   "check": "tests/browser/selftest-nv1152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-nv1152.mjs": "145689b456d29d9f4dee114b298d518862bf73583366d238e0765f3fad47c983",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-packfields-r2",
+   "check": "tests/browser/selftest-packfields.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-packfields.mjs": "3227e072516727c0f0c715f006d42b9394b4089e4730676347aa2c8e52329c97",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-history-r2",
+   "check": "tests/browser/selftest-history.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-history.mjs": "20da853f91313e2604ad2973bc31a8e01e168832fd16477a98aee21832ae9ee9",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-board-r2",
+   "check": "tests/browser/selftest-board.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-board.mjs": "754500c9b484fefcca29b21b8b2177794a731636e8fee8085d6799f4090964e0",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-gps-package-r2",
+   "check": "tests/browser/selftest-gps-package.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-gps-package.mjs": "f6caf0beb43d4921704728701681782a9dde7aa8676574dc1d05427fabadd47f",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-tx-r3",
+   "check": "tests/browser/selftest-tx.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-tx.mjs": "34875b9d652e63ebeb617d6e1af7cd41982152199a05013c8a8dbcc8bf8c7b5e",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-pr23-fixes-r3",
+   "check": "tests/browser/selftest-pr23-fixes.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-pr23-fixes.mjs": "12807eb31a293b043b7af7a01a2222cd51f34313c1ada536b3aa6e17821e79f8",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-extract-store-result-r3",
+   "check": "tests/browser/selftest-store-result.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-store-result.mjs": "dfb50b63763cf109997483b1a7f835e68f899ebaed9d9b80afa2653809f68dc4",
+    "tests/browser/extract-fn.mjs": "50c2c8e5b465720f17b539c8570373a6d81f702b1508387b9d0c66ae5994f5e2"
+   },
+   "mutation": "tests/browser/extract-fn.mjs neutered: the balanced-brace return drops the closing brace (slice(i, j) instead of slice(i, j + 1)) - every extraction through the one owner comes back unbalanced",
+   "red": "fresh replay after the header-only edit (Codex P1 fix on PR #215): with the owner neutered, all 10 selftest consumers failed and pack-expect failed to load - 11 of 11 consumers down",
+   "green": "owner restored byte-exact: all 10 selftest consumers pass and pack-expect loads (PACK_COUNT = 1)",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
