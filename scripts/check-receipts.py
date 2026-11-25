@@ -45,10 +45,22 @@ Usage:
   python3 scripts/check-receipts.py issue <root> --id ID --check PATH
       --kind mutation|historical|rendered --mutation TEXT --red TEXT
       --green TEXT --file PATH [--file PATH...]
+      [--span PATH START-LINE END-LINE ...]
       Append a receipt, pinning the named files' sha256 from the
       tree. Run this AFTER the mutation has actually been observed
       failing and the clean check passing - the texts are the
       record of that observation, not a substitute for it.
+
+A pin is either a whole-file sha256 (a bare string, the original
+form) or a claim span: {"span": [START-LINE, END-LINE], "sha256":
+HEX} pinning only the region from the START-LINE through the
+END-LINE (each an exact full line occurring exactly once in the
+file, inclusive). An edit outside a span leaves the receipt
+CURRENT; an edit inside it goes STALE; a marker that is missing,
+duplicated or out of order is BROKEN - the gate refuses all three
+non-CURRENT states for a changed path, exactly as before (7c:
+whole-file pins on shared files went stale on any edit, and the
+re-issue churn buried the receipts' meaning).
 """
 import argparse
 import fnmatch
@@ -128,6 +140,64 @@ def load_receipts(root):
     return data["receipts"], None
 
 
+def _is_sha256(value):
+    return (isinstance(value, str) and len(value) == 64
+            and all(c in "0123456789abcdef" for c in value))
+
+
+def pin_problems(pin):
+    """A pin is a whole-file sha256 string or a claim-span object
+    {"span": [start, end], "sha256": hex}. Anything else is not a
+    pin the gate can judge."""
+    if _is_sha256(pin):
+        return []
+    if isinstance(pin, dict):
+        problems = []
+        span = pin.get("span")
+        if (not isinstance(span, list) or len(span) != 2
+                or not all(isinstance(s, str) and s.strip() for s in span)):
+            problems.append("'span' must be [start-line, end-line]")
+        if not _is_sha256(pin.get("sha256")):
+            problems.append("a span pin's 'sha256' must be a sha256 hex string")
+        if set(pin.keys()) - {"span", "sha256"}:
+            problems.append("a span pin carries only 'span' and 'sha256'")
+        return problems
+    return ["a pin must be a sha256 string or a span object"]
+
+
+def span_region(content, start_marker, end_marker):
+    """The bytes from the start-marker line through the end-marker
+    line, inclusive - or None when either marker does not occur
+    exactly once as a full line, or they are out of order."""
+    lines = content.split(b"\n")
+    starts = [i for i, ln in enumerate(lines)
+              if ln.decode("utf-8", "replace") == start_marker]
+    ends = [i for i, ln in enumerate(lines)
+            if ln.decode("utf-8", "replace") == end_marker]
+    if len(starts) != 1 or len(ends) != 1 or starts[0] > ends[0]:
+        return None
+    region = b"\n".join(lines[starts[0]:ends[0] + 1])
+    if ends[0] < len(lines) - 1:
+        region += b"\n"
+    return region
+
+
+def pin_state(root, rel, pin):
+    """One pinned file's state under one pin: CURRENT, STALE (the
+    pinned content moved) or BROKEN (the file or its span markers
+    are gone or ambiguous)."""
+    p = Path(root) / rel
+    if not p.is_file():
+        return "BROKEN"
+    if isinstance(pin, str):
+        return "CURRENT" if sha256_file(p) == pin else "STALE"
+    region = span_region(p.read_bytes(), pin["span"][0], pin["span"][1])
+    if region is None:
+        return "BROKEN"
+    digest = hashlib.sha256(region).hexdigest()
+    return "CURRENT" if digest == pin["sha256"] else "STALE"
+
+
 def receipt_problems(receipt):
     """Field-level validity of a receipt record. A receipt is the
     record of an observation: the evidence fields (the named check,
@@ -149,9 +219,13 @@ def receipt_problems(receipt):
         problems.append(f"'kind' must be one of {', '.join(KINDS)}")
     files = receipt.get("files")
     if not isinstance(files, dict) or not files:
-        problems.append("'files' must be a non-empty map of path -> sha256")
-    elif receipt.get("check") not in files:
-        problems.append("the named check is not among the pinned files")
+        problems.append("'files' must be a non-empty map of path -> pin")
+    else:
+        for rel, pin in files.items():
+            for problem in pin_problems(pin):
+                problems.append(f"pin for {rel}: {problem}")
+        if receipt.get("check") not in files:
+            problems.append("the named check is not among the pinned files")
     return problems
 
 
@@ -161,13 +235,12 @@ def receipt_state(root, receipt):
     INVALID (the record itself is incomplete - it covers nothing)."""
     if receipt_problems(receipt):
         return "INVALID"
-    files = receipt.get("files")
-    for rel, want in files.items():
-        p = Path(root) / rel
-        if not p.is_file():
-            return "BROKEN"
-        if sha256_file(p) != want:
-            return "STALE"
+    states = [pin_state(root, rel, pin)
+              for rel, pin in receipt.get("files").items()]
+    if "BROKEN" in states:
+        return "BROKEN"
+    if "STALE" in states:
+        return "STALE"
     return "CURRENT"
 
 
@@ -218,15 +291,22 @@ def cmd_verify(root):
         print("RECEIPTS: none recorded")
         return 0
     bad = 0
+    whole = spans = 0
     for r in receipts:
         state = receipt_state(root, r)
         if state in ("BROKEN", "INVALID"):
             bad += 1
+        for pin in r.get("files", {}).values():
+            if isinstance(pin, dict):
+                spans += 1
+            else:
+                whole += 1
         print(f"{state}: {r.get('id', '?')} (check {r.get('check', '?')}, "
               f"kind {r.get('kind', '?')}, {len(r.get('files', {}))} file(s) pinned)")
         if state == "INVALID":
             for problem in receipt_problems(r):
                 print(f"    invalid: {problem}")
+    print(f"RECEIPTS: pins - {whole} whole-file, {spans} claim-span")
     if bad:
         print(f"RECEIPTS: {bad} broken or invalid receipt(s)")
         return 1
@@ -266,6 +346,18 @@ def cmd_issue(root, args):
             print(f"ISSUE REFUSED: {rel} is not a file in the tree")
             return 1
         files[rel] = sha256_file(p)
+    for rel, start, end in (args.span or []):
+        p = Path(root) / rel
+        if not p.is_file():
+            print(f"ISSUE REFUSED: {rel} is not a file in the tree")
+            return 1
+        region = span_region(p.read_bytes(), start, end)
+        if region is None:
+            print(f"ISSUE REFUSED: the span markers for {rel} must each "
+                  "occur exactly once as a full line, in order")
+            return 1
+        files[rel] = {"span": [start, end],
+                      "sha256": hashlib.sha256(region).hexdigest()}
     if args.check not in files:
         print(f"ISSUE REFUSED: the check itself ({args.check}) must be one of "
               "the pinned --file paths - a receipt pins what its evidence "
@@ -305,7 +397,11 @@ def main():
     pi.add_argument("--green", required=True)
     pi.add_argument("--issued", required=True,
                     help="the round/date the observation was made, e.g. 2026-11-21 correct-phase3b")
-    pi.add_argument("--file", action="append", required=True)
+    pi.add_argument("--file", action="append", default=[])
+    pi.add_argument("--span", action="append", nargs=3, default=[],
+                    metavar=("PATH", "START", "END"),
+                    help="pin only the claim region of PATH between the "
+                         "two exact marker lines")
     args = ap.parse_args()
     root = args.root.resolve()
     if args.mode == "verify":
