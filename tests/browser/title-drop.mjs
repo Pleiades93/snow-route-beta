@@ -21,13 +21,8 @@
 // sampler records one sample every 50 ms). Returns the phase report
 // drive216 grades: { samples, before, after, dropped }.
 //
-// A sample may instead be { t: [names], ok: bool } - the sampler's
-// style-loaded flag (7c, from the 1.293 P6 investigation: a setStyle
-// rebuild blanks the whole map, titles included, and that blackout is
-// no evidence about the title system). Unloaded samples leave the
-// judged stream entirely: they neither convict nor acquit, and the
-// before/after ends are the first and last LOADED samples. The report
-// gains `loaded`, the judged stream's length.
+// Samples may be { t: [names], ok: bool }: unloaded samples leave
+// the judged stream - a style blackout is not title evidence.
 export const DROP_RUN = 3;
 
 export function judgeTitleDrops(win) {
