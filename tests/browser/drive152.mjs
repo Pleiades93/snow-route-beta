@@ -200,7 +200,9 @@ const installStubJ = `(() => {
   };
   return true;
 })()`;
-const jWipe = async () => { await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache'); rq.onsuccess = () => res(); rq.onerror = () => res(); } catch (e) { res(); } }); return true; })()`); }; // no onblocked resolve (7c): a blocked delete left the cache alive and K2's grid came back fromCache, refusal unlanded
+// No onblocked resolve (7c): a blocked delete left the cache alive and K2's grid came back fromCache, refusal unlanded.
+const jWipe = async () => { await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache');
+  rq.onsuccess = () => res(); rq.onerror = () => res(); } catch (e) { res(); } }); return true; })()`); };
 const jEnter = async () => { await jWipe(); await ev(`openRouteMenu()`); await ev(`document.getElementById('rmCreate').click()`); await ev(`document.getElementById('crDoorManual').click()`); await pickCityVaughan(); };
 const jExitDiscard = async () => { await ev(`document.getElementById('crExit').click()`); await sleep(400); await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`); await sleep(400); };
 const geoCount = async () => await ev(`(window.__geoLog || []).length`);
@@ -258,7 +260,8 @@ const installStubK = `(() => {
     if ((u.indexOf('overpass-api.de') >= 0 || u.indexOf('overpass.kumi.systems') >= 0) && window.__kFailCellKey) {
       const b = boxOf(decodeURIComponent((opts && opts.body) || ''));
       const cell = typeof crGrid !== 'undefined' && crGrid && crGrid.cells.find(c => c.key === window.__kFailCellKey); // crGrid is a let-global: window.crGrid never sees it
-      if (b && cell && Math.abs(b.s - cell.box.s) < 0.0005 && Math.abs(b.w - cell.box.w) < 0.0005) return new Promise(res => setTimeout(() => res(new Response('refused by fixture (one cell)', { status: 503 })), 300)); // the box comes from the live grid by key, not hard-coded coordinates (7c)
+      // The box comes from the live grid by key, not hard-coded coordinates (7c).
+      if (b && cell && Math.abs(b.s - cell.box.s) < 0.0005 && Math.abs(b.w - cell.box.w) < 0.0005) return new Promise(res => setTimeout(() => res(new Response('refused by fixture (one cell)', { status: 503 })), 300));
     }
     return prev(url, opts);
   };
