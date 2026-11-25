@@ -67,7 +67,8 @@ function snapForExport(strict) { // the route's snapshot, normalized (memory, el
 }
 // the envelope's one owner: strict reads storage raw and refuses on failure; recovery reads live memory, best-effort
 const ENVELOPE = {
-  /** @returns {object|null} */ strict() { // format v2 (routes carry their own slots); reads stay raw: a failed read fails the whole export
+  // format v2 (routes carry their own slots); reads stay raw: a failed read fails the whole export
+  /** @returns {object|null} */ strict() {
     PERSIST.flush(true); // flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
     // reconcile only when a save failed: memory is ahead, and a raw export would ship the old board
     if (routeLoaded && writePending('primary')) { const okPrim = saveAll().ok; if (!okPrim) return null; }
@@ -100,7 +101,8 @@ const ENVELOPE = {
     const fx = rawRead(LS.fixlog); if (fx === RAW_READ_FAILED) return null; if (fx != null) o.fixlog = fx; // the fix log rides every backup too (same strictness) - it is the log's ONLY channel off the device
     return o;
   },
-  /** @returns {object|null} */ recovery() { // the recovery backup: in-memory state serialized directly - the exit for marks a refusing normal backup would strand
+  // the recovery backup: in-memory state serialized directly - the exit for marks a refusing normal backup would strand
+  /** @returns {object|null} */ recovery() {
     if (!routeLoaded || !activeRoute) return null;
     const data = {};
     const ser = BOARD.serialiseLive(); // Arch-2: the live board's stored strings come from the board module

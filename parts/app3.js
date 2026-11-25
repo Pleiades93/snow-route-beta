@@ -1,8 +1,7 @@
 
 // ===== PACE (one source) ===== CLEAN holds every measure of a clean and both projections; the doorways delegate to it
 const CLEAN = {
-  // the count of a clean's streets, one place: its item keys belonging to the route, timestamp or not
-  /** @param {HistoryEntry} h @returns {number} */ count(h) { const items = (h && h.items) || {}; return Object.keys(items).filter(n => STREETSET.has(n)).length; },
+  /** @param {HistoryEntry} h @returns {number} */ count(h) { const items = (h && h.items) || {}; return Object.keys(items).filter(n => STREETSET.has(n)).length; }, // Beta 1.169 (Carbon fix round, B-07): THE count of a clean's streets, in one place - the streets the clean covers: its item keys that belong to the route, timestamp or not (buildSnap writes a null time for a completed street whose moment was not recorded; the street was still cleaned, and openClean lists it). Through 1.168 refRun and the pace/detail headers counted raw keys while histDur counted only timestamped streets, so the same clean could read '34 streets' in one line and '33 of 34' in the next.
   /** @param {HistoryEntry} h @returns {boolean} */ hasStamps(h) { const T = h && h.sides && h.sides.t; if (!T || typeof T !== 'object') return false; for (const n of Object.keys(T)) { const arr = T[n]; if (!Array.isArray(arr)) continue; for (const pr of arr) { if (Array.isArray(pr) && ((typeof pr[0] === 'string' && !isNaN(Date.parse(pr[0]))) || (typeof pr[1] === 'string' && !isNaN(Date.parse(pr[1]))))) return true; } } return false; }, // 2026-11-15 (denylist fix round, B-02): does the entry's stamp journal hold at least one real moment? A finish after a state restore archives with every stamp null, so buildSnap's window sum comes out 0 over NO evidence - that 0 was never measured. A measured 0 (the RP-05 case: real stamps, all before Start) always carries stamps.
   /** @param {HistoryEntry} h @returns {number} */ workM(h) {
    // side-metres a saved clean actually covered
@@ -36,7 +35,8 @@ const CLEAN = {
     for (let i = history.length - 1; i >= 0; i--) { const h = history[i]; if (h.items && this.count(h) >= 5) return h; }
     return null;
   },
-  /** @param {HistoryEntry} h @returns {object} */ summary(h) { // the summary projection: the read of a clean for the Pace surfaces; no renderer re-derives its figures
+  // the summary projection: the read of a clean for the Pace surfaces; no renderer re-derives its figures
+  /** @param {HistoryEntry} h @returns {object} */ summary(h) {
     return { count: this.count(h), dur: this.dur(h), workM: this.workM(h), paceKm: this.paceKm(h) };
   },
   // the detail projection: everything openClean renders, derived here; the renderer formats and builds DOM, interpreting no evidence

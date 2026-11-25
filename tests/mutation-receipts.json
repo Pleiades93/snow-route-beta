@@ -11697,6 +11697,42 @@
    "red": "full proof suite on the trimmed tree with the original proof: R7 check failed (1 check failed)",
    "green": "re-pinned needle 'syncCrGlow(); // the trim glow tracks the draft': proof-green-half-road ALL CHECKS PASS; full suite 90/90",
    "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1230-r2",
+   "check": "tests/proof/proof-1230.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1230.mjs": {
+     "span": [
+      "  app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes(\"the settled height publishes over a short report while the window still spans the settled height\"));",
+      "  app5.includes('fullH > h && window.innerHeight >= fullH - 2') && app5.includes(\"the settled height publishes over a short report while the window still spans the settled height\"));"
+     ],
+     "sha256": "a555d4a3b9c69bc64a8690657502919fbe712b982e5fa64697e259d7117a606a"
+    }
+   },
+   "mutation": "gate fix on PR #213: the re-pinned check 4e stood on one 319-char line; the check is split into a label line and an expression line - the assertion, both needles and the claim are byte-identical, only the line layout changed",
+   "red": "PR #213 checks run 45580187655: pr-limits error 'tests/proof/proof-1230.mjs: added line of 319 chars (limit 240)'",
+   "green": "split form: proof-1230 25 passed, 0 failed; local pr-limits replication over the full PR diff reports 0 line-length and 0 comment-word violations",
+   "issued": "2026-11-25 comment-trims"
+  },
+  {
+   "id": "comment-trims-1232-r2",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": {
+     "span": [
+      "  pick.includes(\"crResetSearch(); // dismissing ends the search too\"));",
+      "  pick.includes(\"crResetSearch(); // dismissing ends the search too\"));"
+     ],
+     "sha256": "6d7fbb49394f6110fee3667c65757e0ec3a4f0633a4b462c0b91545c56cd16b0"
+    }
+   },
+   "mutation": "gate fix on PR #213: the re-pinned check 1q stood on one 360-char line; the check is split into label and expression lines and the label itself is split by string concatenation - the runtime label string, the needle and the claim are byte-identical, only the line layout changed",
+   "red": "PR #213 checks run 45580187655: pr-limits error 'tests/proof/proof-1232.mjs: added line of 360 chars (limit 240)'",
+   "green": "split form: proof-1232 27 pass, 0 fail; local pr-limits replication over the full PR diff reports 0 line-length and 0 comment-word violations",
+   "issued": "2026-11-25 comment-trims"
   }
  ]
 }
