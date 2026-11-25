@@ -12628,6 +12628,21 @@
    "red": "scanner at 4ec644ac run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf() with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F37 pins the shape in-suite; full suite 129/129 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r16",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "649dacd4bcaa8d3fa7e5ff932d3c9858108348e57c67d84cc72126f00faf2acc",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner's needle parser accepts only quoted literals and identifiers, so a template-literal needle returns null and its operand is silently dropped from the scan",
+   "red": "scanner at 4ec644ac run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(anchor-as-template-literal) with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings (supersedes r15, whose red text lost the needle to shell quoting)",
+   "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixture F37 pins the shape in-suite; full suite 129/129 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
