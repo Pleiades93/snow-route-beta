@@ -53,6 +53,12 @@ const unquote = (tok) => (tok.length >= 2 && (tok[0] === "'" || tok[0] === '"') 
 function scanText(text) {
   const consts = constLiterals(text);
   const resolve = (tok) => unquote(consts[tok] || tok);
+  const negatedBefore = (stmt, idx) => {
+    let b = idx - 1;
+    while (b >= 0 && /[\w$.]/.test(stmt[b])) b--;
+    while (b >= 0 && (stmt[b] === ' ' || stmt[b] === '(')) b--;
+    return stmt[b] === '!';
+  };
   const findings = [];
   for (const [off, stmt] of checkStatements(text)) {
     const calls = [];
@@ -62,13 +68,13 @@ function scanText(text) {
     if (calls.length < 2) continue;
     const guardNeedles = new Set();
     IDX_GUARD.lastIndex = 0;
-    while ((m = IDX_GUARD.exec(stmt)) !== null) guardNeedles.add(resolve(m[1]));
+    while ((m = IDX_GUARD.exec(stmt)) !== null) {
+      if (negatedBefore(stmt, m.index)) continue;
+      guardNeedles.add(resolve(m[1]));
+    }
     INC.lastIndex = 0;
     while ((m = INC.exec(stmt)) !== null) {
-      let b = m.index - 1;
-      while (b >= 0 && /[\w$.]/.test(stmt[b])) b--;
-      while (b >= 0 && (stmt[b] === ' ' || stmt[b] === '(')) b--;
-      if (stmt[b] === '!') continue;
+      if (negatedBefore(stmt, m.index)) continue;
       const after = stmt.slice(m.index + m[0].length).trimStart();
       if (/^(===?\s*false|!==?\s*true)/.test(after)) continue;
       guardNeedles.add(unquote(m[1]));
@@ -81,7 +87,10 @@ function scanText(text) {
       const between = stmt.slice(calls[k][1], calls[k + 1][0]);
       const mm = /^\s*\)*\s*(<=|>=|<|>)\s*\(*\s*[\w$.]*$/.exec(between);
       if (!mm) continue;
-      const op = mm[1];
+      const rawOp = mm[1];
+      const op = negatedBefore(stmt, calls[k][0])
+        ? { '<': '>=', '<=': '>', '>': '<=', '>=': '<' }[rawOp]
+        : rawOp;
       if (op === '<' || op === '<=') {
         if (!vacuous.has(calls[k][2])) vacuous.set(calls[k][2], new Set());
         vacuous.get(calls[k][2]).add(op);
@@ -119,6 +128,9 @@ const FIXTURES = [
   ['F14 mutual strict pins guard each other', `check('x', a.indexOf('left') < a.indexOf('right') && a.indexOf('right') < a.indexOf('left'));`, 0],
   ['F15 a parenthesized right operand is still a pin', `check('x', a.indexOf('write();') > (a.indexOf('anchor')));`, 1],
   ['F16 a parenthesized left operand is still a pin', `check('x', (a.indexOf('gone')) < a.indexOf('here'));`, 1],
+  ['F17 a negated comparison lends no safe side', `check('x', !(a.indexOf('left') < a.indexOf('right')) && a.indexOf('right') < a.indexOf('left'));`, 1],
+  ['F18 a negated comparison flips its vacuous side', `check('x', !(a.indexOf('left') < a.indexOf('right')));`, 1],
+  ['F19 a negated indexOf guard is not a guard', `check('x', !(a.indexOf('gone') > -1) && a.indexOf('gone') < a.indexOf('here'));`, 1],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;

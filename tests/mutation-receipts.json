@@ -12425,6 +12425,20 @@
    "red": "scanner at 654b1104 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > (a.indexOf('anchor')) and (a.indexOf('gone')) < a.indexOf('here') with the vacuous needles absent: the scan check for proof-neg.mjs PASSED - no findings for either shape",
    "green": "fixed scanner flags both on the same scratch file (line 3 needle 'anchor' via >, line 4 needle 'gone' via <); fixtures F15/F16 pin the shapes in-suite; full suite 108/108 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r5",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "6cf7123114ccfd265a03053345e9c3b34634bdc418f92c1409f3df676a587e02",
+    "tests/proof/proof-1263.mjs": "e3209feb48f9b6c318ce90b0971e187e12b146addfe71dffa0332c3b06e0d16e",
+    "parts/app2.js": "e9f6978f12092987c9aeafb66226ea6abcf5b5be118317f203138732d186c017"
+   },
+   "mutation": "scanner reads a negated comparison at face value: its safe-side operand enters the safe set although the negation is true exactly when that operand is absent, and a negated indexOf presence guard counts as a guard",
+   "red": "scanner at 8bff288e run on a scratch root whose proof-neg.mjs checks !(a.indexOf('left') < a.indexOf('right')) && a.indexOf('right') < a.indexOf('left') with a = 'left' ('right' absent, the check passes on nothing): the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (needle 'right', ops '>=,<' - the negated comparison read under its flipped operator); fixtures F17/F18/F19 pin the negated shapes in-suite; full suite 111/111 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }
