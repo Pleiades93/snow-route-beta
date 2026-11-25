@@ -1203,9 +1203,7 @@ with tempfile.TemporaryDirectory() as td:
     repo, b = git_repo(t / "exempt", [("c", {"index.html": "x" * 300 + "\n"})])
     check("pr-limits: a generated file's long line is exempt",
           run_limits(repo, b), 0)
-    # The CI shape: a depth-1 clone holds only the merge commit, so
-    # the judge must fetch ancestry before enumerating commits, or
-    # the size rule passes blind (Codex P1 on PR #211).
+    # Fetch shallow ancestry so the size rule sees the product commit.
     src, b = git_repo(t / "mergesrc", [])
     genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
 

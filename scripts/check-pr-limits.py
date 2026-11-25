@@ -45,8 +45,7 @@ COMMENT_WORD_LIMIT = 20
 LINE_CHAR_LIMIT = 240
 LARGE_LABEL = "large-change"
 
-# Root files that exist today. A new root file means a deliberate
-# edit of this list in the same change, or the judge refuses it.
+# Root files that exist today; a new one edits this list in the same change.
 ROOT_ALLOWLIST = {
     ".gitignore", "AGENTS.md", "CHANGELOG.md", "DEVELOPMENT_RULES.md",
     "README.md", "apple-touch-icon.png", "favicon.svg", "flags.js",
