@@ -12553,6 +12553,21 @@
    "red": "scanner at 03623d59 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') /* ) */ > a.indexOf('anchor') with 'anchor' absent: the scan check for proof-neg.mjs PASSED - no findings",
    "green": "fixed scanner flags the pin on the same scratch file (line 3, needle 'anchor'); fixtures F28 (comment between operands) and F29 (comment-like text inside a string stays a string) pin the shapes in-suite; full suite 121/121 on the real tree",
    "issued": "2026-11-25 correct-block5 codex-fix"
+  },
+  {
+   "id": "correct-pin-vacuity-r11",
+   "check": "tests/proof/proof-pin-vacuity.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pin-vacuity.mjs": "a71197d849790143b20cd0e7e7f6eb6477c7dc4925c4d929abb32b1e3916b88a",
+    "tests/proof/proof-1227.mjs": "fdefc1bc5d4b78ab8a480e92d784d98ba5d9ef400b5efa30a886f995a16bbf1e",
+    "tests/proof/proof-1236.mjs": "26afd1717609360b9cf58cdd0f4a73627f722f174fbdb3ce51f8f6a09df50d61",
+    "tests/proof/proof-1243.mjs": "208fc13b3a2acfaf97ef3d1589496a74ac6d346b0b27b66bc09c24643562dc14"
+   },
+   "mutation": "scanner returns an unresolved identifier's name as its needle, so a literal guard whose text equals the name certifies a pin that actually searches for the identifier's runtime value",
+   "red": "scanner at e75782a8 run on a scratch root whose proof-neg.mjs pins a.indexOf('write();') > a.indexOf(needle) guarded by a.includes('needle'), with needle a var holding 'anchor' (absent from the source): the scan check for proof-neg.mjs PASSED - no findings",
+   "green": "fixed scanner flags the pin on the same scratch file (line 4, needle shown as 'needle'); fixtures F30 (name collision flagged) and F31 (same-identifier guard still clears) pin the shapes in-suite; full suite 123/123 on the real tree",
+   "issued": "2026-11-25 correct-block5 codex-fix"
   }
  ]
 }

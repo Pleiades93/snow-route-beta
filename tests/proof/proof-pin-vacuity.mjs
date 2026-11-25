@@ -86,8 +86,8 @@ function scanText(text) {
       if (stmt[r] !== '+') { q = r; break; }
       q = r + 1;
     }
-    if (toks.length === 1) return [vals[0] === null ? toks[0] : vals[0], q];
-    return [vals.every((v) => v !== null) ? vals.join('') : toks.join(' + '), q];
+    if (toks.length === 1) return [vals[0] === null ? '\u0001id:' + toks[0] : vals[0], q];
+    return [vals.every((v) => v !== null) ? vals.join('') : '\u0001raw:' + toks.join(' + '), q];
   };
   const blankComments = (stmt) => {
     const out = stmt.split('');
@@ -171,7 +171,7 @@ function scanText(text) {
         if (guarded(needle)) continue;
         if (!hasOr && safe.has(needle)) continue;
       }
-      findings.push({ line: text.slice(0, off).split('\n').length, ops: [...v.ops].join(','), needle: needle.slice(0, 64) });
+      findings.push({ line: text.slice(0, off).split('\n').length, ops: [...v.ops].join(','), needle: needle.replace(/^\u0001(id|raw):/, '').slice(0, 64) });
     }
   }
   return findings;
@@ -208,6 +208,8 @@ const FIXTURES = [
   ['F27 a guard on the whole concatenated needle clears it', `check('x', a.includes('anchor') && a.indexOf('write();') > a.indexOf('an' + 'chor'));`, 0],
   ['F28 a comment between operands does not hide the pin', `check('x', a.indexOf('write();') /* ) */ > a.indexOf('anchor'));`, 1],
   ['F29 comment text inside a string is not a comment', `check('x // not a comment', a.indexOf('write();') > a.indexOf('anchor'));`, 1],
+  ['F30 an unresolved identifier is not its name', `check('x', a.includes('needle') && a.indexOf('write();') > a.indexOf(needle));`, 1],
+  ['F31 a guard on the same identifier clears it', `check('x', a.indexOf(V) > -1 && a.indexOf('write();') > a.indexOf(V));`, 0],
 ];
 for (const [name, src, want] of FIXTURES) {
   const got = scanText(src).length;
