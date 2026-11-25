@@ -64,7 +64,9 @@ const phaseReport = async (fromMark, toMark) => {
 // ---------- baseline: the boot placement, stable ----------
 await settle();
 await sleep(3000); // the pick flight's one re-place (and its 2.5 s backstop) land inside this window - grading starts after it
-const stableBase = await poll(`(() => { const P = window.__pres; if (P.samples.length < 20) return false; const last = JSON.stringify([...P.samples[P.samples.length - 1].t].sort()); return P.samples.slice(-6).every(sm => JSON.stringify([...sm.t].sort()) === last) && P.samples[P.samples.length - 1].t.length >= 30; })()`, 60000);
+const stableBase = await poll(`(() => { const P = window.__pres; if (P.samples.length < 20) return false;
+  const last = JSON.stringify([...P.samples[P.samples.length - 1].t].sort());
+  return P.samples.slice(-6).every(sm => JSON.stringify([...sm.t].sort()) === last) && P.samples[P.samples.length - 1].t.length >= 30; })()`, 60000);
 const baseCount = await J(`(() => window.__pres.samples[window.__pres.samples.length - 1].t.length)()`);
 ok('P1 the boot placement settles stable with the old system\'s home character: ' + baseCount + ' titles placed (33 of 34 expected - Tina Place is the known absentee), stable across 6 consecutive samples (stability poll: ' + stableBase + ')',
   stableBase === true && baseCount >= 30);
