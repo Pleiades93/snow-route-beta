@@ -443,36 +443,49 @@ def _limits_added_lines(old_text, new_text):
     return out
 
 
+def _as_text(data):
+    """bytes -> str, or None when the content is not text (a NUL
+    in the first chunk - git's own binary heuristic)."""
+    if data is None:
+        return None
+    if b"\x00" in data[:8000]:
+        return None
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
 def _limits_verdict(mod, changed, labels):
-    """changed: [(path, old_text, new_text)]. The rules and their
-    limits are check-pr-limits.py's own - this gate only feeds it
-    the push's diff (one push is one commit, so the size rule is
-    judged per push). CI stays the authority on the real labels;
-    --labels declares them for this local pre-check only."""
+    """changed: [(path, old_bytes, new_bytes)] - None means the
+    file does not exist on that side. The decisions are
+    check-pr-limits.py's own shared functions; this gate only
+    feeds them the push's diff (one push is one commit, so the
+    size rule is judged per push). Binary files carry no added
+    lines, exactly as git's diff reports them. CI stays the
+    authority on the real labels; --labels declares them for
+    this local pre-check only."""
     errors = []
     product = 0
-    for path, old_text, new_text in changed:
-        if new_text is not None and mod.is_product_path(path):
-            product += len(_limits_added_lines(old_text, new_text))
-        if old_text is None and new_text is not None \
-                and "/" not in path and path not in mod.ROOT_ALLOWLIST:
-            errors.append(f"{path}: new file at the repo root outside "
-                          "the allowlist (ROOT_ALLOWLIST)")
-        if path in mod.GENERATED_EXEMPT or new_text is None:
+    for path, old_bytes, new_bytes in changed:
+        old_text = _as_text(old_bytes)
+        new_text = _as_text(new_bytes)
+        binary = (old_bytes is not None and old_text is None) or \
+            (new_bytes is not None and new_text is None)
+        if old_bytes is None and new_bytes is not None:
+            err = mod.root_file_error(path)
+            if err:
+                errors.append(err)
+        if binary or new_bytes is None:
             continue
-        for text in _limits_added_lines(old_text, new_text):
-            if len(text) > mod.LINE_CHAR_LIMIT:
-                errors.append(f"{path}: added line of {len(text)} chars "
-                              f"(limit {mod.LINE_CHAR_LIMIT})")
-            words = mod.comment_words(path, text)
-            if words is not None and words > mod.COMMENT_WORD_LIMIT:
-                errors.append(f"{path}: added comment line of {words} "
-                              f"words (limit {mod.COMMENT_WORD_LIMIT})")
-    if product > mod.SIZE_LIMIT and mod.LARGE_LABEL not in labels:
-        errors.append(f"this push adds {product} product lines (limit "
-                      f"{mod.SIZE_LIMIT}) without the {mod.LARGE_LABEL} "
-                      "label - the label is applied by Andrew or the "
-                      "lead, never by the change's author")
+        added = _limits_added_lines(old_text, new_text)
+        if mod.is_product_path(path):
+            product += len(added)
+        for text in added:
+            errors.extend(mod.line_errors(path, text))
+    err = mod.size_error("this push", product, labels)
+    if err:
+        errors.append(err)
     return errors, product
 
 
@@ -492,13 +505,13 @@ def limits_gate_plan(root, resolved, labels):
         return None
     changed = []
     for p in resolved:
-        new_text = (root / p).read_text(errors="replace") \
+        new_bytes = (root / p).read_bytes() \
             if (root / p).is_file() else None
         got = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{p}"],
-                             capture_output=True, text=True)
-        old_text = got.stdout if got.returncode == 0 else None
-        if old_text != new_text:
-            changed.append((p, old_text, new_text))
+                             capture_output=True)
+        old_bytes = got.stdout if got.returncode == 0 else None
+        if old_bytes != new_bytes:
+            changed.append((p, old_bytes, new_bytes))
     errors, product = _limits_verdict(mod, changed, labels)
     if errors:
         return "the PR limits fail locally: " + "; ".join(errors)
@@ -523,14 +536,13 @@ def limits_gate_push(root, gh, branch, resolved, labels):
     for p in resolved:
         if remote.get(p) == local.get(p):
             continue
-        new_text = (root / p).read_text(errors="replace") \
+        new_bytes = (root / p).read_bytes() \
             if (root / p).is_file() else None
-        old_text = None
+        old_bytes = None
         if p in remote:
             blob = gh.api("GET", f"{base}/git/blobs/{remote[p]}")
-            old_text = base64.b64decode(blob["content"]).decode(
-                "utf-8", "replace")
-        changed.append((p, old_text, new_text))
+            old_bytes = base64.b64decode(blob["content"])
+        changed.append((p, old_bytes, new_bytes))
     errors, product = _limits_verdict(mod, changed, labels)
     if errors:
         return "the PR limits fail locally: " + "; ".join(errors)

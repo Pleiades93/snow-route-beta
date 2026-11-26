@@ -66,6 +66,40 @@ def is_product_path(path):
     return any(fnmatch.fnmatch(path, p) for p in PRODUCT_PATTERNS)
 
 
+def line_errors(path, text):
+    """The line-length and comment rules for one added line -
+    shared by the CLI below and push.py's local limits gate."""
+    if path is None or path in GENERATED_EXEMPT:
+        return []
+    errs = []
+    if len(text) > LINE_CHAR_LIMIT:
+        errs.append(f"{path}: added line of {len(text)} chars "
+                    f"(limit {LINE_CHAR_LIMIT})")
+    words = comment_words(path, text)
+    if words is not None and words > COMMENT_WORD_LIMIT:
+        errs.append(f"{path}: added comment line of {words} "
+                    f"words (limit {COMMENT_WORD_LIMIT})")
+    return errs
+
+
+def root_file_error(path):
+    """The new-root-file rule, shared with push.py's gate."""
+    if "/" not in path and path not in ROOT_ALLOWLIST:
+        return (f"new root file {path} is not in the "
+                "allowlist - root files are deliberate")
+    return None
+
+
+def size_error(desc, product, labels):
+    """The product-size rule, shared with push.py's gate."""
+    if product > SIZE_LIMIT and LARGE_LABEL not in labels:
+        return (f"{desc} adds {product} product lines "
+                f"(limit {SIZE_LIMIT}) without the {LARGE_LABEL} "
+                "label - the label is applied by Andrew or the "
+                "lead, never by the change's author")
+    return None
+
+
 def comment_words(path, line):
     """Word count if the line is a comment line, else None."""
     s = line.strip()
@@ -225,11 +259,8 @@ def main():
                 print(f"pr-limits: {sha[:8]} adds {product} product "
                       f"lines; {LARGE_LABEL} label present - allowed")
             else:
-                errors.append(
-                    f"commit {sha[:8]} adds {product} product lines "
-                    f"(limit {SIZE_LIMIT}) without the {LARGE_LABEL} "
-                    "label - the label is applied by Andrew or the "
-                    "lead, never by the change's author")
+                errors.append(size_error(f"commit {sha[:8]}",
+                                         product, labels))
         if re.match(r"^(fixup|squash)!", subject):
             warnings.append(f"commit {sha[:8]} is a fixup!/squash! "
                             "marker commit")
@@ -241,15 +272,7 @@ def main():
         prev_files = changed
 
     for path, text in added_lines(root, args.base):
-        if path is None or path in GENERATED_EXEMPT:
-            continue
-        if len(text) > LINE_CHAR_LIMIT:
-            errors.append(f"{path}: added line of {len(text)} chars "
-                          f"(limit {LINE_CHAR_LIMIT})")
-        words = comment_words(path, text)
-        if words is not None and words > COMMENT_WORD_LIMIT:
-            errors.append(f"{path}: added comment line of {words} "
-                          f"words (limit {COMMENT_WORD_LIMIT})")
+        errors.extend(line_errors(path, text))
 
     out = git(root, "diff", "--name-status", "--no-renames",
               f"{args.base}..HEAD")
@@ -258,10 +281,10 @@ def main():
         if len(parts) < 2:
             continue
         status, path = parts[0], parts[-1]
-        if status.startswith("A") and "/" not in path \
-                and path not in ROOT_ALLOWLIST:
-            errors.append(f"new root file {path} is not in the "
-                          "allowlist - root files are deliberate")
+        if status.startswith("A"):
+            err = root_file_error(path)
+            if err:
+                errors.append(err)
 
     areas = scope_areas(root, args.base)
     if len(areas) > 1:
