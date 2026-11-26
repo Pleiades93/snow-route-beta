@@ -78,6 +78,7 @@ ok('M5 tapping a selected section removes only it | ' + JSON.stringify(SS),
 
 // ---- M6: an empty-map tap clears the whole selection ----
 await tapAt([MIDS[0][0] + 0.05, MIDS[0][1] + 0.05]);
+await poll(`selSet.length === 0 && $('selPop').classList.contains('hidden')`, 10000); // Beta 1.298: the pop leaves over 180ms now - poll the terminal state M6 asserts
 SS = await selState();
 ok('M6 tapping empty map clears the selection and hides the pop-up | ' + JSON.stringify(SS), SS.n === 0 && SS.bar === false && SS.chips === 0);
 
