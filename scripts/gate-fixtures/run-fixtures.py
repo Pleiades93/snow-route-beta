@@ -1375,6 +1375,21 @@ SCAN_JS = (
     "function fixtureAlpha(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
     "function fixtureBeta(n) { let p = 1; while (n > 1) { p *= n; n--; } return p; }\n"
 )
+CB_JS = (
+    "function render(items) {\n"
+    "  const a = items.map(x => x.id);\n"
+    "  const b = items.filter(x => x.id);\n"
+    "  return a.length + b.length;\n"
+    "}\n"
+)
+CB_JS_INSERTED = (
+    "function render(items) {\n"
+    "  const z = items.map(x => x.other);\n"
+    "  const a = items.map(x => x.id);\n"
+    "  const b = items.filter(x => x.id);\n"
+    "  return z.length + a.length + b.length;\n"
+    "}\n"
+)
 SCAN_HTML = ("<html><head><style>\n"
              ".fixA { color: red; margin: 0; }\n"
              ".fixB { color: blue; padding: 1px; }\n"
@@ -1418,7 +1433,13 @@ with tempfile.TemporaryDirectory() as td:
           run_scan(clone_tree, "--write-baseline"), 0)
     check("scan: a baselined clone pair passes",
           run_scan(clone_tree), 0)
+    cb_tree = scan_tree(t / "cbstable", js=CB_JS)
+    check("scan: --write-baseline records the callback clone pair",
+          run_scan(cb_tree, "--write-baseline"), 0)
+    w(cb_tree / "parts" / "a.js", CB_JS_INSERTED)
+    check("scan: an unrelated callback insertion keeps baselined identities",
+          run_scan(cb_tree), 0)
 
-total = 116
+total = 118
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

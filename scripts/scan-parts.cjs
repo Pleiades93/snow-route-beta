@@ -79,11 +79,6 @@ function scanJs(file, source) {
     if (ts.isFunctionLike(node) && node.body) {
       const name = node.name || (ts.isVariableDeclaration(node.parent) ||
         ts.isPropertyAssignment(node.parent) ? node.parent.name : null);
-      const label = `${scope}/${name ? name.getText(tree) : '<callback>'}`;
-      const count = (ownerCounts.get(label) || 0) + 1;
-      ownerCounts.set(label, count);
-      scope = count === 1 ? label : `${label}#${count}`;
-
       const exact = [];
       const near = [];
       const identifiers = new Map();
@@ -107,8 +102,21 @@ function scanJs(file, source) {
         }
       }
       tokenize(node.body);
+      // Anonymous identity carries its body hash: stable when an
+      // unrelated callback is inserted before it.
+      const exactJson = JSON.stringify(exact);
+      let hash = 0x811c9dc5;
+      for (let i = 0; i < exactJson.length; i++) {
+        hash ^= exactJson.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+      }
+      const label = name ? `${scope}/${name.getText(tree)}`
+        : `${scope}/<callback>@${hash.toString(16).padStart(8, '0')}`;
+      const count = (ownerCounts.get(label) || 0) + 1;
+      ownerCounts.set(label, count);
+      scope = count === 1 ? label : `${label}#${count}`;
       const at = `${file}:${line(node.getStart(tree))}`;
-      record(JSON.stringify(exact), scope, at);
+      record(exactJson, scope, at);
       // Require enough structure to distinguish renamed bodies from short idioms.
       if (near.length >= 32) record('near:' + JSON.stringify(near), scope, at);
     }
@@ -178,7 +186,7 @@ if (writeBaseline) {
     const list = [...pairs.keys()].map(key => JSON.parse(key));
     list.sort((a, b) => (a.join('\n') < b.join('\n') ? -1 : 1));
     const exemptions = JSON.stringify(baseline.exemptions, null, 2).replace(/\n/g, '\n  ');
-    const body = list.map(pair => '    ' + JSON.stringify(pair)).join(',\n');
+    const body = list.map(pair => '    ' + JSON.stringify(pair, null, 2).replace(/\n/g, '\n    ')).join(',\n');
     fs.writeFileSync(path.join(root, 'scripts/parts-clone-baseline.json'),
       `{\n  "exemptions": ${exemptions},\n  "pairs": [\n${body}\n  ]\n}\n`);
     console.log(`baseline written: ${list.length} pairs`);
