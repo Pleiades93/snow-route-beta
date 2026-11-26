@@ -106,16 +106,19 @@ function scanJs(file, source) {
         }
       }
       tokenize(node.body);
-      // Anonymous identity carries its body hash: stable when an
-      // unrelated callback is inserted before it.
+      // Anonymous and method identities carry the body hash: stable
+      // when an unrelated like-named function is inserted first.
       const exactJson = JSON.stringify(exact);
       let hash = 0x811c9dc5;
       for (let i = 0; i < exactJson.length; i++) {
         hash ^= exactJson.charCodeAt(i);
         hash = Math.imul(hash, 0x01000193) >>> 0;
       }
-      const label = name ? `${scope}/${name.getText(tree)}`
-        : `${scope}/<callback>@${hash.toString(16).padStart(8, '0')}`;
+      const tag = hash.toString(16).padStart(8, '0');
+      const isMethod = ts.isMethodDeclaration(node) ||
+        ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node);
+      const label = name ? `${scope}/${name.getText(tree)}${isMethod ? '@' + tag : ''}`
+        : `${scope}/<callback>@${tag}`;
       const count = (ownerCounts.get(label) || 0) + 1;
       ownerCounts.set(label, count);
       scope = count === 1 ? label : `${label}#${count}`;

@@ -1391,6 +1391,15 @@ CB_JS = (
     "  return a.length + b.length;\n"
     "}\n"
 )
+METHOD_JS = (
+    "const a = { read() { return this.id; } };\n"
+    "const b = { read() { return this.id; } };\n"
+)
+METHOD_JS_INSERTED = (
+    "const z = { read() { return this.other; } };\n"
+    "const a = { read() { return this.id; } };\n"
+    "const b = { read() { return this.id; } };\n"
+)
 CB_JS_INSERTED = (
     "function render(items) {\n"
     "  const z = items.map(x => x.other);\n"
@@ -1450,7 +1459,13 @@ with tempfile.TemporaryDirectory() as td:
     w(cb_tree / "parts" / "a.js", CB_JS_INSERTED)
     check("scan: an unrelated callback insertion keeps baselined identities",
           run_scan(cb_tree), 0)
+    m_tree = scan_tree(t / "mstable", js=METHOD_JS)
+    check("scan: --write-baseline records the method clone pair",
+          run_scan(m_tree, "--write-baseline"), 0)
+    w(m_tree / "parts" / "a.js", METHOD_JS_INSERTED)
+    check("scan: an unrelated method insertion keeps baselined identities",
+          run_scan(m_tree), 0)
 
-total = 120
+total = 122
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
