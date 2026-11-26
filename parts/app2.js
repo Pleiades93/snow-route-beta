@@ -484,7 +484,7 @@ function updateCount() {
   const tw = totalWorkM(); // the share's denominator, read once and guarded: an empty route divided by zero and read 'NaN%'
   const pct = tw > 0 ? Math.round(workDoneM() / tw * 100) : 0;
   // the meter fills with the same fraction the % uses; the total derives from the street list
-  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.width = (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%';
+  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.transform = 'scaleX(' + (tw > 0 ? workDoneM() / tw : 0) + ')';
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Cancel start is offered for the whole run: it erases the run's records, marks included

@@ -52,7 +52,7 @@ ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-str
 // dark text (never white-on-white over the bright map), night is a deep blue-black.
 const T1 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, paceBg: surf($('pacePanel')),
-  barBg: surf($('tabBar')), fillW: $('countFill').offsetWidth,
+  barBg: surf($('tabBar')), fillW: $('countFill').getBoundingClientRect().width,
   order: [...document.querySelectorAll('#tabBar .tabItem')].map(b => b.id) }); })()`));
 ok('T1 day menus share one light surface with dark text (bar = sheets; the Settings takeover is blue in both themes since 1.88, asserted at T3) | ' + JSON.stringify(T1),
   T1.sheetBg === 'rgba(255, 255, 255, 0.92)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === T1.sheetBg);
@@ -194,7 +194,7 @@ ok('S5 count climbs in the new format after a street is done | ' + C2, new RegEx
 await tapById(ev, 'startBtn');
 await waitTrue(poll, `$('count').offsetParent !== null`, 10000); // the shown pill is T5's premise now
 await sleep(600);
-const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').offsetWidth / $('count').offsetWidth, want: workDoneM() / totalWorkM(), txt: $('countTxt').textContent, count: $('count').textContent }))()`));
+const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').getBoundingClientRect().width / $('count').offsetWidth, want: workDoneM() / totalWorkM(), txt: $('countTxt').textContent, count: $('count').textContent }))()`));
 ok('T5 the pill meter fills with the same work fraction the % reports (measured on the shown pill, inside a run - Beta 1.199) | ' + JSON.stringify(T5),
   Math.abs(T5.ratio - T5.want) < 0.04 && T5.want > 0 && T5.txt === T5.count);
 await tapById(ev, 'cancelStartBtn');

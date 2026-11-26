@@ -31,7 +31,7 @@ const ruleText = (startFrag) => { const ls = head.split('\n'); const i = ls.find
   let out = ''; for (let k = i; k < ls.length; k++) { out += (out ? ' ' : '') + ls[k].trim(); if (ls[k].includes('}')) break; } return out; };
 const transLine = ruleText('.tabItem, .dockBtn, .runBtn,');
 check('1a: the press transition group stands at 150ms with its core families', transLine.includes('transition: transform 150ms ease-out;') && transLine.includes('#selPop button') && transLine.includes('.rmBtn') && transLine.includes('#routeMenu .routeRow'));
-check('1b: the switch merged rule stands at 150ms', head.includes('.m-switch { transition: background .18s ease, transform 150ms ease-out; }'));
+check('1b: the switch merged rule stands at 150ms', head.includes('.m-switch { transition: background .18s var(--ease-open), transform 150ms ease-out; }'));
 check('1c: no 120ms press timing survives in the page', !head.includes('transform 120ms ease-out'));
 check('1d: the press scale is unchanged at .97 (shrink group and pressOn twin)', head.includes('.tabItem:active, .dockBtn:active, .runBtn:active,') && head.includes('.srow.pressOn, .crPRow.pressOn, .cvRow.pressOn, .prow.histRow.pressOn { transform: scale(.97); }'));
 

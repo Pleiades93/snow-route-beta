@@ -15237,6 +15237,102 @@
    "red": "no red observation applies: no pin changed - the red on base parts is receipt round3-1297-proof-anchors' record",
    "green": "run-proofs 94/94 on the final tree with the shortened wording",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "transitions-1298-proof-1226",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1226.mjs": "75b1094ae52a6ee9617a0875e6ef331a248f4568b233719eb5de1ec167fc305a"
+   },
+   "mutation": "re-pin only (see sibling receipt detail in the round record)",
+   "red": "observed failing on the base tree",
+   "green": "observed passing on the round tree",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "71d87ee435755f97be0dfc7ab68d934269fc7bd8d7abb34b66efb57ee546d09e"
+   },
+   "mutation": "re-pin only (see sibling receipt detail in the round record)",
+   "red": "observed failing on the base tree",
+   "green": "observed passing on the round tree",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1226-r2",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1226.mjs": "75b1094ae52a6ee9617a0875e6ef331a248f4568b233719eb5de1ec167fc305a"
+   },
+   "mutation": "check 1d re-pinned: the switch merged rule's background leg reads var(--ease-open) instead of ease (transitions FIX 8); the claim (the merged declaration stands after the switch rule, restating the fade beside the shrink) is unchanged. Supersedes transitions-1298-proof-1226 (thin text)",
+   "red": "node tests/proof/proof-1226.mjs against the base parts/head.html: FAIL on check 1d only, 15/16",
+   "green": "python3 scripts/run-proofs.py on the round tree: 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-r2",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "71d87ee435755f97be0dfc7ab68d934269fc7bd8d7abb34b66efb57ee546d09e"
+   },
+   "mutation": "check 1b re-pinned: the switch merged rule's background leg reads var(--ease-open) instead of ease (transitions FIX 8); the claim (the merged rule stands at 150ms) is unchanged. Supersedes transitions-1298-proof-1231 (thin text)",
+   "red": "node tests/proof/proof-1231.mjs against the base parts/head.html: FAIL on check 1b only",
+   "green": "python3 scripts/run-proofs.py on the round tree: 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive190",
+   "check": "tests/browser/drive190.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive190.mjs": "5c1df49c88e016843807486ef63076077739495ad7750f8286c546255e3f2d46"
+   },
+   "mutation": "H2's fill observation re-pointed from style.width to style.transform (the fill now animates scaleX, transitions FIX 9); the claim (empty geometry: counter reads 0%, fill at zero) is unchanged",
+   "red": "drive190 against the historical writer (style.width, fresh assembly): H2 fails alone, width reads '' (19/20)",
+   "green": "drive190 on the round tree: 20/20",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive198",
+   "check": "tests/browser/drive198.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive198.mjs": "e83f7430790c8b8b98a78b1c5500ed9844b0baf6bc8247766fdbf0c20f37b9a1"
+   },
+   "mutation": "the SNAP fillW read re-pointed from style.width to the scaleX fraction in style.transform (transitions FIX 9); the claims (meter fraction > 0 after marking, in and out of a run) are unchanged",
+   "red": "drive198 against the historical writer (style.width, fresh assembly): P2 and P5 fail alone, fillW reads '' (9/11)",
+   "green": "drive198 on the round tree: 11/11",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "c062c7ad624a87ac6c2f36859171773d3f1adcaede2b9beb25cd4a278e5b1207"
+   },
+   "mutation": "T1/T3/T5 fill observations re-pointed from offsetWidth (layout width) to getBoundingClientRect().width (rendered width) - the fill is a full-width box under scaleX now (transitions FIX 9); the claims (meter starts empty; rendered fill fraction equals the work fraction) are unchanged",
+   "red": "writer mutated to a constant scaleX(1): T3 fails (fillW 96.78) and T5 fails (ratio 0.978 vs want 0.029), 26/28 - the re-pointed reads observe the lie",
+   "green": "drive125 on the round tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive128",
+   "check": "tests/browser/drive128.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive128.mjs": "5a9efc5b29dc888b1b21911a438484e67632437a7464f76ba34d575bd75a1aee"
+   },
+   "mutation": "M6 re-derived: after the tap it now polls the terminal state (selection empty AND the pop hidden) instead of reading once - the pop leaves over 180ms since transitions FIX 4; the claim (an empty-map tap clears the selection and hides the pop-up) is unchanged",
+   "red": "hideSurface's exit timer neutered (the pop can never hide): M6 fails, its terminal read shows bar:true after the poll expires (25/27; M8 also fails, its standing rig adjudication)",
+   "green": "drive128 on the round tree: M6 passes (26/27; the only failure is M8, adjudicated rig-marginal with the click measured 461ms after pointerdown against the 400ms spend window)",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }

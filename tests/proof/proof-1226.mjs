@@ -30,8 +30,8 @@ check('1a: the press transition group exists and carries the core families (tab 
 check('1b: the press scale group exists at scale(.97) over the same families', !!scaleLine && scaleLine.includes('#selPop button:active') && scaleLine.includes('.rmBtn:active') && scaleLine.includes('#routeMenu .routeRow:active') && scaleLine.includes('.m-switch:active'));
 check('1c: the centred pressables compose the shrink with their rest transform (no sideways jump mid-press)', head.includes('#cancelStartBtn:active { transform: translateX(-50%) scale(.97); }') && head.includes('#rmClose:active, #setClose:active { transform: translateX(-50%) scale(.97); }') && head.includes('#crHintBtn:active { transform: translateX(-50%) scale(.97); }') && transLine.includes('#cancelStartBtn, #rmClose, #setClose, #crHintBtn'));
 check('1d: the switch transition merges its background fade with the shrink (the merged declaration stands AFTER the switch rule, so it wins the cascade)',
-  head.includes('.m-switch { transition: background .18s ease, transform 150ms ease-out; }') && head.includes('.m-switch { appearance: none;') &&
-  head.indexOf('.m-switch { transition: background .18s ease, transform 150ms ease-out; }') > head.indexOf('.m-switch { appearance: none;'));
+  head.includes('.m-switch { transition: background .18s var(--ease-open), transform 150ms ease-out; }') && head.includes('.m-switch { appearance: none;') &&
+  head.indexOf('.m-switch { transition: background .18s var(--ease-open), transform 150ms ease-out; }') > head.indexOf('.m-switch { appearance: none;'));
 // The flash is gone: the six :active background rules hold their rest fills.
 check('1e: the menu flash value is gone from the page (rgba(255,255,255,.28) survives nowhere)', !head.includes('rgba(255,255,255,.28)'));
 check('1f: the primary flash is gone (the old #dbe4fd :active rule no longer exists)', !head.includes('.rmBtn.primary:active { background: #dbe4fd; }') && head.includes('.rmBtn.primary:active { background: #fff; }'));

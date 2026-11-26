@@ -181,10 +181,10 @@ try {
     const poi2 = map.getSource('routepoi').serialize().data;
     const after = poi2 && poi2.geometry ? poi2.geometry.coordinates.slice() : null;
     updateCount();
-    return { before, after, count: document.getElementById('countTxt').textContent, width: document.getElementById('countFill').style.width };
+    return { before, after, count: document.getElementById('countTxt').textContent, width: document.getElementById('countFill').style.transform };
   })()`) : { before: null, after: null, count: '', width: '' };
   ok('H1 the route POI survives an empty-geometry unload at its real centre (never [0,0]) | ' + JSON.stringify({ before: h.before, after: h.after }), !!h.before && !!h.after && h.after[0] === h.before[0] && h.after[1] === h.before[1] && !(h.after[0] === 0 && h.after[1] === 0));
-  ok('H2 the counter on empty geometry reads 0%, not NaN% | ' + JSON.stringify({ count: h.count, width: h.width }), /· 0%$/.test(h.count || '') && h.width === '0%');
+  ok('H2 the counter on empty geometry reads 0%, not NaN% | ' + JSON.stringify({ count: h.count, width: h.width }), /· 0%$/.test(h.count || '') && h.width === 'scaleX(0)');
   ok('H3 no page exception across drive190 | exc: ' + exc(), exc() === 0);
 } catch (e) {
   ok('drive190 completed without a harness-level throw: ' + String(e && e.message || e), false);

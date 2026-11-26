@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3adaaf4158f0aff6194656264f7f794fdfe9b5f2931e467126410221b37b4349",
+  "canonical_registry_sha256": "15c2244654024974f09655060815bd69bc9439cf27f04370c8553eb376acfb8c",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -9337,7 +9337,7 @@
    "fix": "Beta 1.231 motion round (branch round-motion; PR + gate by parent). The settings switch's own transition rule restates the press shrink at the new 150ms (it replaces the shared declaration, so the timing is written beside its background fade).",
    "fix_id": "motion-1231",
    "id": "motion1231-switch-press",
-   "pattern": "transition: background .18s ease, transform 150ms ease-out;",
+   "pattern": "transition: background .18s var(--ease-open), transform 150ms ease-out;",
    "type": "grep_present"
   },
   {

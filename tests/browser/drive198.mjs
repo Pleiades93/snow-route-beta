@@ -35,7 +35,7 @@ const SNAP = `(() => { const R = (id) => { const e = $(id); if (!e) return null;
   const c = $('count');
   return { run: !!runStart, night: document.body.classList.contains('night'),
     pillShown: getComputedStyle(c).visibility === 'visible', pillVis: getComputedStyle(c).visibility, pillDisplay: getComputedStyle(c).display, pillInline: c.style.visibility,
-    txt: $('countTxt').textContent, fillW: $('countFill').style.width,
+    txt: $('countTxt').textContent, fillW: $('countFill').style.transform.replace('scaleX(', '').replace(')', ''),
     pill: R('count'), foot: c.offsetHeight + parseFloat(getComputedStyle(c).marginTop),
     circle: R('startBtn').h ? R('startBtn') : R('resetBtn'), streets: R('streetsBtn'), pace: R('paceBtn'), dock: R('dock'),
     tabTop: Math.round($('tabBar').getBoundingClientRect().top * 10) / 10 }; })()`;
