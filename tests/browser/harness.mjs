@@ -182,14 +182,10 @@ const ws = new WebSocket(wsUrl);
     console.log('saved', name);
   }
   const ev = async (code) => evaluate(code);
-  // A poll whose expression throws (a global not yet defined, a map
-  // mid-rebuild at null) reads as not-yet, never as a crash: the
-  // wait's whole job is to outlast the page's in-between states, and
-  // a throwing poll crashed drives at boot (flake census 2,
-  // 2026-11-25: window.map stays truthy while the app's map binding
-  // sits at null between teardown and rebuild). A permanently
-  // throwing expression still times out and returns false, so the
-  // caller's own named failure fires - the verdict is unchanged.
+  // A throwing expression reads as not-yet, never as a crash: the
+  // wait exists to outlast in-between states (window.map stays
+  // truthy while the map binding sits at null between rebuilds).
+  // A permanently throwing expression still times out to false.
   const poll = async (expr, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 30000)) { let v = false; try { v = await ev(expr); } catch (e) { v = false; } if (v === true) return true; await sleep(300); } return false; };
   return { proc, send, S, evaluate, ev, shot, poll, consoleLog, sleep, url: 'file://' + DIR + '/' + page };
 }

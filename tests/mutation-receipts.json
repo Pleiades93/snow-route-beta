@@ -14709,6 +14709,19 @@
    "red": "drive219 crashed at bootToPicker, no result block: page evaluation threw TypeError: Cannot read properties of null (reading 'getStyle') - window.map truthy while the map binding sat at null; mechanism proven by probe",
    "green": "drive219 local run 38/38 checks, 0 exceptions - PASS after the poll fix (a throw reads as not-yet; a permanent throw still times out to the caller's named failure)",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-poll-notyet-r3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "117be3cc687ac144e9a4cd4547f76afb3f5682a45c2418b7b888e5b3c86b3315",
+    "tests/browser/harness.mjs": "2860678c57cb7d06630e98c11f61708e4dc9f54e039df39b82182c1f6aafcdd7"
+   },
+   "mutation": "pre-fix harness poll: a throwing poll expression crashes the drive (no mutation - the historical harness, driven on the local rig 2026-11-25); re-issue of -r2 after the Codex comment trim in harness.mjs",
+   "red": "drive219 crashed at bootToPicker, no result block: page evaluation threw TypeError: Cannot read properties of null (reading 'getStyle') - window.map truthy while the map binding sat at null; mechanism proven by probe",
+   "green": "drive219 local run 38/38 checks, 0 exceptions - PASS after the poll fix (a throw reads as not-yet; a permanent throw still times out to the caller's named failure); CI build-and-test green on PR #218",
+   "issued": "2026-11-25"
   }
  ]
 }
