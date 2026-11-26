@@ -19,7 +19,7 @@ function bootMap() {
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
 let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
 // the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears on recovery
-function noteMapState() { $('mapNote').classList.toggle('hidden', !((mapNoteArmed && !glOk) || basemapDead)); }
+function noteMapState() { if ((mapNoteArmed && !glOk) || basemapDead) showSurface($('mapNote')); else hideSurface($('mapNote')); }
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 // proof the basemap is drawing: the moment a tile lands after an outage, the death notice clears itself
@@ -451,8 +451,8 @@ function markUndone(name) { // the mutation is BOARD.clearStreet; the finish sta
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // one selection pop-up: header strip and multi-select pill are the same pop-up (pill glass, every action inside)
   const p = $('selPop');
-  if (!sel) { p.classList.add('hidden'); return; }
-  p.classList.remove('hidden'); // renderPanel no longer raises body.selOpen: its consumer is retired; the button holds its seat in every state
+  if (!sel) { hideSurface(p); return; }
+  showSurface(p); // renderPanel no longer raises body.selOpen: its consumer is retired; the button holds its seat in every state
   const multi = selSet.length >= 2; // single and multi are the SAME size: same box, same two rows; only the words and buttons change
   if (!multi) {
     $('selName').textContent = sel.name;

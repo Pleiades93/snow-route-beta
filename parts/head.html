@@ -327,6 +327,9 @@
   .modal:not(.hidden) .card { animation: menuRise var(--anim-dur) var(--ease-open); }
   #mapNote:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
   #selPop:not(.hidden) { animation: menuRiseC var(--anim-dur) var(--ease-open); } /* centred: its rise keyframes must carry the -50% X shift or the pop-up jumps sideways mid-animation */
+  #selPop.leaving { animation: menuRiseCOut 180ms var(--ease-close) forwards; }
+  #mapNote.leaving { animation: menuRiseOut 180ms var(--ease-close) forwards; }
+  @keyframes menuRiseCOut { to { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuFade { from { opacity: 0; } }
   @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.97); } } /* the entrances start at scale .97 (Andrew's pick from the motion samples); the rise, fade and duration are unchanged */

@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3PT0jyMCwtudRH6po56cqU8gD55vWcTf7j35nHbWye6L0Db69TItTTyYhhRie2v0' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-Bh88iq+o5hSOF0uPdHRPoBux5eQ1nobCgSiUxi8T3LQUEmgg2ZJTjRbFUlkK9j+q' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-TZmKgoBg9lSDMVNXR9ZQwP3oS876l5H/cJw8ZGn+8KeEY8hdiiqkzrcmGLMzjZlE' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-njsBkvRmlMxj+8DDRGr4tfJzvY61PCmdZ8A2enePSztyauHMBhCQtsodBdNPovUY' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -328,6 +328,9 @@
   .modal:not(.hidden) .card { animation: menuRise var(--anim-dur) var(--ease-open); }
   #mapNote:not(.hidden) { animation: menuRise var(--anim-dur) var(--ease-open); }
   #selPop:not(.hidden) { animation: menuRiseC var(--anim-dur) var(--ease-open); } /* centred: its rise keyframes must carry the -50% X shift or the pop-up jumps sideways mid-animation */
+  #selPop.leaving { animation: menuRiseCOut 180ms var(--ease-close) forwards; }
+  #mapNote.leaving { animation: menuRiseOut 180ms var(--ease-close) forwards; }
+  @keyframes menuRiseCOut { to { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuFade { from { opacity: 0; } }
   @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.97); } } /* the entrances start at scale .97 (Andrew's pick from the motion samples); the rise, fade and duration are unchanged */
@@ -3418,7 +3421,7 @@ function bootMap() {
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
 let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
 // the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears on recovery
-function noteMapState() { $('mapNote').classList.toggle('hidden', !((mapNoteArmed && !glOk) || basemapDead)); }
+function noteMapState() { if ((mapNoteArmed && !glOk) || basemapDead) showSurface($('mapNote')); else hideSurface($('mapNote')); }
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 // proof the basemap is drawing: the moment a tile lands after an outage, the death notice clears itself
@@ -3850,8 +3853,8 @@ function markUndone(name) { // the mutation is BOARD.clearStreet; the finish sta
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // one selection pop-up: header strip and multi-select pill are the same pop-up (pill glass, every action inside)
   const p = $('selPop');
-  if (!sel) { p.classList.add('hidden'); return; }
-  p.classList.remove('hidden'); // renderPanel no longer raises body.selOpen: its consumer is retired; the button holds its seat in every state
+  if (!sel) { hideSurface(p); return; }
+  showSurface(p); // renderPanel no longer raises body.selOpen: its consumer is retired; the button holds its seat in every state
   const multi = selSet.length >= 2; // single and multi are the SAME size: same box, same two rows; only the words and buttons change
   if (!multi) {
     $('selName').textContent = sel.name;
