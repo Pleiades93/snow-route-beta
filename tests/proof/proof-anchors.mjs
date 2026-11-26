@@ -137,9 +137,8 @@ check('3b: labelpts is created exactly once and never removed in any part',
 check('3c: no part writes a title layer\'s properties by literal id (the specs in addStack are the only seat; the create backdrop\'s recorded-pair restore is the one sanctioned visibility writer and it names no title id literally)',
   !/set(?:Layout|Paint)Property\('streetnamespt/.test(allParts));
 
-// ---------- (4) the handover (Beta 1.297: instant switch at 15.2) ----------
-// The titles end at 15.2 with no fade stops in their spec; route-only
-// clones start at 15.2 with no fade ramp (decision record: CHANGELOG 1.297).
+// ---------- (4) the handover ----------
+// Titles and clones meet at one boundary, 15.2, with no fade on either side.
 check('4a: the title spec carries no fade stops and is capped at maxzoom 15.2',
   engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]") &&
   engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter:'));

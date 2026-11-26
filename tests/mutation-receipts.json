@@ -15213,6 +15213,30 @@
    "red": "see receipt round3-1297-drive225 (CI head 6 twice: G9 bg rgb(255, 255, 255), ratio 15.40)",
    "green": "drive225 13/13 PASS locally with the polled face read",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-1263-r2",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "164ca9886fe022a8e9cb6486bd09cf4c04de2537f90c21d2aa0245b39fc61c4c"
+   },
+   "mutation": "comment and check-name wording only: the premise header and section header shortened to short whys and check 2's history parenthetical trimmed (Codex P1 on PR #220 head 7, sustained); every pin and assertion unchanged",
+   "red": "no red observation applies: no pin changed - the red on base parts is receipt round3-1297-proof-1263's record",
+   "green": "run-proofs 94/94 on the final tree with the shortened wording",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-anchors-r2",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "4191187d910fd5499044aa3f1deae9991281f19d09f80fcfd1dd1bb3e967e605"
+   },
+   "mutation": "comment wording only: the handover section header shortened to a short why (Codex P1 on PR #220 head 7, sustained); every pin and assertion unchanged",
+   "red": "no red observation applies: no pin changed - the red on base parts is receipt round3-1297-proof-anchors' record",
+   "green": "run-proofs 94/94 on the final tree with the shortened wording",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }
