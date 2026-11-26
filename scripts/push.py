@@ -448,16 +448,18 @@ def _limits_module(instrument_root):
     return mod
 
 
-def _limits_added_lines(old_text, new_text):
+def _limits_changed_lines(old_text, new_text):
     old = [] if old_text is None else old_text.splitlines()
-    new = [] if new_text is None else new_text.splitlines()
-    out = []
+    new = new_text.splitlines()
+    added, deletions = set(), set()
     # autojunk off: unchanged repetitive lines are not additions.
     sm = difflib.SequenceMatcher(None, old, new, autojunk=False)
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
         if tag in ("insert", "replace"):
-            out.extend(new[j1:j2])
-    return out
+            added.update(range(j1, j2))
+        elif tag == "delete":
+            deletions.add((j1, i1, i2))
+    return added, deletions
 
 
 def _as_text(data):
@@ -495,11 +497,10 @@ def _limits_verdict(mod, changed, labels):
                 errors.append(err)
         if binary or new_bytes is None:
             continue
-        added = _limits_added_lines(old_text, new_text)
+        added, deletions = _limits_changed_lines(old_text, new_text)
         if mod.is_product_path(path):
             product += len(added)
-        for text in added:
-            errors.extend(mod.line_errors(path, text))
+        errors.extend(mod.changed_line_errors(path, old_text, new_text, added, deletions))
     err = mod.size_error("this push", product, labels)
     if err:
         errors.append(err)

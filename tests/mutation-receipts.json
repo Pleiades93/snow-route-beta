@@ -15954,6 +15954,71 @@
    "red": "108 pass / 1 fail: 'scan: a planted ignored write fails' got exit 0, want 1 - the fixture section convicts a dead write rule",
    "green": "gate fixtures 109/109 on the restored tree",
    "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-limits-touched-comments",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9",
+    "scripts/gate-fixtures/run-fixtures.py": "8a2d0fb350537c25287ae3258a2a2fb92f47f068b67009ef8332cc6170a38dfb"
+   },
+   "mutation": "changed_line_errors' touched-comment loop neutered (comment_spans iteration replaced with an empty list) in place, the full gate-fixtures suite replayed, then the file restored byte-identical (md5 verified)",
+   "red": "111 pass / 2 fail: 'pr-limits: a rewritten long comment fails on its full text' and 'pr-limits: a deletion leaving a long partial comment fails' both got exit 0, want 1 - per-line judging alone cannot see a multi-line comment",
+   "green": "gate fixtures 113/113 on the shipped file, the four touched-comment cases included",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8a2d0fb350537c25287ae3258a2a2fb92f47f068b67009ef8332cc6170a38dfb",
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9"
+   },
+   "mutation": "the same changed_line_errors neuter in check-pr-limits.py, replayed against the fixtures file as shipped in this step (four touched-comment cases added, total 113)",
+   "red": "the two conviction cases flip (got exit 0, want 1); the untouched-long and rewritten-short controls stay green under the neuter - the cases convict the missing full-text reading, not the harness",
+   "green": "gate fixtures 113/113 restored",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-push-touched-comments",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9"
+   },
+   "mutation": "_limits_verdict fed a synthetic one-word rewrite of a 32-word block comment (8 words per line) through the shipped shared function, then through a per-line-only stand-in for changed_line_errors",
+   "red": "stand-in verdict: no errors - the push path with per-line judging accepts the rewritten history comment",
+   "green": "shipped verdict: ['parts/a.js:1: touched comment of 32 words (limit 20)'] - push.py and the CLI share the one decision function (changed_line_errors via _limits_changed_lines)",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r2",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9",
+    "scripts/gate-fixtures/run-fixtures.py": "d67d797ebfa468872f0927160f3c6f64b5d79bdca7df0613d94a217e9e4d4ff5"
+   },
+   "mutation": "re-issue of phase1-limits-touched-comments after a wording fix in the fixtures file (its own over-cap section comment, convicted by the new judge at its first push-path exercise); the neuter experiment is unchanged",
+   "red": "111 pass / 2 fail under the neuter: the rewritten-long and deletion-partial cases got exit 0, want 1",
+   "green": "gate fixtures 113/113 on the shipped tree",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d67d797ebfa468872f0927160f3c6f64b5d79bdca7df0613d94a217e9e4d4ff5",
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9"
+   },
+   "mutation": "re-issue of phase1-fixtures-touched-comments after the fixtures file's own section comment was compressed to the cap (42 words as written; the new judge refused the step-4 push on it - its first real conviction)",
+   "red": "under the changed_line_errors neuter the two conviction cases flip (got exit 0, want 1); controls stay green",
+   "green": "gate fixtures 113/113 on the shipped tree",
+   "issued": "2026-11-26 phase1-detectors"
   }
  ]
 }

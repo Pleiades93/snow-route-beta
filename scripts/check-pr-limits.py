@@ -2,7 +2,7 @@
 """Pull-request limit judge (machinery gate round, queue 7b).
 
 Judges a PR diff (base..HEAD) under the coding-discipline limits
-Andrew set on 2026-11-23. Only ADDED lines are ever judged.
+Andrew set on 2026-11-23. Added lines and the full text of touched comments are judged.
 
 FAIL rules:
   * A single commit adding more than SIZE_LIMIT product lines,
@@ -10,7 +10,7 @@ FAIL rules:
     applied by Andrew or the lead only; this judge never applies
     it. Product lines are added lines under parts/, plus src/sw.js
     and flags.js - the shipped app's own code.
-  * An added comment line of more than COMMENT_WORD_LIMIT words.
+  * A touched comment of more than COMMENT_WORD_LIMIT words.
   * An added line longer than LINE_CHAR_LIMIT characters.
   * A NEW file at the repo root outside ROOT_ALLOWLIST.
 
@@ -80,6 +80,83 @@ def line_errors(path, text):
         errs.append(f"{path}: added comment line of {words} "
                     f"words (limit {COMMENT_WORD_LIMIT})")
     return errs
+
+
+def comment_spans(path, text):
+    """Yield zero-based first line, last line and full comment text."""
+    ext = Path(path).suffix.lower()
+    quoted = r"""(["'])(?:\\[\s\S]|(?!\1|\\)[\s\S])*\1"""
+    if ext in (".js", ".mjs", ".css"):
+        markers = r"/\*[\s\S]*?\*/"
+        if ext != ".css":
+            markers += r"|//[^\r\n]*"
+        pattern = quoted + r"|\x60(?:\\[\s\S]|[^\x60\\])*\x60|" + markers
+    elif ext in (".html", ".md"):
+        pattern = r"<!--[\s\S]*?-->"
+        if ext == ".html":
+            style = re.search(r"(?<=<style>)[\s\S]*?(?=</style>)", text)
+            if style:
+                offset = text.count("\n", 0, style.start())
+                for first, last, body in comment_spans("style.css", style[0]):
+                    yield first + offset, last + offset, body
+    elif ext in (".py", ".yml", ".yaml", ".sh"):
+        pattern = quoted + r"|\#[^\r\n]*"
+        if ext == ".py":
+            pattern = r"""(?:'''[\s\S]*?'''|""" + r'"""[\s\S]*?"""' + ")|" + pattern
+    else:
+        return
+
+    block = None
+    for match in re.finditer(pattern, text):
+        raw = match[0]
+        if raw.startswith(("'", '"', "\x60")):
+            continue
+        first = text.count("\n", 0, match.start())
+        last = first + raw.count("\n")
+        indent = text[text.rfind("\n", 0, match.start()) + 1:match.start()]
+        marker = "//" if raw.startswith("//") else "#" if raw.startswith("#") else None
+        if marker:
+            body = raw[len(marker):]
+            if (block and block[1] + 1 == first and block[3:] == (indent, marker)
+                    and not indent.strip()):
+                block = block[0], last, block[2] + "\n" + body, indent, marker
+                continue
+        else:
+            body = raw[4:-3] if raw.startswith("<!--") else raw[2:-2]
+            body = re.sub(r"^[ \t]*\* ?", "", body, flags=re.M)
+        if block:
+            yield block[:3]
+        block = first, last, body, indent, marker
+    if block:
+        yield block[:3]
+
+
+def changed_line_errors(path, old_text, new_text, added, deletions):
+    """Judge added lines and full comments intersecting the diff."""
+    lines = new_text.splitlines()
+    errors = [err for i in sorted(added) for err in line_errors(path, lines[i])]
+    if path in GENERATED_EXEMPT:
+        return errors
+    touched = set(added)
+    if deletions:
+        for first, last, _ in comment_spans(path, old_text):
+            for boundary, start, end in deletions:
+                if first < start <= last:
+                    touched.add(boundary - 1)
+                if first < end <= last:
+                    touched.add(boundary)
+    for first, last, body in comment_spans(path, new_text):
+        if not any(i in touched for i in range(first, last + 1)):
+            continue
+        words = len(body.split())
+        if words <= COMMENT_WORD_LIMIT:
+            continue
+        if (first == last and first in added
+                and (comment_words(path, lines[first]) or 0) > COMMENT_WORD_LIMIT):
+            continue
+        errors.append(f"{path}:{first + 1}: touched comment of {words} "
+                      f"words (limit {COMMENT_WORD_LIMIT})")
+    return errors
 
 
 def root_file_error(path):
@@ -206,16 +283,25 @@ def commit_files(root, sha):
     return changed, added, product
 
 
-def added_lines(root, base):
-    """(path, text) for every added line in the base..HEAD diff."""
-    out = git(root, "diff", "--unified=0", "--no-renames",
-              f"{base}..HEAD")
+def changed_line_ranges(root, base):
+    """Path, added line indices and deletion boundaries from Git's diff."""
+    out = git(root, "diff", "--unified=0", "--no-renames", f"{base}..HEAD")
+    ranges = {}
     path = None
-    for ln in out.splitlines():
-        if ln.startswith("+++ b/"):
-            path = ln[6:]
-        elif ln.startswith("+") and not ln.startswith("+++"):
-            yield path, ln[1:]
+    for line in out.splitlines():
+        if line.startswith("diff --git "):
+            path = None
+        elif path is None and line.startswith("+++ b/"):
+            path = line[6:]
+        elif path and line.startswith("@@ "):
+            hunk = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
+            old_start, removed, start, length = (int(value) if value is not None else 1 for value in hunk.groups())
+            added, deletions = ranges.setdefault(path, (set(), set()))
+            if length:
+                added.update(range(start - 1, start - 1 + length))
+            elif removed:
+                deletions.add((start, old_start - 1, old_start - 1 + removed))
+    return ranges
 
 
 def scope_areas(root, base):
@@ -271,8 +357,10 @@ def main():
                             "commit's, and it adds no new file)")
         prev_files = changed
 
-    for path, text in added_lines(root, args.base):
-        errors.extend(line_errors(path, text))
+    for path, (added, deletions) in changed_line_ranges(root, args.base).items():
+        old_text = git(root, "show", f"{args.base}:{path}") if deletions else ""
+        new_text = git(root, "show", f"HEAD:{path}")
+        errors.extend(changed_line_errors(path, old_text, new_text, added, deletions))
 
     out = git(root, "diff", "--name-status", "--no-renames",
               f"{args.base}..HEAD")

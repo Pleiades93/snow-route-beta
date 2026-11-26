@@ -1277,6 +1277,35 @@ with tempfile.TemporaryDirectory() as td:
     repo, b = git_repo(t / "exempt", [("c", {"index.html": "x" * 300 + "\n"})])
     check("pr-limits: a generated file's long line is exempt",
           run_limits(repo, b), 0)
+    # Touched comments (Phase 1, Class 1a): the judge reads a
+    # touched comment's full text, not only its added lines.
+    long_block = ("/*\n"
+                  " * alpha bravo charlie delta echo foxtrot golf hotel\n"
+                  " * india juliet kilo lima mike november oscar papa\n"
+                  " * quebec romeo sierra tango uniform victor whiskey xray\n"
+                  " * yankee zulu apple banana cherry dragon eagle falcon\n"
+                  " */\n")
+    def head1(repo):
+        return subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD~1"],
+                              capture_output=True, text=True).stdout.strip()
+    repo, _ = git_repo(t / "rewritten", [("c1", {"parts/a.js": long_block + "const a = 1;\n"}),
+                                         ("c2", {"parts/a.js": long_block.replace("whiskey", "whisky") + "const a = 1;\n"})])
+    check("pr-limits: a rewritten long comment fails on its full text",
+          run_limits(repo, head1(repo)), 1)
+    shorter = long_block.replace(" * yankee zulu apple banana cherry dragon eagle falcon\n", "")
+    repo, _ = git_repo(t / "delpartial", [("c1", {"parts/a.js": long_block + "const a = 1;\n"}),
+                                          ("c2", {"parts/a.js": shorter + "const a = 1;\n"})])
+    check("pr-limits: a deletion leaving a long partial comment fails",
+          run_limits(repo, head1(repo)), 1)
+    repo, _ = git_repo(t / "untouched", [("c1", {"parts/a.js": long_block + "const a = 1;\n"}),
+                                         ("c2", {"parts/a.js": long_block + "const a = 2;\n"})])
+    check("pr-limits: an untouched long comment passes",
+          run_limits(repo, head1(repo)), 0)
+    short_block = "/* one two three four five six\n seven eight nine ten eleven twelve */\n"
+    repo, _ = git_repo(t / "shorttouch", [("c1", {"parts/a.js": short_block + "const a = 1;\n"}),
+                                          ("c2", {"parts/a.js": short_block.replace("seven", "SEVEN") + "const a = 1;\n"})])
+    check("pr-limits: a rewritten short comment passes",
+          run_limits(repo, head1(repo)), 0)
     # Fetch shallow ancestry so the size rule sees the product commit.
     src, b = git_repo(t / "mergesrc", [])
     genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
@@ -1368,6 +1397,6 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: a baselined clone pair passes",
           run_scan(clone_tree), 0)
 
-total = 109
+total = 113
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
