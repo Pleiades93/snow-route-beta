@@ -1,5 +1,6 @@
 /* Beta 1.158 (Andrew, 2026-11-09: picked "Falls and settles" from the
-   falling-snow examples page): snowfall for the boot/menu scene ONLY.
+   falling-snow examples page): snowfall for the boot scene and the
+   blue menus (every blue menu since 1.299 - never the map).
    Parameters extracted from the examples artifact's built source (its
    "settles" configuration): 85 flakes, radius 1.1-3.6 px, fall speed
    34-72 px/s, sway amplitude 7 px at sway speed 0.7 (per-flake frequency
@@ -20,27 +21,27 @@
    menu's .boot entrance rides a translateX(-26px) slide home plus an
    opacity ramp, so the menu-half field physically slid sideways while
    fading in over the static splash-half field: the twitch. Now there
-   is ONE canvas - #snowCv, inside #splash (a top-level fixed layer
-   spanning the whole opening scene; the canvas is never reparented
+   is ONE canvas - #snowCv (inside #splash through 1.298, a body-level
+   fixed layer since 1.299; the canvas is never reparented at runtime
    and never transformed) - and while the scene is live the engine
-   carries body.snow-scene, under which #routeMenu.boot's background
-   is transparent (head.html), so the single field paints through
+   carries body.snow-scene, under which the menus' backgrounds are
+   transparent (head.html), so the single field paints through
    under the menu's panes: behind the title (the brand layer) and
    behind the pills in both halves of the scene, never covering text
-   or controls. stop() removes the class when the scene ends for
-   good, so the tab menu, the delete-return picker and reduced-motion
-   boots (the engine never starts there) all keep the menu's own
-   opaque blue. A resize preserves flake positions PROPORTIONALLY
+   or controls. park() removes the class when no blue menu is open
+   (1.299: it resumes when one opens), so the map and reduced-motion
+   boots (the engine never starts there) keep the app's own surfaces.
+   A resize preserves flake positions PROPORTIONALLY
    (the field scales, it does not re-scatter); no resize can occur
    mid-transition, since nothing in the transition changes the
    viewport or the canvas's box. Lifetime mirrors the brand layer's:
    it starts at boot, pauses while the page is hidden (rAF halts; the
    dt clamp keeps the resume jump-free), hides in the menu's
    sub-panes alongside the title (showRmPane carries .away on the
-   canvas) and returns at the main pane, and stops for good once the
-   boot scene ends (the pick fade's .bye / the layer's .off / the
-   menu parked) - no snow anywhere else in the app, and it never
-   restarts for the tab-mode menu. Under reduced motion it never
+   canvas and on #brandLayer alike) and returns at the main pane,
+   and parks when no blue menu
+   is open (1.299 - the boot-only lifetime ended there) - no snow on
+   the map, ever. Under reduced motion it never
    starts (the app's standing convention - the same media query arm()
    branches on). window.__snow is the test handle drive180 measures
    (presence, motion, accumulation state, and - at 1.159 - the flakes'
@@ -81,7 +82,12 @@
    44 px tab item + 3 px), so the peak follows it down,
    58 -> 51 - the crest still stands exactly as tall as the
    bar, which was the 1.161 condition. drive180's SNOW9 pin
-   is re-pinned to 51 in the same change. */
+   is re-pinned to 51 in the same change.
+   Beta 1.299: the one field serves every blue menu (Andrew: the
+   same snow as the splash, identical). It parks when no menu is
+   open - clock frozen, field kept, so the pile persists across
+   menus in session memory - and resumes with the menu's first
+   frame. Specks draw from a sprite now: path fills cost frames. */
 (function snowLayer() {
   var cvS = document.getElementById('snowCv');
   var handle = { cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: function () { return []; } };
@@ -92,7 +98,7 @@
   var MID = { per: 4400, rMin: 1.8, rMax: 3.4, vMin: 26, vMax: 48, swayAmp: 7, swaySpeed: 0.6, alpha: 0.85 };
   var BLOB = { per: 45000, rMin: 26, rMax: 52, vMin: 34, vMax: 56, swayAmp: 12, swaySpeed: 0.25, alpha: 0.3 };
   function rand(a, b) { return a + Math.random() * (b - a); }
-  var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, deadFrames = 0;
+  var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, frames = 0;
   var ctxS = cvS.getContext('2d');
   if (!ctxS) return;
   function resize() {
@@ -112,6 +118,7 @@
     g.fillStyle = grad; g.fillRect(0, 0, size, size);
     return c;
   }
+  var speckSprite = makeSprite(32, [[0, 1], [0.75, 1], [1, 0]]); // Beta 1.299: the specks draw from a sprite too - per-frame path fills cost the menus their frames (drive226)
   var midSprite = makeSprite(64, [[0, 1], [0.35, 0.8], [0.7, 0.28], [1, 0]]); // Beta 1.161: the mid layer's soft flake, rendered once
   var blobSprite = makeSprite(256, [[0, 0.55], [0.45, 0.34], [0.75, 0.13], [1, 0]]); // Beta 1.161: the near blobs' extra-soft disc, rendered once
   function newSpeck(scatter) {
@@ -136,6 +143,7 @@
     return maxH * (0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4));
   }
   function render(amount) {
+    frames++; // Beta 1.299: the painted-frame count drive226 times the menus against
     var ctx = ctxS;
     ctx.clearRect(0, 0, W, H);
     if (amount > 0) {
@@ -152,15 +160,13 @@
       ctx.fill();
       ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = '#ffffff';
     var i, f, fx;
-    for (i = 0; i < specks.length; i++) { // Beta 1.161: the speck field - tiny, sharp, each twinkling on its own phase
+    for (i = 0; i < specks.length; i++) { // Beta 1.161: the speck field - tiny, sharp, each twinkling on its own phase (Beta 1.299: drawn from speckSprite - the same disc, no per-frame path fill)
       f = specks[i];
       fx = f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp;
       ctx.globalAlpha = SPECK.alpha * f.o * (0.55 + 0.45 * Math.sin(clock * f.tw + f.twPhase)) * Math.min(1, f.age / 0.6);
-      ctx.beginPath();
-      ctx.arc(fx, f.y, f.r, 0, Math.PI * 2);
-      ctx.fill();
+      var ds = f.r * 2;
+      ctx.drawImage(speckSprite, fx - f.r, f.y - f.r, ds, ds);
     }
     for (i = 0; i < mids.length; i++) { // Beta 1.161: the mid layer - soft flakes from the pre-rendered sprite
       f = mids[i];
@@ -178,27 +184,41 @@
     }
     ctx.globalAlpha = 1;
   }
-  function sceneLive() {
-    var bl = document.getElementById('brandLayer'), rm = document.getElementById('routeMenu'), sp = document.getElementById('splash');
-    if (bl && (bl.classList.contains('bye') || bl.classList.contains('off'))) return false;
-    if (rm && rm.classList.contains('bye')) return false;
-    if (sp && !sp.classList.contains('go')) return true;
-    if (rm && (rm.classList.contains('open') || rm.classList.contains('show'))) return true;
+  function live() { // Beta 1.299: the scene is any open blue menu, plus the splash that carries the boot menu
+    var rm = document.getElementById('routeMenu'), sm = document.getElementById('setMenu'), sp = document.getElementById('splash');
+    if (sp && sp.classList.contains('go')) return true; // the pick fade: paint until finish() removes the splash
+    if ((rm && (rm.classList.contains('open') || rm.classList.contains('show'))) || (sm && sm.classList.contains('open'))) return true;
+    if (sp && sp.style.visibility !== 'hidden') return true; // the splash is up and not parked for Create
     return false;
   }
-  function stop() {
+  function park() { // Beta 1.299: parking freezes the clock and keeps the field - the pile is held, not ended
+    if (!running) return;
     running = false;
     if (raf) window.cancelAnimationFrame(raf);
     raf = 0;
     ctxS.clearRect(0, 0, W, H);
-    document.body.classList.remove('snow-scene'); // Beta 1.159: the scene is over for good - the route menu's own opaque blue is its background again from here on
+    document.body.classList.remove('snow-scene'); // no menu open: the menus' own opaque blue is their background again
+  }
+  function resume() { // Beta 1.299: the first frame paints synchronously, with the menu's first frame
+    if (running) return;
+    running = true;
+    lastTs = 0;
+    document.body.classList.add('snow-scene');
+    render(settleAmount());
+    raf = window.requestAnimationFrame(loop);
+  }
+  function syncSnow() { // Beta 1.299: .away belongs to the Routes panes - derive it, never inherit it (Settings)
+    var rm = document.getElementById('routeMenu'), bl = document.getElementById('brandLayer');
+    var routesUp = !!(rm && (rm.classList.contains('open') || rm.classList.contains('show')));
+    cvS.classList.toggle('away', !!(routesUp && bl && bl.classList.contains('away')));
+    if (live()) resume(); else park();
   }
   function loop(ts) {
     if (!running) return;
+    if (!live()) { park(); return; }
     if (!lastTs) lastTs = ts;
     var dt = Math.min(0.05, (ts - lastTs) / 1000);
     lastTs = ts;
-    if (!sceneLive()) { if (++deadFrames > 45) { stop(); return; } } else deadFrames = 0;
     if (cvS && cvS.classList.contains('away')) { raf = window.requestAnimationFrame(loop); return; } // Beta 1.254 (O-09): the canvas is hidden (.away - a menu sub-pane is up, showRmPane in app2.js) - skip the simulation and the paint entirely until the main pane returns. The scene is NOT dead (sceneLive stays true: the splash/menu are up), so nothing stops or restarts; lastTs already advanced, and dt clamps on the return frame
     clock += dt;
     var amount = settleAmount();
@@ -235,8 +255,17 @@
   window.addEventListener('resize', function () { window.clearTimeout(rzT); rzT = window.setTimeout(resize, 150); });
   running = true;
   handle.running = function () { return running; };
+  handle.frames = function () { return frames; }; // Beta 1.299: drive226's frame-timing proof reads the painted count
   handle.amount = settleAmount;
   handle.ground = function () { return groundHeightAt(W / 2, settleAmount()); };
   handle.flakes = function () { var out = []; var push = function (f) { out.push({ x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }); }; specks.forEach(push); mids.forEach(push); blobs.forEach(push); return out; }; // Beta 1.159: x is the RENDERED position (base + sway offset) - the painted one (Beta 1.161: all three layers report)
   raf = window.requestAnimationFrame(loop);
+  if (window.MutationObserver) { // Beta 1.299: menu class flips drive park/resume - the observer lands before the next paint
+    var watch = function (el, attrs) { if (el) snowObs.observe(el, attrs); };
+    var snowObs = new MutationObserver(syncSnow);
+    watch(document.getElementById('routeMenu'), { attributes: true, attributeFilter: ['class'] });
+    watch(document.getElementById('setMenu'), { attributes: true, attributeFilter: ['class'] });
+    watch(document.getElementById('splash'), { attributes: true, attributeFilter: ['class', 'style'] });
+    snowObs.observe(document.body, { childList: true }); // finish() removes the splash: the park signal
+  }
 })();

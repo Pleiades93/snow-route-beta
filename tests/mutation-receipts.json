@@ -15573,6 +15573,175 @@
    "red": "the pill's resting seat moved (top 50% to 45%): A1 and D1 fail, dy -45 after the poll expires (15/17)",
    "green": "drive210 on the final tree: 17/17",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "snow1299-drive125-t3",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "5f8418206b81d69e63a27fdbe9b909a26abd6306d737b71f9f3ffad09ff63973",
+    "parts/head.html": "5ddfadc5ebf968e61443ce2393da99a067728fb72756308d1ba0d6e184508da5"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field",
+   "red": "drive125 28/29: T3 fails on menuBgi - the menu's own gradient stands and the shared field is covered",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive125-t3-r2",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "9492868e0e5556e559e73f9b03cc474e4e0cbd476085a3f1bd417487f362abcd",
+    "parts/head.html": "5ddfadc5ebf968e61443ce2393da99a067728fb72756308d1ba0d6e184508da5"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field (re-issued after formatting-only splits for the PR line limits; semantically identical to snow1299-drive125-t3)",
+   "red": "drive125 28/29: T3 fails on menuBgi - the menu's own gradient stands and the shared field is covered",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive125-t3-r3",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "95079affbdf17b444ddb63b46b1ec463b385f3ecfc9014400e862d8b5a601b3e",
+    "parts/head.html": "5ddfadc5ebf968e61443ce2393da99a067728fb72756308d1ba0d6e184508da5"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field (re-issued after formatting-only splits for the PR line limits; semantically identical to snow1299-drive125-t3)",
+   "red": "drive125 28/29: T3 fails on menuBgi - the menu's own gradient stands and the shared field is covered",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "f468ce4003935a2fb2ffef13cf89dff0376710a52e351edd8fff9f435998ef52",
+    "parts/brand-snow.js": "0ffd726bfbc2659fe9f515456d7162fe61fd04f19549e877c6ec905435100060"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r2",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "fc4e2e82c6be3509b3abcaca1ec65daf409ab719eefcd9c520b5ccbeb8809427",
+    "parts/brand-snow.js": "0ffd726bfbc2659fe9f515456d7162fe61fd04f19549e877c6ec905435100060"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame (re-issued after a formatting-only split for the PR line limits; semantically identical to snow1299-drive226)",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r3",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "fc4e2e82c6be3509b3abcaca1ec65daf409ab719eefcd9c520b5ccbeb8809427",
+    "parts/brand-snow.js": "98eb0ac8409bf028caf2f05eab318784a97b410ae9d2d568d645bd094c3cd69e"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame (re-issued after the premise-lint header line named #brandLayer in brand-snow.js; semantically identical to snow1299-drive226)",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r4",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "6a8c9aec6609e24eb5caf679b6b2bd488095ca40fc11136296bfbdcd31ff7147",
+    "parts/brand-snow.js": "b2fc5cebec0e9f75fba7babfc24cd002f7f38acc725852a1428d5ad17c473f0e"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame (re-issued after drive226 gained F10/F11 for the Codex P2 fixes; semantically identical to snow1299-drive226)",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 11/11 PASS in the PR #223 gate on head f43ae45a's successor tree (CI shard 2, 2026-11-26); F10/F11 green locally",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive125-t3-r4",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "95079affbdf17b444ddb63b46b1ec463b385f3ecfc9014400e862d8b5a601b3e",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the sibling-gated body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field (re-issued after the C5 sibling-gate changed the rule's text; mutation re-observed on the current tree)",
+   "red": "drive125 28/29: T3 fails - the menu's own gradient stands and the shared field is covered (local, 2026-11-26)",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26; also CI-green on the C4 head)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r5",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "e7204e2878a77f9562350bdb101c83058e52a494477b7a0d68901619619a7b2a",
+    "parts/brand-snow.js": "b2fc5cebec0e9f75fba7babfc24cd002f7f38acc725852a1428d5ad17c473f0e"
+   },
+   "mutation": "parts/brand-snow.js: a one-time 150 ms busy-wait at resume() entry (the open path's first paint stalls before the menu's first moving frame)",
+   "red": "drive226 F2 red (first movement 169 ms after the click, over the 51 ms bound) and F3 red (interval p95 150 ms) on the mutated tree, local 2026-11-26; the pre-fix index-based F2 passed this shape - snow and menu samples arrive together after the stall",
+   "green": "drive226 15/15 on the unmutated tree in CI (the fluidity adjudicating environment); local 12/15 with only the documented rig flakes (F7 tap race, F9/F9b throttled-rig starvation)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive154-e4-r1",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive154.mjs": "5c527c0cb5031392aa3e8b0d661b52cfe59b4af6ac659c1a87c2abb14478b284",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053"
+   },
+   "mutation": "parts/create-pick.js: crConfirmDismiss drops its hideSurface call, so the delete-confirm modal never hides",
+   "red": "drive154 E4 red on the mutated tree (modalHidden:false after the new poll gives up), local 2026-11-26",
+   "green": "drive154 E4 green on the unmutated tree (local 2026-11-26; the poll waits out the 180 ms exit 1.298 added, which the old immediate read raced - CI failures on the C4 and C7 heads of PR #223, pass on C6)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r6",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "77cad00f64896595c371f471b34714ce49f23bb44a7cbaee39d99e0bd1f53618",
+    "parts/brand-snow.js": "b2fc5cebec0e9f75fba7babfc24cd002f7f38acc725852a1428d5ad17c473f0e"
+   },
+   "mutation": "drive226 F7 sequence shape: with routesBtn re-taps scripted at 70 ms the 400 ms tapGuard rejects them and no close is exercised (the pre-fix F7); the fix taps rmClose and asserts the closed-and-parked middle state",
+   "red": "pre-fix F7 failed on the local rig with the menu ending closed (stretched round trips admitted a toggle tap) and passed in CI without ever closing - it could not observe its claim in either direction",
+   "green": "drive226 F7 green locally and the full drive 15/15 in CI on the C7 head's judge (shard 2); F7's new middle-state assert reads the park the close must produce",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r7",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "6a9bfb72756b5c2a46acb52060936246f5ab4d13c494b7c54821163b811bb482",
+    "parts/brand-snow.js": "b2fc5cebec0e9f75fba7babfc24cd002f7f38acc725852a1428d5ad17c473f0e"
+   },
+   "mutation": "drive226 F7 sequence shape: with routesBtn re-taps scripted at 70 ms the 400 ms tapGuard rejects them and no close is exercised (the pre-fix F7); the fix taps rmClose and asserts the closed-and-parked middle state (re-issued at r7 after a comment-only compression of the F7 header)",
+   "red": "pre-fix F7 failed on the local rig with the menu ending closed (stretched round trips admitted a toggle tap) and passed in CI without ever closing - it could not observe its claim in either direction",
+   "green": "drive226 F7 green locally and the full drive 15/15 in CI on the C7/C8 heads (shard 2)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive154-e4-r2",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive154.mjs": "efbcea8b6e412191061a1d1ae527bb5069e10891c79555a6a31a2994d63a716f",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053"
+   },
+   "mutation": "parts/create-pick.js: crConfirmDismiss drops its hideSurface call, so the delete-confirm modal never hides (re-issued at r2 after a comment-only shortening of the E4 poll line)",
+   "red": "drive154 E4 red on the mutated tree (modalHidden:false after the poll gives up), local 2026-11-26",
+   "green": "drive154 E4 green on the unmutated tree (local 2026-11-26 and CI shard 3 on the C8 head); the poll waits out the 180 ms exit 1.298 added, which the old immediate read raced - CI failures on the C4 and C7 heads of PR #223, pass on C6",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }

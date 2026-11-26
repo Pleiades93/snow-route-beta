@@ -245,6 +245,7 @@ await ev2(`(() => { clearThemeOverride(); applyNight(); return true; })()`);
 ok('E3 NIGHT TOKENS (Andrew\'s requirement): the confirm card\'s computed background + text colour EQUAL the theme tokens in BOTH modes - day rgba(255, 255, 255, 0.92) / rgb(28, 37, 52), night rgba(32, 33, 37, 0.94) / rgb(237, 242, 249) - a hardcoded-white card fails the night half | day: ' + JSON.stringify(dayE) + ' night: ' + JSON.stringify(nightE),
   dayE.bg === 'rgba(255, 255, 255, 0.92)' && dayE.col === 'rgb(28, 37, 52)' && nightE.bg === 'rgba(32, 33, 37, 0.94)' && nightE.col === 'rgb(237, 242, 249)');
 await ev2(`document.getElementById('crModalNo').click()`);
+await poll(`document.getElementById('crModal').classList.contains('hidden')`, 10000); // Wait for the exit animation before checking cancellation state.
 const cancelE = JSON.parse(await ev2(`(async () => { const rec = await upGet('route-2'); return JSON.stringify({ rec: !!rec, key: localStorage.getItem(routeKeys('route-2').done), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-2"]'), modalHidden: document.getElementById('crModal').classList.contains('hidden') }); })()`)); // Beta 1.166: the definition's home is the store - presence is read there
 ok('E4 CANCEL LEAVES EVERYTHING: the record, the route\'s storage keys and the row all survive a Cancel | ' + JSON.stringify(cancelE),
   cancelE.rec === true && cancelE.key === '[]' && cancelE.row === true && cancelE.modalHidden === true);
