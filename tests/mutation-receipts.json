@@ -14603,6 +14603,18 @@
    "red": "CI run 45734211500 shard 6 on 53d7f885: drive136 23/24 - F12a failed; its own log payload shows the app banner text 'Backup not saved A recovery backup was shared instead'",
    "green": "the corrected substring matches that CI-sampled banner text verbatim; full drive136 green is the cloud gate's call (the local rig crashes at its reload wall, identically on the base tree)",
    "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296rrr-drive86",
+   "check": "tests/browser/drive86.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive86.mjs": "17852516bb7e73b33cd47d99f6dc64b0eed43eaef80c9312b74dd5bb9222852c"
+   },
+   "mutation": "n/a - re-issue after a limits-only rewrap of the c04 sample line (per-commit PR-limits judged the grown line at 268 chars); no check logic changed",
+   "red": "CI run 45734211500 shard 1 on 53d7f885: drive86 16/18 - T1 and T2 failed on a standing ambient banner (bare shown assertions)",
+   "green": "the re-scoped file (unchanged logic in this rewrap) ran locally: drive86 18/18 PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
   }
  ]
 }

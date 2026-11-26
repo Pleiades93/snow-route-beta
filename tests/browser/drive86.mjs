@@ -25,7 +25,7 @@ ok('T1 trail seeded (2 pts)', A.tl === 2);
 await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail'), toast: $('bannerHead').textContent, shown: $('banner').classList.contains('show') }))()`));
 ok('T1 clear writes [] to storage', A.ls === '[]');
-// shown WITH a clear-related text is the failure - the ambient GPS banner ('Location is off') is not the clear's own
+// shown WITH a clear-related text is the failure: the ambient GPS banner ('Location is off') is not the clear's
 ok('T1 no banner fires on a successful clear (the emptied trail is the confirmation)', !A.shown || A.toast === 'Location is off');
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
 await ev(`loadRoute('5w'); true`); await sleep(600);
@@ -112,7 +112,8 @@ await ev(`(() => { navigator.geolocation.watchPosition = () => 777; navigator.ge
 // ---- C04: break ONLY the marker key, then start a clean ----
 await ev(`(() => { window.__realLsSet = lsSet; lsSet = (k, v) => k === 'snowroute.5w.v5.sess' ? false : window.__realLsSet(k, v); return true; })()`);
 await ev(`(() => { startClean(); return true; })()`);
-const c04Raw = await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent, runStart, marker: Math.floor(runStart / 1000), dirty: writePending('sess'), stored: localStorage.getItem('snowroute.5w.v5.sess') }))()`);
+const c04Raw = await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent, runStart, marker: Math.floor(runStart / 1000), `
+  + `dirty: writePending('sess'), stored: localStorage.getItem('snowroute.5w.v5.sess') }))()`);
 const c04 = JSON.parse(c04Raw);
 ok('C04a marker-save failure at clean start is SILENT since Beta 1.296 (its warning is cut), the clean still starts, retry armed ' +
   '| ' + JSON.stringify(c04), c04.runStart > 0 && (!c04.shown || c04.head === 'Location is off') && c04.dirty === true && (c04.stored === null || c04.stored.indexOf(String(c04.marker)) < 0));
