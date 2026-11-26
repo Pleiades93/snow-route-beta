@@ -17034,6 +17034,59 @@
    "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (123 pass, 1 fail)",
    "green": "shipped scanner restored byte-identical: gate fixtures 124 pass, 0 fail, including the two descendant-stability fixtures",
    "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r10",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued for event-tagged scope segments: a call-argument callback's inherited segment now carries the call's first string argument)",
+   "red": "each plant convicted alone: 'parts/app1.js:786: lsSet write outcome ignored'; a settleAmount body cloned as settleAmountPlant in brand-snow.js; the #snowCv CSS block duplicated as #snowCvPlant inside the style block",
+   "green": "shipped scanner on the untouched tree: PASS (593 clone pairs checked, baseline regenerated - 23 pairs re-keyed to event-tagged segments, count unchanged); prepending an unrelated addEventListener('probe') to app4.js no longer renumbers the click handler's descendant pairs (18 false clone errors before the fix)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r9",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e"
+   },
+   "mutation": "scan-parts.cjs removed from JUDGE_PATHS in check-receipts.py, receipts gate run over the changed scanner",
+   "red": "neutered gate exits 0: the scanner change passes with no current receipt",
+   "green": "shipped gate refuses the same change until a current receipt exists; check-receipts.py restored byte-identical (sha256 f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r8",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e"
+   },
+   "mutation": "scanner moved aside, push plan run on a planted ignored write in app1.js (prospective tree assembled with the plant), then the shipped scanner restored and the plan re-run",
+   "red": "scanner aside: PUSH PLAN OK - the push path accepts a planted ignored write (exit 0)",
+   "green": "shipped scanner: PUSH REFUSED naming it - 'parts/app1.js:786: lsSet write outcome ignored' (exit 1); plant removed, tree restored byte-identical",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r12",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f039dbeaec90ab26bda9a6b81f67e1fb1cb2c5b99e5a822f97c90f120b66dd05",
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued for the listener-stability fixtures)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (125 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 126 pass, 0 fail, including the two listener-stability fixtures",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }

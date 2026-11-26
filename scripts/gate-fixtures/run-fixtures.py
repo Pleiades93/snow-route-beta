@@ -1404,6 +1404,14 @@ DESC_JS = (
     "})();\n"
 )
 DESC_JS_EDITED = DESC_JS.replace("#ffc233", "#ffc234")
+SIB_JS = (
+    "document.addEventListener('click', () => {\n"
+    "  function twinA(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  function twinB(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  return twinA(1) + twinB(2);\n"
+    "});\n"
+)
+SIB_JS_INSERTED = "document.addEventListener('probe', () => 42);\n" + SIB_JS
 METHOD_JS_INSERTED = (
     "const z = { read() { return this.other; } };\n"
     "const a = { read() { return this.id; } };\n"
@@ -1480,7 +1488,13 @@ with tempfile.TemporaryDirectory() as td:
     w(d_tree / "parts" / "a.js", DESC_JS_EDITED)
     check("scan: an ancestor body edit keeps descendant identities",
           run_scan(d_tree), 0)
+    s_tree = scan_tree(t / "sibstable", js=SIB_JS)
+    check("scan: --write-baseline records the listener-nested pair",
+          run_scan(s_tree, "--write-baseline"), 0)
+    w(s_tree / "parts" / "a.js", SIB_JS_INSERTED)
+    check("scan: a prepended listener keeps descendant identities",
+          run_scan(s_tree), 0)
 
-total = 124
+total = 126
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

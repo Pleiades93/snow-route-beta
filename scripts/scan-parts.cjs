@@ -131,12 +131,17 @@ function scanJs(file, source) {
       // ancestor's body edit cannot renumber them.
       let segment;
       if (name) segment = name.getText(tree);
-      else if (ts.isCallExpression(node.parent) && node.parent.expression === node) segment = '<iife>';
       else if (ts.isCallExpression(node.parent)) {
-        const callee = ts.isPropertyAccessExpression(node.parent.expression)
-          ? node.parent.expression.name.text
-          : ts.isIdentifier(node.parent.expression) ? node.parent.expression.text : '';
-        segment = callee ? `<callback:${callee}>` : '<callback>';
+        const call = node.parent;
+        const firstArg = call.arguments && call.arguments[0];
+        const argTag = firstArg && ts.isStringLiteral(firstArg) ? `:${firstArg.text}` : '';
+        if (call.expression === node) segment = `<iife${argTag}>`;
+        else {
+          const callee = ts.isPropertyAccessExpression(call.expression)
+            ? call.expression.name.text
+            : ts.isIdentifier(call.expression) ? call.expression.text : '';
+          segment = callee ? `<callback:${callee}${argTag}>` : '<callback>';
+        }
       } else segment = '<callback>';
       const segKey = `${scope}/${segment}`;
       const segCount = (scopeCounts.get(segKey) || 0) + 1;

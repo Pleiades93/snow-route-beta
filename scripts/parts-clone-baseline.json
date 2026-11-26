@@ -284,7 +284,7 @@
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
-      "parts/app4.js/<callback:addEventListener>#8/releasePack"
+      "parts/app4.js/<callback:addEventListener:click>#7/releasePack"
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
@@ -311,63 +311,63 @@
       "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@076a7f70",
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@076a7f70",
       "parts/app5.js/<callback:then>#2/<callback>@076a7f70"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@f95dff62",
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@f95dff62",
       "parts/app5.js/<callback:then>#2/<callback>@f95dff62"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde",
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde#2"
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@f9ea6fde",
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@f9ea6fde#2"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde",
-      "parts/app4.js/<callback:addEventListener>#8/hrefOf"
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@f9ea6fde",
+      "parts/app4.js/<callback:addEventListener:click>#7/hrefOf"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde",
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@f9ea6fde",
       "parts/app5.js/migratePack/<callback>@f9ea6fde"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde#2",
-      "parts/app4.js/<callback:addEventListener>#8/hrefOf"
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@f9ea6fde#2",
+      "parts/app4.js/<callback:addEventListener:click>#7/hrefOf"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde#2",
+      "parts/app4.js/<callback:addEventListener:click>#7/<callback>@f9ea6fde#2",
       "parts/app5.js/migratePack/<callback>@f9ea6fde"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/hrefOf",
+      "parts/app4.js/<callback:addEventListener:click>#7/hrefOf",
       "parts/app5.js/migratePack/<callback>@f9ea6fde"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
       "parts/app4.js/doRestore/<callback>@73477076"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
       "parts/app5.js/<callback:then>#2/<callback>@73477076"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
       "parts/app5.js/<callback>/<callback>@73477076"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
       "parts/app5.js/<callback>@73477076"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
       "parts/app5.js/migratePack/migRelease"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
       "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
-      "parts/app4.js/<callback:addEventListener>#9/updDone",
+      "parts/app4.js/<callback:addEventListener:click>#8/updDone",
       "parts/app4.js/<callback>@3154897e"
     ],
     [
@@ -495,7 +495,7 @@
       "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
-      "parts/app5.js/<callback:addEventListener>#13/<callback>@c449c59a",
+      "parts/app5.js/<callback:addEventListener:focusout>/<callback>@c449c59a",
       "parts/app5.js/kbSync"
     ],
     [
@@ -687,27 +687,27 @@
       "parts/create-packs.js/upTx/<callback>/<callback:then>/<callback>@77b5c9e7#2"
     ],
     [
-      "parts/create-pick.js/<callback:addEventListener>#18/<callback>@1c05fac9",
+      "parts/create-pick.js/<callback:addEventListener:click>#14/<callback>@1c05fac9",
       "parts/create-pick.js/chosenSet/<callback>@1c05fac9"
     ],
     [
-      "parts/create-pick.js/<callback:addEventListener>#18/<callback>@1c05fac9",
+      "parts/create-pick.js/<callback:addEventListener:click>#14/<callback>@1c05fac9",
       "parts/engine.js/<callback>/lastResortConnect/localFrags/<callback>@1c05fac9"
     ],
     [
-      "parts/create-pick.js/<callback:addEventListener>#7/<callback>@e33454ee",
+      "parts/create-pick.js/<callback:addEventListener:input>/<callback>@e33454ee",
       "parts/create-pick.js/crRunCitySearch/<callback>@e33454ee"
     ],
     [
-      "parts/create-pick.js/<callback:addEventListener>#7/<callback>@e33454ee",
+      "parts/create-pick.js/<callback:addEventListener:input>/<callback>@e33454ee",
       "parts/create-pick.js/crRunCitySearch/<callback>@e33454ee#2"
     ],
     [
-      "parts/create-pick.js/<callback:addEventListener>#7/<callback>@e33454ee",
+      "parts/create-pick.js/<callback:addEventListener:input>/<callback>@e33454ee",
       "parts/create-pick.js/crRunCityTypeahead/<callback>@e33454ee"
     ],
     [
-      "parts/create-pick.js/<callback:onMapReady>/<callback:on>/<callback:some>#2/<callback>@98dccb37",
+      "parts/create-pick.js/<callback:onMapReady>/<callback:on:styledata>/<callback:some>#2/<callback>@98dccb37",
       "parts/create-pick.js/crSetBackdrop/<callback>@98dccb37"
     ],
     [
