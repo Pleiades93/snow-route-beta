@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-CdCJ++il1NtmQ40nIo0vTIMa2SEG3Cg2IDy7DsXMpmi9gBJxGhoQt6IddKxk3oBj' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-favWJzh5SRn+3hUAvQ5ggAlfTrvbFvwdGPMrT4jdGJYtSRofccAd3AGtP68yrcJv' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3PT0jyMCwtudRH6po56cqU8gD55vWcTf7j35nHbWye6L0Db69TItTTyYhhRie2v0' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-Bh88iq+o5hSOF0uPdHRPoBux5eQ1nobCgSiUxi8T3LQUEmgg2ZJTjRbFUlkK9j+q' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -149,6 +149,10 @@
   #confirmPill { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1200; width: min(262px, 92vw); background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); padding: 13px 14px; display: flex; flex-direction: column; gap: 7px; } /* Beta 1.255 (O-03, Andrew's pick A from the cancel-confirm samples): THE shared confirmation surface - the selection pill's own faces and box, centred on the viewport. Through 1.256 it floated scrim-free; Beta 1.257 (Andrew, the backdrop ladder pick) gives the surface its backdrop (#confirmBackdrop, above) - dismissal is still buttons-only: only its two buttons answer. Day face here, night face below - both measured from #selPop itself, so the confirm can never drift from the pill it mirrors */
   body.night #confirmPill { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); }
   #confirmPill.hidden { display: none; }
+  #confirmPill:not(.hidden) { animation: confirmIn var(--anim-dur) var(--ease-open); }
+  #confirmPill.leaving { animation: confirmOut 180ms var(--ease-close) forwards; }
+  @keyframes confirmIn { from { opacity: 0; transform: translate(-50%, -50%) translateY(10px) scale(.97); } }
+  @keyframes confirmOut { to { opacity: 0; transform: translate(-50%, -50%) translateY(10px) scale(.97); } } /* the pill moves in step with its backdrop: in on the open curve, out quicker on the close curve */
   #confirmPill .cfTitle { font-size: 16px; font-weight: 800; line-height: 1.3; } /* the pill title's own type (#selName, Look 2) */
   #confirmPill .cfSub { font-size: 12px; color: #6f757f; line-height: 1.35; } /* the pill sub-line's own type and grey (#selStatus) */
   body.night #confirmPill .cfSub { color: #9aa0aa; }
@@ -327,6 +331,10 @@
   @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuFade { from { opacity: 0; } }
   @keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.97); } } /* the entrances start at scale .97 (Andrew's pick from the motion samples); the rise, fade and duration are unchanged */
+  .modal.leaving { animation: menuFadeOut 180ms var(--ease-close) forwards; }
+  .modal.leaving .card { animation: menuRiseOut 180ms var(--ease-close) forwards; }
+  @keyframes menuFadeOut { to { opacity: 0; } }
+  @keyframes menuRiseOut { to { opacity: 0; transform: translateY(10px) scale(.97); } } /* the exits mirror the entrances: same end pose, the close curve, 180ms */
   .modal .card { position: relative; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; }
   .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
@@ -955,6 +963,23 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
   b.classList.remove('show');
   void b.getBoundingClientRect(); // restart the drop on a re-fire
   b.classList.add('show');
+}
+// overlay exits: a surface leaves over 180ms, then hides; a re-show cancels the leave
+/** @param {HTMLElement} el @returns {void} */
+function showSurface(el) {
+  if (el._exitT) { clearTimeout(el._exitT); el._exitT = 0; }
+  el.classList.remove('leaving'); el.classList.remove('hidden');
+}
+/** @param {HTMLElement} el @returns {void} */
+function hideSurface(el) {
+  if (el.classList.contains('hidden')) return;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (el._exitT) { clearTimeout(el._exitT); el._exitT = 0; }
+    el.classList.remove('leaving'); el.classList.add('hidden'); return;
+  }
+  el.classList.add('leaving');
+  if (el._exitT) clearTimeout(el._exitT);
+  el._exitT = setTimeout(() => { el._exitT = 0; el.classList.add('hidden'); el.classList.remove('leaving'); }, 180);
 }
 // Storage — guarded; a failure is SHOWN, never silent
 /** @returns {void} */ function flagStorage() { document.body.classList.add('storage-bad'); }
@@ -4632,19 +4657,27 @@ $('resetBtn').addEventListener('click', ev => {
   $('finMsg').textContent = (nDone || nNotes)
     ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 && nDone < STREETNAMES.length ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // issue #180: the warning matches finishRun's rule - a FULL clean of a short route (every street done) IS saved, so it is never warned as unsaved
     : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
-  $('finModal').classList.remove('hidden');
+  showSurface($('finModal'));
 });
-$('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
+$('finNo').addEventListener('click', () => hideSurface($('finModal')));
 $('finYes').addEventListener('click', ev => {
   if (!tapGuard('finYes', ev)) return;
-  $('finModal').classList.add('hidden');
+  hideSurface($('finModal'));
   const finished = finishRun();
   if (finished && finished.gpsGap) showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); // after the finish fully completes: the save is never obstructed
 });
 // THE shared confirmation surface (#confirmPill): one reusable surface, buttons only; the backdrop is focus, never a tap target
 let confirmDangerCb = null;
-/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; $('confirmBackdrop').classList.add('on'); p.classList.remove('hidden'); }
-/** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
+/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */
+function showConfirm(o) {
+  const p = $('confirmPill');
+  p.querySelector('.cfTitle').textContent = o.title;
+  p.querySelector('.cfSub').textContent = o.sub;
+  $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger;
+  confirmDangerCb = o.onDanger || null;
+  $('confirmBackdrop').classList.add('on'); showSurface(p);
+}
+/** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); hideSurface($('confirmPill')); confirmDangerCb = null; }
 $('cfKeep').addEventListener('click', hideConfirm);
 $('cfDanger').addEventListener('click', () => { const f = confirmDangerCb; hideConfirm(); if (f) f(); });
 /** @returns {void} */ function askCancelStart() { const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart; showConfirm({ title: 'Cancel this run?', sub: 'All progress will be lost.', keep: 'Keep going', danger: 'Yes, cancel', onDanger: () => { if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); } } }); } // Beta 1.255: THE cancel-start ask - every entry point (the Pace sheet's button, the dock's button) routes through this one function, so the confirmation and its route+run binding can never cover one door and miss the other (gate round 3, Codex P2: the dock's #cancelStartBtn still discarded in one tap)
@@ -4812,12 +4845,12 @@ function setNoteText(n, txt) {
 }
 function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
 let noteFor = null;
-function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); $('noteModal').classList.remove('hidden'); }
-$('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden'));
+function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); showSurface($('noteModal')); }
+$('noteNo').addEventListener('click', () => hideSurface($('noteModal')));
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   const okNote = setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) showBanner('Note not saved');
+  hideSurface($('noteModal')); renderStreets(); if (!okNote.ok) showBanner('Note not saved');
 });
 
 // ===== GPS (checklist SS7) =====
@@ -6771,7 +6804,7 @@ document.addEventListener('pointerdown', e => {
   // the tap is spent here, never reaching the map; the confirmation's backdrop is exempt - dismissal stays buttons-only
   if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill') && !e.target.closest('#confirmBackdrop')) { closeSheets(); spendTap(400); }
 });
-['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
+['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) hideSurface(mEl); }); });
 // div rows never enter :active in some browsers: they take the press shrink through this class instead
 let pressRowEl = null;
 const pressRowOff = () => { if (pressRowEl) { pressRowEl.classList.remove('pressOn'); pressRowEl = null; } };
@@ -9261,9 +9294,9 @@ function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = tit
   crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard';
   $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn);
   $('crModalNo').textContent = crConfirmOneBtn ? 'Cancel' : ((labels && labels.no) || '✕');
-  $('crModalNo').classList.toggle('cancelRed', crConfirmOneBtn || (!!labels && labels.no === 'Cancel')); $('crModal').classList.remove('hidden'); } // two buttons are the only doors
-function crConfirmDismiss() { $('crModal').classList.add('hidden'); crConfirmCb = null; }
-$('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
+  $('crModalNo').classList.toggle('cancelRed', crConfirmOneBtn || (!!labels && labels.no === 'Cancel')); showSurface($('crModal')); } // two buttons are the only doors
+function crConfirmDismiss() { hideSurface($('crModal')); crConfirmCb = null; }
+$('crModalYes').addEventListener('click', () => { hideSurface($('crModal')); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); const bl = $('brandLayer'); if (bl) bl.classList.add('parked'); /* Beta 1.155: the title lives in its own layer now, not inside the menu - the park hides it explicitly (through 1.154 it hid as the menu's child) */ crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('parked'); /* Beta 1.155: revive the title layer with the picker */ }

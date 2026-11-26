@@ -421,19 +421,27 @@ $('resetBtn').addEventListener('click', ev => {
   $('finMsg').textContent = (nDone || nNotes)
     ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 && nDone < STREETNAMES.length ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // issue #180: the warning matches finishRun's rule - a FULL clean of a short route (every street done) IS saved, so it is never warned as unsaved
     : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
-  $('finModal').classList.remove('hidden');
+  showSurface($('finModal'));
 });
-$('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
+$('finNo').addEventListener('click', () => hideSurface($('finModal')));
 $('finYes').addEventListener('click', ev => {
   if (!tapGuard('finYes', ev)) return;
-  $('finModal').classList.add('hidden');
+  hideSurface($('finModal'));
   const finished = finishRun();
   if (finished && finished.gpsGap) showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); // after the finish fully completes: the save is never obstructed
 });
 // THE shared confirmation surface (#confirmPill): one reusable surface, buttons only; the backdrop is focus, never a tap target
 let confirmDangerCb = null;
-/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; $('confirmBackdrop').classList.add('on'); p.classList.remove('hidden'); }
-/** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
+/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */
+function showConfirm(o) {
+  const p = $('confirmPill');
+  p.querySelector('.cfTitle').textContent = o.title;
+  p.querySelector('.cfSub').textContent = o.sub;
+  $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger;
+  confirmDangerCb = o.onDanger || null;
+  $('confirmBackdrop').classList.add('on'); showSurface(p);
+}
+/** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); hideSurface($('confirmPill')); confirmDangerCb = null; }
 $('cfKeep').addEventListener('click', hideConfirm);
 $('cfDanger').addEventListener('click', () => { const f = confirmDangerCb; hideConfirm(); if (f) f(); });
 /** @returns {void} */ function askCancelStart() { const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart; showConfirm({ title: 'Cancel this run?', sub: 'All progress will be lost.', keep: 'Keep going', danger: 'Yes, cancel', onDanger: () => { if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); } } }); } // Beta 1.255: THE cancel-start ask - every entry point (the Pace sheet's button, the dock's button) routes through this one function, so the confirmation and its route+run binding can never cover one door and miss the other (gate round 3, Codex P2: the dock's #cancelStartBtn still discarded in one tap)
@@ -601,12 +609,12 @@ function setNoteText(n, txt) {
 }
 function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
 let noteFor = null;
-function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); $('noteModal').classList.remove('hidden'); }
-$('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden'));
+function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); showSurface($('noteModal')); }
+$('noteNo').addEventListener('click', () => hideSurface($('noteModal')));
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   const okNote = setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) showBanner('Note not saved');
+  hideSurface($('noteModal')); renderStreets(); if (!okNote.ok) showBanner('Note not saved');
 });
 
 // ===== GPS (checklist SS7) =====

@@ -1204,9 +1204,9 @@ function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = tit
   crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard';
   $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn);
   $('crModalNo').textContent = crConfirmOneBtn ? 'Cancel' : ((labels && labels.no) || '✕');
-  $('crModalNo').classList.toggle('cancelRed', crConfirmOneBtn || (!!labels && labels.no === 'Cancel')); $('crModal').classList.remove('hidden'); } // two buttons are the only doors
-function crConfirmDismiss() { $('crModal').classList.add('hidden'); crConfirmCb = null; }
-$('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
+  $('crModalNo').classList.toggle('cancelRed', crConfirmOneBtn || (!!labels && labels.no === 'Cancel')); showSurface($('crModal')); } // two buttons are the only doors
+function crConfirmDismiss() { hideSurface($('crModal')); crConfirmCb = null; }
+$('crModalYes').addEventListener('click', () => { hideSurface($('crModal')); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); const bl = $('brandLayer'); if (bl) bl.classList.add('parked'); /* Beta 1.155: the title lives in its own layer now, not inside the menu - the park hides it explicitly (through 1.154 it hid as the menu's child) */ crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('parked'); /* Beta 1.155: revive the title layer with the picker */ }

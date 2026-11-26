@@ -13,7 +13,7 @@ document.addEventListener('pointerdown', e => {
   // the tap is spent here, never reaching the map; the confirmation's backdrop is exempt - dismissal stays buttons-only
   if (anySheet && !e.target.closest('.sheet') && !e.target.closest('#hud') && !e.target.closest('.modal') && !e.target.closest('#confirmPill') && !e.target.closest('#confirmBackdrop')) { closeSheets(); spendTap(400); }
 });
-['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) mEl.classList.add('hidden'); }); });
+['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) hideSurface(mEl); }); });
 // div rows never enter :active in some browsers: they take the press shrink through this class instead
 let pressRowEl = null;
 const pressRowOff = () => { if (pressRowEl) { pressRowEl.classList.remove('pressOn'); pressRowEl = null; } };
