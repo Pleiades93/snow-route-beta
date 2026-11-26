@@ -17232,6 +17232,32 @@
    "red": "drive180 SNOW6, SNOW10 and SNOW11 FAIL in one run: city-list canvas opacity 0.424 at boot, 0 in tab mode, route list 0.887 mid-fade - all under the 0.99 standing bar",
    "green": "drive180 SNOW6, SNOW10, SNOW11 PASS on the shipped tree (35/37 local, the residue is trace starvation); re-issued after the SNOW lines were wrapped for the line-length judge (claim strings byte-identical)",
    "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive228-walk",
+   "check": "tests/browser/drive228.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive228.mjs": "887cc36ebe2118c175813b22b5dc510890b4e643b1d7529642026beb5ac856c9",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so the canvas carries .away on every route sub-pane again",
+   "red": "drive228 collapses to 5/21 (observed twice): every route sub-pane stop in boot and tab mode fails on the away leg - W3, W5, W9 shown, the rest of the sub-pane stops with them",
+   "green": "drive228 21/21 PASS on the shipped tree (53.4 s local run): all 13 blue surfaces judged in the modes they exist in, snow standing at every stop",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive228-walk-r2",
+   "check": "tests/browser/drive228.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive228.mjs": "5462e8ff35c2d9031b171865ed75312eb49cbf203c8a6d575503ead4095e21c8",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so the canvas carries .away on every route sub-pane again",
+   "red": "drive228 collapses to 5/21 (observed twice): every route sub-pane stop in boot and tab mode fails on the away leg - W3, W5, W9 shown, the rest of the sub-pane stops with them",
+   "green": "drive228 21/21 PASS on the shipped tree; re-issued after three fixture lines were wrapped for the line-length judge (behaviour unchanged, re-run green)",
+   "issued": "2026-11-26 snow-everywhere"
   }
  ]
 }
