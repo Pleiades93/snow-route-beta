@@ -1,5 +1,19 @@
 # Changelog
 
+## Beta 1.300 — 2026-11-26
+
+Boot-menu snow fix (Andrew's live report, 2026-11-26: on a cold start the start screen snowed, but the route picker that
+follows it did not - every menu opened later snowed fine). The snow engine judged its own liveness by a flag: if the frame
+chain stopped during the boot window while the flag still read running, the one re-assertion the boot handover fires (the
+scene observer's resume) turned away, and the picker stood snowless with no later flip left to heal it. The engine now
+stamps every executed frame, and resume restarts the chain unless a frame executed within the last 400 ms - the same
+standard the map's render loop already holds animation frames to. A parked engine still revives exactly as before, the
+pile is untouched, and nothing else about the scene changed. New drive227 covers the real cold start - the boot menu as
+the first scene, plus a leg that drops frame callbacks during the splash and proves the picker still snows; the mutations
+behind its receipts were each observed red twice.
+
+Editorial: this entry; What's New replaced with the fix line; the #ver label reads Beta 1.300.
+
 ## Beta 1.299 — 2026-11-26
 
 Snow on every blue menu (Andrew's pick, 2026-11-26: the same snow as the splash screen, so it is identical). The one snow field that has
