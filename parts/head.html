@@ -168,7 +168,11 @@
   /* Clear stays a ghost at 42px; its ink is the app's red, like every destructive action */
   #selPop #selClearBtn { background: transparent; color: #e63a2e; height: 42px; min-height: 42px; border-radius: 11px; font-size: 14.5px; padding: 0 10px; }
   #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
-  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card); max-height: calc(var(--vvh, 100dvh) * .5); /* Beta 1.79 (Andrew): sheets open at HALF height - the three stops are closed / half / full (drag or flick up to fill, down to half, down again to close) */ display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; transition: transform var(--anim-dur) var(--ease-close), height var(--anim-dur) var(--ease-close), max-height var(--anim-dur) var(--ease-close), visibility 0s linear var(--anim-dur); padding-bottom: var(--sab); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); color: var(--ink);
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card);
+    /* sheets open at HALF height: the three stops are closed / half / full */
+    max-height: calc(var(--vvh, 100dvh) * .5); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; padding-bottom: var(--sab);
+    transition: transform 350ms var(--ease-close), visibility 0s linear 350ms; } /* the close rides transform only; the open spec keeps its height legs for the note raise */
   .grab, .sheetHead { touch-action: none; }
   #sheetBody, #pacePad, #cleanView { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
