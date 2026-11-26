@@ -330,9 +330,8 @@ jobs:
         run: node tests/browser/selftest-title-drop.mjs
       - name: Gate-script verdict fixtures (protocol fix round, 2026-11-17 - the proof-coverage guard and the proof runner prove both verdicts on synthetic trees)
         run: python3 scripts/gate-fixtures/run-fixtures.py
-      - name: Premise lint (advisory - drive premises this PR's app diff touches)
+      - name: Premise lint (blocking - drive premises this PR's app diff touches)
         if: github.event_name == 'pull_request'
-        continue-on-error: true
         run: |
           git fetch --no-tags --depth=1 origin ${{ github.event.pull_request.base.sha }}
           git diff ${{ github.event.pull_request.base.sha }} -- parts/ > /tmp/pr-premise.diff

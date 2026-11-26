@@ -14787,6 +14787,18 @@
    "red": "PR #213 (2026-11-25): the large-change label added mid-round did not take effect - a job re-run replayed the original payload labels and the limits step kept failing until a new head was pushed; the debt is recorded in the round plan",
    "green": "gate fixtures 93/93 pass with the new step text; the step's live read is exercised by this PR's own checks runs (build-and-test PR limits step)",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-premise-blocking",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "2945d915d8822ee6403bab100bceb7d5b3b8b12c782dd00b05b08d9af0b49257"
+   },
+   "mutation": "none - CI wiring change: the premise-lint step loses continue-on-error and is renamed advisory -> blocking",
+   "red": "advisory era: premise-lint findings printed without failing the job (the step carried continue-on-error: true from its introduction through PR #218's runs) - a false premise in a touched drive could merge on a green-looking gate",
+   "green": "this PR's own checks runs are the first blocking runs: the step passes on a parts-free diff, and the round RECORD carries the false-positive watch - the first blocking runs get reviewed before the change is called settled",
+   "issued": "2026-11-25"
   }
  ]
 }
