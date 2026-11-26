@@ -105,14 +105,20 @@ await tapById(ev, 'rmClose');
 await sleep(700);
 
 // ---------- F7: rapid toggle converges to one engine ----------
-await tapById(ev, 'routesBtn'); await sleep(70);
-await tapById(ev, 'routesBtn'); await sleep(70);
+// The middle tap is rmClose, not routesBtn: routesBtn sits behind a
+// 400 ms tap guard, so scripted 70 ms re-taps are rejected and the
+// sequence would never close at all (and stretched round trips let
+// one through as a toggle - the outcome depended on rig speed).
+await tapById(ev, 'routesBtn'); await sleep(120);
+await tapById(ev, 'rmClose'); await sleep(120);
+const MID = await J(`({ open: document.getElementById('routeMenu').classList.contains('open'), running: window.__snow.running() })`);
+await sleep(250);
 await tapById(ev, 'routesBtn'); await sleep(600);
 const T1 = await J(`({ running: window.__snow.running(), n: window.__snow.flakes().length, frames: window.__snow.frames(), open: document.getElementById('routeMenu').classList.contains('open') })`);
 await sleep(250);
 const T2 = await J(`window.__snow.frames()`);
-ok('F7 rapid open/close/open converges: menu open, exactly one field (same flake count), frames advancing | ' + JSON.stringify({ T1, T2 }),
-  T1.open === true && T1.running === true && T1.n === N0 && T2 > T1.frames);
+ok('F7 rapid open/close/open converges through a real close: the middle state is closed and parked, then menu open, exactly one field (same flake count), frames advancing | ' + JSON.stringify({ MID, T1, T2 }),
+  MID.open === false && MID.running === false && T1.open === true && T1.running === true && T1.n === N0 && T2 > T1.frames);
 await tapById(ev, 'rmClose');
 await sleep(700);
 
