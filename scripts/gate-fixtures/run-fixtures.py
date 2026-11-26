@@ -1319,8 +1319,8 @@ with tempfile.TemporaryDirectory() as td:
                                          ("c2", {"parts/a.js": "const re = /[/*]/;\n" + long_block.replace("whiskey", "whisky") + "const a = 1;\n"})])
     check("pr-limits: a long comment beside a regex literal still fails",
           run_limits(repo, head1(repo)), 1)
-    # Replacement hunks (Codex P2 on PR #225): replacing a comment's
-    # last line with code still judges the surviving comment.
+    # Replacement hunks: replacing a comment's last line with
+    # code still judges the surviving comment.
     l1 = "// alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo\n"
     l2 = "// lima mike november oscar papa quebec romeo sierra tango uniform victor\n"
     l3 = "// whiskey xray yankee zulu apple banana cherry dragon eagle falcon\n"

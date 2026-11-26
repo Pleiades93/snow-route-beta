@@ -16678,6 +16678,45 @@
    "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for either pair: without the shared touched-comment verdict the push gate accepts both a rewritten 32-word comment and a 22-word comment whose last line was replaced by code",
    "green": "shipped verdict names both: 'touched comment of 32 words' for the rewritten pair and 'touched comment of 22 words' for the replacement pair, from push.py's own _limits_verdict",
    "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r7",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "90a2af4f67d49596e3c8964bd8b1cd45f58bc9990002394e45833e0e7510697b",
+    "scripts/gate-fixtures/run-fixtures.py": "2ed4038c2067ae9a814c6a223780528ec1fea6ebdaa0ea7f3621e205ef5529dd"
+   },
+   "mutation": "pins refreshed for a comment-only edit (review-history annotation removed from the boundary rule's comment); the r6 neuter observations stand, judge logic untouched",
+   "red": "exactly the four conviction fixtures flip under the neuter: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail on the final text",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r7",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "2ed4038c2067ae9a814c6a223780528ec1fea6ebdaa0ea7f3621e205ef5529dd",
+    "scripts/check-pr-limits.py": "90a2af4f67d49596e3c8964bd8b1cd45f58bc9990002394e45833e0e7510697b"
+   },
+   "mutation": "pins refreshed for a comment-only edit (review-history annotation removed from a fixture comment); the r6 neuter observations stand",
+   "red": "exactly the four conviction fixtures flip under the neuter: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail on the final text",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r5",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "90a2af4f67d49596e3c8964bd8b1cd45f58bc9990002394e45833e0e7510697b"
+   },
+   "mutation": "pins refreshed for a comment-only edit in the shared judge; the r4 module-probe observations stand",
+   "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for either pair: without the shared touched-comment verdict the push gate accepts both a rewritten 32-word comment and a 22-word comment whose last line was replaced by code",
+   "green": "shipped verdict names both: 'touched comment of 32 words' for the rewritten pair and 'touched comment of 22 words' for the replacement pair, from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }

@@ -284,8 +284,7 @@ def changed_line_errors(path, old_text, new_text, added, deletions):
                 if first < end <= last:
                     touched.add(boundary)
     if old_text:
-        # A comment losing lines to a replace/delete is judged
-        # whole in its surviving form (Codex P2, PR #225).
+        # Judge surviving comments whole after replacement or deletion.
         sm = difflib.SequenceMatcher(None, old_text.split("\n"),
                                      new_text.split("\n"), autojunk=False)
         opcodes = sm.get_opcodes()
