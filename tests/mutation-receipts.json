@@ -14928,6 +14928,20 @@
    "red": "under (1): 97 pass 3 fail (the planted violations); under (2): the one-changed-line repetitive case fails (401 counted, size refusal)",
    "green": "gate fixtures 102 pass 0 fail on the shipped tree",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-push-limits-r4",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "79e119f1a23e89fe2baad54891becaaa0ba44ac1bc4338b92d31aa14d4a30a33",
+    "scripts/gate-fixtures/run-fixtures.py": "7cd2e504d251f002cf28fe293326e61bcd955a5ec1b3ca52eac6b999da3614fa",
+    "scripts/check-pr-limits.py": "b91c75ffe61969ec7d60982c839618011da4a170e767964af415a8f83833380c"
+   },
+   "mutation": "the limits gate disconnected from the plan path, and separately autojunk restored in _limits_added_lines; re-issue of -r3 after the autojunk comment trim",
+   "red": "gate fixtures 97 pass 3 fail with the gate disconnected; the repetitive-file case counts 401 added lines for a one-line change with autojunk on (git counts 1)",
+   "green": "gate fixtures 102 pass 0 fail; unit plants: one changed line counts as one, matching git; all planted violations still refuse",
+   "issued": "2026-11-25"
   }
  ]
 }
