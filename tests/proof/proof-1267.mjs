@@ -83,8 +83,10 @@ check('1g: the shipped 5W ends field carries exactly 15 records - 7 boundary at 
 const draftIds = ['crDraftCase', 'crDraftLineDim', 'crDraftLine', 'crDraftLineActive', 'crDraftHit'];
 check('2a: the shared first-label finder exists in create-pick.js',
   pick.includes('function crFirstLabelLayerId()'));
-check('2b: every draft layer is added with the beforeId (below the first label layer) | ' + draftIds.map(id => id + ':' + (pick.includes("id: '" + id + "'") && new RegExp("id: '" + id + "'[\\s\\S]{0,3000}\\}, before\\)").test(pick))).join(' '),
-  draftIds.every(id => new RegExp("id: '" + id + "'[\\s\\S]{0,3000}\\}, before\\)").test(pick)));
+check('2b: every draft layer is added with the beforeId (below the first label layer) | ' +
+  draftIds.map(id => id + ':' + (pick.includes("id: '" + id + "'") && new RegExp("id: '" + id + "'[\\s\\S]{0,3000}\\},\\s*before\\)").test(pick))).join(' '),
+  
+  draftIds.every(id => new RegExp("id: '" + id + "'[\\s\\S]{0,3000}\\},\\s*before\\)").test(pick)));
 check('2c: the trim glow still inserts before crDraftCase (it follows the draft stack below the labels)',
   pick.includes("map.addLayer(crGlowLayerObj(), 'crDraftCase')"));
 

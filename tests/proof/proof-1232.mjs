@@ -110,8 +110,9 @@ check('2b (Beta 1.234): the .crNear styles are gone from the stylesheet', !head.
 
 // ---------- Piece 3: the monochrome bar (Beta 1.243: the bar itself leaves the family for the create text boxes' white pill - 3a/3d/3e/3f re-pin to it; the back pill keeps the 1.232 recipes and 3b stands. Beta 1.244: the one-black ruling - the bar's pill is its DAY face, at night bar and pill wear the shared token black; 3d/3e/3f re-pin again) ----------
 const SOFT = '3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10)';
-const wrapLine = head.split('\n').find(l => l.startsWith('#crSearchWrap {')) || '';
-const pillLine = head.split('\n').find(l => l.startsWith('#crExit {')) || '';
+const ruleSpan = (sel) => { const i = head.indexOf('\n' + sel); if (i < 0) return ''; const s = i + 1; return head.slice(s, head.indexOf('}', s) + 1).replace(/\s+/g, ' '); };
+const wrapLine = ruleSpan('#crSearchWrap {');
+const pillLine = ruleSpan('#crExit {');
 check('3a: the day bar wears the create pill (Beta 1.243 supersedes the 1.232 hairline + Soft Lift: white fill, no border, the city shadow)', wrapLine.includes('background: #fff;') && wrapLine.includes('border: none;') && wrapLine.includes('box-shadow: 0 6px 18px rgba(0,0,0,.18);'));
 check('3b: the day back pill wears the same border and shadow', pillLine.includes('border: 1px solid rgba(20,25,40,.08);') && pillLine.includes('box-shadow: ' + SOFT + ';'));
 check('3c: no app blue survives in the day bar rule', !wrapLine.includes('#3D65EF') && !wrapLine.includes('#1B2FB6'));

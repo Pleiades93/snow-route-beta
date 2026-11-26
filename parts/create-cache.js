@@ -89,7 +89,10 @@ function crGridCellsFor(bbox) { // the ~4x4 km grid over the box (row-major, sou
   const rows = Math.max(1, Math.ceil((bbox.n - bbox.s) / dLat - 1e-9)), cols = Math.max(1, Math.ceil((bbox.e - bbox.w) / dLng - 1e-9));
   const cells = [];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    cells.push({ key: 'r' + r + 'c' + c, box: { s: +(bbox.s + r * dLat).toFixed(6), n: +Math.min(bbox.n, bbox.s + (r + 1) * dLat).toFixed(6), w: +(bbox.w + c * dLng).toFixed(6), e: +Math.min(bbox.e, bbox.w + (c + 1) * dLng).toFixed(6) }, state: 'pending', tries: 0 });
+    cells.push({ key: 'r' + r + 'c' + c,
+      box: { s: +(bbox.s + r * dLat).toFixed(6), n: +Math.min(bbox.n, bbox.s + (r + 1) * dLat).toFixed(6), w: +(bbox.w + c * dLng).toFixed(6), e: +Math.min(bbox.e, bbox.w + (c + 1) * dLng).toFixed(6) },
+      state: 'pending',
+      tries: 0 });
   }
   return cells;
 }

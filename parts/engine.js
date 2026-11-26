@@ -427,7 +427,9 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
     const segs = [];
     for (let i = 0; i + 1 < off.length; i++) { if (!TOPO.segReal(n, i)) continue; segs.push({ seg: [off[i], off[i + 1]], ext: false }); } // between-runs ground is not street: a corner found on it pairs sides at a nonexistent junction
     if (vi === 0 && off.length > 1) { const d = [off[0][0] - off[1][0], off[0][1] - off[1][1]], L = H.jDistM(off[0], off[1]) || 1; segs.push({ seg: [[off[0][0] + d[0] * 8 / L, off[0][1] + d[1] * 8 / L], off[0]], ext: true }); }
-    if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = H.jDistM(q, e) || 1; segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true }); }
+    if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = H.jDistM(q, e) || 1;
+    segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true });
+    }
     return segs;
   };
   // an extension corner is valid only if its leg stays on its own side of the other centreline
@@ -932,7 +934,10 @@ function cornerTouchSlices(slices, pairs) {
         if (!pr.corner || tried.has(coordKey(pr.corner))) continue;
         tried.add(coordKey(pr.corner));
         // the partner shows if a slice ends here or runs through with the corner on it
-        const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p, pi) => pi + 1 < o.pts.length && H.ptSegM(pr.corner, p, o.pts[pi + 1]) < 1.0));
+        const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p,
+          pi) => pi + 1 < o.pts.length && H.ptSegM(pr.corner,
+          p,
+          o.pts[pi + 1]) < 1.0));
         if (!partnerShown) continue; // skip, not stop: rejections must not abandon remaining candidates; the only stop follows a landed hop
         const endPt = atEnd ? sl.pts[sl.pts.length - 1] : sl.pts[0];
         const d = H.jDistM(endPt, pr.corner);
@@ -1019,7 +1024,11 @@ function pullbackEnd(pts, atStart, d) {
   let acc = 0;
   for (let k = 1; k < work.length; k++) {
     const seg = H.jDistM(work[k], work[k - 1]);
-    if (acc + seg >= d) { const f = seg ? (d - acc) / seg : 0; const cut = [work[k - 1][0] + (work[k][0] - work[k - 1][0]) * f, work[k - 1][1] + (work[k][1] - work[k - 1][1]) * f]; const out = [cut].concat(work.slice(k)); return atStart ? out : out.reverse(); }
+    if (acc + seg >= d) { const f = seg ? (d - acc) / seg : 0;
+    const cut = [work[k - 1][0] + (work[k][0] - work[k - 1][0]) * f, work[k - 1][1] + (work[k][1] - work[k - 1][1]) * f];
+    const out = [cut].concat(work.slice(k));
+    return atStart ? out : out.reverse();
+    }
     acc += seg;
   }
   return pts;
@@ -1285,7 +1294,9 @@ function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cu
   if (dJ === null) return { solid: pts, fade: null };
   const sub = (d0, d1) => { // the points between two along-distances, cut points interpolated (sliceLine's way)
     if (d1 - d0 < 0.05) return null;
-    const at = d => { for (let i = 1; i < pts.length; i++) { if (d <= cum[i] || i === pts.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; } } return pts[pts.length - 1]; };
+    const at = d => { for (let i = 1; i < pts.length; i++) { if (d <= cum[i] || i === pts.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0,
+      Math.min(1, (d - cum[i - 1]) / span)); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t,
+      pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; } } return pts[pts.length - 1]; };
     const out = [at(d0)];
     for (let i = 0; i < pts.length; i++) if (cum[i] > d0 && cum[i] < d1) out.push(pts[i]);
     out.push(at(d1));
@@ -1378,7 +1389,12 @@ function buildFamilies() {
   const centres = mergeStrands(centreSlices, null);
   const bands = mergeStrands(bandSlices, null);
   clipStrandEnds(centres, SURF_HALF);
-  clipStrandEnds(bands, SURF_HALF, null, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n], ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (TOPO.runStart(m.n, g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
+  clipStrandEnds(bands,
+    SURF_HALF,
+    null,
+    (sl,
+      atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n],
+      ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (TOPO.runStart(m.n, g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
   const fills = mergeStrands(fillSlices, null);   // exact joins only: consecutive pieces share the half-line vertex, so a fill is one strand through junctions
   // fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
   clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });
@@ -1391,7 +1407,12 @@ function buildFamilies() {
   lastResortConnect(edges, bands);
   PAINT.strands = { centres, bands, edges, fills };   // the merged strands publish into the model: buildSelFill reads the fills from it, not a module global
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
-  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN), fills: fc(fills, () => MUGREEN), fades: { type: 'FeatureCollection', features: fadeSlices.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } }; // Beta 1.259: the fade features bypass mergeStrands by design - each is its own short line in the lineMetrics source, so the gradient's progress spans exactly the fade zone
+  return { centres: fc(centres, sl => sl.key),
+    bands: fc(bands, () => MUGREEN),
+    edges: fc(edges, () => MUGREEN),
+    fills: fc(fills, () => MUGREEN),
+    fades: { type: 'FeatureCollection', features: fadeSlices.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } };
+  // the fade features bypass mergeStrands by design: each is its own short line, so progress spans exactly the fade zone
 }
 function currentSelList() { // every selected stretch: the app's selSet when multi-selecting, else the single anchor - read live at build time
   return (typeof H.selSet !== 'undefined' && Array.isArray(H.selSet) && H.selSet.length) ? H.selSet : (sel ? [sel] : []);
@@ -1402,7 +1423,17 @@ function buildSelFill() {   // selected fills build by fillSlicePts, the board's
   const fades = [];
   for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(it.name, GEO[it.name].cuts[it.idx], fillSlicePts(it.name, it.idx, side), 'f', GREEN, false); for (const f of fSp.fades) fades.push(f); if (fSp.solid) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fSp.solid) } }); selSides.push({ n: it.name, idx: it.idx, side }); } } });
+    if (bits !== 3) [0,
+      1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(it.name,
+        GEO[it.name].cuts[it.idx],
+        fillSlicePts(it.name, it.idx, side),
+        'f',
+        GREEN,
+        false); for (const f of fSp.fades) fades.push(f); if (fSp.solid) { feats.push({ type: 'Feature',
+          properties: { col: GREEN, colG: mute(GREEN) },
+          geometry: { type: 'LineString', coordinates: GJ(fSp.solid) } }); selSides.push({ n: it.name,
+          idx: it.idx,
+          side }); } } });
   }
   // board connectors touching a selected side redraw here too (vibrant), identified by the explicit flag, not mem count
   if (selSides.length && PAINT.strands && PAINT.strands.fills) {
@@ -1519,7 +1550,26 @@ function tunePlaceLabels() {
 }
 // ---- the layer catalogue: groups written once, in stack order; the text/stack lists derive from them
 const LAYERS = {
-  paint: ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit'],
+  paint: ['t1-casing',
+    't1-casingb',
+    't1-surface',
+    't1-band',
+    't1-fill',
+    'fade-casing',
+    'fade-surf-y',
+    'fade-surf-r',
+    'fade-band-g',
+    'fade-fill-g',
+    't1-sel',
+    't1-selband',
+    't1-selfill',
+    'selfade-y',
+    'selfade-r',
+    'selfade-g',
+    'selfade-fill',
+    'sel-core-s',
+    'sel-core-b',
+    'hit'],
   poi: ['routepoi-ring', 'routepoi-dot', 'routepoi-txt'],
   titles: [1, 2, 3, 4].map(t => 'streetnamespt' + t),
   glow: [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b']),
@@ -1548,9 +1598,13 @@ function addStack() {
   }
   const before = firstSymbolId();
   const add = (layer) => { if (!GLM.getLayer(layer.id)) GLM.addLayer(layer, before); };
-  const line = (id, source, paint, layout, filter) => { const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };   // NOTE: a present-but-undefined `filter` key makes MapLibre silently drop the layer (found by the QA tour, 2026-10-28)
-  // --- T1: integrated - the surface itself carries the state; red sorts before yellow, green bands above centres
-  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  const line = (id, source, paint, layout, filter) => { const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };
+  // NOTE: a present-but-undefined `filter` key makes MapLibre silently drop the layer
+  /* --- T1: the surface carries the state; red sorts before yellow, green bands above centres */
+  add(line('t1-casing',
+    'centres',
+    { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' }));
   add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   // the completed band draws at surfW - the same width as the not-done surface, per Andrew's order
@@ -1559,9 +1613,21 @@ function addStack() {
   add(line('t1-fill', 'fills', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   // --- feathers: one literal-gradient layer per colour (line-gradient cannot read properties); features carry k and col
   const fadeOp = ['step', ['zoom'], 0, 12.6, 1];
-  add(line('fade-casing', 'fades', { 'line-gradient': fadeGrad(H.isNight() ? '#000000' : '#5a5f6a'), 'line-width': surfCASE, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'x']));
-  add(line('fade-surf-y', 'fades', { 'line-gradient': fadeGrad(mute(YELLOW)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(YELLOW)]]));
-  add(line('fade-surf-r', 'fades', { 'line-gradient': fadeGrad(mute(RED)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(RED)]]));
+  add(line('fade-casing',
+    'fades',
+    { 'line-gradient': fadeGrad(H.isNight() ? '#000000' : '#5a5f6a'), 'line-width': surfCASE, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' },
+    ['==', ['get', 'k'], 'x']));
+  add(line('fade-surf-y',
+    'fades',
+    { 'line-gradient': fadeGrad(mute(YELLOW)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' },
+    ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(YELLOW)]]));
+  add(line('fade-surf-r',
+    'fades',
+    { 'line-gradient': fadeGrad(mute(RED)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' },
+    ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(RED)]]));
   add(line('fade-band-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'b']));
   add(line('fade-fill-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
   // --- selection glow: three nested widths in the street's own colour; these layers use round joins, not miter
@@ -1602,9 +1668,26 @@ function addStack() {
     }
   }
   // at 12.6 the paint and names pop out, the POI in: no fading (Andrew), never one alone
-  add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
+  add({ id: 'routepoi-ring',
+    type: 'circle',
+    source: 'routepoi',
+    maxzoom: 13.3,
+    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-dot',
+    type: 'circle',
+    source: 'routepoi',
+    maxzoom: 13.3,
+    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-txt',
+    type: 'symbol',
+    source: 'routepoi',
+    maxzoom: 13.3,
+    layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false },
+    paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333',
+      'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)',
+      'text-opacity': ['step', ['zoom'], 1, 12.6, 0],
+      'text-opacity-transition': { duration: 0, delay: 0 },
+      'text-halo-width': 1.6 } });
   LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // the paint and glow groups are the catalogue's
   H.glUnifyLabels(GLM);
   pushSources();

@@ -271,6 +271,18 @@ def local_blob_map(root):
     return out
 
 
+def parts_scan_gate(tree, instrument_root):
+    scanner = instrument_root / "scripts" / "scan-parts.cjs"
+    if not scanner.is_file():
+        return None
+    proc = subprocess.run(["node", str(scanner), str(tree)],
+                          capture_output=True, text=True, timeout=60)
+    if proc.returncode:
+        return "the parts scan failed:\n" + (proc.stderr or proc.stdout).strip()
+    print(proc.stdout.strip())
+    return None
+
+
 def preflight_prospective(root, gh, branch, resolved):
     """The tree this push would CREATE must itself build. Returns an
     error string or None. Runs for EVERY push (Codex P2 on PR #146:
@@ -322,7 +334,7 @@ def preflight_prospective(root, gh, branch, resolved):
         err = mirrors_gate(root, root)
         if err:
             return "the prospective remote tree fails the mirrors gate: " + err
-        return None
+        return parts_scan_gate(root, root)
     import base64
     import shutil
     import tempfile
@@ -354,6 +366,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = mirrors_gate(tmp, root)
         if err:
             return ("the prospective remote tree fails the mirrors gate: " + err)
+        err = parts_scan_gate(tmp, root)
+        if err:
+            return err
         proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
                               cwd=tmp, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
@@ -433,16 +448,18 @@ def _limits_module(instrument_root):
     return mod
 
 
-def _limits_added_lines(old_text, new_text):
+def _limits_changed_lines(old_text, new_text):
     old = [] if old_text is None else old_text.splitlines()
-    new = [] if new_text is None else new_text.splitlines()
-    out = []
+    new = new_text.splitlines()
+    added, deletions = set(), set()
     # autojunk off: unchanged repetitive lines are not additions.
     sm = difflib.SequenceMatcher(None, old, new, autojunk=False)
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
         if tag in ("insert", "replace"):
-            out.extend(new[j1:j2])
-    return out
+            added.update(range(j1, j2))
+        elif tag == "delete":
+            deletions.add((j1, i1, i2))
+    return added, deletions
 
 
 def _as_text(data):
@@ -480,11 +497,10 @@ def _limits_verdict(mod, changed, labels):
                 errors.append(err)
         if binary or new_bytes is None:
             continue
-        added = _limits_added_lines(old_text, new_text)
+        added, deletions = _limits_changed_lines(old_text, new_text)
         if mod.is_product_path(path):
             product += len(added)
-        for text in added:
-            errors.extend(mod.line_errors(path, text))
+        errors.extend(mod.changed_line_errors(path, old_text, new_text, added, deletions))
     err = mod.size_error("this push", product, labels)
     if err:
         errors.append(err)
@@ -736,6 +752,9 @@ def main():
     print("PUSH PLAN OK: " + ", ".join(resolved))
     labels = {x.strip() for x in args.labels.split(",") if x.strip()}
     if args.mode == "plan":
+        err = parts_scan_gate(root, root)
+        if err:
+            return fail(err)
         err = limits_gate_plan(root, resolved, labels)
         if err:
             return fail(err)

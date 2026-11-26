@@ -15885,6 +15885,1208 @@
    "red": "drive227 B2a FAIL (observed twice): callbacks dropped 0, painted frames 0 -> 0, running reads false - the stuck-state premise cannot form because the engine never ran; B1 stayed green, proving a parked engine is revived at arm and only the flag-true stuck chain strands the scene",
    "green": "drive227 3/3 PASS on the final tree (re-issued at the Codex header fix on the drive: history block replaced by a two-line why, checks unchanged)",
    "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "phase1-scan-parts",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "70c759148a6b77597b7f33b5a787b8e24cb6170c934fcac3910b421702552cb6",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "05eef94e8318b78186164d8b2f63628fcde83f344c43863599f04c41b7f3c0cf",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "three plants on a scratch copy of the shipped tree: (1) a bare ignored lsSet call appended to parts/app1.js; (2) two identical >=32-token function bodies (plantCloneA/plantCloneB) appended to parts/app1.js; (3) a duplicate of the .sideChip declaration block under a new .plantChip selector in parts/head.html",
+   "red": "(1) exit 1: parts/app1.js:795: lsSet write outcome ignored. Test the result, return it, or assign it. (2) exit 1: Possible clone at parts/app1.js:794 and parts/app1.js:795 (plantCloneA/plantCloneB). (3) exit 1: Possible clone at parts/head.html:93 and parts/head.html:94 (.plantChip/.sideChip)",
+   "green": "plants removed, scratch files byte-identical to the shipped tree: parts scan PASS (593 clone pairs checked), exit 0; the shipped tree itself passes with all 17 write-safe exemptions in place",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-receipts-judge-scan",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "70c759148a6b77597b7f33b5a787b8e24cb6170c934fcac3910b421702552cb6"
+   },
+   "mutation": "the scripts/scan-parts.cjs line removed from JUDGE_PATHS in a scratch copy of check-receipts.py, trigger_paths probed on the changed path scripts/scan-parts.cjs",
+   "red": "neutered: trigger_paths(['scripts/scan-parts.cjs']) returns [] - a change to the new judge would demand no receipt",
+   "green": "shipped file: trigger_paths(['scripts/scan-parts.cjs']) returns ['scripts/scan-parts.cjs']",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-scan-parts-r2",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "05eef94e8318b78186164d8b2f63628fcde83f344c43863599f04c41b7f3c0cf",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "re-observation on the fixed scanner (the --write-baseline exit fix): the three plants from phase1-scan-parts replayed on a scratch copy, plus a fourth sequence - the clone-plant tree taken through --write-baseline and rescanned",
+   "red": "ignored write: exit 1, parts/app1.js:795 lsSet write outcome ignored. JS clone: exit 1, Possible clone at parts/app1.js:794 and 795 (plantCloneA/plantCloneB). CSS clone (from the r1 run, code path untouched by the fix): exit 1, Possible clone at parts/head.html:93 and 94 (.plantChip/.sideChip). Pre-fix fourth sequence: --write-baseline wrote the baseline yet exited 1, judging the new pair against the pre-write baseline",
+   "green": "plants removed: PASS (593 pairs). Fourth sequence on the fixed scanner: --write-baseline writes 594 pairs and exits 0; the rescan passes. Gate fixtures 109/109 on the shipped tree",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-push-scan-gate",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "a49d9ea263c8624959429c413ad6b2ebaba96905fe365d95d5b8b0876e9ba03a",
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011"
+   },
+   "mutation": "parts_scan_gate neutered to return None in a scratch copy of the repo whose parts/app1.js carries a planted ignored lsSet write (derived artifacts rebuilt so only the scan can refuse)",
+   "red": "neutered: push.py plan accepts the planted tree (PUSH PLAN OK, no scan refusal)",
+   "green": "shipped: push.py plan refuses - 'the parts scan failed: parts/app1.js:795: lsSet write outcome ignored. Test the result, return it, or assign it.' Clean-tree plans pass the gate (steps 1-2 of this round planned through it)",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "32ab05fa22ab0582578429a026a3a63c767accd96304b159a9057f776b750b6c",
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011"
+   },
+   "mutation": "the scanner's write-rule regex neutered in place (lsSet removed from the write set), the full gate-fixtures suite replayed, then the scanner restored byte-identical (md5 verified)",
+   "red": "108 pass / 1 fail: 'scan: a planted ignored write fails' got exit 0, want 1 - the fixture section convicts a dead write rule",
+   "green": "gate fixtures 109/109 on the restored tree",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-limits-touched-comments",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9",
+    "scripts/gate-fixtures/run-fixtures.py": "8a2d0fb350537c25287ae3258a2a2fb92f47f068b67009ef8332cc6170a38dfb"
+   },
+   "mutation": "changed_line_errors' touched-comment loop neutered (comment_spans iteration replaced with an empty list) in place, the full gate-fixtures suite replayed, then the file restored byte-identical (md5 verified)",
+   "red": "111 pass / 2 fail: 'pr-limits: a rewritten long comment fails on its full text' and 'pr-limits: a deletion leaving a long partial comment fails' both got exit 0, want 1 - per-line judging alone cannot see a multi-line comment",
+   "green": "gate fixtures 113/113 on the shipped file, the four touched-comment cases included",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8a2d0fb350537c25287ae3258a2a2fb92f47f068b67009ef8332cc6170a38dfb",
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9"
+   },
+   "mutation": "the same changed_line_errors neuter in check-pr-limits.py, replayed against the fixtures file as shipped in this step (four touched-comment cases added, total 113)",
+   "red": "the two conviction cases flip (got exit 0, want 1); the untouched-long and rewritten-short controls stay green under the neuter - the cases convict the missing full-text reading, not the harness",
+   "green": "gate fixtures 113/113 restored",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-push-touched-comments",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9"
+   },
+   "mutation": "_limits_verdict fed a synthetic one-word rewrite of a 32-word block comment (8 words per line) through the shipped shared function, then through a per-line-only stand-in for changed_line_errors",
+   "red": "stand-in verdict: no errors - the push path with per-line judging accepts the rewritten history comment",
+   "green": "shipped verdict: ['parts/a.js:1: touched comment of 32 words (limit 20)'] - push.py and the CLI share the one decision function (changed_line_errors via _limits_changed_lines)",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r2",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9",
+    "scripts/gate-fixtures/run-fixtures.py": "d67d797ebfa468872f0927160f3c6f64b5d79bdca7df0613d94a217e9e4d4ff5"
+   },
+   "mutation": "re-issue of phase1-limits-touched-comments after a wording fix in the fixtures file (its own over-cap section comment, convicted by the new judge at its first push-path exercise); the neuter experiment is unchanged",
+   "red": "111 pass / 2 fail under the neuter: the rewritten-long and deletion-partial cases got exit 0, want 1",
+   "green": "gate fixtures 113/113 on the shipped tree",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d67d797ebfa468872f0927160f3c6f64b5d79bdca7df0613d94a217e9e4d4ff5",
+    "scripts/check-pr-limits.py": "01812bd35ff77d2529519693291d48c3a83f6e81d65f5cffa884d8fc65403be9"
+   },
+   "mutation": "re-issue of phase1-fixtures-touched-comments after the fixtures file's own section comment was compressed to the cap (42 words as written; the new judge refused the step-4 push on it - its first real conviction)",
+   "red": "under the changed_line_errors neuter the two conviction cases flip (got exit 0, want 1); controls stay green",
+   "green": "gate fixtures 113/113 on the shipped tree",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1223",
+   "check": "tests/proof/proof-1223.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1223.mjs": "d96865723203cfd9ef45f082c773ffd584c3a7df9938d23c8ac8b3b16c1c32f5",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "the cc.append city-bar call in create-pick.js reworded ('Working in ' -> 'Working at ') in place, proof run, file restored byte-identical (md5 verified)",
+   "red": "proof fails: check 3e (the bar text is built from text nodes) convicts the reworded call",
+   "green": "proof-1223: 27 passed, 0 failed on the shipped tree; the 3e needle now spans the wrapped append call exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1229",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "1f2f9ade7735fd1c662ebaeb9f1df20cac658722ae2c6ef4fe7a51b882d280d7",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "the Nominatim viewbox bounds order swapped (n and e exchanged) in the wrapped fetch call in create-pick.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 5c convicts the swapped bound order",
+   "green": "proof-1229: 33 passed, 0 failed; the 5c needle now spans the wrapped bounds array exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1230",
+   "check": "tests/proof/proof-1230.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1230.mjs": "1899a5a0240eea0aa9cf2b6e6cc82190ca25b03f20da9cd97a140e8450d0dd6e",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0"
+   },
+   "mutation": "dpGradeOf's first threshold raised (26 -> 30) in app1.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 3c convicts the moved threshold",
+   "green": "proof-1230: 25 passed, 0 failed; the 3c needle now spans the wrapped DP literal exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1232",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "b4b14dd34204782e9d2c186942fbda7e6fa92a15c9bbf29a3aeb5a65b0095d0d",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the day back pill's border alpha changed (.08 -> .09) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check 3b convicts the changed border",
+   "green": "proof-1232 green on the shipped tree; the pill/wrap extraction is now a line-anchored rule span with whitespace collapsed, so wrapped rules read whole",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1233",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "bbcce4ec4b8b3b9704f63349f6584a5907221d3f6ce51f02389eb75061ed5bbe",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": ".rmBackIco width changed (20px -> 21px) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check B5c convicts the glyph size",
+   "green": "proof-1233 green on the shipped tree; the B5c needle now spans the wrapped .rmBack rule exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1235",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "8275fcd4bf9755c1d10f609408582962584b928ca7407860edcd0e60c263b78f",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "two breaks replayed: the gazetteer slice count raised (6 -> 7) in create-pick.js, and the .rmInput glass background alpha changed (.14 -> .15) in head.html; each proof run red, each file restored byte-identical",
+   "red": "slice break: check B5 fails; glass break: check A6 fails",
+   "green": "proof-1235: 18 passed, 0 failed; needles B5/B7/B9/A6 now span the wrapped shapes exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "0b0b9873872edba099751d7ba89df81e3f62c062c294808ac5457fc84c49d342",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the day dock gradient's second stop changed (#eceef2 -> #eceef3) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check 6 convicts the changed face",
+   "green": "proof-1242 green on the shipped tree; its rule() extraction now collapses whitespace, so the face values are compared byte-exact across the wrap",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "6648584380e8a8e331aaeaab3c10f3993c34ca20e0138fb5f58a978d30a160de",
+    "parts/app4.js": "70415f060e13364c940830b84130efe63c7084defaffc3bcebabc7fe74772be1"
+   },
+   "mutation": "packTileEnum's zoom loop bound changed (z <= maxz -> z < maxz) in the wrapped loop header in app4.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 10 convicts the changed enumeration bound",
+   "green": "proof-1254: 13 passed, 0 failed; the loop-header regex now spans the wrapped header exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1267",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1267.mjs": "2ff38ab475f96e3a72fa4f2ce66979afc7448a793e85184b983712824e7e93e7",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "the crDraftHit addLayer call's beforeId argument removed in create-pick.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 2b convicts the missing beforeId (crDraftHit:false)",
+   "green": "proof-1267: 17 pass, 0 fail; the 2b regex now tolerates the wrapped call (whitespace between the layer object and before)",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1271",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "3e7432d0e927f98bd33b442ddf65d4911e2208f4743aa0a9de43f34d68650621",
+    "parts/app3.js": "313b044ff61dcef04b720081d38e47afd194188a5a2f5c11ae18d1e729c0cdc4",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "two breaks replayed: --drop-pill changed (40px -> 41px) in head.html, and the Clear sub text shortened in app3.js; each proof run red, each file restored byte-identical",
+   "red": "size break: check 2a fails; wording break: check 3a fails",
+   "green": "proof-1271: 15 pass, 0 fail; the 3a needle now spans the wrapped showConfirm call and the 2a needle the wrapped .routeDrop button rule",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1227",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "b7b50f5a45dd257d60d64fa85d20510bd04db8a7aec218f76db8de7cf9ac98b1",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the back pill width changed (50px -> 51px) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check 2c convicts the changed pill size",
+   "green": "proof-1227 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-glow",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "b259d60e46bf688ee25c5d01f41683d2920d53300a536232af44db8fddac399f",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "syncCrGlow's sector read changed (rec.parts[i] -> rec.parts[0]) in create-pick.js, scoped to the pinned two-line shape, proof run, file restored byte-identical",
+   "red": "proof fails: check G convicts the changed feed",
+   "green": "proof-create-glow-casing-fix: 19 pass, 0 fail; the G needle now spans the wrapped statement pair exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-street-end",
+   "check": "tests/proof/proof-street-end-width-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-street-end-width-fix.mjs": "979f701b67bc40f171b5023290ad4110a54d7a856e970bf754194329291e6686",
+    "parts/engine.js": "a3990cb193fba433161e842b7ad7ea423bbab03f7775b71b97781ce1bd097aaf"
+   },
+   "mutation": "the band trim call's half changed (SURF_HALF -> BAND_HALF) in engine.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 3S convicts the retired constant at the call",
+   "green": "proof-street-end-width-fix: ALL CHECKS PASS; the 3S needle now spans the wrapped call and the 5S regex tolerates the wrapped layer arguments",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-soft-1222",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "d1cbf1d57152271446b2d6326f48cff274620fd9e7c0034d1b2a474f905c7edd",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the shared day lift shadow alpha changed (.10 -> .11) in head.html (the stack text stands in two rules; both occurrences changed), proof run, file restored byte-identical",
+   "red": "proof fails: check C convicts the changed shadow",
+   "green": "proof-soft-1222 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1223-r2",
+   "check": "tests/proof/proof-1223.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1223.mjs": "d96865723203cfd9ef45f082c773ffd584c3a7df9938d23c8ac8b3b16c1c32f5",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "the cc.append city-bar call in create-pick.js reworded ('Working in ' -> 'Working at ') in place, proof run, file restored byte-identical (md5 verified) | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3e (the bar text is built from text nodes) convicts the reworded call",
+   "green": "proof-1223: 27 passed, 0 failed on the shipped tree; the 3e needle now spans the wrapped append call exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1229-r2",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "1f2f9ade7735fd1c662ebaeb9f1df20cac658722ae2c6ef4fe7a51b882d280d7",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "the Nominatim viewbox bounds order swapped (n and e exchanged) in the wrapped fetch call in create-pick.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 5c convicts the swapped bound order",
+   "green": "proof-1229: 33 passed, 0 failed; the 5c needle now spans the wrapped bounds array exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1230-r2",
+   "check": "tests/proof/proof-1230.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1230.mjs": "df88e4e93a46b83053fcd72e1a0e7b72d581ddbf26550726473eaaa890b177ce",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0"
+   },
+   "mutation": "dpGradeOf's first threshold raised (26 -> 30) in app1.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3c convicts the moved threshold",
+   "green": "proof-1230: 25 passed, 0 failed; the 3c needle now spans the wrapped DP literal exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1232-r2",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "b4b14dd34204782e9d2c186942fbda7e6fa92a15c9bbf29a3aeb5a65b0095d0d",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the day back pill's border alpha changed (.08 -> .09) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3b convicts the changed border",
+   "green": "proof-1232 green on the shipped tree; the pill/wrap extraction is now a line-anchored rule span with whitespace collapsed, so wrapped rules read whole | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1233-r2",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "19abdc6c866212153901ccfc2c8494bd3ac3303ebf47a0a34d29569d3e63e337",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": ".rmBackIco width changed (20px -> 21px) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check B5c convicts the glyph size",
+   "green": "proof-1233 green on the shipped tree; the B5c needle now spans the wrapped .rmBack rule exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1235-r2",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "0ac29327df1ead4b3df70b63618f91faba7e2efc57a74bd41d8649e039d63019",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "two breaks replayed: the gazetteer slice count raised (6 -> 7) in create-pick.js, and the .rmInput glass background alpha changed (.14 -> .15) in head.html; each proof run red, each file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "slice break: check B5 fails; glass break: check A6 fails",
+   "green": "proof-1235: 18 passed, 0 failed; needles B5/B7/B9/A6 now span the wrapped shapes exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1242-r2",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "0b0b9873872edba099751d7ba89df81e3f62c062c294808ac5457fc84c49d342",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the day dock gradient's second stop changed (#eceef2 -> #eceef3) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 6 convicts the changed face",
+   "green": "proof-1242 green on the shipped tree; its rule() extraction now collapses whitespace, so the face values are compared byte-exact across the wrap | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1254-r2",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "6648584380e8a8e331aaeaab3c10f3993c34ca20e0138fb5f58a978d30a160de",
+    "parts/app4.js": "cce5fd597a9d6b6bc97d29cd30c80d1852d59556a79c0082a6be9bacece77058"
+   },
+   "mutation": "packTileEnum's zoom loop bound changed (z <= maxz -> z < maxz) in the wrapped loop header in app4.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 10 convicts the changed enumeration bound",
+   "green": "proof-1254: 13 passed, 0 failed; the loop-header regex now spans the wrapped header exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1267-r2",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1267.mjs": "a2bee64d7f66ddd152ff4862136e6c963e1df0ef96a47029165033a1aec27f54",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "the crDraftHit addLayer call's beforeId argument removed in create-pick.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 2b convicts the missing beforeId (crDraftHit:false)",
+   "green": "proof-1267: 17 pass, 0 fail; the 2b regex now tolerates the wrapped call (whitespace between the layer object and before) | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1271-r2",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "d02d5adb64e26bbc7a1b68fc074a7dd9ff88df4e662d6e4a85a799f1987f0b00",
+    "parts/app3.js": "8a964f63c2a7a21006a2bdb65a0b37058fa09da805eea348efbf50c8d068ab45",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "two breaks replayed: --drop-pill changed (40px -> 41px) in head.html, and the Clear sub text shortened in app3.js; each proof run red, each file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "size break: check 2a fails; wording break: check 3a fails",
+   "green": "proof-1271: 15 pass, 0 fail; the 3a needle now spans the wrapped showConfirm call and the 2a needle the wrapped .routeDrop button rule | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1227-r2",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "b7b50f5a45dd257d60d64fa85d20510bd04db8a7aec218f76db8de7cf9ac98b1",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the back pill width changed (50px -> 51px) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 2c convicts the changed pill size",
+   "green": "proof-1227 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-glow-r2",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "b259d60e46bf688ee25c5d01f41683d2920d53300a536232af44db8fddac399f",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "syncCrGlow's sector read changed (rec.parts[i] -> rec.parts[0]) in create-pick.js, scoped to the pinned two-line shape, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check G convicts the changed feed",
+   "green": "proof-create-glow-casing-fix: 19 pass, 0 fail; the G needle now spans the wrapped statement pair exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-street-end-r2",
+   "check": "tests/proof/proof-street-end-width-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-street-end-width-fix.mjs": "979f701b67bc40f171b5023290ad4110a54d7a856e970bf754194329291e6686",
+    "parts/engine.js": "c8183d4e9fd5b2f8de15751e8c51cda513bb25c0b14ce708eb6415816a6c3986"
+   },
+   "mutation": "the band trim call's half changed (SURF_HALF -> BAND_HALF) in engine.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3S convicts the retired constant at the call",
+   "green": "proof-street-end-width-fix: ALL CHECKS PASS; the 3S needle now spans the wrapped call and the 5S regex tolerates the wrapped layer arguments | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-soft-1222-r2",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "d1cbf1d57152271446b2d6326f48cff274620fd9e7c0034d1b2a474f905c7edd",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the shared day lift shadow alpha changed (.10 -> .11) in head.html (the stack text stands in two rules; both occurrences changed), proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check C convicts the changed shadow",
+   "green": "proof-soft-1222 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1235-r3",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "31e988857c636e2205c7df087d92753ebbd13a830ceeae03c8c1659ec77beb9b",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "two breaks replayed: the gazetteer slice count raised (6 -> 7) in create-pick.js, and the .rmInput glass background alpha changed (.14 -> .15) in head.html; each proof run red, each file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed | re-issue r3: the proof's own A6 line wrapped after r2 (string split at a newline escape, value identical)",
+   "red": "slice break: check B5 fails; glass break: check A6 fails",
+   "green": "proof-1235: 18 passed, 0 failed; needles B5/B7/B9/A6 now span the wrapped shapes exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-scan-parts-r3",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree: ignored lsSet appended to parts/app1.js; settleAmount body cloned as settleAmountPlant in parts/brand-snow.js; #snowCv CSS block duplicated as #snowCvPlant inside the style block in parts/head.html",
+   "red": "each plant convicted with its exact diagnostic (app1.js:847 lsSet write outcome ignored; clone pair settleAmount/settleAmountPlant; CSS clone #snowCv/#snowCvPlant), scanner exit 1 on all three",
+   "green": "scratch tree restored byte-identical to the shipped parts/ (diff -r clean): parts scan PASS, 593 clone pairs checked, exit 0",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r2",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011"
+   },
+   "mutation": "the scripts/scan-parts.cjs entry removed from JUDGE_PATHS in check-receipts.py",
+   "red": "gate --changed scripts/scan-parts.cjs exits 0: no receipt demanded, the scanner is invisible to the receipts gate",
+   "green": "shipped JUDGE_PATHS restored byte-identical: the same gate refuses, exit 1, naming scripts/scan-parts.cjs as having no current mutation receipt",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-repin-1254-r3",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "6648584380e8a8e331aaeaab3c10f3993c34ca20e0138fb5f58a978d30a160de",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802"
+   },
+   "mutation": "packTileEnum's zoom loop bound changed (z <= maxz -> z < maxz) in the wrapped loop header in app4.js, proof run, file restored byte-identical | re-issue: pins refreshed after the premise-lint adjudication rejoined the healthprobe lines in app4.js (whitespace only, AST-identical); no claim or needle value changed",
+   "red": "proof fails: check 10 convicts the changed enumeration bound (12 passed, 1 failed)",
+   "green": "proof-1254: 13 passed, 0 failed on the rejoined tree; full proof suite 95/95 re-observed at this re-issue",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r3",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the scripts/scan-parts.cjs entry removed from JUDGE_PATHS in check-receipts.py (re-issued after the scanner header compression changed the scanner's hash)",
+   "red": "gate --changed scripts/scan-parts.cjs exits 0: no receipt demanded, the scanner is invisible to the receipts gate",
+   "green": "shipped JUDGE_PATHS restored byte-identical: the same gate refuses, exit 1, naming scripts/scan-parts.cjs as having no current mutation receipt",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r4",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued after the header compression): ignored lsSet appended to parts/app1.js; settleAmount body cloned as settleAmountPlant in parts/brand-snow.js; #snowCv CSS block duplicated as #snowCvPlant inside the style block in parts/head.html",
+   "red": "each plant convicted with its exact diagnostic (app1.js:847 lsSet write outcome ignored; clone pair settleAmount/settleAmountPlant; CSS clone #snowCv/#snowCvPlant), scanner exit 1 on all three",
+   "green": "scratch tree restored byte-identical to the shipped parts/ (diff -r clean): parts scan PASS, 593 clone pairs checked, exit 0",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r2",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "scripts/scan-parts.cjs moved aside so push.py's parts_scan_gate finds no scanner and stands down, with an ignored lsSet planted in parts/app1.js (re-issued after the scanner header compression)",
+   "red": "push.py plan for the planted tree is ACCEPTED (limits gate only): the neutered gate lets an ignored write through",
+   "green": "shipped scanner in place: the same plan is REFUSED - the parts scan failed: parts/app1.js:847 lsSet write outcome ignored; tree restored byte-identical after the probe",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d67d797ebfa468872f0927160f3c6f64b5d79bdca7df0613d94a217e9e4d4ff5",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued after the scanner header compression)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (112 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 113 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r3",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "8cd1b870ffeba987af34fd1e1ed93b1a8598d70a117bb2cd020383424e1e5d98",
+    "scripts/gate-fixtures/run-fixtures.py": "1192f96cfd1afde9a6f0fc1b0e3ea6b3b25e3148b2fe4ea3ea6619703073dc91"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the regex-literal fix: comment_spans now tokenizes JS, skipping strings, templates and regex literals)",
+   "red": "exactly the three conviction fixtures flip: rewritten long comment, deletion-partial long comment, long comment beside a regex literal (112 pass, 3 fail)",
+   "green": "shipped judge restored byte-identical: gate fixtures 115 pass, 0 fail, including the new regex-phantom case the old judge convicted at 31 words",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1192f96cfd1afde9a6f0fc1b0e3ea6b3b25e3148b2fe4ea3ea6619703073dc91",
+    "scripts/check-pr-limits.py": "8cd1b870ffeba987af34fd1e1ed93b1a8598d70a117bb2cd020383424e1e5d98"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the regex-literal fix and the two new regex fixtures)",
+   "red": "exactly the three conviction fixtures flip: rewritten long comment, deletion-partial long comment, long comment beside a regex literal (112 pass, 3 fail)",
+   "green": "shipped judge restored byte-identical: gate fixtures 115 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r2",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "8cd1b870ffeba987af34fd1e1ed93b1a8598d70a117bb2cd020383424e1e5d98"
+   },
+   "mutation": "module probe on the shipped push.py _limits_verdict vs the per-line stand-in (re-issued after the judge's regex-literal fix changed check-pr-limits.py)",
+   "red": "the per-line stand-in (line_errors on the changed line alone) returns no error: without the shared touched-comment verdict the push gate accepts a 32-word comment touched by a one-word edit",
+   "green": "shipped verdict names it: 'parts/x.js:1: touched comment of 32 words (limit 20)' from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1192f96cfd1afde9a6f0fc1b0e3ea6b3b25e3148b2fe4ea3ea6619703073dc91",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued: pins refreshed for the enlarged fixture file)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (114 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 115 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r4",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "8cd1b870ffeba987af34fd1e1ed93b1a8598d70a117bb2cd020383424e1e5d98",
+    "scripts/gate-fixtures/run-fixtures.py": "e30503f4c99145eb3734fb8b2f22ad2e7459840e7a2abeada2492a61f345230d"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (pins refreshed after a comment compression in the fixture file; the r3 observations stand)",
+   "red": "exactly the three conviction fixtures flip: rewritten long comment, deletion-partial long comment, long comment beside a regex literal (112 pass, 3 fail)",
+   "green": "shipped judge: gate fixtures 115 pass, 0 fail, including the new regex-phantom case the old judge convicted at 31 words",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "e30503f4c99145eb3734fb8b2f22ad2e7459840e7a2abeada2492a61f345230d",
+    "scripts/check-pr-limits.py": "8cd1b870ffeba987af34fd1e1ed93b1a8598d70a117bb2cd020383424e1e5d98"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (pins refreshed after a comment compression in the fixture file; the r3 observations stand)",
+   "red": "exactly the three conviction fixtures flip: rewritten long comment, deletion-partial long comment, long comment beside a regex literal (112 pass, 3 fail)",
+   "green": "shipped judge: gate fixtures 115 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "e30503f4c99145eb3734fb8b2f22ad2e7459840e7a2abeada2492a61f345230d",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (pins refreshed after a comment compression in the fixture file; the r3 observations stand)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (114 pass, 1 fail)",
+   "green": "shipped scanner: gate fixtures 115 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r5",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "364a0b8b0ee70b0b804fb9237a199c09b1273152df3d1323d93d1387087851f3",
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the replacement-hunk boundary fix, Codex P2 round 3)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge restored byte-identical: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54",
+    "scripts/check-pr-limits.py": "364a0b8b0ee70b0b804fb9237a199c09b1273152df3d1323d93d1387087851f3"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the replacement-hunk boundary fix and its new fixture)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r3",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "364a0b8b0ee70b0b804fb9237a199c09b1273152df3d1323d93d1387087851f3"
+   },
+   "mutation": "module probe on the shipped push.py _limits_verdict vs the per-line stand-in (re-issued for the replacement-hunk boundary fix in the shared judge)",
+   "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for either pair: without the shared touched-comment verdict the push gate accepts both a rewritten 32-word comment and a 22-word comment whose last line was replaced by code",
+   "green": "shipped verdict names both: 'touched comment of 32 words' for the rewritten pair and 'touched comment of 22 words' for the replacement pair, from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (pins refreshed for the enlarged fixture file)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (115 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r6",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "7c2981998523f6a82aec2dfdf33f997bec42f42d705992a3ec724668088597ba",
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the span-anchored boundary rule: only a comment that itself lost lines is judged whole)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge restored byte-identical: gate fixtures 116 pass, 0 fail; a whole-PR judge sweep over the 38 changed files convicts nothing (the first boundary form over-touched five neighbour comments in app4.js, create-pick.js and head.html)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54",
+    "scripts/check-pr-limits.py": "7c2981998523f6a82aec2dfdf33f997bec42f42d705992a3ec724668088597ba"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the span-anchored boundary rule in the judge)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r4",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "7c2981998523f6a82aec2dfdf33f997bec42f42d705992a3ec724668088597ba"
+   },
+   "mutation": "module probe on the shipped push.py _limits_verdict vs the per-line stand-in (re-issued for the span-anchored boundary rule in the shared judge)",
+   "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for either pair: without the shared touched-comment verdict the push gate accepts both a rewritten 32-word comment and a 22-word comment whose last line was replaced by code",
+   "green": "shipped verdict names both: 'touched comment of 32 words' for the rewritten pair and 'touched comment of 22 words' for the replacement pair, from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r7",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "90a2af4f67d49596e3c8964bd8b1cd45f58bc9990002394e45833e0e7510697b",
+    "scripts/gate-fixtures/run-fixtures.py": "2ed4038c2067ae9a814c6a223780528ec1fea6ebdaa0ea7f3621e205ef5529dd"
+   },
+   "mutation": "pins refreshed for a comment-only edit (review-history annotation removed from the boundary rule's comment); the r6 neuter observations stand, judge logic untouched",
+   "red": "exactly the four conviction fixtures flip under the neuter: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail on the final text",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r7",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "2ed4038c2067ae9a814c6a223780528ec1fea6ebdaa0ea7f3621e205ef5529dd",
+    "scripts/check-pr-limits.py": "90a2af4f67d49596e3c8964bd8b1cd45f58bc9990002394e45833e0e7510697b"
+   },
+   "mutation": "pins refreshed for a comment-only edit (review-history annotation removed from a fixture comment); the r6 neuter observations stand",
+   "red": "exactly the four conviction fixtures flip under the neuter: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail on the final text",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r5",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "90a2af4f67d49596e3c8964bd8b1cd45f58bc9990002394e45833e0e7510697b"
+   },
+   "mutation": "pins refreshed for a comment-only edit in the shared judge; the r4 module-probe observations stand",
+   "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for either pair: without the shared touched-comment verdict the push gate accepts both a rewritten 32-word comment and a 22-word comment whose last line was replaced by code",
+   "green": "shipped verdict names both: 'touched comment of 32 words' for the rewritten pair and 'touched comment of 22 words' for the replacement pair, from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r5",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "e6abac47dffb52931de25507e508a05c2fdba4d5ba3a21362384ef042e54f113",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued for the stable callback identities: an anonymous callback's identity now carries its body hash, so unrelated insertions cannot renumber baselined pairs)",
+   "red": "each plant convicted alone: 'parts/app1.js:786: lsSet write outcome ignored'; a settleAmount body cloned as settleAmountPlant in brand-snow.js; the #snowCv CSS block duplicated as #snowCvPlant inside the style block",
+   "green": "shipped scanner on the untouched tree: PASS (593 clone pairs checked); the baselined callback pair also survives an unrelated callback inserted before it (the pre-fix ordinal identities renumbered it #2/#3 and convicted it as new)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r4",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "e6abac47dffb52931de25507e508a05c2fdba4d5ba3a21362384ef042e54f113"
+   },
+   "mutation": "scan-parts.cjs removed from JUDGE_PATHS in check-receipts.py, receipts gate run over the changed scanner",
+   "red": "neutered gate exits 0: the scanner change passes with no current receipt",
+   "green": "shipped gate refuses the same change until a current receipt exists; check-receipts.py restored byte-identical (sha256 f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r3",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "e6abac47dffb52931de25507e508a05c2fdba4d5ba3a21362384ef042e54f113"
+   },
+   "mutation": "scanner moved aside, push plan run on a planted ignored write in app1.js (prospective tree assembled with the plant), then the shipped scanner restored and the plan re-run",
+   "red": "scanner aside: PUSH PLAN OK - the push path accepts a planted ignored write (exit 0)",
+   "green": "shipped scanner: PUSH REFUSED naming it - 'parts/app1.js:786: lsSet write outcome ignored' (exit 1); plant removed, tree restored byte-identical",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "701563b0cf66ac5560d9d79954c137dbd88063a152395fb371e2ef05d314b557",
+    "scripts/scan-parts.cjs": "e6abac47dffb52931de25507e508a05c2fdba4d5ba3a21362384ef042e54f113"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued for the callback-identity fixtures)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (117 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 118 pass, 0 fail, including the two callback-identity fixtures",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r6",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "28c688e8ac6d2610ef105789ae95ff28cec97fe9b3289d9848dddec131ea6111",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (pins refreshed after the baseline writer learned to wrap pair lines; the r5 detection observations stand)",
+   "red": "each plant convicted alone: 'parts/app1.js:786: lsSet write outcome ignored'; a settleAmount body cloned as settleAmountPlant in brand-snow.js; the #snowCv CSS block duplicated as #snowCvPlant inside the style block",
+   "green": "shipped scanner on the untouched tree: PASS (593 clone pairs checked, baseline regenerated in the wrapped format); the baselined callback pair survives an unrelated callback inserted before it",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r5",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "28c688e8ac6d2610ef105789ae95ff28cec97fe9b3289d9848dddec131ea6111"
+   },
+   "mutation": "scan-parts.cjs removed from JUDGE_PATHS in check-receipts.py, receipts gate run over the changed scanner (pins refreshed for the scanner's writer edit; the r4 observation stands)",
+   "red": "neutered gate exits 0: the scanner change passes with no current receipt",
+   "green": "shipped gate refuses the same change until a current receipt exists; check-receipts.py restored byte-identical (sha256 f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r4",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "28c688e8ac6d2610ef105789ae95ff28cec97fe9b3289d9848dddec131ea6111"
+   },
+   "mutation": "scanner moved aside, push plan run on a planted ignored write in app1.js (prospective tree assembled with the plant), then the shipped scanner restored and the plan re-run (pins refreshed for the scanner's writer edit; the r3 observation stands)",
+   "red": "scanner aside: PUSH PLAN OK - the push path accepts a planted ignored write (exit 0)",
+   "green": "shipped scanner: PUSH REFUSED naming it - 'parts/app1.js:786: lsSet write outcome ignored' (exit 1); plant removed, tree restored byte-identical",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r7",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "701563b0cf66ac5560d9d79954c137dbd88063a152395fb371e2ef05d314b557",
+    "scripts/scan-parts.cjs": "28c688e8ac6d2610ef105789ae95ff28cec97fe9b3289d9848dddec131ea6111"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (pins refreshed for the scanner's writer edit; the r6 observation stands)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (117 pass, 1 fail)",
+   "green": "shipped scanner: gate fixtures 118 pass, 0 fail, including the two callback-identity fixtures",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r8",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "234560c70eeaec22d88265c6927f37661abcfb2c52b05fb3a9e8d19bccf730e0",
+    "scripts/gate-fixtures/run-fixtures.py": "80a6527b985d5d1dbfd6ee1281cd605db6c4898cb4bbbec664b27f9ab029c0da"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the joined-blocks rule: a new span whose lines come from two old spans is judged whole)",
+   "red": "exactly the five conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long, joined blocks (114 pass, 5 fail)",
+   "green": "shipped judge restored byte-identical: gate fixtures 119 pass, 0 fail; a whole-PR judge sweep over the 38 changed files convicts nothing",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r8",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "80a6527b985d5d1dbfd6ee1281cd605db6c4898cb4bbbec664b27f9ab029c0da",
+    "scripts/check-pr-limits.py": "234560c70eeaec22d88265c6927f37661abcfb2c52b05fb3a9e8d19bccf730e0"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the joined-blocks rule and its new fixture)",
+   "red": "exactly the five conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long, joined blocks (114 pass, 5 fail)",
+   "green": "shipped judge: gate fixtures 119 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r6",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "234560c70eeaec22d88265c6927f37661abcfb2c52b05fb3a9e8d19bccf730e0"
+   },
+   "mutation": "module probe on the shipped push.py _limits_verdict vs the per-line stand-in (re-issued for the joined-blocks rule in the shared judge)",
+   "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for any of the three pairs: without the shared touched-comment verdict the push gate accepts a rewritten 32-word comment, a 22-word comment whose last line was replaced by code, and a 22-word comment formed by joining two blocks",
+   "green": "shipped verdict names all three: 32 words (rewritten), 22 words (replacement), 22 words (joined), from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r8",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "80a6527b985d5d1dbfd6ee1281cd605db6c4898cb4bbbec664b27f9ab029c0da",
+    "scripts/scan-parts.cjs": "28c688e8ac6d2610ef105789ae95ff28cec97fe9b3289d9848dddec131ea6111"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (pins refreshed for the enlarged fixture file)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (118 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 119 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r7",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "ef38ef0dc554e5caa5f1b9e90f1f7622ad5ad6862bf1ac645cbee777f3ac4a28",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued for the promise-handler recognition in outcomeUsed: a write feeding .then/.catch/.finally is consumed)",
+   "red": "each plant convicted alone: 'parts/app1.js:786: lsSet write outcome ignored'; a settleAmount body cloned as settleAmountPlant in brand-snow.js; the #snowCv CSS block duplicated as #snowCvPlant inside the style block",
+   "green": "shipped scanner on the untouched tree: PASS (593 clone pairs checked); a write consumed by a promise handler whose callback tests the result now passes, while the same write as a bare statement still convicts",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r6",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "ef38ef0dc554e5caa5f1b9e90f1f7622ad5ad6862bf1ac645cbee777f3ac4a28"
+   },
+   "mutation": "scan-parts.cjs removed from JUDGE_PATHS in check-receipts.py, receipts gate run over the changed scanner",
+   "red": "neutered gate exits 0: the scanner change passes with no current receipt",
+   "green": "shipped gate refuses the same change until a current receipt exists; check-receipts.py restored byte-identical (sha256 f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r5",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "ef38ef0dc554e5caa5f1b9e90f1f7622ad5ad6862bf1ac645cbee777f3ac4a28"
+   },
+   "mutation": "scanner moved aside, push plan run on a planted ignored write in app1.js (prospective tree assembled with the plant), then the shipped scanner restored and the plan re-run",
+   "red": "scanner aside: the plan accepts the planted ignored write",
+   "green": "shipped scanner: the plan refuses naming it - 'parts/app1.js:786: lsSet write outcome ignored'; plant removed, tree restored byte-identical",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r9",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "35dec4a7a7f61f10f724425220868279421e6477ebef6b96c8e967514649bddb",
+    "scripts/scan-parts.cjs": "ef38ef0dc554e5caa5f1b9e90f1f7622ad5ad6862bf1ac645cbee777f3ac4a28"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued for the promise-handler fixture)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (119 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 120 pass, 0 fail, including the promise-handler fixture",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r8",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "f67e922397b88d5c5875a08eb01d9cb5a8c4cb290bc15ca183fe5e2917979330",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued for method identities: methods and accessors now carry the body hash like anonymous callbacks)",
+   "red": "each plant convicted alone: 'parts/app1.js:786: lsSet write outcome ignored'; a settleAmount body cloned as settleAmountPlant in brand-snow.js; the #snowCv CSS block duplicated as #snowCvPlant inside the style block",
+   "green": "shipped scanner on the untouched tree: PASS (593 clone pairs checked, baseline regenerated); a baselined same-name method pair survives an unrelated method inserted before it (the name-only identities renumbered it read#2/read#3 and convicted it as new)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r7",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "f67e922397b88d5c5875a08eb01d9cb5a8c4cb290bc15ca183fe5e2917979330"
+   },
+   "mutation": "scan-parts.cjs removed from JUDGE_PATHS in check-receipts.py, receipts gate run over the changed scanner",
+   "red": "neutered gate exits 0: the scanner change passes with no current receipt",
+   "green": "shipped gate refuses the same change until a current receipt exists; check-receipts.py restored byte-identical (sha256 f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r6",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "f67e922397b88d5c5875a08eb01d9cb5a8c4cb290bc15ca183fe5e2917979330"
+   },
+   "mutation": "scanner moved aside, push plan run on a planted ignored write in app1.js (prospective tree assembled with the plant), then the shipped scanner restored and the plan re-run",
+   "red": "scanner aside: PUSH PLAN OK - the push path accepts a planted ignored write (exit 0)",
+   "green": "shipped scanner: PUSH REFUSED naming it - 'parts/app1.js:786: lsSet write outcome ignored' (exit 1); plant removed, tree restored byte-identical",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r10",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8e5afe2f9d768b5f673d738844bb871a2b69510b7ffe88c268c2ab03988d517e",
+    "scripts/scan-parts.cjs": "f67e922397b88d5c5875a08eb01d9cb5a8c4cb290bc15ca183fe5e2917979330"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued for the method-identity fixtures)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (121 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 122 pass, 0 fail, including the two method-identity fixtures",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r9",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "209820079d7ae63a6015d26a11c59e581f5725f7d7cb7f7fe6dd4bb030150b64",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued for decoupled descendant scopes: identity keeps the body hash, the inherited scope segment is content-free)",
+   "red": "each plant convicted alone: 'parts/app1.js:786: lsSet write outcome ignored'; a settleAmount body cloned as settleAmountPlant in brand-snow.js; the #snowCv CSS block duplicated as #snowCvPlant inside the style block",
+   "green": "shipped scanner on the untouched tree: PASS (593 clone pairs checked, baseline regenerated); a colour literal changed inside the engine IIFE no longer renumbers its 66 baselined descendant pairs (the coupled scheme reported all 66 as new)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r8",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "209820079d7ae63a6015d26a11c59e581f5725f7d7cb7f7fe6dd4bb030150b64"
+   },
+   "mutation": "scan-parts.cjs removed from JUDGE_PATHS in check-receipts.py, receipts gate run over the changed scanner",
+   "red": "neutered gate exits 0: the scanner change passes with no current receipt",
+   "green": "shipped gate refuses the same change until a current receipt exists; check-receipts.py restored byte-identical (sha256 f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r7",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "209820079d7ae63a6015d26a11c59e581f5725f7d7cb7f7fe6dd4bb030150b64"
+   },
+   "mutation": "scanner moved aside, push plan run on a planted ignored write in app1.js (prospective tree assembled with the plant), then the shipped scanner restored and the plan re-run",
+   "red": "scanner aside: PUSH PLAN OK - the push path accepts a planted ignored write (exit 0)",
+   "green": "shipped scanner: PUSH REFUSED naming it - 'parts/app1.js:786: lsSet write outcome ignored' (exit 1); plant removed, tree restored byte-identical",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r11",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "3f474b769122d08b50a90e5ec4c7977968e14268fd1662548656dddf9c62b7fe",
+    "scripts/scan-parts.cjs": "209820079d7ae63a6015d26a11c59e581f5725f7d7cb7f7fe6dd4bb030150b64"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued for the descendant-stability fixtures)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (123 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 124 pass, 0 fail, including the two descendant-stability fixtures",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r10",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued for event-tagged scope segments: a call-argument callback's inherited segment now carries the call's first string argument)",
+   "red": "each plant convicted alone: 'parts/app1.js:786: lsSet write outcome ignored'; a settleAmount body cloned as settleAmountPlant in brand-snow.js; the #snowCv CSS block duplicated as #snowCvPlant inside the style block",
+   "green": "shipped scanner on the untouched tree: PASS (593 clone pairs checked, baseline regenerated - 23 pairs re-keyed to event-tagged segments, count unchanged); prepending an unrelated addEventListener('probe') to app4.js no longer renumbers the click handler's descendant pairs (18 false clone errors before the fix)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r9",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e"
+   },
+   "mutation": "scan-parts.cjs removed from JUDGE_PATHS in check-receipts.py, receipts gate run over the changed scanner",
+   "red": "neutered gate exits 0: the scanner change passes with no current receipt",
+   "green": "shipped gate refuses the same change until a current receipt exists; check-receipts.py restored byte-identical (sha256 f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r8",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e"
+   },
+   "mutation": "scanner moved aside, push plan run on a planted ignored write in app1.js (prospective tree assembled with the plant), then the shipped scanner restored and the plan re-run",
+   "red": "scanner aside: PUSH PLAN OK - the push path accepts a planted ignored write (exit 0)",
+   "green": "shipped scanner: PUSH REFUSED naming it - 'parts/app1.js:786: lsSet write outcome ignored' (exit 1); plant removed, tree restored byte-identical",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r12",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f039dbeaec90ab26bda9a6b81f67e1fb1cb2c5b99e5a822f97c90f120b66dd05",
+    "scripts/scan-parts.cjs": "7ab4dbbcb7433e76362ba7eee0dd500fc5c72bf625867d8790759698fb43e37e"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued for the listener-stability fixtures)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (125 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 126 pass, 0 fail, including the two listener-stability fixtures",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }

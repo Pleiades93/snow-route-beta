@@ -101,7 +101,7 @@ check('10 (#10): packTileEnum exists and both views consume it; the enumeration 
   app4.includes('function packTileEnum(src, pk, budget)')
   && ptu.includes('packTileEnum(src, pk, budget)')
   && pul.includes('packTileEnum(src, pk, budgets.get(pk)')
-  && (app4.match(/for \(let z = 8; z <= maxz; z\+\+\)/g) || []).length === 1
+  && (app4.match(/for \(let z = 8;\n  z <= maxz;\n  z\+\+\)/g) || []).length === 1
   && (app4.match(/rb\.w - 0\.005/g) || []).length === 1);
 
 // ---------- R-05: every LS_GLOBAL value is documented ----------

@@ -101,6 +101,7 @@ JUDGE_PATHS = {
     "scripts/check-shard-coverage.py",
     "scripts/run-proofs.py",
     "scripts/premise-lint.py",
+    "scripts/scan-parts.cjs",
 }
 
 KINDS = ("mutation", "historical", "rendered")

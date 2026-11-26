@@ -1277,6 +1277,65 @@ with tempfile.TemporaryDirectory() as td:
     repo, b = git_repo(t / "exempt", [("c", {"index.html": "x" * 300 + "\n"})])
     check("pr-limits: a generated file's long line is exempt",
           run_limits(repo, b), 0)
+    # Touched comments (Phase 1, Class 1a): the judge reads a
+    # touched comment's full text, not only its added lines.
+    long_block = ("/*\n"
+                  " * alpha bravo charlie delta echo foxtrot golf hotel\n"
+                  " * india juliet kilo lima mike november oscar papa\n"
+                  " * quebec romeo sierra tango uniform victor whiskey xray\n"
+                  " * yankee zulu apple banana cherry dragon eagle falcon\n"
+                  " */\n")
+    def head1(repo):
+        return subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD~1"],
+                              capture_output=True, text=True).stdout.strip()
+    repo, _ = git_repo(t / "rewritten", [("c1", {"parts/a.js": long_block + "const a = 1;\n"}),
+                                         ("c2", {"parts/a.js": long_block.replace("whiskey", "whisky") + "const a = 1;\n"})])
+    check("pr-limits: a rewritten long comment fails on its full text",
+          run_limits(repo, head1(repo)), 1)
+    shorter = long_block.replace(" * yankee zulu apple banana cherry dragon eagle falcon\n", "")
+    repo, _ = git_repo(t / "delpartial", [("c1", {"parts/a.js": long_block + "const a = 1;\n"}),
+                                          ("c2", {"parts/a.js": shorter + "const a = 1;\n"})])
+    check("pr-limits: a deletion leaving a long partial comment fails",
+          run_limits(repo, head1(repo)), 1)
+    repo, _ = git_repo(t / "untouched", [("c1", {"parts/a.js": long_block + "const a = 1;\n"}),
+                                         ("c2", {"parts/a.js": long_block + "const a = 2;\n"})])
+    check("pr-limits: an untouched long comment passes",
+          run_limits(repo, head1(repo)), 0)
+    short_block = "/* one two three four five six\n seven eight nine ten eleven twelve */\n"
+    repo, _ = git_repo(t / "shorttouch", [("c1", {"parts/a.js": short_block + "const a = 1;\n"}),
+                                          ("c2", {"parts/a.js": short_block.replace("seven", "SEVEN") + "const a = 1;\n"})])
+    check("pr-limits: a rewritten short comment passes",
+          run_limits(repo, head1(repo)), 0)
+    # Regex literals: a /* inside one opens no comment; a real
+    # long comment beside one still fails.
+    regex_src = ("const re = /[/*]/;\n"
+                 "const s = \"alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima mike november oscar papa quebec romeo sierra tango uniform victor whiskey xray yankee\";\n"
+                 "/* short */\n")
+    repo, _ = git_repo(t / "regexphantom", [("c1", {"parts/a.js": "const a = 1;\n"}),
+                                            ("c2", {"parts/a.js": regex_src})])
+    check("pr-limits: a regex literal's /* opens no comment",
+          run_limits(repo, head1(repo)), 0)
+    repo, _ = git_repo(t / "regexlong", [("c1", {"parts/a.js": "const re = /[/*]/;\n" + long_block + "const a = 1;\n"}),
+                                         ("c2", {"parts/a.js": "const re = /[/*]/;\n" + long_block.replace("whiskey", "whisky") + "const a = 1;\n"})])
+    check("pr-limits: a long comment beside a regex literal still fails",
+          run_limits(repo, head1(repo)), 1)
+    # Replacement hunks: replacing a comment's last line with
+    # code still judges the surviving comment.
+    l1 = "// alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo\n"
+    l2 = "// lima mike november oscar papa quebec romeo sierra tango uniform victor\n"
+    l3 = "// whiskey xray yankee zulu apple banana cherry dragon eagle falcon\n"
+    repo, _ = git_repo(t / "replacetail", [("c1", {"parts/a.js": l1 + l2 + l3 + "const a = 1;\n"}),
+                                           ("c2", {"parts/a.js": l1 + l2 + "const x = 1;\nconst a = 1;\n"})])
+    check("pr-limits: a comment whose last line is replaced by code still fails",
+          run_limits(repo, head1(repo)), 1)
+    # Joined blocks: deleting the separator between two valid //
+    # blocks forms one comment, judged whole.
+    jb1 = "// alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima\n"
+    jb2 = "// mike november oscar papa quebec romeo sierra tango uniform victor\n"
+    repo, _ = git_repo(t / "joinedblocks", [("c1", {"parts/a.js": jb1 + "\n" + jb2 + "const a = 1;\n"}),
+                                            ("c2", {"parts/a.js": jb1 + jb2 + "const a = 1;\n"})])
+    check("pr-limits: two blocks joined by a deletion fail as one comment",
+          run_limits(repo, head1(repo)), 1)
     # Fetch shallow ancestry so the size rule sees the product commit.
     src, b = git_repo(t / "mergesrc", [])
     genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
@@ -1310,6 +1369,132 @@ with tempfile.TemporaryDirectory() as td:
     check("pr-limits: the labelled control passes in the same "
           "shallow checkout", run_limits(clone, b, "large-change"), 0)
 
-total = 102
+# ------------------------------------------------------------ parts scan
+def run_scan(root, *extra):
+    proc = subprocess.run(["node", str(ROOT / "scripts" / "scan-parts.cjs"),
+                           str(root)] + list(extra),
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+SCAN_JS = (
+    "function fixtureTestedWrite() { return lsSet('k', 'v'); }\n"
+    "function fixtureExemptWrite() { lsSet('hint', 'x') /* write-safe: a stale hint costs nothing */; }\n"
+    "function fixtureAlpha(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "function fixtureBeta(n) { let p = 1; while (n > 1) { p *= n; n--; } return p; }\n"
+)
+PROMISE_JS = "function save(pack) { upPut('route', pack).then(ok => { if (!ok) showBanner('x'); }); }\n"
+CB_JS = (
+    "function render(items) {\n"
+    "  const a = items.map(x => x.id);\n"
+    "  const b = items.filter(x => x.id);\n"
+    "  return a.length + b.length;\n"
+    "}\n"
+)
+METHOD_JS = (
+    "const a = { read() { return this.id; } };\n"
+    "const b = { read() { return this.id; } };\n"
+)
+DESC_JS = (
+    "(function () {\n"
+    "  var colour = '#ffc233';\n"
+    "  function twinA(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  function twinB(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  return twinA(1) + twinB(2) + colour.length;\n"
+    "})();\n"
+)
+DESC_JS_EDITED = DESC_JS.replace("#ffc233", "#ffc234")
+SIB_JS = (
+    "document.addEventListener('click', () => {\n"
+    "  function twinA(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  function twinB(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  return twinA(1) + twinB(2);\n"
+    "});\n"
+)
+SIB_JS_INSERTED = "document.addEventListener('probe', () => 42);\n" + SIB_JS
+METHOD_JS_INSERTED = (
+    "const z = { read() { return this.other; } };\n"
+    "const a = { read() { return this.id; } };\n"
+    "const b = { read() { return this.id; } };\n"
+)
+CB_JS_INSERTED = (
+    "function render(items) {\n"
+    "  const z = items.map(x => x.other);\n"
+    "  const a = items.map(x => x.id);\n"
+    "  const b = items.filter(x => x.id);\n"
+    "  return z.length + a.length + b.length;\n"
+    "}\n"
+)
+SCAN_HTML = ("<html><head><style>\n"
+             ".fixA { color: red; margin: 0; }\n"
+             ".fixB { color: blue; padding: 1px; }\n"
+             "</style></head><body></body></html>\n")
+SCAN_CLONE = (
+    "function fixtureCloneA() { const a = alphaOne(1); const b = betaTwo(2); const c = gammaThree(3); "
+    "if (a && b) return a + b + c; if (c > 9) return c * 3; "
+    "return deltaFour(a, b) + epsilonFive(b, c) + zetaSix(c, a); }\n"
+    "function fixtureCloneB() { const a = alphaOne(1); const b = betaTwo(2); const c = gammaThree(3); "
+    "if (a && b) return a + b + c; if (c > 9) return c * 3; "
+    "return deltaFour(a, b) + epsilonFive(b, c) + zetaSix(c, a); }\n"
+)
+
+
+def scan_tree(base, *, js=SCAN_JS, html=SCAN_HTML):
+    w(base / "parts" / "a.js", js)
+    w(base / "parts" / "head.html", html)
+    w(base / "scripts" / "parts-clone-baseline.json",
+      '{\n  "exemptions": [],\n  "pairs": []\n}\n')
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("scan: a clean tree passes (tested write, exempt write, distinct bodies)",
+          run_scan(scan_tree(t / "clean")), 0)
+    check("scan: a planted ignored write fails",
+          run_scan(scan_tree(t / "ignored",
+                             js=SCAN_JS + "function fixtureIgnored() { lsSet('k2', 'v2'); }\n")), 1)
+    check("scan: an ignored write carrying a write-safe exemption passes",
+          run_scan(scan_tree(t / "exempt",
+                             js="function fixtureOnly() { lsSet('hint', 'x') /* write-safe: a stale hint costs nothing */; }\n")), 0)
+    check("scan: a write consumed by a promise handler passes",
+          run_scan(scan_tree(t / "promise", js=PROMISE_JS)), 0)
+    check("scan: a planted JS clone pair fails",
+          run_scan(scan_tree(t / "jsclone", js=SCAN_JS + SCAN_CLONE)), 1)
+    check("scan: a planted CSS clone block fails",
+          run_scan(scan_tree(t / "cssclone",
+                             html=SCAN_HTML.replace("</style>",
+                                                    ".fixC { color: red; margin: 0; }\n</style>"))), 1)
+    clone_tree = scan_tree(t / "baselined", js=SCAN_JS + SCAN_CLONE)
+    check("scan: --write-baseline records the standing clone pair",
+          run_scan(clone_tree, "--write-baseline"), 0)
+    check("scan: a baselined clone pair passes",
+          run_scan(clone_tree), 0)
+    cb_tree = scan_tree(t / "cbstable", js=CB_JS)
+    check("scan: --write-baseline records the callback clone pair",
+          run_scan(cb_tree, "--write-baseline"), 0)
+    w(cb_tree / "parts" / "a.js", CB_JS_INSERTED)
+    check("scan: an unrelated callback insertion keeps baselined identities",
+          run_scan(cb_tree), 0)
+    m_tree = scan_tree(t / "mstable", js=METHOD_JS)
+    check("scan: --write-baseline records the method clone pair",
+          run_scan(m_tree, "--write-baseline"), 0)
+    w(m_tree / "parts" / "a.js", METHOD_JS_INSERTED)
+    check("scan: an unrelated method insertion keeps baselined identities",
+          run_scan(m_tree), 0)
+    d_tree = scan_tree(t / "dstable", js=DESC_JS)
+    check("scan: --write-baseline records the nested clone pair",
+          run_scan(d_tree, "--write-baseline"), 0)
+    w(d_tree / "parts" / "a.js", DESC_JS_EDITED)
+    check("scan: an ancestor body edit keeps descendant identities",
+          run_scan(d_tree), 0)
+    s_tree = scan_tree(t / "sibstable", js=SIB_JS)
+    check("scan: --write-baseline records the listener-nested pair",
+          run_scan(s_tree, "--write-baseline"), 0)
+    w(s_tree / "parts" / "a.js", SIB_JS_INSERTED)
+    check("scan: a prepended listener keeps descendant identities",
+          run_scan(s_tree), 0)
+
+total = 126
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

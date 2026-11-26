@@ -82,7 +82,10 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
           return null;
         });
         if (read.stopped === 'dense') { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
-        if (read.stopped === 'stale') { clearTimers(); crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
+        if (read.stopped === 'stale') { clearTimers();
+        crAbortOp(op);
+        return { ok: false, kind: 'stale' };
+        } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
         text = read.text;
       } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary. Beta 1.246: the fallback likewise cannot SEE mid-body progress, so its silence timer runs from the answer landing - a text() that wedges is cut by the silence rule, where a trickling one cannot be told apart (the streaming branch remains the primary on every browser that has it)
       clearTimers();

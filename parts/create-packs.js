@@ -18,14 +18,31 @@ const UP_TX_FAILED = {}; // internal: a store transaction that errored, aborted,
 let userPackCache = {}; // the merged {id: pack} picture of both homes (the backup export's source); it reflects only verified writes
 let upStoreComplete = false; // true once the boot read succeeded: only then is the cache provably complete and the strict backup export allowed
 let upStatus = { state: 'boot' }; // the init outcome, exposed as window.__userPacksStatus for the battery (the migratePack status-object precedent)
-function upCanon(v) { if (v === null || typeof v !== 'object') return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(upCanon).join(',') + ']'; return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + upCanon(v[k])).join(',') + '}'; } // key-order-insensitive canonical form for read-back equality: a structured-clone round-trip through IndexedDB is not a byte channel, so equality is judged on content, never on key order
-function upIdbOpen() { return new Promise(res => { let rq; try { rq = indexedDB.open(UP_IDB_NAME, 1); } catch (e) { res(null); return; } rq.onupgradeneeded = () => { const db = rq.result; if (!db.objectStoreNames.contains(UP_IDB_STORE)) db.createObjectStore(UP_IDB_STORE, { keyPath: 'id' }); }; rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); rq.onblocked = () => res(null); }); }
-function upTx(mode, fn) { return new Promise(res => { upIdbOpen().then(db => { if (!db) { res(UP_TX_FAILED); return; } let req; try { const tx = db.transaction(UP_IDB_STORE, mode); tx.oncomplete = () => { db.close(); res(req ? req.result : true); }; tx.onerror = () => { db.close(); res(UP_TX_FAILED); }; tx.onabort = () => { db.close(); res(UP_TX_FAILED); }; req = fn(tx.objectStore(UP_IDB_STORE)); } catch (e) { try { db.close(); } catch (e2) {} res(UP_TX_FAILED); } }); }); } // one short transaction per operation, the crIdb* shape - and a write counts at transaction COMPLETE, never at request success alone
+function upCanon(v) { if (v === null || typeof v !== 'object') return JSON.stringify(v);
+if (Array.isArray(v)) return '[' + v.map(upCanon).join(',') + ']';
+return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + upCanon(v[k])).join(',') + '}';
+} // key-order-insensitive canonical form: IndexedDB round-trips are not byte channels, so equality judges content, never key order
+function upIdbOpen() { return new Promise(res => { let rq; try { rq = indexedDB.open(UP_IDB_NAME,
+  1); } catch (e) { res(null); return; } rq.onupgradeneeded = () => { const db = rq.result; if (!db.objectStoreNames.contains(UP_IDB_STORE)) db.createObjectStore(UP_IDB_STORE,
+  { keyPath: 'id' }); }; rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); rq.onblocked = () => res(null); });
+}
+function upTx(mode, fn) { return new Promise(res => { upIdbOpen().then(db => { if (!db) { res(UP_TX_FAILED); return; } let req; try { const tx = db.transaction(UP_IDB_STORE, mode); tx.oncomplete = () => { db.close(); res(req ?
+  req.result :
+    true); }; tx.onerror = () => { db.close(); res(UP_TX_FAILED); }; tx.onabort = () => { db.close(); res(UP_TX_FAILED); }; req = fn(tx.objectStore(UP_IDB_STORE)); } catch (e) { try { db.close(); } catch (e2) {} res(UP_TX_FAILED); } }); });
+} // one short transaction per operation: a write counts at transaction COMPLETE, never at request success alone
 async function upGetAll() { const all = await upTx('readonly', st => st.getAll()); if (all === UP_TX_FAILED || !Array.isArray(all)) return null; const map = {}; for (const rec of all) if (rec && typeof rec === 'object' && typeof rec.id === 'string') map[rec.id] = rec; return map; } // {id: pack} for the whole store; null on any failure
 // one pack: the pack, null when absent, UP_READ_FAILED when the read itself failed - the distinction is the point
 async function upGet(id) { const rec = await upTx('readonly', st => st.get(id)); if (rec === UP_TX_FAILED) return UP_READ_FAILED; return rec === undefined ? null : rec; }
-async function upPut(id, pack) { const rec = { ...pack, id }; const w = await upTx('readwrite', st => st.put(rec)); if (w === UP_TX_FAILED) return false; const back = await upGet(id); return !!back && back !== UP_READ_FAILED && upCanon(back) === upCanon(rec); } // a created-route write counts only when the record reads back content-equal - the verified half of the house write discipline, and the gate every caller refuses on
-async function upDel(id) { const w = await upTx('readwrite', st => st.delete(id)); if (w === UP_TX_FAILED) return false; return (await upGet(id)) === null; } // deletion likewise: verified absent before the caller may treat the route as gone
+async function upPut(id, pack) { const rec = { ...pack, id };
+const w = await upTx('readwrite', st => st.put(rec));
+if (w === UP_TX_FAILED) return false;
+const back = await upGet(id);
+return !!back && back !== UP_READ_FAILED && upCanon(back) === upCanon(rec);
+} // a created-route write counts only when the record reads back content-equal - the gate every caller refuses on
+async function upDel(id) { const w = await upTx('readwrite', st => st.delete(id));
+if (w === UP_TX_FAILED) return false;
+return (await upGet(id)) === null;
+} // deletion likewise: verified absent before the caller may treat the route as gone
 async function initUserPacks() { // migration + boot registration; never blocks boot: on failure the app runs on legacy data and the drain retries
   const result = { state: 'done', fromStore: 0, fromLegacy: 0, drained: 0, migrated: false, legacyDeleted: false };
   try {
@@ -84,7 +101,12 @@ function computeBoundaryEnds(roads, allStreets) {
       const cum = [0]; for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + distM(line[i - 1], line[i]));
       const total = cum[cum.length - 1];
       const atD = d => { // the point at along-run distance d (sliceLine's interpolation)
-        for (let i = 1; i < line.length; i++) { if (d <= cum[i] || i === line.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t]; } }
+        for (let i = 1;
+        i < line.length;
+        i++) { if (d <= cum[i] || i === line.length - 1) { const span = cum[i] - cum[i - 1] || 1;
+        const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span));
+        return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t];
+        } }
         return line[line.length - 1];
       };
       for (const atStart of [true, false]) {

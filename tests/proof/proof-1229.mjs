@@ -83,7 +83,7 @@ check('4e: the fallback box prep carries the mirror watchdog, orphaning its wedg
 // ---------- 5: Ontario only ----------
 check('5a: the Ontario bounds + filter exist', pick.includes('const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 };') && pick.includes('function crInOntario(it)'));
 check('5b: a result naming a non-Ontario province/state is refused (the border-strip leak is closed)', pick.includes("if (st) return st === 'Ontario';"));
-check('5c: the city search asks Canada-only inside the Ontario bound', pick.includes("countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q="));
+check('5c: the city search asks Canada-only inside the Ontario bound', pick.includes("countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w,\n      CR_ON_BOUNDS.n,\n      CR_ON_BOUNDS.e,\n      CR_ON_BOUNDS.s].join(',') + '&bounded=1&q="));
 check('5d: the city search filters its results', pick.includes('.filter(crIsPlace).filter(crInOntario)'));
 check('5e: the street search bounds its answers to the picked city (Beta 1.234 re-derived: there are no service results to filter - the crossings computation itself drops crossings outside the city box)', pick.includes('xs.filter(x => !cityBox || crInBox(cityBox, x.pt[0], x.pt[1]))') && !pick.includes('results = results.filter(crInOntario);'));
 check('5f: the no-city street path makes no request at all (Beta 1.234 re-derived: the Ontario bound holds by construction - the street search URL builder is gone; the CITY search keeps the live bounded request, proof-1232 check 1p)', !pick.includes("else url += '&countrycodes=ca&viewbox='") && !pick.includes('&bounded=0'));

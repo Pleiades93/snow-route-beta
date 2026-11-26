@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "d42603f30ae656df427b5a24f06ae320ca869012436b4f0b0039775f13d86d4d",
+  "canonical_registry_sha256": "6d939b15beb85459c17ace197aa215b389d94d4d9508446333efbb258cfc1ab3",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1592,
-   "included": 1562,
+   "canonical": 1596,
+   "included": 1566,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -522,7 +522,7 @@
    "file": "parts/app4.js",
    "fix": "The preload covers the map's MINIMUM zoom (z8 up \u2014 Beta 1.72, R04): the map allows zoom 8 but the preload stopped at z10, so offline at z8\u20139 the basemap had nothing to draw.",
    "id": "beta-preload-covers-minzoom",
-   "pattern": "for (let z = 8; z <= maxz; z++) {",
+   "pattern": "for (let z = 8;\n  z <= maxz;\n  z++) {",
    "type": "grep_present"
   },
   {
@@ -554,7 +554,7 @@
    "file": "parts/app1.js",
    "fix": "buildGpx's marker pointer WALKS forward monotonically through the trail (Phase 2 form) \u2014 re-scanning from the top per marker is O(n\u00b2) and was the export's stall.",
    "id": "beta-gpx-pointer-walk",
-   "pattern": "while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++;",
+   "pattern": "while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++",
    "type": "grep_present"
   },
   {
@@ -1009,7 +1009,7 @@
    "file": "parts/app1.js",
    "fix": "A failed start-key DELETE retries through the flush (startDirty \u2014 Beta 1.92, F05): a delete that silently failed resurrected a finished run's start on the next load.",
    "id": "beta-start-delete-retry",
-   "pattern": "if (this.flags.start) saveStart(); // saveStart re-arms the flag itself on failure",
+   "pattern": "if (this.flags.start) saveStart() /* write-safe: saveStart re-arms its own PERSIST flag on failure */;",
    "type": "grep_present"
   },
   {
@@ -1113,7 +1113,7 @@
    "file": "parts/app1.js",
    "fix": "The migration COMMITS with its marker only after the copy lands \u2014 an unmarked migration re-runs and (no-wipe notwithstanding) re-judges data it already moved.",
    "id": "beta-migration-marker-commit",
-   "pattern": "lsSet(rk.mig, '1'); // commit: if this write fails",
+   "pattern": "lsSet(rk.mig, '1') /* write-safe: if this write fails",
    "type": "grep_present"
   },
   {
@@ -1277,7 +1277,7 @@
    "file": "parts/app4.js",
    "fix": "The pack completion state is a FINGERPRINT of the manifest (packMigFingerprint) \u2014 a bare boolean flag cannot tell 'complete for THIS manifest' from 'complete for a stale one'.",
    "id": "beta-packmig-fingerprint",
-   "pattern": "lsSet(PACKMIG_KEY, packMigFingerprint(list));",
+   "pattern": "lsSet(PACKMIG_KEY, packMigFingerprint(list)) /* write-safe:",
    "type": "grep_present"
   },
   {
@@ -6077,7 +6077,7 @@
    "fix": "Beta 1.195 GPS debug log toggle (PR #42): the 1.189/1.190 raw fix logger STAYS (Andrew reversed the same-day removal, PR #41, ten minutes after it merged; this build reverts it and converts the logger) behind a Settings switch in the Backup pane (#swFixLog). The enabled state is runtime-only: fixLogEnabled is a plain app3 let initialized false at every boot, with NO stored representation anywhere (not in SETTINGS/canonicalSettings, not in LS_GLOBAL, not in any backup field), reachable from app4 only through the doors fixLogIsEnabled/fixLogSetEnabled. Recording is gated at fixLogRaw (off = never recorded, storage never touched \u2014 fixLogClose's no-session early return keeps a logging-off watch stop from writing even an empty record); on mid-watch records from the next fix; off never deletes the log; segmentation stays by locate-on. Caps cut to ~1 hour: FIXLOG_MAX 3600, FIXLOG_MAX_CHARS 200000 (measured worst case ~46.0 chars/fix -> ~165,600 at 3,600, the rest margin). Proof: drive194 (39 checks, T1-T4 toggle sections + re-derived L sections). If a probe fails, the toggle has regressed or been reverted \u2014 restore the shipped form and re-run drive194.",
    "fix_id": "fixlog-toggle-1195",
    "id": "fixlog1195-open-guard",
-   "pattern": "function fixLogOpen() { if (!fixLogEnabled) return; try {",
+   "pattern": "function fixLogOpen() { if (!fixLogEnabled) return;\ntry {",
    "type": "grep_present"
   },
   {
@@ -6949,7 +6949,7 @@
    "fix": "Pack cache round (PR #70, merge a417427db94fa9fc45438a0de3d09a24f308e717; rollback: revert the merge -> 6ddbb380). Andrew approved 'fix all of it' in chat 2026-11-15, covering two assessed Carbon-sweep leftovers (human assessment: denylist-mediums-assessment; both graded REAL at LOW; the tile cache holds re-downloadable map data only, no stored format touched). C-02 (parts/app4.js, stDel): the offline-cache delete ran guarded only by the per-page preloadRunning flag, breaking the pack writers'-turn contract (takePackWriteTurn) both other pack mutations honour; it now acquires the turn and holds it across the delete and the metadata clears, released in a finally. C-01 (same file, the xPre download handler): downloads only ever PUT manifest URLs and never pruned entries orphaned by route deletions/updates (deleteRoute never touches the pack cache), so orphans survived every same-session download while the census weighed their bytes against the 250 MB cap; the download now prunes off-manifest entries (URL-normalized comparison, like migratePack) right after its census, subtracting the freed bytes from the cap accounting. Three Codex P2s in the PR #69/#70 gate hardened the prune before it shipped: the handler refreshes persisted route registrations (initUserPacks) before building the manifest; the prune runs only on a PROVEN manifest - a fresh full store read (upGetAll) succeeds and every persisted route, normalized via normalizePack, has its whole packTileUrls set inside the manifest (a content proof, not an ID check, so a route recreated under a reused ID in a different area fails it); and the pack turn is acquired FIRST, with the refresh and manifest built inside it, so a preceding writer's completed download cannot be overtaken by a stale snapshot. On any doubt the cache is preserved whole. Proofs: tests/proof/proof-pack-cache-c01.mjs (four scenarios, both-ways demonstrated at every gate step) and proof-pack-cache-c02.mjs. Maintenance, no Beta bump (page still reads Beta 1.205, live-verified byte-identical).",
    "fix_id": "pack-cache-c01-c02",
    "id": "pack-cache-c01-content-proof",
-   "pattern": "pruneProven = Object.keys(storedNow).every(id => { const nv = normalizePack(storedNow[id], {});",
+   "pattern": "pruneProven = Object.keys(storedNow).every(id => { const nv = normalizePack(storedNow[id],\n      {});",
    "type": "grep_present"
   },
   {
@@ -7603,7 +7603,7 @@
    "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs.",
    "fix_id": "green-half-road",
    "id": "green-half-road-band-clip",
-   "pattern": "clipStrandEnds(bands, SURF_HALF, null, (sl, atStart)",
+   "pattern": "clipStrandEnds(bands,\n    SURF_HALF,\n    null,\n    (sl,\n      atStart)",
    "type": "grep_present"
   },
   {
@@ -7693,7 +7693,7 @@
    "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs. (Probe re-pinned at Beta 1.264: the feather-leak fix inserted the nine Beta 1.259 fade layers between t1-fill and t1-sel in the engine's stack order, breaking the old four-id adjacency literal; the new pattern pins the full span - the original four green layers plus all nine fades.) (Re-pinned at Beta 1.282, architecture #13: the spelled list this probe pinned moved into the engine's LAYERS catalogue in parts/engine.js - the claim is unchanged, the pattern now pins the catalogue's own span.)",
    "fix_id": "green-half-road",
    "id": "green-half-road-create-layers",
-   "pattern": "'t1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill'",
+   "pattern": "'t1-fill',\n    'fade-casing',\n    'fade-surf-y',\n    'fade-surf-r',\n    'fade-band-g',\n    'fade-fill-g',\n    't1-sel',\n    't1-selband',\n    't1-selfill',\n    'selfade-y',\n    'selfade-r',\n    'selfade-g',\n    'selfade-fill'",
    "type": "grep_present"
   },
   {
@@ -7776,7 +7776,7 @@
    "fix": "Beta 1.209 (PR #84, merge 75d1f49f; rollback: revert the merge -> Beta 1.208 at 7920dabe). Five Andrew-directed fixes from his Beta 1.208 phone session: (1) the sector-trim glow covers only the still-picked sectors; (2) multi-select side arrows follow the driver's path through turns (groupSideMap, tap order = the drive, 20 m join band); (3) the class pills wear true black #000000; (4) the selection card wears Look 2 and its button reads 'Complete entire road'; (5) the progress pill's slot is permanently reserved (visibility toggle) so the dock never moves. Proof: tests/proof/proof-trim-glow-path-pills.mjs (48 checks); gate: all four contexts SUCCESS, key drives name-checked in shard logs (drive125 28/28, drive128 18/18, drive156 36/36, drive194 39/39, drive198 11/11); merged tree == tested tree; live page byte-identical. Scope 1: syncCrGlow builds the glow from the chosen sector parts only - a removed sector keeps its grey paint but no glow.",
    "fix_id": "trim-glow-path-pills",
    "id": "tgp-trim-glow-chosen-parts",
-   "pattern": "if (rec) { const set = crChosenSet(name, rec); for (let i = 0; i < rec.parts.length; i++) { if (!set.has(i)) continue;",
+   "pattern": "if (rec) { const set = crChosenSet(name, rec);\n    for (let i = 0;\n    i < rec.parts.length;\n    i++) { if (!set.has(i)) continue;",
    "type": "grep_present"
   },
   {
@@ -8451,7 +8451,7 @@
    "fix": "Beta 1.221 GATE FIX (Codex P2, PR #98): cutting the 'Clean started' success pill left startClean's warning chain with an UNGUARDED final branch - every healthy Start showed the false 'cancel safety snapshot could not be saved' warning. The branch is gated on !okSnap.ok again; the healthy path is silent, the warning fires only on a real snapshot-save failure. Regressions: drive146 S1 (healthy Start silent) + S2 (snap write forced to fail, warning fires). Re-pinned in the popup-round2 round (Beta 1.296): the snapshot warning chain is CUT by the notification audit (rows 9/10 ride silently); the start still saves the snapshot and session marker silently, and the one start survivor is the saveAllWarned banner.",
    "fix_id": "startclean-snap-guard",
    "id": "gts-snap-guard",
-   "pattern": "saveSnap(); noteSessionStart();",
+   "pattern": "saveSnap() /* write-safe: the writer arms its own retry flag on failure */; noteSessionStart();",
    "type": "grep_present"
   },
   {
@@ -11904,7 +11904,7 @@
    "fix": "Beta 1.264 (createfeatherleak-1264; PR #160, merge e1013d9826ce1996a08dc83ba73a5be310c1cf9b; live sha256 057d84417f5e7c0fe7bde6cda555542b4bfe2ccc1b2023796ddf0c1ab5a16124, reads Beta 1.264). Andrew's 2026-11-21 report: the loaded route's Beta 1.259 feather tips rendered in create mode (14 features measured) because the nine fade layers never joined CR_ROUTE_LAYERS, the create backdrop's hide list in parts/create-pick.js. drive217 proves create mode now renders zero across all nine fade layers and exit restores them exactly. This probe pins the five BOARD fade ids in the list, in stack order after t1-fill. Their absence is the leak returning. (Re-pinned at Beta 1.282, architecture #13: the spelled list this probe pinned moved into the engine's LAYERS catalogue in parts/engine.js - the claim is unchanged, the pattern now pins the catalogue's own span.)",
    "fix_id": "createfeatherleak-1264",
    "id": "createfeatherleak1264-board-fades",
-   "pattern": "'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g'",
+   "pattern": "'fade-casing',\n    'fade-surf-y',\n    'fade-surf-r',\n    'fade-band-g',\n    'fade-fill-g'",
    "type": "grep_present"
   },
   {
@@ -11913,7 +11913,7 @@
    "fix": "Beta 1.264 (createfeatherleak-1264; PR #160, merge e1013d9826ce1996a08dc83ba73a5be310c1cf9b; live sha256 057d84417f5e7c0fe7bde6cda555542b4bfe2ccc1b2023796ddf0c1ab5a16124, reads Beta 1.264). Andrew's 2026-11-21 report: the loaded route's Beta 1.259 feather tips rendered in create mode (14 features measured) because the nine fade layers never joined CR_ROUTE_LAYERS, the create backdrop's hide list in parts/create-pick.js. drive217 proves create mode now renders zero across all nine fade layers and exit restores them exactly. This probe pins the four SELECTION fade ids in the list, in stack order after t1-selfill (latent in create mode - their source is starved there - but the same omission). Their absence reopens the latent half of the leak. (Re-pinned at Beta 1.282, architecture #13: the spelled list this probe pinned moved into the engine's LAYERS catalogue in parts/engine.js - the claim is unchanged, the pattern now pins the catalogue's own span.)",
    "fix_id": "createfeatherleak-1264",
    "id": "createfeatherleak1264-selection-fades",
-   "pattern": "'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill'",
+   "pattern": "'selfade-y',\n    'selfade-r',\n    'selfade-g',\n    'selfade-fill'",
    "type": "grep_present"
   },
   {
@@ -13913,6 +13913,42 @@
    "fix_id": "snow-boot-scene",
    "id": "snow-boot-scene-1300-drive",
    "pattern": "drive227: Beta 1.300 - THE BOOT SCENE",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "Phase 1 detectors (audit Classes 3+4): the write-outcome scan fails any outcome-returning write in parts/ whose result is not tested, returned or assigned and carries no write-safe exemption.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-write-rule",
+   "pattern": "write outcome ignored. Test the result, return it, or assign it.",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "Phase 1 detectors (audit Classes 3+4): the clone detector fails a NEW pair of identical or renamed-identical function bodies, or identical CSS blocks, against the recorded baseline.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-clone-rule",
+   "pattern": "Possible clone at",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "Phase 1 detectors: the clone baseline regenerates only by the scanner's own --write-baseline command (refused while the write rule fails), never by hand-editing.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-baseline-mode",
+   "pattern": "--write-baseline",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/check-receipts.py",
+   "fix": "Phase 1 detectors: scan-parts.cjs sits in JUDGE_PATHS, so a change to the scanner demands a current mutation receipt like any other judge.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-judge-path",
+   "pattern": "\"scripts/scan-parts.cjs\",",
    "type": "grep_present"
   }
  ]

@@ -2,7 +2,7 @@
 """Pull-request limit judge (machinery gate round, queue 7b).
 
 Judges a PR diff (base..HEAD) under the coding-discipline limits
-Andrew set on 2026-11-23. Only ADDED lines are ever judged.
+Andrew set on 2026-11-23. Added lines and the full text of touched comments are judged.
 
 FAIL rules:
   * A single commit adding more than SIZE_LIMIT product lines,
@@ -10,7 +10,7 @@ FAIL rules:
     applied by Andrew or the lead only; this judge never applies
     it. Product lines are added lines under parts/, plus src/sw.js
     and flags.js - the shipped app's own code.
-  * An added comment line of more than COMMENT_WORD_LIMIT words.
+  * A touched comment of more than COMMENT_WORD_LIMIT words.
   * An added line longer than LINE_CHAR_LIMIT characters.
   * A NEW file at the repo root outside ROOT_ALLOWLIST.
 
@@ -34,6 +34,7 @@ Usage:
   python3 scripts/check-pr-limits.py <root> --base <sha> [--labels a,b]
 """
 import argparse
+import difflib
 import fnmatch
 import re
 import subprocess
@@ -80,6 +81,262 @@ def line_errors(path, text):
         errs.append(f"{path}: added comment line of {words} "
                     f"words (limit {COMMENT_WORD_LIMIT})")
     return errs
+
+
+_REGEX_PREV_OK = set("(,=:[!&|?{};+-*%~^<>")
+_REGEX_WORDS = {"return", "typeof", "case", "delete", "void", "in", "of",
+                "instanceof", "new", "yield", "await", "else", "do", "throw"}
+
+
+def _js_comment_matches(text):
+    """(start, raw) for each // and /* */ comment in JS source.
+
+    One pass: quoted strings, template literals and regex literals
+    are skipped whole, so a /* inside any of them opens nothing.
+    A / opens a regex when the previous significant token cannot
+    end an expression (the standard lexer heuristic)."""
+    out = []
+    i, n = 0, len(text)
+    prev = ""       # last significant char, or "word" / "str" / "end"
+    word = ""       # last identifier when prev == "word"
+    stack = []      # "tpl" or ("expr", brace depth) inside a template
+    while i < n:
+        c = text[i]
+        if stack and stack[-1] == "tpl":
+            if c == "\\":
+                i += 2
+                continue
+            if c == "`":
+                stack.pop()
+                prev, word = "str", ""
+                i += 1
+                continue
+            if c == "$" and text[i + 1:i + 2] == "{":
+                stack.append(("expr", 1))
+                i += 2
+                continue
+            i += 1
+            continue
+        if c in " \t\r\n":
+            i += 1
+            continue
+        if c == "/" and text[i + 1:i + 2] == "/":
+            j = text.find("\n", i)
+            if j < 0:
+                j = n
+            raw = text[i:j]
+            out.append((i, raw[:-1] if raw.endswith("\r") else raw))
+            i = j
+            continue
+        if c == "/" and text[i + 1:i + 2] == "*":
+            j = text.find("*/", i + 2)
+            if j < 0:
+                i += 2
+                continue
+            out.append((i, text[i:j + 2]))
+            i = j + 2
+            continue
+        if c in "'\"":
+            j = i + 1
+            while j < n:
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == c or text[j] == "\n":
+                    break
+                j += 1
+            i = min(j + 1, n)
+            prev, word = "str", ""
+            continue
+        if c == "`":
+            stack.append("tpl")
+            i += 1
+            continue
+        if c == "/":
+            if prev == "word":
+                regex = word in _REGEX_WORDS
+            elif prev in ("str", "end"):
+                regex = False
+            else:
+                regex = prev == "" or prev in _REGEX_PREV_OK
+            if not regex:
+                prev, word = "/", ""
+                i += 1
+                continue
+            j = i + 1
+            in_class = False
+            while j < n:
+                d = text[j]
+                if d == "\\":
+                    j += 2
+                    continue
+                if d == "[":
+                    in_class = True
+                elif d == "]":
+                    in_class = False
+                elif d == "/" and not in_class:
+                    break
+                elif d == "\n":
+                    break
+                j += 1
+            j = min(j + 1, n)
+            while j < n and text[j].isalpha():
+                j += 1
+            i = j
+            prev, word = "str", ""
+            continue
+        if c == "{" and stack and isinstance(stack[-1], tuple):
+            stack[-1] = ("expr", stack[-1][1] + 1)
+            prev, word = "{", ""
+            i += 1
+            continue
+        if c == "}" and stack and isinstance(stack[-1], tuple):
+            depth = stack[-1][1] - 1
+            if depth:
+                stack[-1] = ("expr", depth)
+            else:
+                stack.pop()
+            prev, word = "}", ""
+            i += 1
+            continue
+        if c.isalnum() or c in "_$":
+            j = i
+            while j < n and (text[j].isalnum() or text[j] in "_$"):
+                j += 1
+            word = text[i:j]
+            prev = "word"
+            i = j
+            continue
+        if c in "+-" and prev == c:
+            prev, word = "end", ""
+            i += 1
+            continue
+        prev, word = c, ""
+        i += 1
+    return out
+
+
+def comment_spans(path, text):
+    """Yield zero-based first line, last line and full comment text."""
+    ext = Path(path).suffix.lower()
+    quoted = r"""(["'])(?:\\[\s\S]|(?!\1|\\)[\s\S])*\1"""
+    if ext in (".js", ".mjs"):
+        yield from _merge_spans(text, _js_comment_matches(text))
+        return
+    if ext == ".css":
+        pattern = quoted + r"|\x60(?:\\[\s\S]|[^\x60\\])*\x60|" + r"/\*[\s\S]*?\*/"
+    elif ext in (".html", ".md"):
+        pattern = r"<!--[\s\S]*?-->"
+        if ext == ".html":
+            style = re.search(r"(?<=<style>)[\s\S]*?(?=</style>)", text)
+            if style:
+                offset = text.count("\n", 0, style.start())
+                for first, last, body in comment_spans("style.css", style[0]):
+                    yield first + offset, last + offset, body
+    elif ext in (".py", ".yml", ".yaml", ".sh"):
+        pattern = quoted + r"|\#[^\r\n]*"
+        if ext == ".py":
+            pattern = r"""(?:'''[\s\S]*?'''|""" + r'"""[\s\S]*?"""' + ")|" + pattern
+    else:
+        return
+
+    found = [(m.start(), m.group(0)) for m in re.finditer(pattern, text)
+             if not m.group(0).startswith(("'", '"', "\x60"))]
+    yield from _merge_spans(text, found)
+
+
+def _merge_spans(text, found):
+    """Merge consecutive same-indent // or # lines into one span."""
+    block = None
+    for start, raw in found:
+        first = text.count("\n", 0, start)
+        last = first + raw.count("\n")
+        indent = text[text.rfind("\n", 0, start) + 1:start]
+        marker = "//" if raw.startswith("//") else "#" if raw.startswith("#") else None
+        if marker:
+            body = raw[len(marker):]
+            if (block and block[1] + 1 == first and block[3:] == (indent, marker)
+                    and not indent.strip()):
+                block = block[0], last, block[2] + "\n" + body, indent, marker
+                continue
+        else:
+            body = raw[4:-3] if raw.startswith("<!--") else raw[2:-2]
+            body = re.sub(r"^[ \t]*\* ?", "", body, flags=re.M)
+        if block:
+            yield block[:3]
+        block = first, last, body, indent, marker
+    if block:
+        yield block[:3]
+
+
+def changed_line_errors(path, old_text, new_text, added, deletions):
+    """Judge added lines and full comments intersecting the diff."""
+    lines = new_text.splitlines()
+    errors = [err for i in sorted(added) for err in line_errors(path, lines[i])]
+    if path in GENERATED_EXEMPT:
+        return errors
+    touched = set(added)
+    if deletions:
+        for first, last, _ in comment_spans(path, old_text):
+            for boundary, start, end in deletions:
+                if first < start <= last:
+                    touched.add(boundary - 1)
+                if first < end <= last:
+                    touched.add(boundary)
+    if old_text:
+        # Judge surviving comments whole after replacement or deletion.
+        sm = difflib.SequenceMatcher(None, old_text.split("\n"),
+                                     new_text.split("\n"), autojunk=False)
+        opcodes = sm.get_opcodes()
+        home = {}
+        origin = {}
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == "equal":
+                for k in range(i2 - i1):
+                    home[i1 + k] = j1 + k
+                    origin[j1 + k] = i1 + k
+        span_of = {}
+        for f0, l0, _b in comment_spans(path, old_text):
+            for i in range(f0, l0 + 1):
+                span_of[i] = f0
+        # A span whose lines come from two old spans was joined
+        # by a deletion: judge it whole.
+        for nf, nl, _nb in comment_spans(path, new_text):
+            joined = {span_of[origin[j]] for j in range(nf, nl + 1)
+                      if j in origin and origin[j] in span_of}
+            if len(joined) >= 2:
+                touched.update(range(nf, nl + 1))
+        lost_at = {}
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag in ("replace", "delete"):
+                for i in range(i1, i2):
+                    if i in span_of:
+                        lost_at.setdefault(span_of[i], []).append(j1)
+        if lost_at:
+            new_spans = list(comment_spans(path, new_text))
+            for f0, l0, _b in comment_spans(path, old_text):
+                if f0 not in lost_at:
+                    continue
+                survivors = {home[i] for i in range(f0, l0 + 1)
+                             if i in home}
+                for nf, nl, _nb in new_spans:
+                    inside = any(nf <= s <= nl for s in survivors)
+                    near = any(nf - 1 <= p <= nl + 1
+                               for p in lost_at[f0])
+                    if inside and near:
+                        touched.update(range(nf, nl + 1))
+    for first, last, body in comment_spans(path, new_text):
+        if not any(i in touched for i in range(first, last + 1)):
+            continue
+        words = len(body.split())
+        if words <= COMMENT_WORD_LIMIT:
+            continue
+        if (first == last and first in added
+                and (comment_words(path, lines[first]) or 0) > COMMENT_WORD_LIMIT):
+            continue
+        errors.append(f"{path}:{first + 1}: touched comment of {words} "
+                      f"words (limit {COMMENT_WORD_LIMIT})")
+    return errors
 
 
 def root_file_error(path):
@@ -206,16 +463,25 @@ def commit_files(root, sha):
     return changed, added, product
 
 
-def added_lines(root, base):
-    """(path, text) for every added line in the base..HEAD diff."""
-    out = git(root, "diff", "--unified=0", "--no-renames",
-              f"{base}..HEAD")
+def changed_line_ranges(root, base):
+    """Path, added line indices and deletion boundaries from Git's diff."""
+    out = git(root, "diff", "--unified=0", "--no-renames", f"{base}..HEAD")
+    ranges = {}
     path = None
-    for ln in out.splitlines():
-        if ln.startswith("+++ b/"):
-            path = ln[6:]
-        elif ln.startswith("+") and not ln.startswith("+++"):
-            yield path, ln[1:]
+    for line in out.splitlines():
+        if line.startswith("diff --git "):
+            path = None
+        elif path is None and line.startswith("+++ b/"):
+            path = line[6:]
+        elif path and line.startswith("@@ "):
+            hunk = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", line)
+            old_start, removed, start, length = (int(value) if value is not None else 1 for value in hunk.groups())
+            added, deletions = ranges.setdefault(path, (set(), set()))
+            if length:
+                added.update(range(start - 1, start - 1 + length))
+            elif removed:
+                deletions.add((start, old_start - 1, old_start - 1 + removed))
+    return ranges
 
 
 def scope_areas(root, base):
@@ -271,8 +537,13 @@ def main():
                             "commit's, and it adds no new file)")
         prev_files = changed
 
-    for path, text in added_lines(root, args.base):
-        errors.extend(line_errors(path, text))
+    for path, (added, deletions) in changed_line_ranges(root, args.base).items():
+        exists = subprocess.run(["git", "-C", str(root), "cat-file", "-e",
+                                 f"{args.base}:{path}"],
+                                capture_output=True).returncode == 0
+        old_text = git(root, "show", f"{args.base}:{path}") if exists else ""
+        new_text = git(root, "show", f"HEAD:{path}")
+        errors.extend(changed_line_errors(path, old_text, new_text, added, deletions))
 
     out = git(root, "diff", "--name-status", "--no-renames",
               f"{args.base}..HEAD")

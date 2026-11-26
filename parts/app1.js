@@ -52,7 +52,12 @@ const PACK_TILES_MAX = 20000; // the tile-URL iteration budget: a worldwide-box 
     if (raw === undefined) return false; // A-02: an unreadable legacy field blocks the pass - it is not an absent one
     if (raw === null) { if (f in prog) { delete prog[f]; progDirty = true; } continue; } // legacy no longer holds the field: its fill record is moot
     const slot = migGet(rk[f]); if (slot === undefined) return false;
-    if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; continue; } // fill the gap, verified, and record the fill as migration-owned before moving on
+    if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false;
+    prog[f] = raw;
+    progDirty = true;
+    if (!saveProg()) return false;
+    continue;
+    } // fill the gap, verified, and record the fill as migration-owned before moving on
     // migration's own fill, but the legacy value moved on: re-copy, so the stale fill never becomes permanent
     if (f in prog && slot === prog[f]) { if (raw !== prog[f]) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; } continue; }
     if (f in prog) { delete prog[f]; progDirty = true; } // the slot value is NOT what migration wrote - someone else (a restore) owns it now; it wins, untouched
@@ -60,7 +65,7 @@ const PACK_TILES_MAX = 20000; // the tile-URL iteration budget: a worldwide-box 
   // parity before committing: every legacy field must be present in the slot; an unreadable field blocks it
   for (const f of ROUTE_FIELDS) { const lg = migGet(LEGACY_KEYS[f]); if (lg === undefined) return false; if (lg !== null) { const sl = migGet(rk[f]); if (sl === undefined || sl === null) return false; } }
   if (!saveProg()) return false;
-  lsSet(rk.mig, '1'); // commit: if this write fails, next boot re-runs the pass and retries the marker - safe either way
+  lsSet(rk.mig, '1') /* write-safe: if this write fails, next boot re-runs the pass and retries the marker */;
   lsDel(rk.migfill); // the marker governs: a failed delete leaves the fill record inert (the marker short-circuits before it is read)
   return true;
 }
@@ -71,7 +76,14 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
 /** @param {TrailPoint[]} trail @param {number[]} [trailSessions] @returns {TrailPoint[][]} */ function trailSegments(trail, trailSessions) {
   trailSessions = trailSessions || [];
   const segs = []; let seg = []; let sessAt = 0;
-  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) { segs.push(seg); seg = []; } seg.push(p); }
+  for (let i = 0;
+  i < trail.length;
+  i++) { const p = trail[i];
+  if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo;
+  } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++
+    ; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) { segs.push(seg); seg = []; } seg.push(p);
+  }
   if (seg.length) segs.push(seg);
   return segs;
 }
@@ -128,10 +140,29 @@ function hideSurface(el) {
 /** @param {string} k @param {string} v @returns {boolean} */ function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
 /** @param {string} k @returns {boolean} */ function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } }
 // ===== DEVICE PROFILE ===== Android only, graded by measured speed; on iPhone this machinery never runs at all
-const DP_PLATFORM = (() => { try { const ua = (window.navigator && navigator.userAgent) || ''; if (/Android/i.test(ua)) return 'android'; if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'; if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return 'ios'; return 'other'; } catch (e) { return 'other'; } })(); // iPadOS asks for the desktop UA - a 'Macintosh' agent with a multi-touch screen is an iPad, never an Android
+const DP_PLATFORM = (() => { try { const ua = (window.navigator &&
+  navigator.userAgent) || ''; if (/Android/i.test(ua)) return 'android'; if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'; if (/Macintosh/i.test(ua) &&
+  (navigator.maxTouchPoints || 0) > 1) return 'ios'; return 'other'; } catch (e) { return 'other'; } })();
+// iPadOS asks for the desktop UA - a 'Macintosh' agent with a multi-touch screen is an iPad, never an Android
 const DP_ANDROID = DP_PLATFORM === 'android';
 const DP_TIERS = [{ pr: 2 }, { pr: 1.5 }, { pr: 1.25 }]; // the closed knob list: canvas pixel ratio per tier (0 full / 1 mid / 2 low)
-const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1, bootGrade: -1, booted: false, bootApplyUntil: 0, pending: -1, lastEvalTier: -1, agree: 0, lastApplyAt: 0, lastInteractAt: 0, pointerDown: false, renderSeen: false, hooked: false, samples: [] };
+const DP = { platform: DP_PLATFORM,
+  entered: false,
+  tier: 0,
+  hint: 0,
+  stored: -1,
+  bootGrade: -1,
+  booted: false,
+  bootApplyUntil: 0,
+  pending: -1,
+  lastEvalTier: -1,
+  agree: 0,
+  lastApplyAt: 0,
+  lastInteractAt: 0,
+  pointerDown: false,
+  renderSeen: false,
+  hooked: false,
+  samples: [] };
 // the constructor's ratio: on Android the applied tier's, everywhere else the literal 2
 /** @returns {number} */ function dpPixelRatio() { return DP_ANDROID ? DP_TIERS[DP.tier].pr : 2; }
 /** @param {number[]} a @returns {number} */ function dpMedian(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
@@ -174,7 +205,8 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
   try { idle = typeof map !== 'undefined' && !!map && !map.isMoving() && !DP.pointerDown && (now - DP.lastInteractAt > 600) && !(document.body && document.body.classList.contains('kb')); } catch (e) { idle = false; }
   if (!idle) return;
   DP.tier = DP.pending; DP.pending = -1; DP.lastApplyAt = now;
-  try { if (typeof map !== 'undefined' && map && typeof map.setPixelRatio === 'function') map.setPixelRatio(DP_TIERS[DP.tier].pr); } catch (e) { /* a map without the setter keeps the constructor's ratio; the tier still governs the next map built */ }
+  try { if (typeof map !== 'undefined' && map && typeof map.setPixelRatio === 'function') map.setPixelRatio(DP_TIERS[DP.tier].pr);
+  } catch (e) { /* a map without the setter keeps the constructor's ratio; the tier still governs the next map built */ }
 }
 // real work only: a frame counts when the map rendered or is moving; idle screens earn no samples
 /** @returns {void} */ function dpSamplerStart() {
@@ -184,7 +216,8 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
     const dt = now - last; last = now;
     if (document.hidden) return;
     let work = DP.renderSeen; DP.renderSeen = false;
-    try { if (typeof map !== 'undefined' && map) { if (!DP.hooked) { DP.hooked = true; map.on('render', () => { DP.renderSeen = true; }); } if (map.isMoving()) work = true; } } catch (e) { /* the map is not up yet - frames before it exists are not work samples */ }
+    try { if (typeof map !== 'undefined' && map) { if (!DP.hooked) { DP.hooked = true; map.on('render', () => { DP.renderSeen = true; }); } if (map.isMoving()) work = true;
+    } } catch (e) { /* the map is not up yet - frames before it exists are not work samples */ }
     if (!work || !(dt > 0) || dt > 1000) return; // a >1 s frame is a stall or tab switch, not a sample: it never convicts a device alone
     DP.samples.push(dt); if (DP.samples.length > 240) DP.samples.splice(0, DP.samples.length - 240);
     sinceEval++;
@@ -509,7 +542,11 @@ const BOARD = {
   },
   // the fallback: revert only sides stamped at/after the run's start, re-derive, drop coverage (it re-earns)
   /** @param {number} startMs @returns {void} */ revertRunMarks(startMs) {
-    for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= startMs) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= startMs) { P[i] &= ~2; st[1] = null; } } }
+    for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {};
+    for (let i = 0;
+    i < P.length;
+    i++) { const st = T[i] || [null, null];
+    if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= startMs) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= startMs) { P[i] &= ~2; st[1] = null; } } }
     BOARD.rederive();
     coveredIdx = {};
   },
@@ -622,7 +659,15 @@ trailSessions = parseJ(lsGet(LS.sess), []); // each clean's epoch-second start (
 trailSessions = Array.isArray(trailSessions) ? [...new Set(trailSessions.filter(t => Number.isFinite(t) && t >= 946684800 && t <= 4102444800))].sort((a, b) => a - b) : [];
 if (trailSessions.length > TRAIL_MAX) trailSessions = trailSessions.slice(trailSessions.length - TRAIL_MAX); // no cap for session markers (one per clean start): load bounds them at the trail's cap, newest kept
 // Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
-trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
+trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) &&
+  p.length === 3 &&
+  Number.isFinite(p[0]) &&
+  Number.isFinite(p[1]) &&
+  Number.isFinite(p[2]) &&
+  p[2] >= 946684800 &&
+  p[2] <= 4102444800 &&
+  Math.abs(p[0]) <= 90 &&
+  Math.abs(p[1]) <= 180) : [];
 if (trail.length > TRAIL_MAX) trail = trail.slice(trail.length - TRAIL_MAX);
 const trailBeforeWindow = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailBeforeWindow) markDirty('trail'); if (trailBeforeWindow > 0 && !trail.length && !runStart && trailSessions.length) { trailSessions = []; markDirty('sess'); } // Beta 1.193 (trail redesign): the window binds at load like everywhere else - a 1.190-era resident trail (every clean, up to the old point cap) is cut to the live run's last 60 minutes on the first 1.191 boot, and with no live run it empties: the fallback has no run to protect. runStart was parsed above (line order is load-bearing: the start record is read before the trail for exactly this). The binding is STORED, not just in memory: a shortened trail is marked dirty so the next flush writes the windowed value (a backup reads storage raw - it must never carry points the window forbids), and when the window empties a trail that EXISTED with no live run, its session markers go with it - markers never outlive their trail (the C-01 pair rule, applied at load; a live run keeps its markers, its own start among them). The clear is scoped to the window's own act (trailBeforeWindow > 0): markers stored with NO trail at all are not the window's business - the migration and restore layers govern those (C-01/C06), and clearing them here would eat records those layers legitimately carry (the slot migration's copied sess field - drive145 N12d caught exactly that in this round's first gate). // Beta 1.152 (NV round, NV4): the writer caps the trail at TRAIL_MAX by dropping the OLDEST points (recordFix, app3) - the load keeps the same end of the same cap, so a planted slot cannot resurrect an unbounded trail.
 BOARD.loadCoverage();
@@ -641,7 +686,10 @@ BOARD.loadSides();
   const lastMs = sig && sig.runId ? (+sig.runId || 0) : 0; // the entry's identity (none yields 0); in the no-run branch it must equal the finclean marker's at
   const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
   if (runStart) { const act = finishReconcileAction(runStart, lastMs, boardEmpty); if (act === 'rollback') { HIST.dropPhantom(sig, rawLast, last, lastMs); } else if (act === 'complete') { if (txDel(LS.start).ok) runStart = 0; } return; }
-  const marker = parseJ(lsGet(LS.finclean), null); const markerRun = marker && typeof marker === 'object' && !Array.isArray(marker) ? marker.run : null; const markerAt = marker && typeof marker === 'object' ? (+marker.at || 0) : 0; const boardMatch = !boardEmpty && finishBoardMatch(sig, pieces, pieceTimes, STREETNAMES);
+  const marker = parseJ(lsGet(LS.finclean), null);
+  const markerRun = marker && typeof marker === 'object' && !Array.isArray(marker) ? marker.run : null;
+  const markerAt = marker && typeof marker === 'object' ? (+marker.at || 0) : 0;
+  const boardMatch = !boardEmpty && finishBoardMatch(sig, pieces, pieceTimes, STREETNAMES);
   if (finishReconcileNoRunAction(markerRun, markerAt, lastMs, boardEmpty, boardMatch) === 'rollback') { if (HIST.dropPhantom(sig, rawLast, last, lastMs)) txDel(LS.finclean); }
 }
 // a committed finish with failed metadata writes leaves a durable obligation: completed here at load, guarded and idempotent
@@ -699,7 +747,9 @@ let themeOverride = null, themeOverrideUntil = 0; // null = automatic
   if (!okNight || !okExp) showBanner('Not saved'); } // a failed write is surfaced; the override still applies for this session
 /** @returns {void} */ function themeTick() { // the boundary hand-back, and the automatic cycle itself: if the effective theme no longer matches the screen, repaint
   if (themeOverride !== null && Date.now() >= themeOverrideUntil) clearThemeOverride();
-  if (typeof document !== 'undefined' && document.body && typeof applyNight === 'function' && isNight() !== document.body.classList.contains('night')) { applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); }
+  if (typeof document !== 'undefined' && document.body && typeof applyNight === 'function' && isNight() !== document.body.classList.contains('night')) { applyNight();
+  if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap();
+  }
 }
 (function initTheme() { // boot resolution (script eval; the boot tail's applyNight makes it visible)
   let continuing = false; try { continuing = !!sessionStorage.getItem('snowroute.session'); sessionStorage.setItem('snowroute.session', '1'); } catch (e) {}
@@ -715,7 +765,9 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // the run's work only (stamped at/after Start): pre-Start marks would otherwise inflate the live rate
 /** @returns {number} */ function liveWorkM() {
   if (!runStart) return 0; let s = 0;
-  for (const n of STREETNAMES) { const p = pieces[n], T = pieceTimes[n] || {}; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((p[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) s += L; if ((p[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) s += L; }); }
+  for (const n of STREETNAMES) { const p = pieces[n], T = pieceTimes[n] || {};
+  STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((p[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) s += L; if ((p[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) s += L; });
+  }
   return s; }
 /** @returns {number} */ function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].total * 2; return s; }
 // the sides record is the authority for completion, so it writes first: on failure the earlier coherent state survives
@@ -760,14 +812,14 @@ const PERSIST = {
     const saveFixLogFn = lateFn('saveFixLog');
     // the fix log flushes on the trail's cadence (re-stringifying it per fix is out); forced flushes always write
     if (this.flags.fixlog && saveFixLogFn && (force || Date.now() - this.windows.fixlog > TRAIL_FLUSH_MS) && saveFixLogFn().ok) { this.flags.fixlog = false; this.windows.fixlog = Date.now(); }
-    if (this.flags.start) saveStart(); // saveStart re-arms the flag itself on failure
+    if (this.flags.start) saveStart() /* write-safe: saveStart re-arms its own PERSIST flag on failure */;
     const saveSnapFn = lateFn('saveSnap');
-    if (this.flags.snap && saveSnapFn) saveSnapFn(); // the cancel snapshot retries on the same heartbeat (saveSnap, app3, manages its own flag via the doorway)
+    if (this.flags.snap && saveSnapFn) saveSnapFn() /* write-safe: saveSnap manages its own flag and retries on the heartbeat */;
     const persistRunDistFn = lateFn('persistRunDist');
     if (force && runStart && persistRunDistFn) persistRunDistFn(true); // a forced flush is the page's last word: the counter banks with it, gated on a live run
     const bankMirrorFn = lateFn('bankRunDistMirror');
     if (runStart && bankMirrorFn) bankMirrorFn(); // the second copy writes only from this flush path (a different writer/cadence), so the records fail independently
-    if (this.flags.primary) saveAll(); // a failed primary save retries here: saveAll clears the flag itself when a save lands whole
+    if (this.flags.primary) saveAll() /* write-safe: saveAll clears its own flag only when a save lands whole */;
   },
 };
 // dirty-flag access: app3/app4 touch the flags only through these three functions, the retry machinery's one doorway

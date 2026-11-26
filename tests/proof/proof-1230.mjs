@@ -44,7 +44,8 @@ check('2b: the stored hint is a global device record, never a route field', app1
 // ---------- 3: the eight grading rules' machinery ----------
 check('3a (rule 1): the boot grade waits for at least 24 work samples', app1.includes('if (DP.samples.length >= 24) dpBootGrade();'));
 check('3b (rule 1): grades are medians', app1.includes('const g = dpGradeOf(dpMedian(DP.samples));') && app1.includes('const cand = dpGradeOf(dpMedian(w));'));
-check('3c (rule 4): full quality is the default and the thresholds sit past smooth', app1.includes('function dpGradeOf(ms) { return ms <= 26 ? 0 : (ms <= 45 ? 1 : 2); }') && app1.includes('const DP = { platform: DP_PLATFORM, entered: false, tier: 0,'));
+check('3c (rule 4): full quality is the default and the thresholds sit past smooth',
+  app1.includes('function dpGradeOf(ms) { return ms <= 26 ? 0 : (ms <= 45 ? 1 : 2); }') && app1.includes('const DP = { platform: DP_PLATFORM,\n  entered: false,\n  tier: 0,'));
 check('3d (rule 3): a session upgrade needs two consecutive agreeing evaluations', app1.includes('if (DP.agree >= 2) DP.pending = cand;'));
 check('3e (rule 3): a 45s minimum dwell stands between applied changes', app1.includes('now - DP.lastApplyAt < 45000'));
 check('3f (rule 7): a change lands only at a fully idle map', app1.includes('!map.isMoving() && !DP.pointerDown && (now - DP.lastInteractAt > 600)'));

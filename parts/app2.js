@@ -113,7 +113,13 @@ function addReferenceLayers() {
     const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); }
   if (map.getSource('ref')) { map.getSource('ref').setData({ type: 'FeatureCollection', features: feats }); return; } // a switch re-points the source at the new pack's reference features (never the old route's)
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
-  map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
+  map.addLayer({ id: 'ref-line',
+    type: 'line',
+    source: 'ref',
+    filter: ['has', 'refName'],
+    layout: { 'line-cap': 'round' },
+    paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } },
+    map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }
 function makeBeamImage() { // the beam is a fan (strong at the dot, fading, soft-skirted); two passes fake the missing blur
   const S = 512, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
@@ -135,13 +141,26 @@ function addGpsLayers() {
   map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   // raw ImageData: handing over the canvas element throws 'mismatched image size' and killed this layer batch silently
   if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); }
-  map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
+  map.addLayer({ id: 'gps-beam',
+    type: 'symbol',
+    source: 'gps',
+    filter: ['==', ['get', 'k'], 'beam'],
+    layout: { 'icon-image': 'beam-img',
+      'icon-size': 0.62,
+      'icon-rotate': ['get', 'rot'],
+      'icon-rotation-alignment': 'map',
+      'icon-pitch-alignment': 'map',
+      'icon-anchor': 'center',
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true } });
+  // gradient fan symbol, painted under the accuracy ring and the dot
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
   map.addLayer({
     id: 'gps-puck-shader', type: 'custom', _prog: null, _buf: null, _aPos: -1, _u: {},
     onAdd(m, gl) {
-      const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log('PUCKSHADER compile failed: ' + gl.getShaderInfoLog(s)); return s; };
+      const sh = (type,
+        src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log('PUCKSHADER compile failed: ' + gl.getShaderInfoLog(s)); return s; };
       const prog = gl.createProgram();
       gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
         'attribute vec2 a_pos;',
@@ -293,9 +312,18 @@ let selStretch = null; // {name, idx} — the paint engine reads this global in 
 let swallowClickUntil = 0;
 function spendTap(ms) { swallowClickUntil = Date.now() + ms; } // app2 is the sole writer of its tap-swallow variable: others spend a tap through this setter only
 function projLL(p) { return map.project([p[1], p[0]]); }
-function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy; let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t)); }
-function nearestStreet(pt) { let best = null, bd = Infinity; for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd }; }
-function nearestStretch(name, pt) { let bi = 0, bd = Infinity; STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } }); return { idx: bi, d: bd }; }
+function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy;
+let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0;
+t = Math.max(0, Math.min(1, t));
+return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t));
+}
+function nearestStreet(pt) { let best = null, bd = Infinity;
+for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd };
+}
+function nearestStretch(name, pt) { let bi = 0, bd = Infinity;
+STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } });
+return { idx: bi, d: bd };
+}
 function geoSideFrame(name, idx, anchorLL) {
   // side 0 = geographic left, side 1 = right (the engine's convention); returns the projection + left vector
   const part = STRETCH[name].parts[idx];
@@ -503,7 +531,10 @@ const NOTEEDIT = { // the note session owner: the editor's state and acts live h
   // the flush's result is kept: fresh failures ride the warning; a suppressed one is owed 'not saved'
   flushSwitch(draft, draftFor) { clearTimeout(this.saveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) showBanner('Not saved'); },
   flushRebuild(draft, draftFor) { clearTimeout(this.saveTimer); this.saveTimer = 0; return setNoteText(draftFor, draft).ok; }, // setNoteText returns an OBJECT: {ok:false} is truthy, so the flush returns .ok, never the object
-  scheduleSave(n, ta, hint, paintNt) { hint.textContent = 'Saving…'; clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400); }, // Beta 1.63 (audit F04): the hint tells the truth about the write
+  scheduleSave(n, ta, hint, paintNt) { hint.textContent = 'Saving…';
+  clearTimeout(this.saveTimer);
+  this.saveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400);
+  }, // Beta 1.63 (audit F04): the hint tells the truth about the write
   // blur finalizes like the debounced save (same result, same hint): a failed blur save must say so
   saveNow(n, ta, hint, paintNt) { clearTimeout(this.saveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; },
   toggle(n) { this.openFor = this.openFor === n ? null : n; },
@@ -545,7 +576,19 @@ function renderStreets() { // tap a street's name area to open its note editor (
   const stR = $('stRouteN'), stS = $('stRouteS');
   if (stR && stS) { stR.textContent = activeRoute ? activeRoute.name : ''; stS.textContent = (activeRoute && activeRoute.area ? ' · ' + activeRoute.area : '') + (runStart ? ' · clean in progress' : ' · not started'); }
   const stH = $('stHero');
-  if (stH) { const tw = totalWorkM(); stH.innerHTML = '<div class="stHeroN">' + STREETNAMES.filter(streetComplete).length + ' <span class="stHeroU">/ ' + STREETNAMES.length + ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' + (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%"></div></div><div class="stCaps"><span>' + (workDoneM() / 2000).toFixed(1) + ' km of road cleared</span><span>' + (tw / 2000).toFixed(1) + ' km total</span></div>'; }
+  if (stH) { const tw = totalWorkM();
+  stH.innerHTML = '<div class="stHeroN">' +
+    STREETNAMES.filter(streetComplete).length +
+    ' <span class="stHeroU">/ ' +
+    STREETNAMES.length +
+    ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' +
+    (tw > 0 ? (workDoneM() / tw * 100) : 0) +
+    '%"></div></div><div class="stCaps"><span>' +
+    (workDoneM() / 2000).toFixed(1) +
+    ' km of road cleared</span><span>' +
+    (tw / 2000).toFixed(1) +
+    ' km total</span></div>';
+  }
   const stGN = $('stGroupN'), stGC = $('stGroupC');
   // the list leads with the primaries (gold, cleaned first), then the secondaries (raspberry), alphabetical inside each colour
   if (stGN && stGC) { stGN.textContent = listFilter === 'primaries' ? 'PRIMARIES' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; }
@@ -607,8 +650,8 @@ function renderStreets() { // tap a street's name area to open its note editor (
       // a failed flush says so, never 'Saved': the editor tells the truth about the finalized save
       const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved - Storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713';
       ta.addEventListener('input', () => { NOTEEDIT.scheduleSave(n, ta, hint, paintNt); });
-      ta.addEventListener('blur', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt); });
-      ed.querySelector('.nedSave').addEventListener('click', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt); });
+      ta.addEventListener('blur', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt) /* write-safe: saveNow checks its write and paints the outcome in the hint */; });
+      ed.querySelector('.nedSave').addEventListener('click', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt) /* write-safe: saveNow checks its write and paints the outcome in the hint */; });
       ed.querySelector('.nedDone').addEventListener('click', () => { NOTEEDIT.close(); renderStreets(); });
       el.appendChild(ed);
     }
@@ -703,7 +746,13 @@ function makeSheetDraggable(sheet) {
     if (!moved && Math.abs(total) < 3) return; // near-zero dead zone: the old 9 px threshold was the first hitch of the drag hesitation
     if (!moved) {
       moved = true;
-      if (sheet._spring) { cancelSheetSpring(sheet); sheet.style.transform = ''; startY = e.clientY; lastY = e.clientY; startH = sheet.offsetHeight; samples = [{ t: performance.now(), y: e.clientY }]; } // a catch mid-settle restarts the drag from the sheet's live height
+      if (sheet._spring) { cancelSheetSpring(sheet);
+      sheet.style.transform = '';
+      startY = e.clientY;
+      lastY = e.clientY;
+      startH = sheet.offsetHeight;
+      samples = [{ t: performance.now(), y: e.clientY }];
+      } // a catch mid-settle restarts the drag from the sheet's live height
       sheet.classList.add('dragging'); sheet.classList.remove('snapping');
       try { sheet.setPointerCapture(pid); } catch (err) {}
     }
@@ -727,7 +776,8 @@ function makeSheetDraggable(sheet) {
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
     const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
     // the default stop targets the natural height, not defH: short sheets sprang to half, then snapped back
-    const naturalH = (() => { const ph = sheet.style.height, pm = sheet.style.maxHeight; sheet.style.height = ''; sheet.style.maxHeight = ''; const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
+    const naturalH = (() => { const ph = sheet.style.height,
+      pm = sheet.style.maxHeight; sheet.style.height = ''; sheet.style.maxHeight = ''; const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
     // velocity from the last ~130 ms of movement (px/ms, up positive): the spring starts at it
     let v = 0;
     if (panelMoved && samples.length > 1) {
@@ -801,7 +851,11 @@ function routeDropEl(p) { // dropdown (the row's sibling): Load over Delete, or 
 // each row renders with its dropdown card as its sibling
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); }
 function menuListFade(el) { // edges feather only while hiding content (30 px covered, none at rest); the arrow lives here too
-  if (!el) return; const max = el.scrollHeight - el.clientHeight; el.classList.toggle('fadeT', el.scrollTop > 1); el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1); if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
+  if (!el) return;
+  const max = el.scrollHeight - el.clientHeight;
+  el.classList.toggle('fadeT', el.scrollTop > 1);
+  el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1);
+  if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { // delegation sorts taps by target: Delete asks, Load chooses, Loaded spends it, anywhere else toggles the dropdown
   const del = e.target.closest('.dropDel'); if (del) { askDeleteRoute(del.closest('.routeDrop').dataset.route); return; }
   const load = e.target.closest('.dropLoad'); if (load) { choose(load.closest('.routeDrop').dataset.route); return; }
@@ -816,7 +870,11 @@ function ddOpen(drop) { // show, reflow (growth from height 0), then .open; a pe
   const row = drop.previousElementSibling;
   clearTimeout(drop._ddT);
   const pane = drop.closest('.rmPane'); // an open pins the pane's top margin at its seat: growth runs purely downward, nothing above moves
-  if (pane && !pane._ddPin) { pane._ddPin = true; let mt = parseFloat(getComputedStyle(pane).marginTop); if (!isFinite(mt)) mt = pane.getBoundingClientRect().top - pane.parentElement.getBoundingClientRect().top - 24; pane.style.marginTop = mt + 'px'; }
+  if (pane && !pane._ddPin) { pane._ddPin = true;
+  let mt = parseFloat(getComputedStyle(pane).marginTop);
+  if (!isFinite(mt)) mt = pane.getBoundingClientRect().top - pane.parentElement.getBoundingClientRect().top - 24;
+  pane.style.marginTop = mt + 'px';
+  }
   drop.style.display = 'block';
   void drop.offsetHeight;
   drop.classList.add('open'); if (row && row.classList.contains('routeRow')) row.classList.add('ddOpen');

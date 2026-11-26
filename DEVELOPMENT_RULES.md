@@ -35,7 +35,15 @@ turn every discovered bug into a permanent regression test.
    whole-tests-tree sweep rule — the 1.223 dash sweep's missed copies in
    drive118/136/161 and e2e-offline are the worked example): every hit is
    re-pinned in the same change or adjudicated per-occurrence in the
-   sweep's own output.
+   sweep's own output. The push path also runs `scripts/scan-parts.cjs`
+   over parts/ (Phase 1 detectors): an outcome-returning write (lsSet,
+   txSet, upSet, upPut, the save family) must be tested, returned or
+   assigned, or carry an immediate `/* write-safe: reason */` comment
+   naming why not; and a NEW identical or renamed-identical function
+   body, or identical CSS block, fails against the standing pairs in
+   scripts/parts-clone-baseline.json - regenerate that baseline only by
+   command (`node scripts/scan-parts.cjs . --write-baseline`), never
+   by hand.
 8. **Document** — update the docs the change makes stale, in the same change.
 9. **Merge only when safe** — per §3 as restructured by the
    testing-efficiency rollout (2026-11-23, Andrew's decision — the tiers

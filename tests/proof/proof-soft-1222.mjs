@@ -51,7 +51,7 @@ function rule(selector) {
   const m = new RegExp('(^|\\n)\\s*' + esc + '\\s*\\{').exec(head);
   if (!m) return '';
   const open = head.indexOf('{', m.index), close = head.indexOf('}', open);
-  return head.slice(open + 1, close);
+  return head.slice(open + 1, close).replace(/\s+/g, ' ');
 }
 
 const SOFT = '0 2px 8px rgba(10,16,60,.25)';
