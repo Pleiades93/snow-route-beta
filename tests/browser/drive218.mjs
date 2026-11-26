@@ -21,11 +21,8 @@ if (!await poll(`!!(window.map && map.getLayer && map.getLayer('roads_labels_maj
 // label pass on both flips so the lift lands on entry and the restore
 // on exit; restacks (mid-create theme swaps) recompute from the same
 // state. No label layer is forked.
-// This drive grades the rendered behaviour at the 14.8 framing
-// (basemap rendering, titles placed). Through Beta 1.296 the frame
-// was 15.7; Beta 1.297 ends the titles at 15.2, so the frame moves
-// below the switch, where the titles are the route-mode system this
-// drive grades (the clone side above 15.2 is drive214/drive219's):
+// Frame below the switch so route titles remain visible while
+// grading create-mode exclusions (basemap rendering, titles placed):
 // route mode = exclusion on, zero basemap route names, titles naming;
 // create mode = exclusion off, basemap names PRESENT on route streets,
 // title layers hidden (exactly one naming system - no doubles);

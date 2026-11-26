@@ -46,7 +46,7 @@ const jread = async (expr) => {
 };
 // 2026-11-09 (L7 root hardening, part 1 - the camera thief; tests-only): picking the
 // route started introToRoute's choreography (app4): a jumpTo to the wide view, then -
-// on an 800 ms timer (1500 before Beta 1.297) - a 3000 ms flyTo to the fitted view. bootThrough's readiness
+// on an 800 ms timer - a 3000 ms flyTo to the fitted view. bootThrough's readiness
 // poll reads !map.isMoving(), which holds BEFORE the timer fires: the flight is
 // still PENDING and invisible to every readiness signal, so a drive that jumps the
 // camera inside that window has its view stolen back mid-check (diag4 trace, run

@@ -426,7 +426,7 @@ await bootToPicker();
 await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
-await sleep(500); // inside the dwell (800 ms since Beta 1.297) - the window is wide open
+await sleep(500); // inside the dwell - the window is wide open
 await ev(`(() => { unloadRouteToBoot(); return true; })()`); // the delete path's own unload: nothing stands over the boot view - there is no hold to strand and no cure to release
 await sleep(800);
 await pickRoute();

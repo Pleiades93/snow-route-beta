@@ -15115,6 +15115,54 @@
    "red": "no red observation applies: no assertion changed - the mutation red for V2's current form is receipt round3-1297-drive219-r3's record",
    "green": "the identical code with the longer comments passed drive219 38/38 in the immediately preceding local run; with the shortened comments the drive passes 37/38, the one failure being A6's degenerate settled slice (gap -1, span 0 - the census-2 sampler-starvation signature, seen twice tonight on untouched code, CI-green on head 1)",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive218-r2",
+   "check": "tests/browser/drive218.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive218.mjs": "044ac1d44cfa2f017678d801e98ea02b364d91b85d37f40da144adf2471c7f4c"
+   },
+   "mutation": "comment-only: the framing header shortened to a short why (Codex P1 on PR #220 head 5, sustained); no check logic changed",
+   "red": "no red observation applies: no assertion changed - the A3/D3 red is receipt round3-1297-drive218's record",
+   "green": "on the final tree: drive218 14/14 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219-r5",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "c0068e9c35b821bc48f5b6fc899ce544c4d75199b0cc9d3b400f684003506fff"
+   },
+   "mutation": "comment-only: the phase H staging comment drops its version parenthetical; no check logic changed",
+   "red": "no red observation applies: no assertion changed",
+   "green": "the identical code passed drive219 38/38 earlier in the round (receipt round3-1297-drive219-r3's green run); the comment cannot change behaviour",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive130-r3",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive130.mjs": "d66a5ce4256c0b26392c1fa3a6e23bce2bf8edd462143e3481af47701e986511"
+   },
+   "mutation": "comment-only: the intro-gate header drops its version parenthetical; no check logic changed",
+   "red": "no red observation applies: no assertion changed",
+   "green": "on the final tree: drive130 11/11 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive145-r2",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive145.mjs": "884c0d22709bb8c5d846151f4a7f1cf0044db083f9a60e7f3878062ac5241fa0"
+   },
+   "mutation": "comment-only: the N23 staging comment drops its version parenthetical; no check logic changed",
+   "red": "no red observation applies: no assertion changed",
+   "green": "N22/N23 pass on the round tree (receipt round3-1297-drive145's record stands for the drag family's local environmental failures)",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }

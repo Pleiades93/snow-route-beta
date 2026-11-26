@@ -290,7 +290,7 @@ await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 15000)
 await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);
 await poll(`typeof routeLoaded !== 'undefined' && routeLoaded === true`, 20000);
 ok('N22 a route pick starts the camera wide of the fitted view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return map.getZoom() < fit.zoom - 1.5; })()`));
-await sleep(2200); // the flight starts at +800ms by design (1500 before Beta 1.297) - wait until it is under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
+await sleep(2200); // the flight starts at +800ms by design - wait until it is under way before polling for the settle, or the poll reads the pre-flight stillness and N23 measures the wide start
 await poll(`!map.isMoving()`, 25000);
 ok('N23 the intro flight lands exactly on the fitted route view', await ev(`(function(){ var fit = map.cameraForBounds([[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]], { padding: 28 }); return Math.abs(map.getZoom() - fit.zoom) < 0.05 && Math.abs(map.getCenter().lng - fit.center.lng) < 0.001 && Math.abs(map.getCenter().lat - fit.center.lat) < 0.001; })()`));
 
