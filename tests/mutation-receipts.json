@@ -15664,6 +15664,19 @@
    "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
    "green": "drive226 11/11 PASS in the PR #223 gate on head f43ae45a's successor tree (CI shard 2, 2026-11-26); F10/F11 green locally",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive125-t3-r4",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "95079affbdf17b444ddb63b46b1ec463b385f3ecfc9014400e862d8b5a601b3e",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the sibling-gated body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field (re-issued after the C5 sibling-gate changed the rule's text; mutation re-observed on the current tree)",
+   "red": "drive125 28/29: T3 fails - the menu's own gradient stands and the shared field is covered (local, 2026-11-26)",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26; also CI-green on the C4 head)",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }
