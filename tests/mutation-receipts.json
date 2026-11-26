@@ -14825,6 +14825,45 @@
    "red": "gate fixtures 97 pass 3 fail under the mutation: exactly the three refusal cases (long line, long comment, new root file) flip to exit 0",
    "green": "gate fixtures 100 pass 0 fail on the shipped tree (the printed total was also corrected 93 -> 100: the literal had drifted 3 behind the real case count before this round)",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-premise-blocking-r2",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "6110aa604f8c1e3bdfc3cd171477adc8868f058dc20953f89c54122935fe819e"
+   },
+   "mutation": "none - CI wiring: the premise step loses continue-on-error AND gains --strict (re-issue of test-efficiency-premise-blocking after the Codex PR #219 P1: without --strict the lint exits 0 even when it flags)",
+   "red": "proven on the lint's own fixture case (display-removal): identical flags printed, exit 0 without --strict, exit 1 with it - the first version of this change (no --strict) could never fail a job",
+   "green": "gate fixtures 100/100 and premise-lint fixtures PASS with the final step text; this PR's subsequent checks runs are the first truly blocking runs (parts-free diff passes; the false-positive watch stays open for the first parts-changing PR)",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-limits-shared",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "historical",
+   "files": {
+    "scripts/check-pr-limits.py": "b91c75ffe61969ec7d60982c839618011da4a170e767964af415a8f83833380c",
+    "scripts/push.py": "68db552c945937b2e19b68da66a9c3e6b2fd71907d3945697de2574b360b1074"
+   },
+   "mutation": "none - behavior-preserving extraction: the line/root/size decisions move into shared functions (line_errors, root_file_error, size_error) that the checker CLI and push.py both call (Codex PR #219 P1: the gate had cloned the decisions)",
+   "red": "before: push.py's _limits_verdict re-implemented the checker's decisions over its own diff - two implementations of the same rules, free to drift",
+   "green": "gate fixtures 100 pass 0 fail (their pr-limits section judges the refactored checker directly); push.py unit plants pass with the checker's own wording, including the binary exclusion",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-push-limits-r2",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "68db552c945937b2e19b68da66a9c3e6b2fd71907d3945697de2574b360b1074",
+    "scripts/gate-fixtures/run-fixtures.py": "c5f5003aeb9d9a69f117438a77c3f545a2a16ad5332160bde4b9f3fd695fcbf8",
+    "scripts/check-pr-limits.py": "b91c75ffe61969ec7d60982c839618011da4a170e767964af415a8f83833380c"
+   },
+   "mutation": "the limits gate disconnected from push.py's plan path; re-issue of test-efficiency-push-limits after the shared-verdict rewrite and binary exclusion",
+   "red": "gate fixtures: the 3 planted-violation cases fail with the gate disconnected (97 pass, 3 fail), observed 2026-11-25",
+   "green": "gate fixtures 100 pass 0 fail; real-tree plan refused all three plants and passed clean sets; a binary plant (NUL-laden, 900 chars) now passes the text rules as git's own diff would report it",
+   "issued": "2026-11-25"
   }
  ]
 }
