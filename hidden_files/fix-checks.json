@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "d5653146c83fe390ed20c5dd06c99aae728be1672edc8ed3f8ce4ef893216c11",
+  "canonical_registry_sha256": "e2fc70fd34d8c9945c4a3096bb7aabb9bc3d43f5662cc5d1f880ba62d7733f96",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1560,
-   "included": 1530,
+   "canonical": 1562,
+   "included": 1532,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13625,6 +13625,24 @@
    "fix_id": "te-poll-notyet",
    "id": "te-poll-notyet",
    "pattern": "catch (e) { v = false; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/lane-judge.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): laneViolations convicts only on 3+ consecutive missing/dim samples - the proven queryRenderedFeatures blind-spot bound (title-drop DROP_RUN evidence); single-sample absence acquits.",
+   "fix_id": "te-lane-run-bound",
+   "id": "te-lane-run-bound",
+   "pattern": "export const LANE_DROP_RUN = 3;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/lane-judge.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): drive219 A6 judged as a wave - completion gap vs the groups own streaming span, 3000 ms floor - instead of a flat wall bracket that measured tile-fetch latency under load.",
+   "fix_id": "te-a6-sync-wave",
+   "id": "te-a6-sync-wave",
+   "pattern": "export function syncVerdict",
    "type": "grep_present"
   }
  ]
