@@ -109,6 +109,27 @@ ok('F7 rapid open/close/open converges: menu open, exactly one field (same flake
 await tapById(ev, 'rmClose');
 await sleep(700);
 
+// ---------- F10/F11: the sub-pane ground, and Settings never inherits .away ----------
+await tapById(ev, 'routesBtn');
+await sleep(500);
+await tapById(ev, 'rmChoose');
+await poll(`document.getElementById('snowCv').classList.contains('away')`, 5000);
+const P1 = await J(`({ away: document.getElementById('snowCv').classList.contains('away'),
+  menuBgi: getComputedStyle(document.getElementById('routeMenu')).backgroundImage })`);
+ok('F10 on a Routes sub-pane the snow hides (.away) AND the menu keeps its own blue ground - the map never shows through the menu | ' + JSON.stringify(P1),
+  P1.away === true && P1.menuBgi.includes('linear-gradient') && P1.menuBgi.includes('rgb(61, 101, 239)'));
+await tapById(ev, 'routesBtn');
+await sleep(700);
+await tapById(ev, 'setBtn');
+await sleep(650);
+const P2 = await J(`({ away: document.getElementById('snowCv').classList.contains('away'), running: window.__snow.running(), frames: window.__snow.frames() })`);
+await sleep(250);
+const P3 = await J(`window.__snow.frames()`);
+ok('F11 Settings opened after a Routes sub-pane still gets its snow: no inherited .away, engine running, frames advancing | ' + JSON.stringify({ P2, P3 }),
+  P2.away === false && P2.running === true && P3 > P2.frames);
+await tapById(ev, 'setClose');
+await sleep(700);
+
 // ---------- F8: Settings carries the snow; the version seat clears the mound ----------
 await tapById(ev, 'setBtn');
 await sleep(650);

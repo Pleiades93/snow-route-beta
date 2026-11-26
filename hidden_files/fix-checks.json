@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "c342ff4002e0e45a9a4e96fe2bb9b9108411acfc8c020ba74b3e1b7cb6e6f9cd",
+  "canonical_registry_sha256": "037cdd2e4b978fecf4510b533495daafe6a38748f016f01bb44727e81a3fcf36",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -13846,10 +13846,10 @@
   {
    "added": "2026-11-26",
    "file": "parts/head.html",
-   "fix": "Snow on every blue menu (Beta 1.299): while the snow scene is live, both blue menus step aside for the one shared field behind them - the step-aside rule names #routeMenu and #setMenu together.",
+   "fix": "Snow on every blue menu (Beta 1.299): while the snow scene is live AND the field is showing, both blue menus step aside for the one shared field behind them. The rule is sibling-gated on the canvas not carrying .away (Codex P2 on PR #223: on a sub-pane the faded canvas plus a stepped-aside menu would leave the map showing through the menu's ground in tab mode, where no splash sits behind).",
    "fix_id": "snow-menus-1299",
    "id": "snow-menus-1299-step-aside",
-   "pattern": "body.snow-scene #routeMenu, body.snow-scene #setMenu { background: transparent; }",
+   "pattern": "body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.away) ~ #setMenu { background: transparent; }",
    "type": "grep_present"
   },
   {

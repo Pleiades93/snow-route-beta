@@ -496,7 +496,7 @@
 #snowCv { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; visibility: hidden; transition: opacity .3s ease; }
 #snowCv.away { opacity: 0; } /* the snow hides in the menu's sub-panes alongside the title and returns at the main pane */
 body.snow-scene #snowCv { visibility: visible; background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* while snow is live the canvas wears the menu blue, so the field is the menus' ground */
-body.snow-scene #routeMenu, body.snow-scene #setMenu { background: transparent; } /* while snow is live both menus step aside for the one field behind them */
+body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.away) ~ #setMenu { background: transparent; } /* menus step aside only while the field shows; hidden snow leaves them their own blue */
 #brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s var(--ease-open); }
 #brandBlock { display: flex; flex-direction: column; align-items: center; } /* no entrance of its own: entrances live on the children. One rigid unit, never reparented, and it no longer travels */
 #brandBlock > * { flex: none; }

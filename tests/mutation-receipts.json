@@ -15651,6 +15651,19 @@
    "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
    "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r4",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "6a8c9aec6609e24eb5caf679b6b2bd488095ca40fc11136296bfbdcd31ff7147",
+    "parts/brand-snow.js": "b2fc5cebec0e9f75fba7babfc24cd002f7f38acc725852a1428d5ad17c473f0e"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame (re-issued after drive226 gained F10/F11 for the Codex P2 fixes; semantically identical to snow1299-drive226)",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 11/11 PASS in the PR #223 gate on head f43ae45a's successor tree (CI shard 2, 2026-11-26); F10/F11 green locally",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }

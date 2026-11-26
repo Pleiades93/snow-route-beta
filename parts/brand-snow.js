@@ -83,25 +83,11 @@
    58 -> 51 - the crest still stands exactly as tall as the
    bar, which was the 1.161 condition. drive180's SNOW9 pin
    is re-pinned to 51 in the same change.
-   Beta 1.299 (Andrew, 2026-11-26: "the same snow as the splash
-   screen, so it's identical"): the one field now serves EVERY blue
-   menu - the boot picker, the tab-mode Routes menu and the Settings
-   takeover. The canvas sits at body level (head.html), wearing the
-   menus' own gradient while body.snow-scene stands, and both menus
-   step aside for it. Life is keyed to menu openness, not the boot
-   scene: a MutationObserver on the menus and the splash resumes
-   the engine the moment a menu opens - painting one
-   frame synchronously, so the snow lands with the menu's first
-   frame - and parks it the moment none is open. Parking freezes
-   the clock and keeps the flake field untouched, so the pile a
-   menu closes with is the pile the next menu opens with, held in
-   session memory only (no storage). The density, the layers, the
-   settle cycle and the .away sub-pane rule are all unchanged;
-   drive226 proves the frame timing, throttled and not. One paint
-   change came with the proof: the specks now draw from a
-   pre-rendered sprite like the other layers - the same discs,
-   but ~550 per-frame path fills were what the frame budget
-   measured (A/B in the round record). */
+   Beta 1.299: the one field serves every blue menu (Andrew: the
+   same snow as the splash, identical). It parks when no menu is
+   open - clock frozen, field kept, so the pile persists across
+   menus in session memory - and resumes with the menu's first
+   frame. Specks draw from a sprite now: path fills cost frames. */
 (function snowLayer() {
   var cvS = document.getElementById('snowCv');
   var handle = { cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: function () { return []; } };
@@ -221,7 +207,12 @@
     render(settleAmount());
     raf = window.requestAnimationFrame(loop);
   }
-  function syncSnow() { if (live()) resume(); else park(); }
+  function syncSnow() { // Beta 1.299: .away belongs to the Routes panes - derive it, never inherit it (Settings)
+    var rm = document.getElementById('routeMenu'), bl = document.getElementById('brandLayer');
+    var routesUp = !!(rm && (rm.classList.contains('open') || rm.classList.contains('show')));
+    cvS.classList.toggle('away', !!(routesUp && bl && bl.classList.contains('away')));
+    if (live()) resume(); else park();
+  }
   function loop(ts) {
     if (!running) return;
     if (!live()) { park(); return; }
