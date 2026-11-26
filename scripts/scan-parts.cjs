@@ -175,11 +175,13 @@ for (const name of fs.readdirSync(dir).sort()) {
   if (name === 'head.html') scanCss(file, fs.readFileSync(path.join(root, file), 'utf8'));
 }
 
+let baselineWritten = false;
 if (writeBaseline) {
   if (failures) {
     console.error('baseline refused: the write rule fails on this tree');
     process.exitCode = 1;
   } else {
+    baselineWritten = true;
     const list = [...pairs.keys()].map(key => JSON.parse(key));
     list.sort((a, b) => (a.join('\n') < b.join('\n') ? -1 : 1));
     const exemptions = JSON.stringify(baseline.exemptions, null, 2).replace(/\n/g, '\n  ');
@@ -195,7 +197,7 @@ const known = new Set([
   ...baseline.exemptions.filter(entry => entry.name?.trim() && entry.why?.trim()).map(entry => entry.pair),
 ].map(pair => JSON.stringify([...pair].sort())));
 for (const [pair, locations] of pairs) {
-  if (!known.has(pair)) fail(`Possible clone at ${locations.join(' and ')}: ${pair}`);
+  if (!baselineWritten && !known.has(pair)) fail(`Possible clone at ${locations.join(' and ')}: ${pair}`);
 }
 if (!failures) console.log(`parts scan: PASS (${pairs.size} clone pairs checked)`);
 process.exitCode = failures ? 1 : 0;

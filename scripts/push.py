@@ -271,6 +271,18 @@ def local_blob_map(root):
     return out
 
 
+def parts_scan_gate(tree, instrument_root):
+    scanner = instrument_root / "scripts" / "scan-parts.cjs"
+    if not scanner.is_file():
+        return None
+    proc = subprocess.run(["node", str(scanner), str(tree)],
+                          capture_output=True, text=True, timeout=60)
+    if proc.returncode:
+        return "the parts scan failed:\n" + (proc.stderr or proc.stdout).strip()
+    print(proc.stdout.strip())
+    return None
+
+
 def preflight_prospective(root, gh, branch, resolved):
     """The tree this push would CREATE must itself build. Returns an
     error string or None. Runs for EVERY push (Codex P2 on PR #146:
@@ -322,7 +334,7 @@ def preflight_prospective(root, gh, branch, resolved):
         err = mirrors_gate(root, root)
         if err:
             return "the prospective remote tree fails the mirrors gate: " + err
-        return None
+        return parts_scan_gate(root, root)
     import base64
     import shutil
     import tempfile
@@ -354,6 +366,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = mirrors_gate(tmp, root)
         if err:
             return ("the prospective remote tree fails the mirrors gate: " + err)
+        err = parts_scan_gate(tmp, root)
+        if err:
+            return err
         proc = subprocess.run([sys.executable, str(tmp / "scripts" / "build-pages.py"), "--check"],
                               cwd=tmp, capture_output=True, text=True, timeout=300)
         if proc.returncode != 0:
@@ -736,6 +751,9 @@ def main():
     print("PUSH PLAN OK: " + ", ".join(resolved))
     labels = {x.strip() for x in args.labels.split(",") if x.strip()}
     if args.mode == "plan":
+        err = parts_scan_gate(root, root)
+        if err:
+            return fail(err)
         err = limits_gate_plan(root, resolved, labels)
         if err:
             return fail(err)

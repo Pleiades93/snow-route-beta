@@ -1310,6 +1310,64 @@ with tempfile.TemporaryDirectory() as td:
     check("pr-limits: the labelled control passes in the same "
           "shallow checkout", run_limits(clone, b, "large-change"), 0)
 
-total = 102
+# ------------------------------------------------------------ parts scan
+def run_scan(root, *extra):
+    proc = subprocess.run(["node", str(ROOT / "scripts" / "scan-parts.cjs"),
+                           str(root)] + list(extra),
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+SCAN_JS = (
+    "function fixtureTestedWrite() { return lsSet('k', 'v'); }\n"
+    "function fixtureExemptWrite() { lsSet('hint', 'x') /* write-safe: a stale hint costs nothing */; }\n"
+    "function fixtureAlpha(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "function fixtureBeta(n) { let p = 1; while (n > 1) { p *= n; n--; } return p; }\n"
+)
+SCAN_HTML = ("<html><head><style>\n"
+             ".fixA { color: red; margin: 0; }\n"
+             ".fixB { color: blue; padding: 1px; }\n"
+             "</style></head><body></body></html>\n")
+SCAN_CLONE = (
+    "function fixtureCloneA() { const a = alphaOne(1); const b = betaTwo(2); const c = gammaThree(3); "
+    "if (a && b) return a + b + c; if (c > 9) return c * 3; "
+    "return deltaFour(a, b) + epsilonFive(b, c) + zetaSix(c, a); }\n"
+    "function fixtureCloneB() { const a = alphaOne(1); const b = betaTwo(2); const c = gammaThree(3); "
+    "if (a && b) return a + b + c; if (c > 9) return c * 3; "
+    "return deltaFour(a, b) + epsilonFive(b, c) + zetaSix(c, a); }\n"
+)
+
+
+def scan_tree(base, *, js=SCAN_JS, html=SCAN_HTML):
+    w(base / "parts" / "a.js", js)
+    w(base / "parts" / "head.html", html)
+    w(base / "scripts" / "parts-clone-baseline.json",
+      '{\n  "exemptions": [],\n  "pairs": []\n}\n')
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("scan: a clean tree passes (tested write, exempt write, distinct bodies)",
+          run_scan(scan_tree(t / "clean")), 0)
+    check("scan: a planted ignored write fails",
+          run_scan(scan_tree(t / "ignored",
+                             js=SCAN_JS + "function fixtureIgnored() { lsSet('k2', 'v2'); }\n")), 1)
+    check("scan: an ignored write carrying a write-safe exemption passes",
+          run_scan(scan_tree(t / "exempt",
+                             js="function fixtureOnly() { lsSet('hint', 'x') /* write-safe: a stale hint costs nothing */; }\n")), 0)
+    check("scan: a planted JS clone pair fails",
+          run_scan(scan_tree(t / "jsclone", js=SCAN_JS + SCAN_CLONE)), 1)
+    check("scan: a planted CSS clone block fails",
+          run_scan(scan_tree(t / "cssclone",
+                             html=SCAN_HTML.replace("</style>",
+                                                    ".fixC { color: red; margin: 0; }\n</style>"))), 1)
+    clone_tree = scan_tree(t / "baselined", js=SCAN_JS + SCAN_CLONE)
+    check("scan: --write-baseline records the standing clone pair",
+          run_scan(clone_tree, "--write-baseline"), 0)
+    check("scan: a baselined clone pair passes",
+          run_scan(clone_tree), 0)
+
+total = 109
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

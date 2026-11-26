@@ -15913,6 +15913,47 @@
    "red": "neutered: trigger_paths(['scripts/scan-parts.cjs']) returns [] - a change to the new judge would demand no receipt",
    "green": "shipped file: trigger_paths(['scripts/scan-parts.cjs']) returns ['scripts/scan-parts.cjs']",
    "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-scan-parts-r2",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "05eef94e8318b78186164d8b2f63628fcde83f344c43863599f04c41b7f3c0cf",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "re-observation on the fixed scanner (the --write-baseline exit fix): the three plants from phase1-scan-parts replayed on a scratch copy, plus a fourth sequence - the clone-plant tree taken through --write-baseline and rescanned",
+   "red": "ignored write: exit 1, parts/app1.js:795 lsSet write outcome ignored. JS clone: exit 1, Possible clone at parts/app1.js:794 and 795 (plantCloneA/plantCloneB). CSS clone (from the r1 run, code path untouched by the fix): exit 1, Possible clone at parts/head.html:93 and 94 (.plantChip/.sideChip). Pre-fix fourth sequence: --write-baseline wrote the baseline yet exited 1, judging the new pair against the pre-write baseline",
+   "green": "plants removed: PASS (593 pairs). Fourth sequence on the fixed scanner: --write-baseline writes 594 pairs and exits 0; the rescan passes. Gate fixtures 109/109 on the shipped tree",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-push-scan-gate",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "a49d9ea263c8624959429c413ad6b2ebaba96905fe365d95d5b8b0876e9ba03a",
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011"
+   },
+   "mutation": "parts_scan_gate neutered to return None in a scratch copy of the repo whose parts/app1.js carries a planted ignored lsSet write (derived artifacts rebuilt so only the scan can refuse)",
+   "red": "neutered: push.py plan accepts the planted tree (PUSH PLAN OK, no scan refusal)",
+   "green": "shipped: push.py plan refuses - 'the parts scan failed: parts/app1.js:795: lsSet write outcome ignored. Test the result, return it, or assign it.' Clean-tree plans pass the gate (steps 1-2 of this round planned through it)",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "32ab05fa22ab0582578429a026a3a63c767accd96304b159a9057f776b750b6c",
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011"
+   },
+   "mutation": "the scanner's write-rule regex neutered in place (lsSet removed from the write set), the full gate-fixtures suite replayed, then the scanner restored byte-identical (md5 verified)",
+   "red": "108 pass / 1 fail: 'scan: a planted ignored write fails' got exit 0, want 1 - the fixture section convicts a dead write rule",
+   "green": "gate fixtures 109/109 on the restored tree",
+   "issued": "2026-11-26 phase1-detectors"
   }
  ]
 }
