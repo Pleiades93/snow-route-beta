@@ -14864,6 +14864,30 @@
    "red": "gate fixtures: the 3 planted-violation cases fail with the gate disconnected (97 pass, 3 fail), observed 2026-11-25",
    "green": "gate fixtures 100 pass 0 fail; real-tree plan refused all three plants and passed clean sets; a binary plant (NUL-laden, 900 chars) now passes the text rules as git's own diff would report it",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-premise-blocking-r3",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "8f7f7d496fa4093067c77a6b76ae3c1359420edd977657fd54fff80b88ec6103"
+   },
+   "mutation": "none - CI wiring: premise step blocking via --strict (see -r2); re-issue after the live-labels comment trim changed checks.yml's hash",
+   "red": "proven on the lint's own fixture case (display-removal): identical flags printed, exit 0 without --strict, exit 1 with it",
+   "green": "gate fixtures 100/100 with the final checks.yml; this PR's subsequent checks runs exercise the blocking step on a parts-free diff",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-live-labels-r2",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "8f7f7d496fa4093067c77a6b76ae3c1359420edd977657fd54fff80b88ec6103"
+   },
+   "mutation": "none - CI wiring: PR limits step reads labels live (payload fallback); re-issue after the step comment trim changed checks.yml's hash",
+   "red": "PR #213 (2026-11-25): the large-change label added mid-round did not take effect on a re-run - the payload labels were replayed until a new head was pushed",
+   "green": "the live read ran in PR #219's own build-and-test (its first exercise) and the limits step judged the real labels; gate fixtures pass with the step text",
+   "issued": "2026-11-25"
   }
  ]
 }

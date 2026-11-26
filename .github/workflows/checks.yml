@@ -198,10 +198,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PAYLOAD_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
-          # Labels are read LIVE at step time: the event payload
-          # freezes them at trigger time, so a label added mid-round
-          # (large-change) never reached this step on a re-run - the
-          # labeled-event debt. The payload list is the fallback.
+          # Labels read live: a mid-round label counts on re-runs.
           PR_LABELS=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" --jq '[.[].name] | join(",")' 2>/dev/null || echo "$PAYLOAD_LABELS")
           python3 scripts/check-pr-limits.py . --base "$BASE_SHA" --labels "$PR_LABELS"
       - name: Receipts gate (refuse changed checks without current mutation receipts, class N1)
