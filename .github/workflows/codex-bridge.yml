@@ -19,7 +19,7 @@
 #
 # Verdict rules: the blob must name the PR's current head SHA; completed
 # with no unresolved findings passes; completed with unresolved findings
-# fails; anything else is awaited up to a 15-minute timeout, then the gate
+# fails; anything else is awaited up to a 30-minute timeout, then the gate
 # FAILS CLOSED. A blob for an older commit never satisfies a newer head.
 # Draft PRs are not reviewed by Codex, so a draft times out and fails by
 # design — mark it ready to get a verdict.
@@ -48,7 +48,7 @@ jobs:
   codex-review-gate:
     name: codex review gate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - name: Check out the verdict script from the base branch
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

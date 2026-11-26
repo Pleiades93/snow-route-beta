@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "ed01b449c8ba1dce3428d8ca85fd83101ce60bb2fc806bfbfa8cd2fbb3252938",
+  "canonical_registry_sha256": "76d98c754174f5bb54c6cf0942b44f404e94eb35b56f199cc2d6e27379709a41",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1574,
-   "included": 1544,
+   "canonical": 1584,
+   "included": 1554,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13751,6 +13751,96 @@
    "fix_id": "load-transition-1297",
    "id": "loadtransition1297-dwell-800",
    "pattern": "essential: false }); } catch (e) {} }, 800);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app1.js",
+   "fix": "Beta 1.298 (transitions-1298): every overlay surface leaves through the one hideSurface helper (180ms exit, then .hidden; a re-show cancels the leave; reduced motion hides at once). If this pattern disappears an exit path has bypassed the helper and dismissals snap again.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-exit-helper",
+   "pattern": "function hideSurface(el) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Beta 1.298 (transitions-1298): the sheet close is the open's quicker mirror at 350ms on the close curve WITH the detent height legs - the audit flags the layout legs for the record only, because the detents ride them; dropping them breaks drive123 A2 and the detent close.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-sheet-close",
+   "pattern": "transition: transform 350ms var(--ease-close), height 350ms var(--ease-close), max-height 350ms var(--ease-close), visibility 0s linear 350ms;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Beta 1.298 (transitions-1298): a leaving surface takes no taps (Codex P2, PR #221): its controls die with the dismissal, not 180ms later; showSurface restores interaction by removing .leaving. drive192 P6b grades it.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-leaving-inert",
+   "pattern": ".modal.leaving, #confirmPill.leaving, #selPop.leaving, #mapNote.leaving { pointer-events: none; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Beta 1.298 (transitions-1298): the Streets filter highlight is a sliding pill (recipe 16) seated by seatFilterPill under the .on tab; drive88 F1 grades the seat.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-filter-pill",
+   "pattern": "id=\"filtersPill\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app3.js",
+   "fix": "Beta 1.298 (transitions-1298): the speed readout writes through setSpdNum (recipe 36): changed digits cross-fade with the rise/fall shift, slots collapse to plain text, reduced motion writes plain; drive199 P4b/P4c grade the swap.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-subtle-setter",
+   "pattern": "function setSpdNum(txt) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app4.js",
+   "fix": "Beta 1.298 (transitions-1298): the day/night faces persist across theme flips (Codex P2, PR #221): stampNightBtn restamps only when the markup differs, so the same .nbIco elements live through the flip and the 250ms crossfade runs; drive125 S7b samples mid opacities.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-glyph-persist",
+   "pattern": "function stampNightBtn() {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Beta 1.298 (transitions-1298): reduced-motion coverage reaches the surfaces (FIX 12): the second RM block flattens sheets, modals, the confirm pair, the pop and note, press, the fill, the switch, the arrow, the splash dissolve and this round's new motions at matching specificity; proof-1298 pins the set.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-rm-surfaces",
+   "pattern": ".sheet, .sheet.open { transition: none; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app1.js",
+   "fix": "Beta 1.298 (transitions-1298): under reduced motion the banner's exit animation does not run, so showBanner keeps its 3s stay with this timer instead; without it the banner would never leave.",
+   "fix_id": "transitions-1298",
+   "id": "transitions1298-banner-rm-timer",
+   "pattern": "b._rmT = setTimeout(",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/codex-bridge.py",
+   "fix": "Bridge wait 900s to 1800s (Andrew's decision, 2026-11-26): busy-round Codex verdicts land in 15-25 minutes, past the old window, so rounds burned gate attempts on timing alone (PR #220's bridge gate failed with no review posted).",
+   "fix_id": "bridge-wait-1800",
+   "id": "bridge-wait-1800-poll-default",
+   "pattern": "\"--timeout-seconds\", type=int, default=1800",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": ".github/workflows/codex-bridge.yml",
+   "fix": "Bridge wait 900s to 1800s (Andrew's decision, 2026-11-26): the bridge job's own timeout rose 20 to 40 minutes in the same change, so the longer poll is not killed by the job before it can elapse.",
+   "fix_id": "bridge-wait-1800",
+   "id": "bridge-wait-1800-job-timeout",
+   "pattern": "timeout-minutes: 40",
    "type": "grep_present"
   }
  ]
