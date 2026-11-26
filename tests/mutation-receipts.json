@@ -15612,6 +15612,32 @@
    "red": "drive125 28/29: T3 fails on menuBgi - the menu's own gradient stands and the shared field is covered",
    "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26)",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "f468ce4003935a2fb2ffef13cf89dff0376710a52e351edd8fff9f435998ef52",
+    "parts/brand-snow.js": "0ffd726bfbc2659fe9f515456d7162fe61fd04f19549e877c6ec905435100060"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r2",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "fc4e2e82c6be3509b3abcaca1ec65daf409ab719eefcd9c520b5ccbeb8809427",
+    "parts/brand-snow.js": "0ffd726bfbc2659fe9f515456d7162fe61fd04f19549e877c6ec905435100060"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame (re-issued after a formatting-only split for the PR line limits; semantically identical to snow1299-drive226)",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }

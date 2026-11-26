@@ -96,7 +96,11 @@
    menu closes with is the pile the next menu opens with, held in
    session memory only (no storage). The density, the layers, the
    settle cycle and the .away sub-pane rule are all unchanged;
-   drive226 proves the frame timing, throttled and not. */
+   drive226 proves the frame timing, throttled and not. One paint
+   change came with the proof: the specks now draw from a
+   pre-rendered sprite like the other layers - the same discs,
+   but ~550 per-frame path fills were what the frame budget
+   measured (A/B in the round record). */
 (function snowLayer() {
   var cvS = document.getElementById('snowCv');
   var handle = { cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: function () { return []; } };
@@ -127,6 +131,7 @@
     g.fillStyle = grad; g.fillRect(0, 0, size, size);
     return c;
   }
+  var speckSprite = makeSprite(32, [[0, 1], [0.75, 1], [1, 0]]); // Beta 1.299: the specks draw from a sprite too - per-frame path fills cost the menus their frames (drive226)
   var midSprite = makeSprite(64, [[0, 1], [0.35, 0.8], [0.7, 0.28], [1, 0]]); // Beta 1.161: the mid layer's soft flake, rendered once
   var blobSprite = makeSprite(256, [[0, 0.55], [0.45, 0.34], [0.75, 0.13], [1, 0]]); // Beta 1.161: the near blobs' extra-soft disc, rendered once
   function newSpeck(scatter) {
@@ -168,15 +173,13 @@
       ctx.fill();
       ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = '#ffffff';
     var i, f, fx;
-    for (i = 0; i < specks.length; i++) { // Beta 1.161: the speck field - tiny, sharp, each twinkling on its own phase
+    for (i = 0; i < specks.length; i++) { // Beta 1.161: the speck field - tiny, sharp, each twinkling on its own phase (Beta 1.299: drawn from speckSprite - the same disc, no per-frame path fill)
       f = specks[i];
       fx = f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp;
       ctx.globalAlpha = SPECK.alpha * f.o * (0.55 + 0.45 * Math.sin(clock * f.tw + f.twPhase)) * Math.min(1, f.age / 0.6);
-      ctx.beginPath();
-      ctx.arc(fx, f.y, f.r, 0, Math.PI * 2);
-      ctx.fill();
+      var ds = f.r * 2;
+      ctx.drawImage(speckSprite, fx - f.r, f.y - f.r, ds, ds);
     }
     for (i = 0; i < mids.length; i++) { // Beta 1.161: the mid layer - soft flakes from the pre-rendered sprite
       f = mids[i];

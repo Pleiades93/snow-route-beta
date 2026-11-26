@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "40a797e552b82735d47f1d3745e413c57b56930fee6a9ccd2764514dbe092097",
+  "canonical_registry_sha256": "c342ff4002e0e45a9a4e96fe2bb9b9108411acfc8c020ba74b3e1b7cb6e6f9cd",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1584,
-   "included": 1554,
+   "canonical": 1589,
+   "included": 1559,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13841,6 +13841,51 @@
    "fix_id": "bridge-wait-1800",
    "id": "bridge-wait-1800-job-timeout",
    "pattern": "timeout-minutes: 40",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Snow on every blue menu (Beta 1.299): while the snow scene is live, both blue menus step aside for the one shared field behind them - the step-aside rule names #routeMenu and #setMenu together.",
+   "fix_id": "snow-menus-1299",
+   "id": "snow-menus-1299-step-aside",
+   "pattern": "body.snow-scene #routeMenu, body.snow-scene #setMenu { background: transparent; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Snow on every blue menu (Beta 1.299): the snow canvas sits at body level, hidden unless the scene is live, and while live it wears the menus' own blue gradient - the field IS the menu ground, at the splash's identical density.",
+   "fix_id": "snow-menus-1299",
+   "id": "snow-menus-1299-field-ground",
+   "pattern": "body.snow-scene #snowCv { visibility: visible; background: linear-gradient(135deg, #3d65ef, #1b2fb6); }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Snow on every blue menu (Beta 1.299): the Settings version label seats at 58px, clear of the snow mound's 51px crest at every width, with no added text shadow.",
+   "fix_id": "snow-menus-1299",
+   "id": "snow-menus-1299-version-seat",
+   "pattern": "bottom: calc(58px + env(safe-area-inset-bottom, 0px))",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/brand-snow.js",
+   "fix": "Snow on every blue menu (Beta 1.299): the engine's life is keyed to menu openness (park holds the pile, resume paints with the menu's first frame) and the test handle exposes the painted-frame count drive226 times - the old terminal stop machinery (deadFrames grace) is retired, absent from the file.",
+   "fix_id": "snow-menus-1299",
+   "id": "snow-menus-1299-no-terminal-stop",
+   "pattern": "deadFrames",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/brand-snow.js",
+   "fix": "Snow on every blue menu (Beta 1.299): window.__snow exposes frames(), the painted-frame counter the fluidity drive (drive226) judges the menus' 420ms open/close against, throttled and not.",
+   "fix_id": "snow-menus-1299",
+   "id": "snow-menus-1299-frames-handle",
+   "pattern": "handle.frames = function () { return frames; };",
    "type": "grep_present"
   }
  ]
