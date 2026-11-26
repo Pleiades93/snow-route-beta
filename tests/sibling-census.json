@@ -20392,6 +20392,246 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26 transitions round C7 (ADD 36: the speed readout settles digit by digit), issued by the builder before the C7 push"
+  },
+  {
+   "id": "transitions-1298-c8",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "nightBtn"
+    ],
+    "functions": [
+     "nightBtnHTML",
+     "applyNight",
+     "renderIcons"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:applyNight:parts/app1.js:themeTick",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from themeTick in parts/app1.js",
+     "status": "covered",
+     "note": "the sunrise/sunset tick flips the theme through applyNight; the glyphs now crossfade instead of cutting - the guard exemption (.nbIco) keeps only their motion alive during the swap (proof-1231 2a, re-pinned with receipt)"
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:__bootTail",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from __bootTail in parts/app5.js",
+     "status": "covered",
+     "note": "the boot tail settles the theme before first paint settles; the stacked glyphs key off body.night in CSS, so the right face shows from the first frame"
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:nightBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from nightBtn:click in parts/app5.js",
+     "status": "covered",
+     "note": "the tap path: override flips, applyNight re-stamps both glyphs and the CSS crossfades them 250ms - drive125 S6/S7 grade the faces and the terminal opacities (mutation receipt transitions-1298-drive125-c8)"
+    },
+    {
+     "id": "caller:nightBtnHTML:parts/app4.js:renderIcons",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nightBtnHTML() is called from renderIcons in parts/app4.js",
+     "status": "covered",
+     "note": "every icon re-mint restamps the button with both faces (moon in day art, sun in night art), so a pack/theme re-mint can never strand a single-glyph button"
+    },
+    {
+     "id": "caller:nightBtnHTML:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nightBtnHTML() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "applyNight stamps the same stacked markup before renderIcons runs - the swap's own stamp, pinned by proof-1231 2c (re-pinned with receipt)"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "the Locate face flip re-mints icons; the night button restamps identically (its faces are theme-fixed), no visual change"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:stopGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from stopGps in parts/app3.js",
+     "status": "covered",
+     "note": "same restamp on stop; no visual change"
+    },
+    {
+     "id": "caller:renderIcons:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "the first mint stamps the stacked glyphs at load"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "applyNight's renderIcons call restamps the same markup its own stamp just wrote - redundant but harmless, and it keeps every other host themed in the same pass"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "a route load re-mints; the button restamps identically"
+    },
+    {
+     "id": "theme:nightBtn",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #nightBtn has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the button is now a grid with both glyphs in one cell; visibility is CSS on body.night (sun by night, moon by day) and only the glyphs animate - colours still step instantly under the theme-swap guard"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "3c078e334eb1c83808356464e5422e41e8d269157a825489a45b18f9fc846cd2",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "debbd19a55d304b914e386a9289636efd60f8dd3396af93a037d2bd584bb895a",
+    "parts/app4.js": "2c1ac4d0796f2c8ce4b54ad82e1f79fae945ed177fe57a31f0c2fe93525e73bc",
+    "parts/app5.js": "218d7f8b44f0fdff1b35347bb7d2055df40c754a31903f02ec10c428c386e010",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "22f718209cdb163dd732094758e372b124e2b68ccf6357adfa92d6e234671ebe",
+    "parts/head.html": "f9666b976bdfbde177e1d1473e79c00f48060f2ba7888e049de854e5720374d2",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round C8 (ADD 09: the day/night glyphs crossfade; also removes C7's redundant tabular-nums on #spdNum, which inherits it from #spdPill - proof-1224 counts exactly five), issued by the builder before the C8 push"
+  },
+  {
+   "id": "transitions-1298-c8b",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "nightBtn"
+    ],
+    "functions": [
+     "nightBtnHTML",
+     "applyNight",
+     "renderIcons"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:applyNight:parts/app1.js:themeTick",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from themeTick in parts/app1.js",
+     "status": "covered",
+     "note": "the sunrise/sunset tick flips the theme through applyNight; the glyphs now crossfade instead of cutting - the guard exemption (.nbIco) keeps only their motion alive during the swap (proof-1231 2a, re-pinned with receipt)"
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:__bootTail",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from __bootTail in parts/app5.js",
+     "status": "covered",
+     "note": "the boot tail settles the theme before first paint settles; the stacked glyphs key off body.night in CSS, so the right face shows from the first frame"
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:nightBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from nightBtn:click in parts/app5.js",
+     "status": "covered",
+     "note": "the tap path: override flips, applyNight re-stamps both glyphs and the CSS crossfades them 250ms - drive125 S6/S7 grade the faces and the terminal opacities (mutation receipt transitions-1298-drive125-c8)"
+    },
+    {
+     "id": "caller:nightBtnHTML:parts/app4.js:renderIcons",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nightBtnHTML() is called from renderIcons in parts/app4.js",
+     "status": "covered",
+     "note": "every icon re-mint restamps the button with both faces (moon in day art, sun in night art), so a pack/theme re-mint can never strand a single-glyph button"
+    },
+    {
+     "id": "caller:nightBtnHTML:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nightBtnHTML() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "applyNight stamps the same stacked markup before renderIcons runs - the swap's own stamp, pinned by proof-1231 2c (re-pinned with receipt)"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "the Locate face flip re-mints icons; the night button restamps identically (its faces are theme-fixed), no visual change"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:stopGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from stopGps in parts/app3.js",
+     "status": "covered",
+     "note": "same restamp on stop; no visual change"
+    },
+    {
+     "id": "caller:renderIcons:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "the first mint stamps the stacked glyphs at load"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "applyNight's renderIcons call restamps the same markup its own stamp just wrote - redundant but harmless, and it keeps every other host themed in the same pass"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "a route load re-mints; the button restamps identically"
+    },
+    {
+     "id": "theme:nightBtn",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #nightBtn has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the button is now a grid with both glyphs in one cell; visibility is CSS on body.night (sun by night, moon by day) and only the glyphs animate - colours still step instantly under the theme-swap guard"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "3c078e334eb1c83808356464e5422e41e8d269157a825489a45b18f9fc846cd2",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "debbd19a55d304b914e386a9289636efd60f8dd3396af93a037d2bd584bb895a",
+    "parts/app4.js": "2c1ac4d0796f2c8ce4b54ad82e1f79fae945ed177fe57a31f0c2fe93525e73bc",
+    "parts/app5.js": "cf110d96ed89d2d6bf0beeba6150826ef8b98beb3db58b9c99d56f505f1b143a",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "22f718209cdb163dd732094758e372b124e2b68ccf6357adfa92d6e234671ebe",
+    "parts/head.html": "f9666b976bdfbde177e1d1473e79c00f48060f2ba7888e049de854e5720374d2",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round C8 re-issue (lines split for the PR limits after c8; same marks, fresh pins)"
   }
  ]
 }

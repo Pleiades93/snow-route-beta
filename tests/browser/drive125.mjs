@@ -124,7 +124,10 @@ await tapById(ev, 'startBtn');
 await sleep(700);
 const S6 = JSON.parse(await ev(`(() => { const c = $('cancelStartBtn'); const cr = c.getBoundingClientRect(); const tr = $('tabBar').getBoundingClientRect();
   const hit = document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2);
-  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id, moonIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.moon; return $('nightBtn').innerHTML === t.innerHTML; })(), // serialized-vs-serialized: a raw string compare against the ICONS source never matches (the HTML serializer normalizes the SVG)
+  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id,
+    moonIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.moon; const nb = $('nightBtn').querySelector('.nbMoon');
+      return !!nb && nb.innerHTML === t.innerHTML; })(), // serialized-vs-serialized: a raw string compare against the ICONS source never matches (the HTML serializer normalizes the SVG)
+    // transitions round: the button stacks both glyphs (recipe 09), so the compare reads the moon face's own span
     listCol: getComputedStyle($('streetsBtn')).color, paceCol: getComputedStyle($('paceBtn')).color, tabCol: getComputedStyle($('homeBtn')).color }); })()`));
 ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the tap | ' + JSON.stringify(S6),
   S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
@@ -133,7 +136,12 @@ ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' +
 await tapById(ev, 'nightBtn');
 await sleep(600);
 ok('S7 day mode: the day/night button offers Night - the moon shows where it takes you, not where you are (Beta 1.28)', S6.moonIcon === true);
-const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; const im = t.querySelector('img.pico'); if (im) im.src = MASK_PACKS.glyph.icons.sun.n; return $('nightBtn').innerHTML === t.innerHTML; })(), // Beta 1.217 (Codex P2 on PR #94, REAL): the button wears the sun glyph in its NIGHT artwork, so the expected markup is themed the same way before the serialized compare; the sun-identity assertion itself is unchanged. Beta 1.218: the theming mechanism is renderIcons now - it mints ICONS.sun already themed for the active pack, so the re-point above is a no-op safeguard under Pulsar and the compare stands as written
+const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'),
+  sunOp: getComputedStyle($('nightBtn').querySelector('.nbSun')).opacity, moonOp: getComputedStyle($('nightBtn').querySelector('.nbMoon')).opacity,
+  sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; const im = t.querySelector('img.pico'); if (im) im.src = MASK_PACKS.glyph.icons.sun.n;
+    const nb = $('nightBtn').querySelector('.nbSun'); return !!nb && nb.innerHTML === t.innerHTML; })(),
+  // Beta 1.217 (Codex P2, PR #94): the sun wears its NIGHT artwork - the expected markup is themed before comparing
+  // Beta 1.218: renderIcons mints ICONS.sun already themed, so the re-point above is a no-op safeguard; the compare stands
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
@@ -141,7 +149,7 @@ ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.strin
 const S7b = JSON.parse(await ev(`(() => { const l = map && map.getLayer('buildings-3d'); return JSON.stringify({ there: !!l, type: l && l.type, h: l && map.getPaintProperty('buildings-3d', 'fill-extrusion-height') }); })()`));
 ok('S7b the 3D buildings layer survives a basemap swap (Beta 1.90): a fill-extrusion on the buildings source-layer with the estimated-height ramp, still there after the theme flip rebuilt the style | ' + JSON.stringify(S7b),
   S7b.there && S7b.type === 'fill-extrusion' && JSON.stringify(S7b.h).includes('coalesce'));
-ok('S7 night mode: the day/night button now offers Day - sun icon, state in agreement', S7.sunIcon === true);
+ok('S7 night mode: the day/night button now offers Day - sun icon, state in agreement (transitions round: the swap crossfades - sun fully in, moon fully out)', S7.sunIcon === true && S7.sunOp === '1' && S7.moonOp === '0');
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')) }); })()`));
 ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 1.75) | ' + JSON.stringify(T4),

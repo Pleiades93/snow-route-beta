@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3303aa7bd905e6ea33f4763796b6b74237efe3a5a1cfb963d1f4d75fd33579c0",
+  "canonical_registry_sha256": "ed01b449c8ba1dce3428d8ca85fd83101ce60bb2fc806bfbfa8cd2fbb3252938",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -9346,7 +9346,7 @@
    "fix": "Beta 1.231 motion round. The theme-swap guard: while applyNight holds the theme-swap class on the root, every transition in the document is suppressed, so a day/night flip steps in one frame instead of animating colours across the screen.",
    "fix_id": "motion-1231",
    "id": "motion1231-theme-guard",
-   "pattern": "html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }",
+   "pattern": "html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }",
    "type": "grep_present"
   },
   {

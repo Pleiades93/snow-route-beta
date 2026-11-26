@@ -36,9 +36,9 @@ check('1c: no 120ms press timing survives in the page', !head.includes('transfor
 check('1d: the press scale is unchanged at .97 (shrink group and pressOn twin)', head.includes('.tabItem:active, .dockBtn:active, .runBtn:active,') && head.includes('.srow.pressOn, .crPRow.pressOn, .cvRow.pressOn, .prow.histRow.pressOn { transform: scale(.97); }'));
 
 // ---------- Piece 2: the instant theme swap ----------
-check('2a: the theme-swap guard rule stands in the page', head.includes('html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }'));
+check('2a: the theme-swap guard rule stands in the page (glyph spans exempt)', head.includes('html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }'));
 check('2b: applyNight raises the guard BEFORE the class flip and lifts it after', app5.indexOf("de.classList.add('theme-swap')") > -1 && app5.indexOf("de.classList.add('theme-swap')") < app5.indexOf("document.body.classList.toggle('night', isNight())") && app5.includes("requestAnimationFrame(lift); setTimeout(lift, 150);"));
-check('2c: the swap still flips the theme-color meta and the night button icon', app5.includes("tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2')") && app5.includes("$('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon;"));
+check('2c: the swap still flips the theme-color meta and the night button icon', app5.includes("tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2')") && app5.includes("$('nightBtn').innerHTML = nightBtnHTML();"));
 
 // ---------- Piece 3: the 1.81 spring stands untouched ----------
 check('3a: springSheet stands with its closed form and omega', app2.includes('const SHEET_OMEGA = 30;') && app2.includes('function springSheet(sheet, q0, qT, v0, apply, finish)'));

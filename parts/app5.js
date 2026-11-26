@@ -61,7 +61,8 @@ document.addEventListener('click', e => {
 }, true);
 function applyNight() { // the swap is instant: the guard suppresses transitions while the class flips, so colours step in one frame
   const de = document.documentElement; de.classList.add('theme-swap');
-  document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2'); $('nightBtn').innerHTML = isNight() ? ICONS.sun : ICONS.moon; renderIcons();
+  document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2');
+  $('nightBtn').innerHTML = nightBtnHTML(); renderIcons();
   void de.offsetWidth; // the flush: the flipped theme's styles commit now, transition-free
   const lift = () => de.classList.remove('theme-swap');
   requestAnimationFrame(lift); setTimeout(lift, 150);

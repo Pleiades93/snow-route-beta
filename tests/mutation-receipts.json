@@ -15393,6 +15393,66 @@
    "red": "setSpdNum reduced to a plain textContent write: P4b fails alone (no swap latched, {}), 27/28",
    "green": "drive199 on the final C7 tree: 28/28",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-c8",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "b40ccb77c8223e234dba6d6c0e665db8408512a346677628ea8e68077ae708c2"
+   },
+   "mutation": "checks 2a/2c re-pinned for the icon swap (transitions ADD 09): the theme-swap guard now exempts .nbIco (the glyph crossfade is the one motion the swap keeps) and applyNight stamps nightBtnHTML(); both claims (the guard stands; the swap flips the meta and the button icon) are unchanged",
+   "red": "the updated proof against the base parts/head.html + parts/app5.js fails exactly 2a and 2c (1b also fails in that run only because the whole-file stash reverted C5's switch line in the same file; its own RED stands in transitions-1298-proof-1231-r2)",
+   "green": "proof-1231 on the round tree: 23/23; full run-proofs 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-c8",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "ee74527daca244dfaff95be0b30a0be2261765e20c48e5327b09e48df8d203d1"
+   },
+   "mutation": "the glyph-identity reads re-derived to the stacked faces (.nbMoon/.nbSun spans, transitions ADD 09) and S7's offers-Day check extended with the swap's terminal opacities (sun 1, moon 0); the claims (the button offers the moon by day and the sun by night, in the right artwork) are unchanged",
+   "red": "the body.night .nbSun rule removed: the extended S7 check fails alone (the sun never fades in), 27/28",
+   "green": "drive125 on the round tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-c8-r2",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "b20b6351ac792d1ecbd30ced51f014af01a6851c5385fc32da87af5cd5cb14b4"
+   },
+   "mutation": "checks 2a/2c re-pinned for the icon swap (transitions ADD 09) - re-issued after formatting-only splits for the PR line limits; semantically identical to transitions-1298-proof-1231-c8",
+   "red": "the updated proof against the base parts/head.html + parts/app5.js fails exactly 2a and 2c",
+   "green": "proof-1231 on the final C8 tree: 23/23; full run-proofs 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-c8-r2",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "eebe4b6ca5c8b1acb8b594a6a603c595ba3bdd3dd080bb64243f9a5cee42f567"
+   },
+   "mutation": "glyph-identity reads re-derived to the stacked faces plus S7's terminal-opacity extension (transitions ADD 09) - re-issued after formatting-only splits for the PR line limits; semantically identical to transitions-1298-drive125-c8",
+   "red": "the body.night .nbSun rule removed: the extended S7 check fails alone (the sun never fades in), 27/28",
+   "green": "drive125 on the final C8 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-c8-r3",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "27bace08f9193bcf89dd83ea01c795f2ef0b93263dfbff7b71da945a4e61cf19"
+   },
+   "mutation": "glyph-identity reads re-derived to the stacked faces plus S7's terminal-opacity extension (transitions ADD 09) - re-issued after comment compressions for the PR word limits; semantically identical to transitions-1298-drive125-c8",
+   "red": "the body.night .nbSun rule removed: the extended S7 check fails alone (the sun never fades in), 27/28",
+   "green": "drive125 on the final C8 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }
