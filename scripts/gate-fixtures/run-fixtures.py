@@ -1383,6 +1383,7 @@ SCAN_JS = (
     "function fixtureAlpha(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
     "function fixtureBeta(n) { let p = 1; while (n > 1) { p *= n; n--; } return p; }\n"
 )
+PROMISE_JS = "function save(pack) { upPut('route', pack).then(ok => { if (!ok) showBanner('x'); }); }\n"
 CB_JS = (
     "function render(items) {\n"
     "  const a = items.map(x => x.id);\n"
@@ -1430,6 +1431,8 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: an ignored write carrying a write-safe exemption passes",
           run_scan(scan_tree(t / "exempt",
                              js="function fixtureOnly() { lsSet('hint', 'x') /* write-safe: a stale hint costs nothing */; }\n")), 0)
+    check("scan: a write consumed by a promise handler passes",
+          run_scan(scan_tree(t / "promise", js=PROMISE_JS)), 0)
     check("scan: a planted JS clone pair fails",
           run_scan(scan_tree(t / "jsclone", js=SCAN_JS + SCAN_CLONE)), 1)
     check("scan: a planted CSS clone block fails",
@@ -1448,6 +1451,6 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: an unrelated callback insertion keeps baselined identities",
           run_scan(cb_tree), 0)
 
-total = 119
+total = 120
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

@@ -51,6 +51,10 @@ function outcomeUsed(node) {
     }
   }
   if (ts.isConditionalExpression(parent) && parent.condition === node) return true;
+  // A write feeding a promise handler is consumed by it.
+  if (ts.isPropertyAccessExpression(parent) &&
+      /^(?:then|catch|finally)$/.test(parent.name.text) &&
+      ts.isCallExpression(parent.parent) && parent.parent.expression === parent) return true;
   return ts.isExpression(parent) && !ts.isCallExpression(parent) && outcomeUsed(parent);
 }
 
