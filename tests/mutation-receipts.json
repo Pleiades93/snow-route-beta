@@ -13531,6 +13531,160 @@
    "red": "mutated 1.296 tree: 15/18 checks, 0 exceptions - FAIL",
    "green": "clean 1.296 tree: 18/18 checks, 0 exceptions - PASS",
    "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-proof-1226",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1226.mjs": "b17e1a08844853719d13b70e24e7f67f6baf9d805a5c0f910d7eab1afe47d182",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: FAILED; failing: 1h: the :active holds wear the rest fills (menu pills, cards, rows, cr",
+   "green": "on the ported tree: exit 0",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-proof-1235",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1235.mjs": "56679ca9558b21521d667d5d473460e88fe3664383ad2c2b95d3b409ac7ec2ba",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 18 passed, 0 failed - the pins do NOT discriminate the port (the merge and the render they pin are unchanged by it); this commit's change to the proof is the B8/B10 claim re-scope to the fallback-only flow, and this receipt records that honestly while tracking the file's new sha",
+   "green": "on the ported tree: 18 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-proof-city-search-owner",
+   "check": "tests/proof/proof-city-search-owner.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-city-search-owner.mjs": "7f21be79b0e3f2a5dfabe4004767ebb4c83ecb8c45f7af2d61f526e65e3683b5",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 9 passed, 1 failed; failing: 3: all five seats call the owner (pane open, short-query return, input",
+   "green": "on the ported tree: 10 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-proof-soft-1222",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "655d4a761682d44597fd5ad6e70a49eb9d356631d727a938a4c7312af42d68bf",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 14 pass, 1 fail",
+   "green": "on the ported tree: 15 pass, 0 fail",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-drive151",
+   "check": "tests/browser/drive151.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive151.mjs": "7837d3650f7922ae7140d7e13466fffd52f3716f554247fbe7f457924c460f66",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: the drive aborted inside pickVaughan - the settled miss never fires a search there, so the result rows its helper waits for never render (no result block)",
+   "green": "on the ported tree: 10/10 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-drive152",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive152.mjs": "95b310b4541c0c5e93f96f60a59b7cd6dcf8c47d5d3c54a6c3cc37f10cc6491d",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 3/8 checks, 0 exceptions - FAIL; failing checks include: K1a; K1b; K2a; K2b",
+   "green": "on the ported tree: 8/8 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-drive153",
+   "check": "tests/browser/drive153.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive153.mjs": "93b0168a3d11caf498b03418759804c0e4b82485189b611eb28b9eb411911483",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 11/15 checks, 0 exceptions - FAIL; failing checks include: D1 MANUAL DOOR SEARCH; D2 tapping the typed-search result picks the city and enters; D3 NO-PACK CITY USES THE GRID: Caledon; D5 HONEST FAILURE",
+   "green": "on the ported tree: 15/15 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-drive154",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive154.mjs": "fc6ce28b75cae4554a4f788a5b91b5a93f7b357ba4199ae4fc703b9c5abdb035",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 21/22 checks, 0 exceptions - FAIL; failing checks include: C1 MANUAL PATH PARITY: King readies through the grid and the",
+   "green": "on the ported tree: 22/22 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-drive164",
+   "check": "tests/browser/drive164.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive164.mjs": "2da22904746b1d516b2c2f5246705ff4fa37545ebe3e27d2b07c41ce28fcf00a",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 15/16 checks, 0 exceptions - FAIL; failing checks include: E1b DA-12: clearing through the input handler aborts IMMEDIAT",
+   "green": "on the ported tree: 16/16 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-drive166",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive166.mjs": "c51cdd5fc4df8fb944ff07ca6a3f419401a2cce0b844282791ccc6957de96933",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: the run died in setup (page-evaluation TypeError in its boot seam, 0 checks ran) - the same rig premise that killed its ported-tree run; discrimination for the re-pointed helper is carried by drives 151/152/181, whose identical helper fails on the pre-port tree and passes on the ported tree",
+   "green": "the ported-tree run died in setup at the basemap-restack premise (0 checks ran; an unrelated map-rendering premise on this throttled rig - the same drive passed 58/58 in the round's commit-1 final runs and its re-pointed helper is the identical shape that passes in drives 151/152/181); the cloud gate is the judge",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2-drive181",
+   "check": "tests/browser/drive181.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive181.mjs": "36c3f23a027f5e1bd203b61d07c52dc80c512d23646cac060c4aaf8842202cac",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 4/19 checks, 0 exceptions - FAIL; failing checks include: S1; TEETH1; TEETH2; S2a",
+   "green": "on the ported tree: 19/19 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
   }
  ]
 }

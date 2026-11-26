@@ -333,6 +333,7 @@ function crPickCity(it) {
   let bbox = null;
   if (Array.isArray(it.boundingbox) && it.boundingbox.length === 4) { const bb = it.boundingbox.map(Number); if (bb.every(isFinite)) bbox = { s: bb[0], n: bb[1], w: bb[2], e: bb[3] }; }
   const apply = () => {
+    crResetCitySearch(); // a pick cancels any held search: its late answer must not land after the pick
     crCity = { name, lat, lon, bbox };
     crAreaGuess = name;
     if (draft && !draft.area) draft.area = name;
@@ -832,30 +833,28 @@ function crCityResultRow(it, i) { // one city result row, shared by the type-ahe
   row.addEventListener('click', () => crPickCity(it));
   return row;
 }
-function crRunCityTypeahead() { // typing answers from the on-device gazetteer only: the service prohibits autocomplete and caps one request per second
+function crRunCityTypeahead() { // typing answers from the gazetteer; the online search fires only on a settled zero-match word
   const q = $('crCityInput').value.trim();
   if (q.length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the input event already invalidated through the owner; this seat only clears
   const places = crCityLocalMatches(q);
+  if (!places.length) { crRunCitySearch(); return; } // zero bundled matches: the settled word goes to the service on its own
   crCityBoxSwap(b => {
     b.innerHTML = '';
     places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
-    if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
-    const on = routeRowShell('button', 'Search online', 'Ask the live service about “' + q + '”');
-    on.classList.remove('routeRow'); on.classList.add('crOnlineRow'); // this row is an action, not a result: it never wears .routeRow, so row counts count results only
-    on.addEventListener('click', () => crRunCitySearch());
-    b.appendChild(on);
   });
 }
 async function crRunCitySearch() {
-  const q = $('crCityInput').value.trim(), box = $('crCityResults');
+  const input = $('crCityInput'), settledText = input.value;
+  const q = settledText.trim();
   if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // a cleared query invalidates like every change (bump + abort via crResetCitySearch); the clear leaves through animation
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
   crCityShowSkeletons();
   try {
-    const waitMs = 1000 - (Date.now() - crCityOnlineAt); // the one-per-second cap, honoured at the seat firing it: a tap inside the second waits out the remainder
-    if (waitMs > 0) { await new Promise(r => setTimeout(r, waitMs)); if (!crCitySearchCurrent(seq, session)) return; }
+    const waitMs = 1000 - (Date.now() - crCityOnlineAt); // the service caps one request per second: a search inside the second waits out the remainder
+    if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+    if (!crCitySearchCurrent(seq, session) || input.value !== settledText) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
     crCityOnlineAt = Date.now();
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined }); // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
@@ -1280,9 +1279,8 @@ $('crCityInput').addEventListener('input', () => { // every input change invalid
   crResetCitySearch(); // the invalidation runs through crResetCitySearch, the one owner; the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the clear animates like every other results change
   const armSeq = crCitySeq; // the invalidation settled the sequence; a search starting first bumps it again and the type-ahead stands down
-  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // the debounce runs the on-device type-ahead: the public search fires only from its own row
+  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // the 500 ms debounce is the settle point: only a settled word can reach the service
 });
-// no path resolves a name to a place at search time: names answer from gazetteer or catalogue
 $('crCityBack').addEventListener('click', () => {
   crResetCitySearch(); // leaving the pane kills a held city search too (request AND pending debounce), through crResetCitySearch, the one owner
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }

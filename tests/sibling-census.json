@@ -17479,6 +17479,202 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-25 popup-round2 (Beta 1.296) commit 1 re-issue r4 (per-path changed flags)"
+  },
+  {
+   "id": "popup-round2-c2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crRunCityTypeahead",
+     "crRunCitySearch",
+     "crPickCity",
+     "crResetCitySearch",
+     "crCityLocalMatches",
+     "crCityResultRow",
+     "crCityShowSkeletons",
+     "crOpenCityPane"
+    ],
+    "elements": [
+     "crCityInput",
+     "crCityResults",
+     "crCityBack",
+     "banner"
+    ]
+   },
+   "changed": [
+    "parts/create-pick.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCityLocalMatches:parts/create-pick.js:crRunCityTypeahead",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityLocalMatches() is called from crRunCityTypeahead in parts/create-pick.js",
+     "status": "covered",
+     "note": "the typeahead's bundled matching; drives 151-154/164/166/181, proof-1235 B5"
+    },
+    {
+     "id": "caller:crCityLocalMatches:parts/create-pick.js:ctl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityLocalMatches() is called from ctl in parts/create-pick.js",
+     "status": "covered",
+     "note": "the search merge's local recompute (proof-1235 B8 re-scoped: reached only after a miss, fills nothing; the net stays as specified)"
+    },
+    {
+     "id": "caller:crCityResultRow:parts/create-pick.js:crRunCityTypeahead",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityResultRow() is called from crRunCityTypeahead in parts/create-pick.js",
+     "status": "covered",
+     "note": "bundled results render through the shared row builder; drive166 J10 (Toronto), drive153 phase F"
+    },
+    {
+     "id": "caller:crCityResultRow:parts/create-pick.js:ctl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityResultRow() is called from ctl in parts/create-pick.js",
+     "status": "covered",
+     "note": "the search answer renders through the shared row builder; drives 151-154/181, proof-1235 B10"
+    },
+    {
+     "id": "caller:crCityShowSkeletons:parts/create-pick.js:crRunCitySearch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityShowSkeletons() is called from crRunCitySearch in parts/create-pick.js",
+     "status": "covered",
+     "note": "the in-flight skeletons; drive153 D5 (they clear on failure), drives 151-154 flows"
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:crCityChange:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from crCityChange:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane open resets the search (owner proof check 3); drives 151-154/166 city sections"
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:crDoorManual:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from crDoorManual:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the manual door opens the pane through the same reset; every city drive enters here"
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:pvAddBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from pvAddBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the preview add door opens the pane through the same reset; owner proof check 3"
+    },
+    {
+     "id": "caller:crPickCity:parts/create-pick.js:crPackPickCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPickCity() is called from crPackPickCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "a pack chooser pick lands through crPickCity, whose apply now resets the search; drive154 phase B, drive153 E1"
+    },
+    {
+     "id": "caller:crPickCity:parts/create-pick.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPickCity() is called from row:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "every result row pick; drives 151-154/164/166/181"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:apply",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from apply in parts/create-pick.js",
+     "status": "covered",
+     "note": "the NEW seat this commit adds: a pick cancels a held search; proof-city-search-owner check 3 (five seats)"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "leaving the pane kills a held search; owner proof check 3, drive164 E2"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crCityInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crCityInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "invalidation at the input event; drive164 E1b (abort is immediate at clear)"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crOpenCityPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crOpenCityPane in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane open seat; owner proof check 3"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crRunCitySearch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crRunCitySearch in parts/create-pick.js",
+     "status": "covered",
+     "note": "the short-query return seat; drive164 cases 1-2 (direct calls), owner proof check 3"
+    },
+    {
+     "id": "caller:crRunCitySearch:parts/create-pick.js:crRunCityTypeahead",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRunCitySearch() is called from crRunCityTypeahead in parts/create-pick.js",
+     "status": "covered",
+     "note": "THE new seat: a settled zero-match word routes into the online search; drives 151/152/153/154/164/181 red-green pairs"
+    },
+    {
+     "id": "caller:crRunCityTypeahead:parts/create-pick.js:crCityInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRunCityTypeahead() is called from crCityInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "the 500 ms debounce seat (registry beta-1120 probe); every typing drive"
+    },
+    {
+     "id": "theme:banner",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #banner has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "anchor carried for context; the banner is commit 1's surface, untouched by fix 4 - its rows are census popup-round2-c1's"
+    },
+    {
+     "id": "theme:crCityBack",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crCityBack has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no rule for the Back button changed in fix 4; the seat's behaviour is a caller row above"
+    },
+    {
+     "id": "theme:crCityInput",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crCityInput has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "no input rule changed in fix 4; typing behaviour is the caller rows above"
+    },
+    {
+     "id": "theme:crCityResults",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crCityResults has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "no results-box rule changed in fix 4; the removed .crOnlineRow rules are pinned by probes popupfix4-no-online-row-css and proof-1226 1h / proof-soft-1222 A"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/app2.js": "d7807f26e5e6bfe215fd9b5aab4adc4406da7594e7f1e92d5402adce64f9af64",
+    "parts/app3.js": "d50467b5994bdeb52c145de352224dfe389770e3aaf089415a66a0eb166737f4",
+    "parts/app4.js": "76aa7948ea241a42c382a5c25a7cc030e40a3272455cd4994714e9e27f8a0135",
+    "parts/app5.js": "79f14b5ee7ef9f406818eb07f7b914b4a79478862263d8d8ce3f10f8722a7d86",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "fa738321831fc26e4c6ebfca7c81b428d4e0517d0a9c9329985285dd02d15aaf",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "8a0f30c507453b2037ea2d52f3f4b27289f8feff3331a751239905688011890d",
+    "parts/head.html": "1f89eb3ddad39093820fe26f27d92af99651f5d3bbc473488bd4511631471930",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 popup-round2 (Beta 1.296) commit 2"
   }
  ]
 }

@@ -52,10 +52,11 @@ check('1b: the owner body is the historical ritual (sequence bump, abort + handl
   && ownerFn.includes('if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }'));
 check('2: the spelled-out bump survives exactly once in the file - inside the owner',
   (pick.match(/crCitySeq\+\+;/g) || []).length === 1);
-check('3: all four seats call the owner (pane open, short-query return, input event, pane Back)',
-  (pick.match(/crResetCitySearch\(\);/g) || []).length === 4
+check('3: all five seats call the owner (pane open, short-query return, input event, pane Back, city pick apply)',
+  (pick.match(/crResetCitySearch\(\);/g) || []).length === 5
   && extractFn(pick, 'function crOpenCityPane(ret)').includes('crResetCitySearch();')
-  && extractFn(pick, 'async function crRunCitySearch()').includes('crResetCitySearch();'));
+  && extractFn(pick, 'async function crRunCitySearch()').includes('crResetCitySearch();')
+  && extractFn(pick, 'function crPickCity(it)').includes('crResetCitySearch();'));
 
 // ---------- 4-6: the owner's three moves, run for real ----------
 const prelude = [

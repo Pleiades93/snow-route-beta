@@ -92,14 +92,13 @@ const installStub = `(() => {
 })()`;
 const pickCityVaughan = async () => {
   const pane = await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000).catch(() => false);
-  await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughan'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-  // Issue #180 TEST-PREMISE UPDATE (Beta 1.286): typing answers from the
-  // on-device gazetteer, whose Vaughan carries the REAL bounding box;
+  await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughann'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+  // Fix 4 TEST-PREMISE UPDATE (Beta 1.296): typing answers instantly from
+  // the on-device gazetteer, whose Vaughan carries the REAL bounding box;
   // the S-checks grade the grid's cell counts and its failed-cell
-  // injections against the FIXTURE Vaughan, so the helper picks through
-  // the Search online row and the merged results - the fixture's city.
-  await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 10000).catch(() => false);
-  await ev(`(() => { const b = document.querySelector('#crCityResults .crOnlineRow'); if (b) b.click(); return true; })()`);
+  // injections against the FIXTURE Vaughan, so the helper types a
+  // deliberate gazetteer miss ('Vaughann') - the settled miss fires the
+  // online fallback on its own and the results are the fixture's city.
   const rows = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 10000).catch(() => false);
   if (rows === true) await ev(`document.querySelector('#crCityResults .routeRow').click()`);
   const inPick = rows === true ? await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 10000).catch(() => false) : false;

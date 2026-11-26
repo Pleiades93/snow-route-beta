@@ -85,16 +85,15 @@ const TAP_POINTS = { 'Bordeaux Drive': { lat: 43.798972, lng: -79.574666 }, 'Ald
 // Beta 1.121: Door 2 now opens the CITY pane - this helper walks it
 // (type the city, wait for the populated-place results, pick Vaughan,
 // land in the pick stage) and reports what it saw for the checks.
-// Issue #180 TEST-PREMISE UPDATE (Beta 1.286): typing answers from the
+// Fix 4 TEST-PREMISE UPDATE (Beta 1.296): typing answers instantly from the
 // on-device gazetteer, whose Vaughan carries the REAL bounding box; this
 // drive grades the grid against the fixture's Vaughan (its failed-cell
-// case keys on the fixture grid), so the helper picks through the Search
-// online row and the merged results - the fixture's city, as before.
+// case keys on the fixture grid), so the helper types a deliberate
+// gazetteer miss ('Vaughann') - the settled miss fires the online fallback
+// on its own and the results are the fixture's city, as before.
 const pickCityVaughan = async () => {
   const pane = await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000).catch(() => false);
-  await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughan'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-  await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 10000).catch(() => false);
-  await ev(`(() => { const b = document.querySelector('#crCityResults .crOnlineRow'); if (b) b.click(); return true; })()`);
+  await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughann'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
   const rows = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 10000).catch(() => false);
   const first = rows === true ? await ev(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (!b) return ''; const n = b.querySelector('.routeName'); const a = b.querySelector('.routeArea'); return (n ? n.textContent : '') + ', ' + (a ? a.textContent : ''); })()`) : '';
   if (rows === true) await ev(`document.querySelector('#crCityResults .routeRow').click()`);

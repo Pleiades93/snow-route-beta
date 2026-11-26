@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "73b412d8ae6168b7cddf6a3e64bdcbd714ff032193c51ac67a6d601d1f82c385",
+  "canonical_registry_sha256": "462d4212e4b3c9d452f4e02aafd42380c1237dea0f908794bc5bec49491f17c8",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1554,
-   "included": 1524,
+   "canonical": 1559,
+   "included": 1529,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -1893,9 +1893,9 @@
   {
    "added": "2026-11-05",
    "file": "parts/head.html",
-   "fix": "Route rows give pressed feedback (the :active rule, Beta 1.105): a route row that doesn't react to the tap reads as a dead button on the phone. Re-pinned in Beta 1.226 (PR #104): the .28 :active flash is deliberately superseded - the press feedback is now the shrink (proof-1226) and the row HOLDS its rest soft fill (.18) on press; this probe now pins the hold form. Repointed 2026-11-23 (sweep round, coding-discipline rule 3): the rule now groups the Search online row beside the route rows; the pressed-fill claim is unchanged.",
+   "fix": "Route rows give pressed feedback (the :active rule, Beta 1.105): a route row that doesn't react to the tap reads as a dead button on the phone. Re-pinned in Beta 1.226 (PR #104): the .28 :active flash is deliberately superseded - the press feedback is now the shrink (proof-1226) and the row HOLDS its rest soft fill (.18) on press; this probe now pins the hold form. Repointed 2026-11-23 (sweep round, coding-discipline rule 3): the rule now groups the Search online row beside the route rows; the pressed-fill claim is unchanged. Re-pinned in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed, so the hold rule names the route row alone; the pressed-fill claim is unchanged.",
    "id": "beta-1105-route-row-pressed",
-   "pattern": "#routeMenu .routeRow:active, #routeMenu .crOnlineRow:active { background: rgba(255,255,255,.18); }",
+   "pattern": "#routeMenu .routeRow:active { background: rgba(255,255,255,.18); }",
    "type": "grep_present"
   },
   {
@@ -2544,7 +2544,7 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete. The timer also carries the armSeq stand-down (Beta 1.286, drive153 D5): a public search started before the timer fires supersedes the type-ahead, whose render must not land on the search's answer or re-fill the empty box its failure honestly leaves.",
+   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete. The timer also carries the armSeq stand-down (Beta 1.286, drive153 D5): a public search started before the timer fires supersedes the type-ahead, whose render must not land on the search's answer or re-fill the empty box its failure honestly leaves. Re-pinned in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed - the 500 ms debounce is now the settle point, and a settled word with zero bundled matches fires the capped search on its own; a bundled match means the service never runs. The timer line itself is unchanged.",
    "id": "beta-1120-autocomplete-debounce",
    "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500);",
    "type": "grep_present"
@@ -13081,7 +13081,7 @@
   {
    "added": "2026-11-23",
    "file": "parts/create-pick.js",
-   "fix": "Issue #180 (Beta 1.286): city search typing answers from the on-device gazetteer (crRunCityTypeahead); the public Nominatim service is asked only from the explicit Search online row, at most once per second (its policy prohibits client-side autocomplete).",
+   "fix": "Issue #180 (Beta 1.286): city search typing answers from the on-device gazetteer (crRunCityTypeahead); the public Nominatim service is asked only from the explicit Search online row, at most once per second (its policy prohibits client-side autocomplete). Updated in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed - the type-ahead itself routes a settled zero-match word into the online search, and bundled matches never reach the service.",
    "fix_id": "sweep-180-nominatim-typeahead",
    "id": "sweep-180-nominatim-typeahead-local",
    "pattern": "function crRunCityTypeahead()",
@@ -13571,6 +13571,51 @@
    "fix_id": "popup-cull-1296",
    "id": "popup1296-finish-cancel",
    "pattern": "<button id=\"finNo\">Cancel</button>",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-no-online-row-js",
+   "pattern": "crOnlineRow",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-no-online-row-css",
+   "pattern": "crOnlineRow",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-zero-match-routes",
+   "pattern": "if (!places.length) { crRunCitySearch(); return; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-settled-guard",
+   "pattern": "input.value !== settledText",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-pick-resets",
+   "pattern": "crResetCitySearch(); // a pick cancels any held search",
    "type": "grep_present"
   }
  ]

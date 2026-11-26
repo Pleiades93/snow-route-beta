@@ -164,16 +164,15 @@ await ev2(`exitCreate()`);
 // ---- phase C: the manual path's street search (parity) ----
 // Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city
 // results from .rmBtn to .routeRow; the selectors below follow.
-// Issue #180 TEST-PREMISE UPDATE (Beta 1.286): typing answers from the
+// Fix 4 TEST-PREMISE UPDATE (Beta 1.296): typing answers instantly from the
 // on-device gazetteer (the real King City box); C1 grades the grid
-// against the fixture's King, so the pick goes through the Search
-// online row and the merged results - the fixture's city, as before.
+// against the fixture's King, so the helper types a deliberate gazetteer
+// miss ('King Cityy') - the settled miss fires the online fallback on
+// its own and the results are the fixture's city, as before.
 await openDoorsTab();
 await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
-await typeCity('King City');
-await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 15000);
-await ev2(`document.querySelector('#crCityResults .crOnlineRow').click()`);
+await typeCity('King Cityy');
 await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
 await ev2(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (b) b.click(); return true; })()`);
 const readyC = await poll(`crPrepState === 'ready'`, 30000);
