@@ -29305,6 +29305,147 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26"
+  },
+  {
+   "id": "snow-everywhere-final",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "showRmPane",
+     "syncSnow"
+    ],
+    "elements": [
+     "snowCv"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/brand-snow.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:showRmPane:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmBack2:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmBack2:click in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmBack:click in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmChoose:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmChoose:click in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmCreate:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmCreate:click in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crDoorList:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crDoorList:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crOpenCityPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crOpenCityPane in parts/create-pick.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:openDoors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from openDoors in parts/create-pick.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:rmCityListBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmCityListBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-save.js:pvSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from pvSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "call site untouched; the seat's contract change is the round's ruling - this navigation now keeps the snow (drive228 walks it)"
+    },
+    {
+     "id": "theme:snowCv",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #snowCv has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the canvas's .away CSS seats are the change itself: hide rule deleted, step-aside keys on the scene alone"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb",
+    "parts/app3.js": "8a964f63c2a7a21006a2bdb65a0b37058fa09da805eea348efbf50c8d068ab45",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "f268106b59d05180efdcc69d9e9e7666dfa495765696490469b7ed30b9e7f136",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "c8183d4e9fd5b2f8de15751e8c51cda513bb25c0b14ce708eb6415816a6c3986",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 snow-everywhere final head"
   }
  ]
 }
