@@ -1,5 +1,18 @@
 # Changelog
 
+## Beta 1.299 — 2026-11-26
+
+Snow on every blue menu (Andrew's pick, 2026-11-26: the same snow as the splash screen, so it is identical). The one snow field that has
+always served the start screen now also serves the Routes menu and the Settings takeover: same engine, same density, nothing tuned per
+menu. The canvas moved out of the splash to body level, wearing the menus' own blue gradient while it is live, and both menus step aside
+for it. Snow runs only while a blue menu is open - it paints its first frame with the menu's first frame, stops dead when the menu closes,
+and never shows on the map. Closing a menu holds the pile: the next menu opens with the snow exactly as it was left (session memory only,
+nothing stored). The Settings version label moved up so the settled snow never covers it. One paint fix came with the frame-timing proof
+(drive226): the speck layer now draws from a pre-rendered sprite like the other layers - the same discs, but the old per-frame path fills
+cost the menus frames. drive226 proves the open and close frame budget, throttled and not.
+
+Editorial: this entry; What's New replaced with the snow lines; the #ver label reads Beta 1.299.
+
 ## Beta 1.298 — 2026-11-26
 
 The transitions round, built from the 2026-11-25 motion audit Andrew picked through (all 12 fixes, 3 additions; the panel reveal was not picked). Surfaces now
