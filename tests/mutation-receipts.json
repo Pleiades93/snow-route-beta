@@ -15163,6 +15163,56 @@
    "red": "no red observation applies: no assertion changed",
    "green": "N22/N23 pass on the round tree (receipt round3-1297-drive145's record stands for the drag family's local environmental failures)",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive150",
+   "check": "tests/browser/drive150.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive150.mjs": "5fa9261d3ad8c7446c488812739bc3507668d90cc943c7033b078992336607f1",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "Beta 1.297's dwell (1500 -> 800 ms): the restore section's one-shot route-list read landed before the restored pack's boot registration rendered it (the dwell discriminator: the same drive passes 37/37 locally with the dwell reverted, fails D4/D5 with it)",
+   "red": "on the round tree: CI head 3 and head 6 (twice) - drive150 dies with no result block (an evaluation read crashes the run); locally D4/D5 fail with rows [5w] while the store already holds route-6w, and a re-read 4 s later shows both rows - registration lag, convicted by a one-shot read",
+   "green": "with D4 polling the listing itself until the restored row renders: drive150 37/37 PASS locally twice on the 800 ms tree",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive225",
+   "check": "tests/browser/drive225.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive225.mjs": "bfaf0529023ad1f2726b20f47baa407914efe55c882834cb8e856c3e5e3b6593"
+   },
+   "mutation": "gate repair on PR #220's head 6: G9 read the banner's night face once after a fixed 900 ms sleep; the night restyle lands after the body class, so the read took the day face",
+   "red": "CI head 6, twice (incl. the failed-jobs re-run): G9 fails with identical values - bg rgb(255, 255, 255), ratio 15.40 (the day face). The drive passed CI on heads 1 and 3 and locally; the read was always racy, that CI window exposed it",
+   "green": "with G9 polling the face itself until it reads dark (9 s budget): drive225 13/13 PASS locally",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive150-r2",
+   "check": "tests/browser/drive150.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive150.mjs": "bc31eb21cc9d625819566f7e4b83e64226c647ab333b7ba2f935a082aec17c27",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "same repair as receipt round3-1297-drive150, re-issued after the limits gate made the author wrap the poll line's comment; the staging is unchanged",
+   "red": "see receipt round3-1297-drive150 (CI heads 3/6 no-result-block crashes; local D4/D5 rows-vs-store split; dwell discriminator 37/37 at 1500 ms)",
+   "green": "drive150 37/37 PASS locally twice on the 800 ms tree with the polled listing read",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive225-r2",
+   "check": "tests/browser/drive225.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive225.mjs": "63ab638fffba69b812f67b094b155927c4b8258d015dc89a3823bc6c01debe33"
+   },
+   "mutation": "same repair as receipt round3-1297-drive225, re-issued after the limits gate made the author wrap the poll line's comment; the staging is unchanged",
+   "red": "see receipt round3-1297-drive225 (CI head 6 twice: G9 bg rgb(255, 255, 255), ratio 15.40)",
+   "green": "drive225 13/13 PASS locally with the polled face read",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }

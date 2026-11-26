@@ -57,7 +57,8 @@ ok('G8 the banner leaves on its own | gone after ' + (Date.now() - tFinish) + ' 
 // ---- night face: same banner, dark card, measured contrast ----
 await ev(`(() => { setThemeOverride(true); return true; })()`);
 await poll120(`document.body.classList.contains('night')`, 10000);
-await ev(`(() => { showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); return true; })()`); await sleep(900);
+await ev(`(() => { showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); return true; })()`);
+await poll120(`(() => { try { return window.__bannerFace().bg === 'rgb(32, 33, 37)'; } catch (e) { return false; } })()`, 9000); // poll the face itself - the night restyle lands after the body class
 const N = await J(`(() => window.__bannerFace())()`);
 ok('G9 night face: dark card, headline contrast >= 4.5 | bg ' + N.bg + ', ratio ' + (N.ratio || 0).toFixed(2), N.bg === 'rgb(32, 33, 37)' && N.ratio >= 4.5);
 await poll120(`getComputedStyle($('banner')).visibility === 'hidden'`, 9000);
