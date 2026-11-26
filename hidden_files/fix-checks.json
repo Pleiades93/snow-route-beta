@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "c469113b9ef8fb273b65782274ff292a3f120a448cf17e42c8e5f0e3883c65f6",
+  "canonical_registry_sha256": "a1ce9e3a0930df7551f9f8ba06983fc8996830d4b5619f9881630f5945c16a51",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1570,
-   "included": 1540,
+   "canonical": 1573,
+   "included": 1543,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -7663,10 +7663,10 @@
   {
    "added": "2026-11-15",
    "file": "parts/engine.js",
-   "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the titles are restored below zoom 15 (the R4 form is re-pinned in proof-green-half-road itself); this probe pins the title spec's opacity tail again) (Rolled 2026-11-24 by label-handover-1294, Beta 1.294: the titles fade out across zoom 15-16 and end at maxzoom 16 for the handover; this probe pins the spec's opacity tail in its new form)",
+   "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the titles are restored below zoom 15 (the R4 form is re-pinned in proof-green-half-road itself); this probe pins the title spec's opacity tail again) (Rolled 2026-11-24 by label-handover-1294, Beta 1.294: the titles fade out across zoom 15-16 and end at maxzoom 16 for the handover; this probe pins the spec's opacity tail in its new form) (Rolled 2026-11-25 by label-switch-1297, Beta 1.297: the fade stops are deleted; the tail is now the 12.62 fade-in stop)",
    "fix_id": "green-half-road",
    "id": "green-half-road-titles-retired-1258",
-   "pattern": "15, 1, 16, 0]",
+   "pattern": "12.62, 1]",
    "type": "grep_present"
   },
   {
@@ -13252,19 +13252,19 @@
   {
    "added": "2026-11-24",
    "file": "parts/engine.js",
-   "fix": "Beta 1.294 (label-handover-1294): the title layers fade out across zoom 15-16 inside their own spec (a spec value, not a code write). If the band stops leave the spec, the titles stay at full strength into the basemap's zoom band and double-print against the handover copies. drive219 V2/V3 grade it live; proof-anchors 4a pins the spec.",
+   "fix": "Beta 1.294 (label-handover-1294): the title layers fade out across zoom 15-16 inside their own spec (a spec value, not a code write). If the band stops leave the spec, the titles stay at full strength into the basemap's zoom band and double-print against the handover copies. drive219 V2/V3 grade it live; proof-anchors 4a pins the spec. (Rolled 2026-11-25 by label-switch-1297, Beta 1.297: the fade band is deleted - the expression now ends at the 12.62 stop and the titles end at the 15.2 cap; this probe pins the no-ramp expression.)",
    "fix_id": "label-handover-1294",
    "id": "labelhandover1294-title-fade",
-   "pattern": "'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0]",
+   "pattern": "'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]",
    "type": "grep_present"
   },
   {
    "added": "2026-11-24",
    "file": "parts/engine.js",
-   "fix": "Beta 1.294 (label-handover-1294): the title layers end at maxzoom 16 - above the band the basemap names everything. Opacity alone would still place the title symbols and steal collisions, so the cap is what makes 'gone above 16' true. drive219 V3 and drive130 L2 grade it live; proof-anchors 4a pins it.",
+   "fix": "Beta 1.294 (label-handover-1294): the title layers end at maxzoom 16 - above the band the basemap names everything. Opacity alone would still place the title symbols and steal collisions, so the cap is what makes 'gone above 16' true. drive219 V3 and drive130 L2 grade it live; proof-anchors 4a pins it. (Rolled 2026-11-25 by label-switch-1297, Beta 1.297: the cap is now 15.2, the instant switch point.)",
    "fix_id": "label-handover-1294",
    "id": "labelhandover1294-title-cap",
-   "pattern": "minzoom: PT_MIN[t - 1], maxzoom: 16, filter:",
+   "pattern": "minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter:",
    "type": "grep_present"
   },
   {
@@ -13716,6 +13716,33 @@
    "id": "te-push-limits",
    "pattern": "LIMITS GATE",
    "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app2.js",
+   "fix": "Beta 1.297 (label-switch-1297): the handover clones start at the one shared constant routeLabelMinZoom = 15.2 (Andrew's decided switch point) - creation and the zoom-range guard both read it, so the pair cannot drift apart. drive130 L3 and drive214 M4 grade it live; proof-anchors 4b pins it.",
+   "fix_id": "label-switch-1297",
+   "id": "labelswitch1297-clone-floor",
+   "pattern": "const routeLabelMinZoom = 15.2;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app2.js",
+   "fix": "Beta 1.297 (label-switch-1297): the clones carry no text-opacity fade ramp - the 15-to-16 interpolate override is deleted, so above 15.2 the clones print at full strength at once (the instant switch). If the ramp returns, the handover fades again against Andrew's decision. drive219 N4 grades it live.",
+   "fix_id": "label-switch-1297",
+   "id": "labelswitch1297-clone-no-ramp",
+   "pattern": "'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1]",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/engine.js",
+   "fix": "Beta 1.297 (label-switch-1297): the title spec carries no 15-16 fade-out stops - the opacity expression ends at the 12.62 fade-in stop, so the titles hold full strength until the 15.2 cap removes them (the instant switch). The 12.6 fade-in itself is untouched per Andrew's scope ruling. drive219 V2 grades the swap live.",
+   "fix_id": "label-switch-1297",
+   "id": "labelswitch1297-title-no-ramp",
+   "pattern": ", 15, 1, 16, 0]",
+   "type": "grep_absent"
   }
  ]
 }

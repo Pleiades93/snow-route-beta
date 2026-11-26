@@ -36,8 +36,8 @@
 // drive). Fail-first baseline: on the Beta 1.262 tree checks 2, 3, 4, 7,
 // 8 and 9 fail (cap present, band split present, heal present, hook
 // absent, residue absent).
-// Beta 1.294 premise update: the handover caps the titles at 16 with
-// the spec fade (check 2), rebuilds the clones (check 5), R1 at 250 (6).
+// Beta 1.297 premise update: the handover is an instant switch at
+// 15.2 - cap 15.2, no fade stops (check 2); clones start at 15.2.
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -67,10 +67,10 @@ check('1: the labelpts source is created once from LABELPTS in addStack (never r
   engine.includes("const id = 'streetnamespt' + t;") &&
   engine.includes('function nudgeFifth()') && engine.includes('function assignTiers()'));
 
-// ---------- (2) the cap - Beta 1.294 handover (was: NO cap, pre-1.294) ----------
-check('2: the title layers are capped at maxzoom 16 and fade out across 15-16 in the spec (Beta 1.294 premise update: the handover supersedes the restored no-cap form)',
-  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 16, filter:') &&
-  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0]"));
+// ---------- (2) the cap - Beta 1.297 instant switch (was: 15-16 fade) ----------
+check('2: the title layers are capped at maxzoom 15.2 and the spec opacity carries no 15-16 fade stops (Beta 1.297 premise update: the instant switch supersedes the 1.294 fade band; the 12.6 fade-in is untouched)',
+  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter:') &&
+  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]"));
 
 // ---------- (3) the exclusion restored at every zoom; the split deleted ----------
 check("3: glUnifyLabels sets the pre-1.258 exclusion (stock kind filter AND name not in ROUTE_TILE_NAMES) on the originals under the blanket 13-24 zoom range, with the day readability paint - and no '-pre15' band exists anywhere in parts (Beta 1.265 premise update: the exclusion literal is now built once as exclF and applied under the create-mode condition - outside create mode the computed filter is this same shape; proof-1265 pins the condition)",
@@ -96,8 +96,8 @@ check("5: the '-route' clone layers are removed at the top of the label pass and
 // ---------- (6) THE NAMED EXCEPTION: R1 ----------
 check("6: R1 symbol-spacing is owned in glUnifyLabels at the top of the road branch, value 250 (Beta 1.294 premise update: Andrew re-picked the repetition on 2026-11-24; the write now covers the originals and the handover clones)",
   app2.includes("setL(L.id, 'symbol-spacing', 250);") &&
-  app2.includes('LABEL RULE: titles name the route below 15') &&
-  app2.indexOf("setL(L.id, 'symbol-spacing', 250);") > app2.indexOf('LABEL RULE: titles name the route below 15'));
+  app2.includes('LABEL RULE: titles name the route below 15.2') &&
+  app2.indexOf("setL(L.id, 'symbol-spacing', 250);") > app2.indexOf('LABEL RULE: titles name the route below 15.2'));
 
 // ---------- (7) the heal is retired ----------
 check('7: the standing heal is gone - no armTitleHeal, no titleCamSig, no init call in the engine',

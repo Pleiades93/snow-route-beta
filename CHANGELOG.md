@@ -1,5 +1,16 @@
 # Changelog
 
+## Beta 1.297 — 2026-11-25
+
+Two map-transition fixes Andrew decided on 2026-11-25. (1) Street-name handover: the switch from the app's centred route titles to the basemap's own names is
+now instant at zoom 15.2 - the Beta 1.294 fade across 15-16 is gone. The titles end at maxzoom 15.2 with no fade stops in their spec (their low-zoom fade-in at
+12.6 is unchanged, exactly as shipped), and the route-only basemap clones start at the same 15.2 with no fade ramp. (2) Route-load transition: the intro dwell
+before the fly-in drops from 1500 ms to 800 ms, so the flight starts right as the menu and splash finish closing instead of about 700 ms after them. The
+flight itself is unchanged (same wide jump, same 3000 ms flyTo, same pitch and curve), and the destination tile prefetch keeps the head start that fits
+inside the shorter dwell.
+
+Editorial: this entry; What's New replaced with the handover and load lines; the #ver label reads Beta 1.297. plus 2 maintenance PRs since Beta 1.296.
+
 ## Beta 1.296 — 2026-11-25
 
 The pop-up round, from Andrew's notification audit (86 pop-ups reviewed; the bar: absolutely critical only). (1) The cull: 54 pop-ups are gone - hints, suggestions,

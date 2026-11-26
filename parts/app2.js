@@ -36,7 +36,8 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
-    // route names get their own label-layer copies (from 15, fading in 15-16): a filter cannot key on zoom
+    // route names get their own label-layer copies (from 15.2, no fade): a filter cannot key on zoom
+    const routeLabelMinZoom = 15.2;
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // no-op guards: this pass runs on every stack build, and a mutation re-triggers symbol placement - skip matches
@@ -52,11 +53,10 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
         const specL = (spec.layers || []).find(x => x.id === baseId);
         if (specL) {
           const clone = JSON.parse(JSON.stringify(specL));
-          clone.id = cloneId; clone.minzoom = 15; clone.maxzoom = 24;
+          clone.id = cloneId; clone.minzoom = routeLabelMinZoom; clone.maxzoom = 24;
           const baseF0 = specL.filter ? convF(specL.filter) : null;
           const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
           clone.filter = baseF0 ? ['all', baseF0, routeF] : routeF;
-          clone.paint = Object.assign({}, clone.paint, { 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1] });
           const live = m.getStyle().layers; const at = live.findIndex(x => x.id === baseId);
           const beforeId = at >= 0 && live[at + 1] ? live[at + 1].id : undefined; // the clone seats right after its base, so a remove-and-rebuild restores the same layer order
           try { m.addLayer(clone, beforeId); } catch (e2) {}
@@ -86,9 +86,9 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
       }
       if (kind === 'road') {
         const isClone = id === 'roads_labels_major-route' || id === 'roads_labels_minor-route';
-        if (isClone) { if ((L.minzoom || 0) !== 15 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 15, 24); }
+        if (isClone) { if ((L.minzoom || 0) !== routeLabelMinZoom || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, routeLabelMinZoom, 24); }
         else if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // guard: same no-op rule as setL/setP
-        // LABEL RULE: titles name the route below 15, fade out across 15-16; clones take route names over from 15
+        // LABEL RULE: titles name the route below 15.2; clones take route names over from 15.2
         setL(L.id, 'symbol-spacing', 250); // Andrew re-picked 250 on 2026-11-24: names repeat sooner when zoomed in.
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
           // while creating, the exclusion is simply not added (every street named); `creating` is the single condition

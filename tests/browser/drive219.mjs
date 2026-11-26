@@ -4,12 +4,12 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 1, mobile: true }, S); // this lane grades presence and paint, not pixels: at the harness's retina factor the software-rendered headless map eats the main thread and the 50 ms sampler starves to a few ticks a second (measured), which would stretch the very timings under grade. At factor 1 the sampler holds its 50 ms median (measured).
 
 // drive219: the title lane. Phase 0 grades the shipped ON state, the
-// middle phases centred spec-fixed titles, phase V the zoom 15-16
-// handover, phase Z the forced-off contract.
+// middle phases centred spec-fixed titles, phase V the zoom 15.2
+// instant switch, phase Z the forced-off contract.
 // Settled-frame rule: names are judged only over samples at or after the
 // flight's moveend (mid-flight, the wide view legitimately loses names).
 // The lane grades that the app never dims or hides an ORIGINAL basemap
-// layer (A5, B1); the clones' own spec fade is graded as its own group.
+// layer (A5, B1); the clones are graded as their own group.
 // Theme-swap limit (flagged, not fixed): setStyle recreates labelpts, so
 // source identity breaks at a swap; the centre spec survives as layer
 // spec and phase B grades exactly that boundary.
@@ -146,12 +146,15 @@ ok('N2 THE TITLE BUILD IS LIVE AS SHIPPED: the labelpts source carries the full 
 ok('N3 THE ORIGINALS EXCLUDE ROUTE NAMES as shipped: both road-label filters carry the exclusion (the route names are inlined inside it) - major filter names Valeria Boulevard: ' + ((N['roads_labels_major'] || {}).filt || '').includes('Valeria Boulevard') + ', minor filter: ' + ((N['roads_labels_minor'] || {}).filt || '').includes('Valeria Boulevard'),
   !!N['roads_labels_major'] && (N['roads_labels_major'].filt || '').includes('Valeria Boulevard') && (N['roads_labels_major'].filt || '').includes('"!"') &&
   !!N['roads_labels_minor'] && (N['roads_labels_minor'].filt || '').includes('Valeria Boulevard') && (N['roads_labels_minor'].filt || '').includes('"!"'));
-ok('N4 THE HANDOVER CLONES EXIST AS SHIPPED with their shape: both -route layers present from minzoom 15, route-only filters (they name Valeria Boulevard with NO exclusion marker), and the spec fade in across 15-16 (major clone: ' + JSON.stringify(N['roads_labels_major-route']) + ', minor clone: ' + JSON.stringify(N['roads_labels_minor-route']) + ')',
+ok('N4 THE HANDOVER CLONES EXIST AS SHIPPED with their shape: both -route layers present from minzoom 15.2, route-only filters ' +
+  '(they name Valeria Boulevard with NO exclusion marker), and NO spec fade ramp (major clone: ' + JSON.stringify(N['roads_labels_major-route']) +
+  ', minor clone: ' + JSON.stringify(N['roads_labels_minor-route']) + ')',
   !!N['roads_labels_major-route'] && !!N['roads_labels_minor-route'] &&
-  N['roads_labels_major-route'].min === 15 && N['roads_labels_minor-route'].min === 15 &&
+  N['roads_labels_major-route'].min === 15.2 && N['roads_labels_minor-route'].min === 15.2 &&
   (N['roads_labels_major-route'].filt || '').includes('Valeria Boulevard') && !(N['roads_labels_major-route'].filt || '').includes('"!"') &&
   (N['roads_labels_minor-route'].filt || '').includes('Valeria Boulevard') && !(N['roads_labels_minor-route'].filt || '').includes('"!"') &&
-  (N['roads_labels_major-route'].op || '').includes('15,0,16,1') && (N['roads_labels_minor-route'].op || '').includes('15,0,16,1'));
+  !(N['roads_labels_major-route'].op || '').includes('15,0') && !(N['roads_labels_major-route'].op || '').includes('16,1') &&
+  !(N['roads_labels_minor-route'].op || '').includes('15,0') && !(N['roads_labels_minor-route'].op || '').includes('16,1'));
 ok('N5 THE REPETITION IS 250 ON ALL FOUR ROAD-LABEL LAYERS (Andrew\'s 2026-11-24 re-pick): major ' + (N['roads_labels_major'] || {}).spacing + ', minor ' + (N['roads_labels_minor'] || {}).spacing + ', major clone ' + (N['roads_labels_major-route'] || {}).spacing + ', minor clone ' + (N['roads_labels_minor-route'] || {}).spacing,
   N['roads_labels_major'] && N['roads_labels_major'].spacing === 250 && N['roads_labels_minor'] && N['roads_labels_minor'].spacing === 250 &&
   N['roads_labels_major-route'] && N['roads_labels_major-route'].spacing === 250 && N['roads_labels_minor-route'] && N['roads_labels_minor-route'].spacing === 250);
@@ -350,7 +353,7 @@ ok('U3 THE TOUR: zoom in, back out to the fit and a pan - across every leg: zero
 
 // ================= Phase V: the handover, graded on the zoom journey =================
 // Same page as phase U. A two-leg zoom to 17 with a held stop at 15.5:
-// both fades are caught mid-band as a standing state, not a chase.
+// Beta 1.297 grades the crossing as an instant swap - no mid-band state.
 const vBaseOk = await poll(`(() => { try { const last = window.__li.samples[window.__li.samples.length - 1]; return !!last && last.titles.length >= 30 && last.clone.length === 0; } catch (e) { return false; } })()`, 30000); // the fit-view state itself, polled: the sampler starves under load, so a single read (or a windowed max, which reaches back across camera moves) cannot grade a standing state
 const vBase = await J(`(() => { const last = window.__li.samples[window.__li.samples.length - 1]; return last ? { titles: last.titles.length, clone: last.clone.length } : { titles: 0, clone: -1 }; })()`);
 const vFrom = await J(`window.__li.samples.length`);
@@ -368,9 +371,16 @@ const vTop = await J(`(() => { const pick = (ids) => ids.filter((id) => map.getL
 console.log('drive219 V: baseline titles ' + vBase.titles + ' clone ' + vBase.clone + ', mid-band samples titles ' + vMidT.length + ' clone ' + vMidC.length + ' of ' + vWindow.length + ', at 17: ' + JSON.stringify(vTop));
 ok('V1 THE FAR SIDE OF THE HANDOVER AT BASELINE: at the fit view the titles carry the route (placed: ' + vBase.titles + ', state poll: ' + vBaseOk + ') and the clones render nothing (clone names: ' + vBase.clone + ') - below 15 the basemap route copies stand silent by their spec',
   vBaseOk === true && vBase.clone === 0);
-ok('V2 BOTH FADES ARE CAUGHT MID-BAND on the journey to 17: samples with the titles group strictly between fully on and fully off: ' + vMidT.length + ', samples with the clone group strictly between: ' + vMidC.length + ' (window samples: ' + vWindow.length + ') - the crossover is a fade, not a swap, on both sides',
-  vMidT.length >= 1 && vMidC.length >= 1);
-ok('V3 THE CLOSE SIDE AT ZOOM 17: the titles render NOTHING (rendered: ' + vTop.titles + ' - the maxzoom cap, not a fade tail), the clones carry the route names (route names on the clones: ' + vTop.cloneRoute + ' of ' + vTop.cloneAll + ' clone names), the originals still render no route name (route names on the originals: ' + vTop.origRoute + ') and still exclude (major filter carries the exclusion: ' + (vTop.filt['roads_labels_major'] || '').includes('"!"') + ', minor: ' + (vTop.filt['roads_labels_minor'] || '').includes('"!"') + ') - above 16 the map reads like a normal map and no street prints twice',
+ok('V2 THE CROSSOVER IS A SWAP, NOT A FADE (Beta 1.297, inverted from the 1.294 fade claim): samples with either group strictly ' +
+  'between fully on and fully off: titles ' + vMidT.length + ', clones ' + vMidC.length + ' (window samples: ' + vWindow.length +
+  '), and the window really crossed (best titles sample: ' + Math.max(0, ...vWindow.map((s) => (s.titles || []).length)) +
+  ', best clone sample: ' + Math.max(0, ...vWindow.map((s) => (s.clone || []).length)) + ') - at 15.2 both sides change state at once, no in-between',
+  vMidT.length === 0 && vMidC.length === 0 && vWindow.some((s) => (s.titles || []).length >= 30) && vWindow.some((s) => (s.clone || []).length >= 1));
+ok('V3 THE CLOSE SIDE AT ZOOM 17: the titles render NOTHING (rendered: ' + vTop.titles + ' - the maxzoom cap, not a fade tail), ' +
+  'the clones carry the route names (route names on the clones: ' + vTop.cloneRoute + ' of ' + vTop.cloneAll + ' clone names), ' +
+  'the originals still render no route name (route names on the originals: ' + vTop.origRoute + ') and still exclude ' +
+  '(major filter carries the exclusion: ' + (vTop.filt['roads_labels_major'] || '').includes('"!"') + ', minor: ' +
+  (vTop.filt['roads_labels_minor'] || '').includes('"!"') + ') - above 15.2 the map reads like a normal map and no street prints twice',
   vTop.titles === 0 && vTop.cloneRoute >= 1 && vTop.origRoute === 0 &&
   (vTop.filt['roads_labels_major'] || '').includes('"!"') && (vTop.filt['roads_labels_minor'] || '').includes('"!"'));
 await ev(`(() => { map.zoomTo(${uFit.z}, { duration: 1200 }); return true; })()`);

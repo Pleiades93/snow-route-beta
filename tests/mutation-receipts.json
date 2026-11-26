@@ -14942,6 +14942,89 @@
    "red": "gate fixtures 97 pass 3 fail with the gate disconnected; the repetitive-file case counts 401 added lines for a one-line change with autojunk on (git counts 1)",
    "green": "gate fixtures 102 pass 0 fail; unit plants: one changed line counts as one, matching git; all planted violations still refuse",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "round3-1297-proof-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "00273d42c7b85440eb1d360de39aa1e681319debbf765bef7743e89236352d79",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): titles capped at maxzoom 16 with the 15-16 fade stops; LABEL RULE comment at 15",
+   "red": "on base parts: FAIL check 2 (cap/fade form) and check 6 (LABEL RULE anchor at 15); 11 passed, 2 failed",
+   "green": "on the 1.297 tree: proof-1263 passes inside run-proofs 94/94",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-anchors",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "537d35d650ba997c6c9425e930838fa86f8c7dd0df7bb0968018f28057885e4e",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): title cap 16 with fade stops; clones from minzoom 15 with the 15-16 fade ramp",
+   "red": "on base parts: FAIL 4a and 4b only; 12 passed, 2 failed",
+   "green": "on the 1.297 tree: proof-anchors passes inside run-proofs 94/94",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-green-half-road",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "91ab3d4bb10b3088ea0109c6625ec850f6671688d7109f31acd9e03b2cf05af3",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): title layers capped at maxzoom 16",
+   "red": "on base parts: FAIL R4 (maxzoom 16 pin) only; 1 check failed",
+   "green": "on the 1.297 tree: proof-green-half-road passes inside run-proofs 94/94",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive130",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive130.mjs": "3166e4666272b3fe6dac26d20ffc86c270484c5fd7fc9b45ecb90f3f49173c16",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): titles capped at 16 with the fade stops; clones from 15 with the ramp",
+   "red": "on base parts: 9/11 - FAIL L2 (opacity carries 15,1 and 16,0 stops, maxzoom 16) and L3 (clone minzoom 15, ramp present)",
+   "green": "on the 1.297 tree: drive130 11/11 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive214",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive214.mjs": "1e5d24b101b2ee9a2a479379c72464d44298b75a8e4e22f9704d5f38cd14f9f1",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): titles render at 15.7 inside the fade; title maxzoom 16; clone minzoom 15",
+   "red": "on base parts: 24/26 - FAIL M3 (13 title features at 15.7) and M4 (titleMax 16, cloneMin 15)",
+   "green": "on the 1.297 tree: drive214 26/26 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "8d707c6504826a52ca387f3eff222cee86b4566afc5d28d9dfee764e031f96e3",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): clones from minzoom 15 with the 15-16 spec fade; titles fading across 15-16",
+   "red": "on base parts: 36/38 - FAIL N4 (clone min 15, ramp 15,0,16,1) and V2 (13 mid-band samples on each group across the journey)",
+   "green": "on the 1.297 tree: drive219 38/38 PASS (V2: zero mid-band samples, window crossed)",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }
