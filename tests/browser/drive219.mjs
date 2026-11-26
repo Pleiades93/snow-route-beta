@@ -222,13 +222,8 @@ ok('A6 THE SYNC AT THE SETTLED FRAME: titles and basemap road names complete in 
 // ================= Phase F: movement after the load-in (same page) =================
 const fTears0 = A.tears.length;
 const fToken = srcTokens(A.samples)[0];
-// The pan waits for the placement to COMPLETE, not just cross 30 titles:
-// with the 800 ms dwell (Beta 1.297) the flight launches before the
-// prefetch has warmed the fit view on a slow rig, and the marginal
-// titles are still churning when the pan used to start - F1 read their
-// churn as pan losses twice in the round-3 investigation, while the
-// 1500 ms tree passed. Stable = the same title set across samples at
-// least 500 ms apart, the phase-U completion rule applied here.
+// The pan waits for a stable title set (the same set across samples
+// at least 500 ms apart): unfinished load-in churn is not a pan loss.
 await poll(`(() => { try { const s = window.__li.samples; if (s.length < 2) return false; const a = s[s.length - 1];
   for (let i = s.length - 2; i >= 0; i--) { if (a.t - s[i].t >= 500) { const b = s[i];
     return a.titles.length >= 30 && b.titles.length === a.titles.length && a.titles.every((n) => b.titles.includes(n)); } }
@@ -383,14 +378,8 @@ const V = await J(`window.__li`);
 const vWindow = V.samples.slice(vFrom);
 const vMidT = vWindow.filter((s) => s.groups && s.groups.titles && s.groups.titles.effMax > 0.05 && s.groups.titles.effMax < 0.95);
 const vMidC = vWindow.filter((s) => s.groups && s.groups.clone && s.groups.clone.effMax > 0.05 && s.groups.clone.effMax < 0.95);
-// Rendered continuity (Codex P1 on PR #220, sustained): the effMax
-// counts above read paint spec only - effOf ignores zoom-range
-// eligibility, so a cap/floor GAP would still read 1/1 and pass. The
-// held stop at 15.5 is the rendered read that can see a gap: above
-// the switch and settled, the clones must already carry route names
-// while the titles render none (vMidStop, polled at the stop above).
-// A raw both-empty sample run was tried first and discarded: under
-// tile starvation it fires on the correct tree too.
+// effOf reads paint spec only, not zoom range; the held-stop read
+// (vMidStop, polled at the 15.5 stop above) is what sees a gap.
 const vTop = await J(`(() => { const pick = (ids) => ids.filter((id) => map.getLayer(id)); const names = (ids) => { const s = new Set(); if (ids.length) for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return [...s]; }; const tN = names(pick(['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'])); const cN = names(pick(['roads_labels_major-route', 'roads_labels_minor-route'])); const oN = names(pick(['roads_labels_major', 'roads_labels_minor'])); const filt = {}; for (const id of ['roads_labels_major', 'roads_labels_minor']) { const L = map.getStyle().layers.find((x) => x.id === id); filt[id] = L && L.filter ? JSON.stringify(L.filter) : ''; } return { titles: tN.length, cloneRoute: cN.filter((n) => ROUTE_TILE_NAMES.includes(n)).length, cloneAll: cN.length, origRoute: oN.filter((n) => ROUTE_TILE_NAMES.includes(n)).length, filt, zoom: map.getZoom() }; })()`);
 console.log('drive219 V: baseline titles ' + vBase.titles + ' clone ' + vBase.clone + ', mid-band samples titles ' + vMidT.length + ' clone ' + vMidC.length + ' of ' + vWindow.length + ', at 17: ' + JSON.stringify(vTop));
 ok('V1 THE FAR SIDE OF THE HANDOVER AT BASELINE: at the fit view the titles carry the route (placed: ' + vBase.titles + ', state poll: ' + vBaseOk + ') and the clones render nothing (clone names: ' + vBase.clone + ') - below 15 the basemap route copies stand silent by their spec',
