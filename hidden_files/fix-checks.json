@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "2248feee674594995549ef0e3c7c9f36582f3074c18de213f99eef144237f84a",
+  "canonical_registry_sha256": "3ade0eaafd5ca9b32cad06fcc93848e60e1ebe31ef1eea97b2d994b3eb4c6f28",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1564,
-   "included": 1534,
+   "canonical": 1565,
+   "included": 1535,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13661,6 +13661,15 @@
    "fix_id": "te-e2e-launch-retry",
    "id": "te-e2e-launch-retry",
    "pattern": "chrome launch failed after 3 attempts",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/selftest-runner.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): the runner self-test prints fixture-startups captured output on failure - six evidence-free burns made the fixture undiagnosable.",
+   "fix_id": "te-fixture-startup-diag",
+   "id": "te-fixture-startup-diag",
+   "pattern": "fixture-startup r1 status",
    "type": "grep_present"
   }
  ]
