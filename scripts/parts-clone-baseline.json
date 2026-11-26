@@ -11,40 +11,40 @@
   ],
   "pairs": [
     [
-      "parts/app1.js/clearStreet@e6bd0530/<callback>@86cbda80",
-      "parts/app1.js/clearedSides@4f0fbec6/<callback>@86cbda80"
+      "parts/app1.js/clearStreet/<callback>@86cbda80",
+      "parts/app1.js/clearedSides/<callback>@86cbda80"
     ],
     [
-      "parts/app1.js/clearStreet@e6bd0530/<callback>@86cbda80",
-      "parts/app1.js/zeroMarks@12f81911/<callback>@86cbda80"
+      "parts/app1.js/clearStreet/<callback>@86cbda80",
+      "parts/app1.js/zeroMarks/<callback>@86cbda80"
     ],
     [
-      "parts/app1.js/clearStreet@e6bd0530/<callback>@86cbda80",
+      "parts/app1.js/clearStreet/<callback>@86cbda80",
       "parts/create-pick.js/crAlongSorter/<callback>@86cbda80"
     ],
     [
-      "parts/app1.js/clearedSides@4f0fbec6/<callback>@86cbda80",
-      "parts/app1.js/zeroMarks@12f81911/<callback>@86cbda80"
+      "parts/app1.js/clearedSides/<callback>@86cbda80",
+      "parts/app1.js/zeroMarks/<callback>@86cbda80"
     ],
     [
-      "parts/app1.js/clearedSides@4f0fbec6/<callback>@86cbda80",
+      "parts/app1.js/clearedSides/<callback>@86cbda80",
       "parts/create-pick.js/crAlongSorter/<callback>@86cbda80"
+    ],
+    [
+      "parts/app1.js/completeFinishCleanup/<callback:every>/<callback>@8851ab58",
+      "parts/app1.js/reconcileInterruptedFinish/<callback:every>/<callback>@8851ab58"
     ],
     [
       "parts/app1.js/completeFinishCleanup/<callback>@290ed66f",
       "parts/app1.js/reconcileInterruptedFinish/<callback>@290ed66f"
     ],
     [
-      "parts/app1.js/completeFinishCleanup/<callback>@290ed66f/<callback>@8851ab58",
-      "parts/app1.js/reconcileInterruptedFinish/<callback>@290ed66f/<callback>@8851ab58"
-    ],
-    [
-      "parts/app1.js/completeStreet@88072846/<callback>@bbb2cc57",
+      "parts/app1.js/completeStreet/<callback>@bbb2cc57",
       "parts/app4.js/mergeRestoreEntries/<callback>@bbb2cc57"
     ],
     [
       "parts/app1.js/dpMedian/<callback>@73d5649a",
-      "parts/engine.js/<callback>@5f16c8ff/mergeStrands/<callback>@73d5649a"
+      "parts/engine.js/<callback>/mergeStrands/<callback>@73d5649a"
     ],
     [
       "parts/app1.js/finishJunctionCuts/<callback>@07176498",
@@ -60,7 +60,7 @@
     ],
     [
       "parts/app1.js/finishJunctionCuts/<callback>@07176498",
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498"
+      "parts/app3.js/dur/<callback>@07176498"
     ],
     [
       "parts/app1.js/finishJunctionCuts/<callback>@07176498",
@@ -68,15 +68,15 @@
     ],
     [
       "parts/app1.js/finishJunctionCuts/<callback>@07176498",
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498"
+      "parts/app4.js/plan/pushField/<callback>@07176498"
     ],
     [
       "parts/app1.js/finishJunctionCuts/<callback>@07176498",
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498"
+      "parts/create-pick.js/setChosen/<callback>@07176498"
     ],
     [
       "parts/app1.js/finishJunctionCuts/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
       "parts/app1.js/loadRouteState/<callback>@07176498",
@@ -88,7 +88,7 @@
     ],
     [
       "parts/app1.js/loadRouteState/<callback>@07176498",
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498"
+      "parts/app3.js/dur/<callback>@07176498"
     ],
     [
       "parts/app1.js/loadRouteState/<callback>@07176498",
@@ -96,15 +96,15 @@
     ],
     [
       "parts/app1.js/loadRouteState/<callback>@07176498",
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498"
+      "parts/app4.js/plan/pushField/<callback>@07176498"
     ],
     [
       "parts/app1.js/loadRouteState/<callback>@07176498",
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498"
+      "parts/create-pick.js/setChosen/<callback>@07176498"
     ],
     [
       "parts/app1.js/loadRouteState/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
       "parts/app1.js/nextSunBoundary/<callback>@07176498",
@@ -112,7 +112,7 @@
     ],
     [
       "parts/app1.js/nextSunBoundary/<callback>@07176498",
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498"
+      "parts/app3.js/dur/<callback>@07176498"
     ],
     [
       "parts/app1.js/nextSunBoundary/<callback>@07176498",
@@ -120,15 +120,15 @@
     ],
     [
       "parts/app1.js/nextSunBoundary/<callback>@07176498",
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498"
+      "parts/app4.js/plan/pushField/<callback>@07176498"
     ],
     [
       "parts/app1.js/nextSunBoundary/<callback>@07176498",
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498"
+      "parts/create-pick.js/setChosen/<callback>@07176498"
     ],
     [
       "parts/app1.js/nextSunBoundary/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
       "parts/app1.js/ptSegM",
@@ -140,7 +140,7 @@
     ],
     [
       "parts/app1.js/segLenM",
-      "parts/engine.js/<callback>@5f16c8ff/segLenM"
+      "parts/engine.js/<callback>/segLenM"
     ],
     [
       "parts/app1.js/sliceLine/at",
@@ -148,10 +148,10 @@
     ],
     [
       "parts/app1.js/sliceLine/at",
-      "parts/engine.js/<callback>@5f16c8ff/splitBoundaryEnd/sub/at"
+      "parts/engine.js/<callback>/splitBoundaryEnd/sub/at"
     ],
     [
-      "parts/app1.js/zeroMarks@12f81911/<callback>@86cbda80",
+      "parts/app1.js/zeroMarks/<callback>@86cbda80",
       "parts/create-pick.js/crAlongSorter/<callback>@86cbda80"
     ],
     [
@@ -184,7 +184,7 @@
     ],
     [
       "parts/app2.js/addReferenceLayers/<callback>@33767d65",
-      "parts/engine.js/<callback>@5f16c8ff/GJ/<callback>@33767d65"
+      "parts/engine.js/<callback>/GJ/<callback>@33767d65"
     ],
     [
       "parts/app2.js/glUnifyLabels/<callback>@1c32a67f",
@@ -196,11 +196,11 @@
     ],
     [
       "parts/app2.js/makeSheetDraggable/end/<callback>@8a870b04",
-      "parts/create-pick.js/<callback>@4c7e28cb/up/<callback>@8a870b04"
+      "parts/create-pick.js/<callback>/up/<callback>@8a870b04"
     ],
     [
       "parts/app2.js/makeSheetDraggable/end/settleClose/<callback>@50caf923",
-      "parts/create-pick.js/<callback>@4c7e28cb/up/<callback>@50caf923"
+      "parts/create-pick.js/<callback>/up/<callback>@50caf923"
     ],
     [
       "parts/app2.js/pickFontFromStyle/<callback>@403d7d11",
@@ -211,20 +211,20 @@
       "parts/create-pick.js/crPoiFont/<callback>@fe5870a4"
     ],
     [
-      "parts/app2.js/renderStreets/<callback>@2c333f71/<callback>@c82abfe7",
-      "parts/app2.js/renderStreets/<callback>@2c333f71/<callback>@c82abfe7#2"
+      "parts/app2.js/renderStreets/<callback:forEach>/<callback>@c82abfe7",
+      "parts/app2.js/renderStreets/<callback:forEach>/<callback>@c82abfe7#2"
     ],
     [
       "parts/app2.js/streetHalf/<callback>@f941f16d",
-      "parts/app3.js/boardHasMarks/<callback>@6185fce1/<callback>@f941f16d"
+      "parts/app3.js/boardHasMarks/<callback:some>/<callback>@f941f16d"
     ],
     [
-      "parts/app3.js/<callback>@39fbb6cd/<callback>@88acd1ea",
-      "parts/app3.js/<callback>@39fbb6cd/<callback>@88acd1ea#2"
+      "parts/app3.js/<callback:onMapReady>#2/<callback>@88acd1ea",
+      "parts/app3.js/<callback:onMapReady>#2/<callback>@88acd1ea#2"
     ],
     [
       "parts/app3.js/buildSnap/<callback>@07176498",
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498"
+      "parts/app3.js/dur/<callback>@07176498"
     ],
     [
       "parts/app3.js/buildSnap/<callback>@07176498",
@@ -232,19 +232,19 @@
     ],
     [
       "parts/app3.js/buildSnap/<callback>@07176498",
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498"
+      "parts/app4.js/plan/pushField/<callback>@07176498"
     ],
     [
       "parts/app3.js/buildSnap/<callback>@07176498",
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498"
+      "parts/create-pick.js/setChosen/<callback>@07176498"
     ],
     [
       "parts/app3.js/buildSnap/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
       "parts/app3.js/buildSnap/<callback>@7fe40360",
-      "parts/app3.js/dur@4ca3c6f0/<callback>@7fe40360"
+      "parts/app3.js/dur/<callback>@7fe40360"
     ],
     [
       "parts/app3.js/buildSnap/<callback>@7fe40360",
@@ -255,27 +255,27 @@
       "parts/app4.js/buildReport/<callback>@a6328fc8"
     ],
     [
-      "parts/app3.js/count@f883c967/<callback>@01eaaca4",
-      "parts/app3.js/detail@1fd3c388/<callback>@01eaaca4"
+      "parts/app3.js/count/<callback>@01eaaca4",
+      "parts/app3.js/detail/<callback>@01eaaca4"
     ],
     [
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498",
+      "parts/app3.js/dur/<callback>@07176498",
       "parts/app4.js/buildReport/<callback>@07176498"
     ],
     [
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498",
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498"
+      "parts/app3.js/dur/<callback>@07176498",
+      "parts/app4.js/plan/pushField/<callback>@07176498"
     ],
     [
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498",
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498"
+      "parts/app3.js/dur/<callback>@07176498",
+      "parts/create-pick.js/setChosen/<callback>@07176498"
     ],
     [
-      "parts/app3.js/dur@4ca3c6f0/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/app3.js/dur/<callback>@07176498",
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
-      "parts/app3.js/dur@4ca3c6f0/<callback>@7fe40360",
+      "parts/app3.js/dur/<callback>@7fe40360",
       "parts/app4.js/buildReport/<callback>@7fe40360"
     ],
     [
@@ -284,7 +284,7 @@
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
-      "parts/app4.js/<callback>@6b957886/releasePack"
+      "parts/app4.js/<callback:addEventListener>#8/releasePack"
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
@@ -292,15 +292,15 @@
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
+      "parts/app5.js/<callback:then>#2/<callback>@73477076"
+    ],
+    [
+      "parts/app3.js/startCompass/<callback>@73477076",
+      "parts/app5.js/<callback>/<callback>@73477076"
+    ],
+    [
+      "parts/app3.js/startCompass/<callback>@73477076",
       "parts/app5.js/<callback>@73477076"
-    ],
-    [
-      "parts/app3.js/startCompass/<callback>@73477076",
-      "parts/app5.js/<callback>@89eda22f/<callback>@73477076"
-    ],
-    [
-      "parts/app3.js/startCompass/<callback>@73477076",
-      "parts/app5.js/<callback>@bae0d943/<callback>@73477076"
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
@@ -311,68 +311,68 @@
       "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
-      "parts/app4.js/<callback>@102813b6/updDone",
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@076a7f70",
+      "parts/app5.js/<callback:then>#2/<callback>@076a7f70"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@f95dff62",
+      "parts/app5.js/<callback:then>#2/<callback>@f95dff62"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde",
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde#2"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde",
+      "parts/app4.js/<callback:addEventListener>#8/hrefOf"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde",
+      "parts/app5.js/migratePack/<callback>@f9ea6fde"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde#2",
+      "parts/app4.js/<callback:addEventListener>#8/hrefOf"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/<callback>@f9ea6fde#2",
+      "parts/app5.js/migratePack/<callback>@f9ea6fde"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/hrefOf",
+      "parts/app5.js/migratePack/<callback>@f9ea6fde"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app4.js/doRestore/<callback>@73477076"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app5.js/<callback:then>#2/<callback>@73477076"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app5.js/<callback>/<callback>@73477076"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app5.js/<callback>@73477076"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app5.js/migratePack/migRelease"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#8/releasePack",
+      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
+    ],
+    [
+      "parts/app4.js/<callback:addEventListener>#9/updDone",
       "parts/app4.js/<callback>@3154897e"
     ],
     [
       "parts/app4.js/<callback>@2eddf373",
       "parts/app4.js/<callback>@2eddf373#2"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/<callback>@076a7f70",
-      "parts/app5.js/<callback>@bae0d943/<callback>@076a7f70"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/<callback>@f95dff62",
-      "parts/app5.js/<callback>@bae0d943/<callback>@f95dff62"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/<callback>@f9ea6fde",
-      "parts/app4.js/<callback>@6b957886/<callback>@f9ea6fde#2"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/<callback>@f9ea6fde",
-      "parts/app4.js/<callback>@6b957886/hrefOf"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/<callback>@f9ea6fde",
-      "parts/app5.js/migratePack/<callback>@f9ea6fde"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/<callback>@f9ea6fde#2",
-      "parts/app4.js/<callback>@6b957886/hrefOf"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/<callback>@f9ea6fde#2",
-      "parts/app5.js/migratePack/<callback>@f9ea6fde"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/hrefOf",
-      "parts/app5.js/migratePack/<callback>@f9ea6fde"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/releasePack",
-      "parts/app4.js/doRestore/<callback>@73477076"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/releasePack",
-      "parts/app5.js/<callback>@73477076"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/releasePack",
-      "parts/app5.js/<callback>@89eda22f/<callback>@73477076"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/releasePack",
-      "parts/app5.js/<callback>@bae0d943/<callback>@73477076"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/releasePack",
-      "parts/app5.js/migratePack/migRelease"
-    ],
-    [
-      "parts/app4.js/<callback>@6b957886/releasePack",
-      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
       "parts/app4.js/<callback>@6ffa52db",
@@ -396,27 +396,27 @@
     ],
     [
       "parts/app4.js/buildReport/<callback>@07176498",
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498"
+      "parts/app4.js/plan/pushField/<callback>@07176498"
     ],
     [
       "parts/app4.js/buildReport/<callback>@07176498",
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498"
+      "parts/create-pick.js/setChosen/<callback>@07176498"
     ],
     [
       "parts/app4.js/buildReport/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
+    ],
+    [
+      "parts/app4.js/doRestore/<callback>@73477076",
+      "parts/app5.js/<callback:then>#2/<callback>@73477076"
+    ],
+    [
+      "parts/app4.js/doRestore/<callback>@73477076",
+      "parts/app5.js/<callback>/<callback>@73477076"
     ],
     [
       "parts/app4.js/doRestore/<callback>@73477076",
       "parts/app5.js/<callback>@73477076"
-    ],
-    [
-      "parts/app4.js/doRestore/<callback>@73477076",
-      "parts/app5.js/<callback>@89eda22f/<callback>@73477076"
-    ],
-    [
-      "parts/app4.js/doRestore/<callback>@73477076",
-      "parts/app5.js/<callback>@bae0d943/<callback>@73477076"
     ],
     [
       "parts/app4.js/doRestore/<callback>@73477076",
@@ -435,104 +435,104 @@
       "parts/app5.js/migratePack/<callback>@d876e56d#2"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c",
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c#2"
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c#2"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c",
       "parts/app5.js/askDeleteRoute/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c",
       "parts/app5.js/deleteRoute/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c",
       "parts/app5.js/loadRoute/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c",
       "parts/create-packs.js/initUserPacks/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c",
       "parts/create-packs.js/mergeUserPacks/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c",
       "parts/create-packs.js/uniqueRouteId/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c#2",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c#2",
       "parts/app5.js/askDeleteRoute/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c#2",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c#2",
       "parts/app5.js/deleteRoute/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c#2",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c#2",
       "parts/app5.js/loadRoute/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c#2",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c#2",
       "parts/create-packs.js/initUserPacks/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c#2",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c#2",
       "parts/create-packs.js/mergeUserPacks/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/finishPlan/<callback>@0104664c#2",
+      "parts/app4.js/plan/finishPlan/<callback>@0104664c#2",
       "parts/create-packs.js/uniqueRouteId/<callback>@0104664c"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498",
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498"
+      "parts/app4.js/plan/pushField/<callback>@07176498",
+      "parts/create-pick.js/setChosen/<callback>@07176498"
     ],
     [
-      "parts/app4.js/plan@3a1346f2/pushField/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/app4.js/plan/pushField/<callback>@07176498",
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
-      "parts/app5.js/<callback>@73477076",
-      "parts/app5.js/<callback>@89eda22f/<callback>@73477076"
-    ],
-    [
-      "parts/app5.js/<callback>@73477076",
-      "parts/app5.js/<callback>@bae0d943/<callback>@73477076"
-    ],
-    [
-      "parts/app5.js/<callback>@73477076",
-      "parts/app5.js/migratePack/migRelease"
-    ],
-    [
-      "parts/app5.js/<callback>@73477076",
-      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
-    ],
-    [
-      "parts/app5.js/<callback>@89eda22f/<callback>@73477076",
-      "parts/app5.js/<callback>@bae0d943/<callback>@73477076"
-    ],
-    [
-      "parts/app5.js/<callback>@89eda22f/<callback>@73477076",
-      "parts/app5.js/migratePack/migRelease"
-    ],
-    [
-      "parts/app5.js/<callback>@89eda22f/<callback>@73477076",
-      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
-    ],
-    [
-      "parts/app5.js/<callback>@bae0d943/<callback>@73477076",
-      "parts/app5.js/migratePack/migRelease"
-    ],
-    [
-      "parts/app5.js/<callback>@bae0d943/<callback>@73477076",
-      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
-    ],
-    [
-      "parts/app5.js/<callback>@e508362a/<callback>@c449c59a",
+      "parts/app5.js/<callback:addEventListener>#13/<callback>@c449c59a",
       "parts/app5.js/kbSync"
+    ],
+    [
+      "parts/app5.js/<callback:then>#2/<callback>@73477076",
+      "parts/app5.js/<callback>/<callback>@73477076"
+    ],
+    [
+      "parts/app5.js/<callback:then>#2/<callback>@73477076",
+      "parts/app5.js/<callback>@73477076"
+    ],
+    [
+      "parts/app5.js/<callback:then>#2/<callback>@73477076",
+      "parts/app5.js/migratePack/migRelease"
+    ],
+    [
+      "parts/app5.js/<callback:then>#2/<callback>@73477076",
+      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
+    ],
+    [
+      "parts/app5.js/<callback>/<callback>@73477076",
+      "parts/app5.js/<callback>@73477076"
+    ],
+    [
+      "parts/app5.js/<callback>/<callback>@73477076",
+      "parts/app5.js/migratePack/migRelease"
+    ],
+    [
+      "parts/app5.js/<callback>/<callback>@73477076",
+      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
+    ],
+    [
+      "parts/app5.js/<callback>@73477076",
+      "parts/app5.js/migratePack/migRelease"
+    ],
+    [
+      "parts/app5.js/<callback>@73477076",
+      "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
       "parts/app5.js/askDeleteRoute/<callback>@0104664c",
@@ -599,56 +599,56 @@
       "parts/brand-snow.js/snowLayer/ground"
     ],
     [
-      "parts/create-cache.js/crIdbDelete/<callback>@7dbebacf/<callback>@a0ed31e0",
-      "parts/create-cache.js/crIdbDelete/<callback>@7dbebacf/<callback>@a0ed31e0#2"
+      "parts/create-cache.js/crIdbDelete/<callback>/<callback>@a0ed31e0",
+      "parts/create-cache.js/crIdbDelete/<callback>/<callback>@a0ed31e0#2"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64",
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64#2"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64",
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64#2"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64",
-      "parts/create-citydata.js/crPackResolveCity/<callback>@418aa3c9/<callback>@b46c1b64"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64",
+      "parts/create-citydata.js/crPackResolveCity/<callback>/<callback>@b46c1b64"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64#2"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64#2"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64#2",
-      "parts/create-citydata.js/crPackResolveCity/<callback>@418aa3c9/<callback>@b46c1b64"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64#2",
+      "parts/create-citydata.js/crPackResolveCity/<callback>/<callback>@b46c1b64"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64#2",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64#2",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@b46c1b64#2",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64#2"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@b46c1b64#2",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64#2"
     ],
     [
-      "parts/create-cache.js/crIdbOpen/<callback>@919fc012/<callback>@c2c69d41",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@c2c69d41"
+      "parts/create-cache.js/crIdbOpen/<callback>/<callback>@c2c69d41",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@c2c69d41"
     ],
     [
-      "parts/create-cache.js/crIdbPut/<callback>@c81f2ec7/<callback>@430b6476",
-      "parts/create-cache.js/crIdbPut/<callback>@c81f2ec7/<callback>@430b6476#2"
+      "parts/create-cache.js/crIdbPut/<callback>/<callback>@430b6476",
+      "parts/create-cache.js/crIdbPut/<callback>/<callback>@430b6476#2"
     ],
     [
       "parts/create-citydata.js/crCovFold/<callback>@c0f6a4da",
       "parts/create-citydata.js/crCovMerge/<callback>@c0f6a4da"
     ],
     [
-      "parts/create-citydata.js/crPackResolveCity/<callback>@418aa3c9/<callback>@b46c1b64",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64"
+      "parts/create-citydata.js/crPackResolveCity/<callback>/<callback>@b46c1b64",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64"
     ],
     [
-      "parts/create-citydata.js/crPackResolveCity/<callback>@418aa3c9/<callback>@b46c1b64",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64#2"
+      "parts/create-citydata.js/crPackResolveCity/<callback>/<callback>@b46c1b64",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64#2"
     ],
     [
       "parts/create-fetch.js/crOverpassFetch/<callback>@59040031",
@@ -656,7 +656,7 @@
     ],
     [
       "parts/create-packs.js/computeBoundaryEnds/atD",
-      "parts/engine.js/<callback>@5f16c8ff/splitBoundaryEnd/sub/at"
+      "parts/engine.js/<callback>/splitBoundaryEnd/sub/at"
     ],
     [
       "parts/create-packs.js/computeBoundaryEnds/r6",
@@ -679,44 +679,48 @@
       "parts/create-packs.js/uniqueRouteId/<callback>@0104664c"
     ],
     [
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64",
-      "parts/create-packs.js/upIdbOpen/<callback>@5446ba3b/<callback>@b46c1b64#2"
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64",
+      "parts/create-packs.js/upIdbOpen/<callback>/<callback>@b46c1b64#2"
     ],
     [
-      "parts/create-packs.js/upTx/<callback>@626f099e/<callback>@643a668d/<callback>@77b5c9e7",
-      "parts/create-packs.js/upTx/<callback>@626f099e/<callback>@643a668d/<callback>@77b5c9e7#2"
+      "parts/create-packs.js/upTx/<callback>/<callback:then>/<callback>@77b5c9e7",
+      "parts/create-packs.js/upTx/<callback>/<callback:then>/<callback>@77b5c9e7#2"
     ],
     [
-      "parts/create-pick.js/<callback>@1978b9e1/<callback>@1c05fac9",
-      "parts/create-pick.js/chosenSet@0b60dc0a/<callback>@1c05fac9"
+      "parts/create-pick.js/<callback:addEventListener>#18/<callback>@1c05fac9",
+      "parts/create-pick.js/chosenSet/<callback>@1c05fac9"
     ],
     [
-      "parts/create-pick.js/<callback>@1978b9e1/<callback>@1c05fac9",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/localFrags/<callback>@1c05fac9"
+      "parts/create-pick.js/<callback:addEventListener>#18/<callback>@1c05fac9",
+      "parts/engine.js/<callback>/lastResortConnect/localFrags/<callback>@1c05fac9"
     ],
     [
-      "parts/create-pick.js/<callback>@6ecb277e/<callback>@a37d083d/<callback>@67ec6e38/<callback>@98dccb37",
-      "parts/create-pick.js/crSetBackdrop/<callback>@98dccb37"
-    ],
-    [
-      "parts/create-pick.js/<callback>@af5c0f38/<callback>@e33454ee",
+      "parts/create-pick.js/<callback:addEventListener>#7/<callback>@e33454ee",
       "parts/create-pick.js/crRunCitySearch/<callback>@e33454ee"
     ],
     [
-      "parts/create-pick.js/<callback>@af5c0f38/<callback>@e33454ee",
+      "parts/create-pick.js/<callback:addEventListener>#7/<callback>@e33454ee",
       "parts/create-pick.js/crRunCitySearch/<callback>@e33454ee#2"
     ],
     [
-      "parts/create-pick.js/<callback>@af5c0f38/<callback>@e33454ee",
+      "parts/create-pick.js/<callback:addEventListener>#7/<callback>@e33454ee",
       "parts/create-pick.js/crRunCityTypeahead/<callback>@e33454ee"
     ],
     [
-      "parts/create-pick.js/chosenSet@0b60dc0a/<callback>@1c05fac9",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/localFrags/<callback>@1c05fac9"
+      "parts/create-pick.js/<callback:onMapReady>/<callback:on>/<callback:some>#2/<callback>@98dccb37",
+      "parts/create-pick.js/crSetBackdrop/<callback>@98dccb37"
+    ],
+    [
+      "parts/create-pick.js/chosenSet/<callback>@1c05fac9",
+      "parts/engine.js/<callback>/lastResortConnect/localFrags/<callback>@1c05fac9"
     ],
     [
       "parts/create-pick.js/crLineLen",
-      "parts/engine.js/<callback>@5f16c8ff/segLenM"
+      "parts/engine.js/<callback>/segLenM"
+    ],
+    [
+      "parts/create-pick.js/crRunCitySearch/<callback:crCityBoxSwap>#2/<callback>@1ec3a4a0",
+      "parts/create-pick.js/crRunCityTypeahead/<callback:crCityBoxSwap>#2/<callback>@1ec3a4a0"
     ],
     [
       "parts/create-pick.js/crRunCitySearch/<callback>@e33454ee",
@@ -729,10 +733,6 @@
     [
       "parts/create-pick.js/crRunCitySearch/<callback>@e33454ee#2",
       "parts/create-pick.js/crRunCityTypeahead/<callback>@e33454ee"
-    ],
-    [
-      "parts/create-pick.js/crRunCitySearch/<callback>@eeef2fb5/<callback>@1ec3a4a0",
-      "parts/create-pick.js/crRunCityTypeahead/<callback>@a604bbb1/<callback>@1ec3a4a0"
     ],
     [
       "parts/create-pick.js/crSectorTap/<callback>@33767d65",
@@ -756,7 +756,7 @@
     ],
     [
       "parts/create-pick.js/crSectorTap/<callback>@33767d65",
-      "parts/engine.js/<callback>@5f16c8ff/GJ/<callback>@33767d65"
+      "parts/engine.js/<callback>/GJ/<callback>@33767d65"
     ],
     [
       "parts/create-pick.js/crSectorTap/<callback>@33767d65#2",
@@ -776,7 +776,7 @@
     ],
     [
       "parts/create-pick.js/crSectorTap/<callback>@33767d65#2",
-      "parts/engine.js/<callback>@5f16c8ff/GJ/<callback>@33767d65"
+      "parts/engine.js/<callback>/GJ/<callback>@33767d65"
     ],
     [
       "parts/create-pick.js/renderDraft/<callback>@33767d65",
@@ -792,7 +792,7 @@
     ],
     [
       "parts/create-pick.js/renderDraft/<callback>@33767d65",
-      "parts/engine.js/<callback>@5f16c8ff/GJ/<callback>@33767d65"
+      "parts/engine.js/<callback>/GJ/<callback>@33767d65"
     ],
     [
       "parts/create-pick.js/renderDraft/<callback>@33767d65#2",
@@ -804,11 +804,11 @@
     ],
     [
       "parts/create-pick.js/renderDraft/<callback>@33767d65#2",
-      "parts/engine.js/<callback>@5f16c8ff/GJ/<callback>@33767d65"
+      "parts/engine.js/<callback>/GJ/<callback>@33767d65"
     ],
     [
-      "parts/create-pick.js/setChosen@4b9777c1/<callback>@07176498",
-      "parts/engine.js/<callback>@5f16c8ff/assignTiers/<callback>@07176498"
+      "parts/create-pick.js/setChosen/<callback>@07176498",
+      "parts/engine.js/<callback>/assignTiers/<callback>@07176498"
     ],
     [
       "parts/create-pick.js/syncCrGlow/<callback>@33767d65",
@@ -816,187 +816,187 @@
     ],
     [
       "parts/create-pick.js/syncCrGlow/<callback>@33767d65",
-      "parts/engine.js/<callback>@5f16c8ff/GJ/<callback>@33767d65"
+      "parts/engine.js/<callback>/GJ/<callback>@33767d65"
     ],
     [
       "parts/create-pick.js/syncCrGlow/<callback>@33767d65#2",
-      "parts/engine.js/<callback>@5f16c8ff/GJ/<callback>@33767d65"
+      "parts/engine.js/<callback>/GJ/<callback>@33767d65"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/XYOf",
-      "parts/engine.js/<callback>@5f16c8ff/offsetLine/<callback>@82eaa18f"
+      "parts/engine.js/<callback>/XYOf",
+      "parts/engine.js/<callback>/offsetLine/<callback>@82eaa18f"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/<callback>@9a820ed8/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/buildJunctions/<callback>@b54abfb7/<callback>@76163de7"
+      "parts/engine.js/<callback>/bridgeStragglers/<callback:filter>/<callback>@76163de7",
+      "parts/engine.js/<callback>/buildJunctions/<callback:forEach>#2/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/<callback>@9a820ed8/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/clipStrandEnds/<callback>@8bd26b7a/<callback>@b16b139a/<callback>@76163de7"
+      "parts/engine.js/<callback>/bridgeStragglers/<callback:filter>/<callback>@76163de7",
+      "parts/engine.js/<callback>/clipStrandEnds/<callback:forEach>/<callback:forEach>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/<callback>@9a820ed8/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/fillCornerLinks/<callback>@76163de7"
+      "parts/engine.js/<callback>/bridgeStragglers/<callback:filter>/<callback>@76163de7",
+      "parts/engine.js/<callback>/fillCornerLinks/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/<callback>@9a820ed8/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/junctionPairs/<callback>@445d0c62/<callback>@76163de7"
+      "parts/engine.js/<callback>/bridgeStragglers/<callback:filter>/<callback>@76163de7",
+      "parts/engine.js/<callback>/junctionPairs/<callback:forEach>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/<callback>@9a820ed8/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@101745a6/<callback>@76163de7"
+      "parts/engine.js/<callback>/bridgeStragglers/<callback:filter>/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/<callback>@9a820ed8/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@2c13f4e4/<callback>@76163de7"
+      "parts/engine.js/<callback>/bridgeStragglers/<callback:filter>/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:map>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/revC",
-      "parts/engine.js/<callback>@5f16c8ff/mergeStrands/rev"
+      "parts/engine.js/<callback>/bridgeStragglers/revC",
+      "parts/engine.js/<callback>/mergeStrands/rev"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/bridgeStragglers/signs",
-      "parts/engine.js/<callback>@5f16c8ff/throughOK/signsOf"
+      "parts/engine.js/<callback>/bridgeStragglers/signs",
+      "parts/engine.js/<callback>/throughOK/signsOf"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildFamilies/<callback>@d9f88f5f",
-      "parts/engine.js/<callback>@5f16c8ff/buildFamilies/<callback>@d9f88f5f#2"
+      "parts/engine.js/<callback>/buildFamilies/<callback>@d9f88f5f",
+      "parts/engine.js/<callback>/buildFamilies/<callback>@d9f88f5f#2"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildFamilies/<callback>@d9f88f5f",
-      "parts/engine.js/<callback>@5f16c8ff/buildFamilies/<callback>@d9f88f5f#3"
+      "parts/engine.js/<callback>/buildFamilies/<callback>@d9f88f5f",
+      "parts/engine.js/<callback>/buildFamilies/<callback>@d9f88f5f#3"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildFamilies/<callback>@d9f88f5f#2",
-      "parts/engine.js/<callback>@5f16c8ff/buildFamilies/<callback>@d9f88f5f#3"
+      "parts/engine.js/<callback>/buildFamilies/<callback>@d9f88f5f#2",
+      "parts/engine.js/<callback>/buildFamilies/<callback>@d9f88f5f#3"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildFamilies/<callback>@fe96b0b6",
-      "parts/engine.js/<callback>@5f16c8ff/fadeFC/<callback>@fe96b0b6"
+      "parts/engine.js/<callback>/buildFamilies/<callback>@fe96b0b6",
+      "parts/engine.js/<callback>/fadeFC/<callback>@fe96b0b6"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildJunctions/<callback>@b54abfb7/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/clipStrandEnds/<callback>@8bd26b7a/<callback>@b16b139a/<callback>@76163de7"
+      "parts/engine.js/<callback>/buildJunctions/<callback:forEach>#2/<callback>@76163de7",
+      "parts/engine.js/<callback>/clipStrandEnds/<callback:forEach>/<callback:forEach>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildJunctions/<callback>@b54abfb7/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/fillCornerLinks/<callback>@76163de7"
+      "parts/engine.js/<callback>/buildJunctions/<callback:forEach>#2/<callback>@76163de7",
+      "parts/engine.js/<callback>/fillCornerLinks/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildJunctions/<callback>@b54abfb7/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/junctionPairs/<callback>@445d0c62/<callback>@76163de7"
+      "parts/engine.js/<callback>/buildJunctions/<callback:forEach>#2/<callback>@76163de7",
+      "parts/engine.js/<callback>/junctionPairs/<callback:forEach>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildJunctions/<callback>@b54abfb7/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@101745a6/<callback>@76163de7"
+      "parts/engine.js/<callback>/buildJunctions/<callback:forEach>#2/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/buildJunctions/<callback>@b54abfb7/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@2c13f4e4/<callback>@76163de7"
+      "parts/engine.js/<callback>/buildJunctions/<callback:forEach>#2/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:map>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipEndAtJunction/<callback>@b361caea/<callback>@1e84cf51",
-      "parts/engine.js/<callback>@5f16c8ff/clipEndAtJunction/<callback>@b361caea/<callback>@1e84cf51#2"
+      "parts/engine.js/<callback>/clipEndAtJunction/<callback:forEach>/<callback>@1e84cf51",
+      "parts/engine.js/<callback>/clipEndAtJunction/<callback:forEach>/<callback>@1e84cf51#2"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipOne/<callback>@2fcbc725",
-      "parts/engine.js/<callback>@5f16c8ff/clipOne/<callback>@93aef443"
+      "parts/engine.js/<callback>/clipOne/<callback>@2fcbc725",
+      "parts/engine.js/<callback>/clipOne/<callback>@93aef443"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipOne/U",
-      "parts/engine.js/<callback>@5f16c8ff/clipOne/W"
+      "parts/engine.js/<callback>/clipOne/U",
+      "parts/engine.js/<callback>/clipOne/W"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipPieces/<callback>@f4878edd",
-      "parts/engine.js/<callback>@5f16c8ff/edgeRunSlices/flush/<callback>@f4878edd"
+      "parts/engine.js/<callback>/clipPieces/<callback>@f4878edd",
+      "parts/engine.js/<callback>/edgeRunSlices/flush/<callback>@f4878edd"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipStrandEnds/<callback>@8bd26b7a/<callback>@b16b139a/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/fillCornerLinks/<callback>@76163de7"
+      "parts/engine.js/<callback>/clipStrandEnds/<callback:forEach>/<callback:forEach>/<callback>@76163de7",
+      "parts/engine.js/<callback>/fillCornerLinks/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipStrandEnds/<callback>@8bd26b7a/<callback>@b16b139a/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/junctionPairs/<callback>@445d0c62/<callback>@76163de7"
+      "parts/engine.js/<callback>/clipStrandEnds/<callback:forEach>/<callback:forEach>/<callback>@76163de7",
+      "parts/engine.js/<callback>/junctionPairs/<callback:forEach>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipStrandEnds/<callback>@8bd26b7a/<callback>@b16b139a/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@101745a6/<callback>@76163de7"
+      "parts/engine.js/<callback>/clipStrandEnds/<callback:forEach>/<callback:forEach>/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/clipStrandEnds/<callback>@8bd26b7a/<callback>@b16b139a/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@2c13f4e4/<callback>@76163de7"
+      "parts/engine.js/<callback>/clipStrandEnds/<callback:forEach>/<callback:forEach>/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:map>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/cornerTouchSlices/<callback>@7241777f/<callback>@f79c115f/<callback>@3fb0bae2",
-      "parts/engine.js/<callback>@5f16c8ff/pathBadGreen/<callback>@b4477204"
+      "parts/engine.js/<callback>/cornerTouchSlices/<callback:forEach>#2/<callback:forEach>/<callback:some>/<callback>@a5160600",
+      "parts/engine.js/<callback>/throughTouch/<callback:forEach>/<callback:forEach>/<callback:forEach>/<callback:some>/<callback>@a5160600"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/cornerTouchSlices/<callback>@7241777f/<callback>@f79c115f/<callback>@c513caa7/<callback>@a5160600",
-      "parts/engine.js/<callback>@5f16c8ff/throughTouch/<callback>@daabac47/<callback>@18061253/<callback>@85398743/<callback>@20507c51/<callback>@a5160600"
+      "parts/engine.js/<callback>/cornerTouchSlices/<callback:forEach>#2/<callback:forEach>/<callback>@3fb0bae2",
+      "parts/engine.js/<callback>/pathBadGreen/<callback>@b4477204"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/cornerTouchSlices/properX",
-      "parts/engine.js/<callback>@5f16c8ff/edgeRunSlices/flush/properX"
+      "parts/engine.js/<callback>/cornerTouchSlices/properX",
+      "parts/engine.js/<callback>/edgeRunSlices/flush/properX"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/cornerTouchSlices/properX",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/properCross"
+      "parts/engine.js/<callback>/cornerTouchSlices/properX",
+      "parts/engine.js/<callback>/lastResortConnect/properCross"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/cornerTouchSlices/properX/<callback>@308738d0",
-      "parts/engine.js/<callback>@5f16c8ff/edgeRunSlices/flush/properX/<callback>@308738d0"
+      "parts/engine.js/<callback>/cornerTouchSlices/properX/<callback>@308738d0",
+      "parts/engine.js/<callback>/edgeRunSlices/flush/properX/<callback>@308738d0"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/cornerTouchSlices/properX/<callback>@308738d0",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/properCross/<callback>@308738d0"
+      "parts/engine.js/<callback>/cornerTouchSlices/properX/<callback>@308738d0",
+      "parts/engine.js/<callback>/lastResortConnect/properCross/<callback>@308738d0"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/edgeRunSlices/flush/properX",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/properCross"
+      "parts/engine.js/<callback>/edgeRunSlices/flush/properX",
+      "parts/engine.js/<callback>/lastResortConnect/properCross"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/edgeRunSlices/flush/properX/<callback>@308738d0",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/properCross/<callback>@308738d0"
+      "parts/engine.js/<callback>/edgeRunSlices/flush/properX/<callback>@308738d0",
+      "parts/engine.js/<callback>/lastResortConnect/properCross/<callback>@308738d0"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/fillCornerLinks/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/junctionPairs/<callback>@445d0c62/<callback>@76163de7"
+      "parts/engine.js/<callback>/fillCornerLinks/<callback>@76163de7",
+      "parts/engine.js/<callback>/junctionPairs/<callback:forEach>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/fillCornerLinks/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@101745a6/<callback>@76163de7"
+      "parts/engine.js/<callback>/fillCornerLinks/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/fillCornerLinks/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@2c13f4e4/<callback>@76163de7"
+      "parts/engine.js/<callback>/fillCornerLinks/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:map>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/junctionPairs/<callback>@445d0c62/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@101745a6/<callback>@76163de7"
+      "parts/engine.js/<callback>/junctionPairs/<callback:forEach>/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/junctionPairs/<callback>@445d0c62/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@2c13f4e4/<callback>@76163de7"
+      "parts/engine.js/<callback>/junctionPairs/<callback:forEach>/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:map>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/junctionPairs/<callback>@445d0c62/pathBad",
-      "parts/engine.js/<callback>@5f16c8ff/pathBadNear"
+      "parts/engine.js/<callback>/junctionPairs/<callback:forEach>/pathBad",
+      "parts/engine.js/<callback>/pathBadNear"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@101745a6/<callback>@76163de7",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@2c13f4e4/<callback>@76163de7"
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>#2/<callback>@00449ce0",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:some>#2/<callback>@00449ce0"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@71be36cb/<callback>@00449ce0",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@9f32283b/<callback>@00449ce0"
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>#2/<callback>@00449ce0",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:some>/<callback:some>/<callback>@00449ce0"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@71be36cb/<callback>@00449ce0",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@b662bdbe/<callback>@6d9b6fe4/<callback>@00449ce0"
+      "parts/engine.js/<callback>/lastResortConnect/<callback:filter>/<callback>@76163de7",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:map>/<callback>@76163de7"
     ],
     [
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@9f32283b/<callback>@00449ce0",
-      "parts/engine.js/<callback>@5f16c8ff/lastResortConnect/<callback>@b662bdbe/<callback>@6d9b6fe4/<callback>@00449ce0"
+      "parts/engine.js/<callback>/lastResortConnect/<callback:some>#2/<callback>@00449ce0",
+      "parts/engine.js/<callback>/lastResortConnect/<callback:some>/<callback:some>/<callback>@00449ce0"
     ],
     [
       "parts/head.html/#bannerIco:empty",

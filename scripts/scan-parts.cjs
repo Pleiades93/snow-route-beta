@@ -68,6 +68,7 @@ function scanJs(file, source) {
     return;
   }
   const ownerCounts = new Map();
+  const scopeCounts = new Map();
   function visit(node, scope = file) {
     if (ts.isCallExpression(node)) {
       const callee = ts.isPropertyAccessExpression(node.expression) ? node.expression.name : node.expression;
@@ -121,11 +122,26 @@ function scanJs(file, source) {
         : `${scope}/<callback>@${tag}`;
       const count = (ownerCounts.get(label) || 0) + 1;
       ownerCounts.set(label, count);
-      scope = count === 1 ? label : `${label}#${count}`;
+      const identity = count === 1 ? label : `${label}#${count}`;
       const at = `${file}:${line(node.getStart(tree))}`;
-      record(exactJson, scope, at);
+      record(exactJson, identity, at);
       // Require enough structure to distinguish renamed bodies from short idioms.
-      if (near.length >= 32) record('near:' + JSON.stringify(near), scope, at);
+      if (near.length >= 32) record('near:' + JSON.stringify(near), identity, at);
+      // Descendants inherit a content-free scope segment, so an
+      // ancestor's body edit cannot renumber them.
+      let segment;
+      if (name) segment = name.getText(tree);
+      else if (ts.isCallExpression(node.parent) && node.parent.expression === node) segment = '<iife>';
+      else if (ts.isCallExpression(node.parent)) {
+        const callee = ts.isPropertyAccessExpression(node.parent.expression)
+          ? node.parent.expression.name.text
+          : ts.isIdentifier(node.parent.expression) ? node.parent.expression.text : '';
+        segment = callee ? `<callback:${callee}>` : '<callback>';
+      } else segment = '<callback>';
+      const segKey = `${scope}/${segment}`;
+      const segCount = (scopeCounts.get(segKey) || 0) + 1;
+      scopeCounts.set(segKey, segCount);
+      scope = segCount === 1 ? segKey : `${segKey}#${segCount}`;
     }
     ts.forEachChild(node, child => visit(child, scope));
   }

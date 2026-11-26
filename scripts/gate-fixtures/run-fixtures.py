@@ -1395,6 +1395,15 @@ METHOD_JS = (
     "const a = { read() { return this.id; } };\n"
     "const b = { read() { return this.id; } };\n"
 )
+DESC_JS = (
+    "(function () {\n"
+    "  var colour = '#ffc233';\n"
+    "  function twinA(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  function twinB(n) { let s = 0; for (let i = 0; i < n; i++) s += i * 2; return s; }\n"
+    "  return twinA(1) + twinB(2) + colour.length;\n"
+    "})();\n"
+)
+DESC_JS_EDITED = DESC_JS.replace("#ffc233", "#ffc234")
 METHOD_JS_INSERTED = (
     "const z = { read() { return this.other; } };\n"
     "const a = { read() { return this.id; } };\n"
@@ -1465,7 +1474,13 @@ with tempfile.TemporaryDirectory() as td:
     w(m_tree / "parts" / "a.js", METHOD_JS_INSERTED)
     check("scan: an unrelated method insertion keeps baselined identities",
           run_scan(m_tree), 0)
+    d_tree = scan_tree(t / "dstable", js=DESC_JS)
+    check("scan: --write-baseline records the nested clone pair",
+          run_scan(d_tree, "--write-baseline"), 0)
+    w(d_tree / "parts" / "a.js", DESC_JS_EDITED)
+    check("scan: an ancestor body edit keeps descendant identities",
+          run_scan(d_tree), 0)
 
-total = 122
+total = 124
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
