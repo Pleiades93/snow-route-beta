@@ -133,7 +133,14 @@ ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the
   S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
 ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' + JSON.stringify(S6),
   S6.listCol === 'rgb(34, 38, 46)' && S6.paceCol === 'rgb(34, 38, 46)' && S6.tabCol === 'rgb(43, 48, 56)');
+// the sun's opacity sampled across the tap: a crossfade passes through mid values, a cut never does
+await ev(`(() => { window.__fade = []; window.__fadeDone = false; const s = $('nightBtn').querySelector('.nbSun'); const t0 = performance.now();
+  const tick = () => { const o = +getComputedStyle(s).opacity; window.__fade.push(o); const mid = window.__fade.some(v => v > 0.05 && v < 0.95);
+    if (performance.now() - t0 < 3000 && !(mid && o === 1)) { requestAnimationFrame(tick); } else { window.__fadeDone = true; } };
+  requestAnimationFrame(tick); return true; })()`);
 await tapById(ev, 'nightBtn');
+// T4: poll the fade's terminal state, not a fixed sleep
+await poll(`document.body.classList.contains('night') && getComputedStyle(document.querySelector('#nightBtn .nbSun')).opacity === '1'`, 10000);
 await sleep(600);
 ok('S7 day mode: the day/night button offers Night - the moon shows where it takes you, not where you are (Beta 1.28)', S6.moonIcon === true);
 const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'),
@@ -150,6 +157,9 @@ const S7b = JSON.parse(await ev(`(() => { const l = map && map.getLayer('buildin
 ok('S7b the 3D buildings layer survives a basemap swap (Beta 1.90): a fill-extrusion on the buildings source-layer with the estimated-height ramp, still there after the theme flip rebuilt the style | ' + JSON.stringify(S7b),
   S7b.there && S7b.type === 'fill-extrusion' && JSON.stringify(S7b.h).includes('coalesce'));
 ok('S7 night mode: the day/night button now offers Day - sun icon, state in agreement (transitions round: the swap crossfades - sun fully in, moon fully out)', S7.sunIcon === true && S7.sunOp === '1' && S7.moonOp === '0');
+await poll(`window.__fadeDone === true`, 8000);
+const FADE = JSON.parse(await ev(`JSON.stringify(window.__fade || [])`));
+ok('S7b the swap really crossfades: the sun passes through mid opacities on its way in (Codex P2, PR #221) | samples ' + FADE.length, FADE.some(o => o > 0.05 && o < 0.95));
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')) }); })()`));
 ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 1.75) | ' + JSON.stringify(T4),

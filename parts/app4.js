@@ -866,6 +866,11 @@ function nightBtnHTML() { // both glyphs stacked: the moon wears its day art, th
   const wrap = (k, u) => `<span class="pwrap${PACK_WRAP[k]}"><img class="pico" data-k="${k}" src="${u}"></span>`;
   return `<span class="nbIco nbMoon">${wrap('moon', MAP.moon.d)}</span><span class="nbIco nbSun">${wrap('sun', MAP.sun.n)}</span>`;
 }
+function stampNightBtn() { // the faces persist across theme flips: re-stamping would birth them at their end state and kill the crossfade
+  const b = $('nightBtn'); if (!b) return;
+  const t = document.createElement('span'); t.innerHTML = nightBtnHTML();
+  if (b.innerHTML !== t.innerHTML) b.innerHTML = t.innerHTML;
+}
 function renderIcons() { // re-mints ICONS from the active pack (theme + Locate state) and stamps every host; deterministic calls only
   const night = document.body.classList.contains('night');
   const MP = MASK_PACKS.glyph; // the one set's maps - read by the mint below AND by the ✕ stamp loops after it
@@ -886,7 +891,7 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
   ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; });
   $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
   $('selNote').innerHTML = ICONS.note;
-  $('nightBtn').innerHTML = nightBtnHTML();
+  stampNightBtn();
   // the pin host retired with the pin (the Locate pill is text); notes and stat icons re-stamp
   document.querySelectorAll('.ntIco, .nmNote, .cvNoteIco').forEach(el => { el.innerHTML = ICONS.note; });
   { const bx = $('crExit'); if (bx) bx.innerHTML = `<img class="crBackIco" alt="" src="${night ? GLYPH_CREATE.back.n : GLYPH_CREATE.back.d}">`; const si = $('crSearchIco'); if (si) si.innerHTML = `<img class="crMagIco" alt="" src="${night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d}">`; const cl = $('crClear'); if (cl) cl.innerHTML = `<img class="crClrIco" alt="" src="${night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d}">`; } // Beta 1.227: the create bar's hosts - the back pill wears the theme variant of the arrow. Beta 1.232: the bar is monochrome now, so the magnifier and the clear disc wear the theme variant too - dark on the white day bar, white on the night glass. Beta 1.243: the search wrap wears the white pill in BOTH themes now, so the magnifier and the clear disc wear the DARK variant in both themes - they follow the bar's surface, not the app theme (white glyphs would vanish on the white night bar); the back pill still flips with the theme, so its arrow keeps the theme variant. Beta 1.244: the bar is dark at night again (the shared token black), so the magnifier and the clear disc wear the theme variant once more - the 1.232 stamps restored; the 1.243 both-themes dark stamps retire with the scope error they served

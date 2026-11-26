@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-LJEs3+CXBGgF3vJcvj7HhO6DiGVnP3sD2Me8Y+JBzTr2UdnBtFAXfL6ZMsNBRHN+' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-xnAxXMdMB+96jRLl9V7TX2S+qm/N5DJXK9AbWEMF/4jREHXsIMCLn/Io/1As/H6E' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-/cDSK/We8b0Qv309zzetQa2T34zWwhldWeE0vj6AYNch2vN9eXYPZ/RXRwh0Jx/z' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-xnAxXMdMB+96jRLl9V7TX2S+qm/N5DJXK9AbWEMF/4jREHXsIMCLn/Io/1As/H6E' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -6631,6 +6631,11 @@ function nightBtnHTML() { // both glyphs stacked: the moon wears its day art, th
   const wrap = (k, u) => `<span class="pwrap${PACK_WRAP[k]}"><img class="pico" data-k="${k}" src="${u}"></span>`;
   return `<span class="nbIco nbMoon">${wrap('moon', MAP.moon.d)}</span><span class="nbIco nbSun">${wrap('sun', MAP.sun.n)}</span>`;
 }
+function stampNightBtn() { // the faces persist across theme flips: re-stamping would birth them at their end state and kill the crossfade
+  const b = $('nightBtn'); if (!b) return;
+  const t = document.createElement('span'); t.innerHTML = nightBtnHTML();
+  if (b.innerHTML !== t.innerHTML) b.innerHTML = t.innerHTML;
+}
 function renderIcons() { // re-mints ICONS from the active pack (theme + Locate state) and stamps every host; deterministic calls only
   const night = document.body.classList.contains('night');
   const MP = MASK_PACKS.glyph; // the one set's maps - read by the mint below AND by the ✕ stamp loops after it
@@ -6651,7 +6656,7 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
   ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; });
   $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
   $('selNote').innerHTML = ICONS.note;
-  $('nightBtn').innerHTML = nightBtnHTML();
+  stampNightBtn();
   // the pin host retired with the pin (the Locate pill is text); notes and stat icons re-stamp
   document.querySelectorAll('.ntIco, .nmNote, .cvNoteIco').forEach(el => { el.innerHTML = ICONS.note; });
   { const bx = $('crExit'); if (bx) bx.innerHTML = `<img class="crBackIco" alt="" src="${night ? GLYPH_CREATE.back.n : GLYPH_CREATE.back.d}">`; const si = $('crSearchIco'); if (si) si.innerHTML = `<img class="crMagIco" alt="" src="${night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d}">`; const cl = $('crClear'); if (cl) cl.innerHTML = `<img class="crClrIco" alt="" src="${night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d}">`; } // Beta 1.227: the create bar's hosts - the back pill wears the theme variant of the arrow. Beta 1.232: the bar is monochrome now, so the magnifier and the clear disc wear the theme variant too - dark on the white day bar, white on the night glass. Beta 1.243: the search wrap wears the white pill in BOTH themes now, so the magnifier and the clear disc wear the DARK variant in both themes - they follow the bar's surface, not the app theme (white glyphs would vanish on the white night bar); the back pill still flips with the theme, so its arrow keeps the theme variant. Beta 1.244: the bar is dark at night again (the shared token black), so the magnifier and the clear disc wear the theme variant once more - the 1.232 stamps restored; the 1.243 both-themes dark stamps retire with the scope error they served
@@ -6948,7 +6953,7 @@ document.addEventListener('click', e => {
 function applyNight() { // the swap is instant: the guard suppresses transitions while the class flips, so colours step in one frame
   const de = document.documentElement; de.classList.add('theme-swap');
   document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2');
-  $('nightBtn').innerHTML = nightBtnHTML(); renderIcons();
+  stampNightBtn(); renderIcons();
   void de.offsetWidth; // the flush: the flipped theme's styles commit now, transition-free
   const lift = () => de.classList.remove('theme-swap');
   requestAnimationFrame(lift); setTimeout(lift, 150);

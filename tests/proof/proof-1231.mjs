@@ -38,7 +38,7 @@ check('1d: the press scale is unchanged at .97 (shrink group and pressOn twin)',
 // ---------- Piece 2: the instant theme swap ----------
 check('2a: the theme-swap guard rule stands in the page (glyph spans exempt)', head.includes('html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }'));
 check('2b: applyNight raises the guard BEFORE the class flip and lifts it after', app5.indexOf("de.classList.add('theme-swap')") > -1 && app5.indexOf("de.classList.add('theme-swap')") < app5.indexOf("document.body.classList.toggle('night', isNight())") && app5.includes("requestAnimationFrame(lift); setTimeout(lift, 150);"));
-check('2c: the swap still flips the theme-color meta and the night button icon', app5.includes("tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2')") && app5.includes("$('nightBtn').innerHTML = nightBtnHTML();"));
+check('2c: the swap still flips the theme-color meta and the night button icon', app5.includes("tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2')") && app5.includes('stampNightBtn();'));
 
 // ---------- Piece 3: the 1.81 spring stands untouched ----------
 check('3a: springSheet stands with its closed form and omega', app2.includes('const SHEET_OMEGA = 30;') && app2.includes('function springSheet(sheet, q0, qT, v0, apply, finish)'));

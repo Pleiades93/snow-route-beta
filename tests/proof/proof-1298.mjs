@@ -1,15 +1,7 @@
 // proof-1298.mjs - Beta 1.298 (transitions round, FIX 12).
-// The reduced-motion block covered the menu system but not the surfaces
-// (the audit's coverage FIX): sheets, modals, the confirm pair, the
-// selection pop and map note, the banner, press feedback, the count
-// fill, the switch, the scroll arrow and the splash dissolve all ran at
-// full strength for a reduced-motion user. The block now flattens each
-// at matching specificity - a media query adds none, so the state
-// selectors ride along (the block's own E-02 lesson). This round's new
-// motions (the sliding filter pill, the glyph crossfade, the speed
-// digit swap) are covered from birth. The banner also gains a JS leg:
-// its exit is animation-driven, so under reduced motion a timer in
-// showBanner keeps the 3s stay instead.
+// Pin the reduced-motion overrides at matching specificity, this
+// round's new motions included; the banner's exit is animation-driven,
+// so under reduced motion its stay is kept by a timer instead.
 import { readFileSync } from 'node:fs';
 
 const root = new URL('../../', import.meta.url);

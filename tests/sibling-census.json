@@ -23434,6 +23434,1190 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26 transitions round consolidated census re-issued after the Codex P2 fix (the .leaving pointer-events rule in head.html): same 155 rows and marks, pinned at the new final tree"
+  },
+  {
+   "id": "transitions-1298-final-r3",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "banner",
+     "brandLayer",
+     "confirmBackdrop",
+     "confirmPill",
+     "countFill",
+     "crModal",
+     "filters",
+     "filtersPill",
+     "finModal",
+     "mapNote",
+     "nightBtn",
+     "noteModal",
+     "pacePanel",
+     "routeMenu",
+     "selPop",
+     "setMenu",
+     "sheet",
+     "spdNum",
+     "spdPill",
+     "swAwake",
+     "swChime",
+     "swFixLog",
+     "swVib"
+    ],
+    "functions": [
+     "applyNight",
+     "closeSheetEl",
+     "closeSheets",
+     "crConfirm",
+     "crConfirmDismiss",
+     "hideConfirm",
+     "hideSurface",
+     "nightBtnHTML",
+     "noteMapState",
+     "openNote",
+     "openRouteMenu",
+     "renderIcons",
+     "renderPanel",
+     "seatFilterPill",
+     "setSpdNum",
+     "showBanner",
+     "showConfirm",
+     "showRmPane",
+     "showSetPane",
+     "showSurface",
+     "springSheet",
+     "syncFilterTabs",
+     "syncNoteSheetRaise",
+     "updateCount",
+     "stampNightBtn"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-pick.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:applyNight:parts/app1.js:themeTick",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from themeTick in parts/app1.js",
+     "status": "covered",
+     "note": "the sunrise/sunset tick flips the theme through applyNight; the glyphs now crossfade instead of cutting - the guard exemption (.nbIco) keeps only their motion alive during the swap (proof-1231 2a, re-pinned with receipt)"
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:__bootTail",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from __bootTail in parts/app5.js",
+     "status": "covered",
+     "note": "the boot tail settles the theme before first paint settles; the stacked glyphs key off body.night in CSS, so the right face shows from the first frame"
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:nightBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from nightBtn:click in parts/app5.js",
+     "status": "covered",
+     "note": "the tap path: override flips, applyNight re-stamps both glyphs and the CSS crossfades them 250ms - drive125 S6/S7 grade the faces and the terminal opacities (mutation receipt transitions-1298-drive125-c8)"
+    },
+    {
+     "id": "caller:closeSheetEl:parts/app3.js:closePace",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheetEl() is called from closePace in parts/app3.js",
+     "status": "covered",
+     "note": "the Pace sheet closes on the same closing spec: transform only, 350ms; its height freeze in closeSheetEl is unaffected (the inline height clears on the existing 480ms timer, after the slide)"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "opening the route menu closes any sheet on the new closing timing; drive145/drive163 grade menu/sheet interplay"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:paceClose:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - closeSheets is registered by reference as the paceClose click handler in parts/app2.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the Pace close button rides closeSheets; drive192 grades the Pace sheet's open/close"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "renderStreets' close call is unchanged in shape; only the CSS closing spec moved"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:sheetClose:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - closeSheets is registered by reference as the sheetClose click handler in parts/app2.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the Streets close button: the sheet now slides out over 350ms on transform; drive88/drive128 grade sheet closes"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the toggle-close path rides the same spec; drive163 grades the Streets sheet toggling"
+    },
+    {
+     "id": "caller:closeSheets:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "the confirmed cancel closes sheets through closeSheets (after the C1 helper hide); drive196/drive198 grade the cancel flow; drive196 ran green locally"
+    },
+    {
+     "id": "caller:closeSheets:parts/app3.js:openPace",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from openPace in parts/app3.js",
+     "status": "covered",
+     "note": "opening Pace closes the Streets sheet on the new timing; the swap is graded by drive192"
+    },
+    {
+     "id": "caller:closeSheets:parts/app5.js:document:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from document:pointerdown in parts/app5.js",
+     "status": "covered",
+     "note": "tap-away closes sheets on the new timing; the spend mechanism is untouched (drive128 M8's local failure is the adjudicated rig-marginal click delay, identical on base)"
+    },
+    {
+     "id": "caller:closeSheets:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "entering create closes sheets through the same call; create drives (drive170 family) grade the flow"
+    },
+    {
+     "id": "caller:crConfirm:parts/app5.js:askDeleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crConfirm() is called from askDeleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route-delete confirm opens through showSurface now; the entrance is unchanged and the Yes path still runs the callback after the hide - drive212 and drive210 grade the delete/confirm flows end to end"
+    },
+    {
+     "id": "caller:crConfirm:parts/create-pick.js:askDiscard",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crConfirm() is called from askDiscard in parts/create-pick.js",
+     "status": "covered",
+     "note": "the draft-discard ask: drive170 grades the crModal discard flow (open, No, Yes) with the new show/hide path"
+    },
+    {
+     "id": "caller:crConfirm:parts/create-pick.js:crClearAll:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crConfirm() is called from crClearAll:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "clear-all ask rides the same crConfirm/showSurface path as askDiscard; drive170 grades the shared modal mechanism"
+    },
+    {
+     "id": "caller:crConfirmDismiss:parts/create-pick.js:crModalNo:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - crConfirmDismiss is registered by reference as the crModalNo click handler in parts/create-pick.js; the event invokes it directly",
+     "status": "covered",
+     "note": "No now leaves over 180ms via hideSurface inside crConfirmDismiss; drive170 polls the modal closed, so the timed hide is inside its budget"
+    },
+    {
+     "id": "caller:hideConfirm:parts/app3.js:cfDanger:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideConfirm() is called from cfDanger:click in parts/app3.js",
+     "status": "covered",
+     "note": "the danger callback still fires synchronously on click; only the pill's hide animates - drive210/drive212 grade the confirm pill's danger paths"
+    },
+    {
+     "id": "caller:hideConfirm:parts/app3.js:cfKeep:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - hideConfirm is registered by reference as the cfKeep click handler in parts/app3.js; the event invokes it directly",
+     "status": "covered",
+     "note": "Keep hides the pill through hideSurface; drive210/drive212 grade the pill's keep path and its closed state"
+    },
+    {
+     "id": "caller:hideConfirm:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideConfirm() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "a route switch clears a pending confirmation through hideConfirm; the pill leaves over 180ms over the incoming route - drive212 grades switch flows; no state rides the timer (callback nulled synchronously)"
+    },
+    {
+     "id": "caller:hideSurface:parts/app2.js:noteMapState",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from noteMapState in parts/app2.js",
+     "status": "covered",
+     "note": "recovery now leaves over 180ms instead of snapping; the notice's show/hide condition is unchanged - drive115 grades the notice lifecycle (its B3/D2 fail identically on the pristine base on this rig: adjudicated environmental, gate watches)"
+    },
+    {
+     "id": "caller:hideSurface:parts/app2.js:renderPanel",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from renderPanel in parts/app2.js",
+     "status": "covered",
+     "note": "deselect leaves over 180ms via the helper; drive199 P8 and drive128 grade the pop's open/close states (drive128 M8 is the adjudicated rig-marginal spend window, mechanism untouched)"
+    },
+    {
+     "id": "caller:hideSurface:parts/app3.js:cfKeep:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from cfKeep:click in parts/app3.js",
+     "status": "covered",
+     "note": "the helper's confirm-pill seat: exit keyframes compose the centring translate; drive210/drive212 grade the pill opening and closing"
+    },
+    {
+     "id": "caller:hideSurface:parts/app3.js:finNo:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from finNo:click in parts/app3.js",
+     "status": "covered",
+     "note": "drive89 T2 polls finModal hidden after finNo - the 180ms leave lands inside the poll budget; ran green locally"
+    },
+    {
+     "id": "caller:hideSurface:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "finishRun still runs synchronously on the click; the modal leaves over it - drive89 grades the finish flow; ran green locally"
+    },
+    {
+     "id": "caller:hideSurface:parts/app3.js:noteNo:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from noteNo:click in parts/app3.js",
+     "status": "covered",
+     "note": "drive88 grades the note modal's Cancel path; ran green locally"
+    },
+    {
+     "id": "caller:hideSurface:parts/app3.js:noteYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from noteYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "the note still saves synchronously before the leave; drive88 grades save + close; ran green locally"
+    },
+    {
+     "id": "caller:hideSurface:parts/app5.js:mEl:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from mEl:pointerdown in parts/app5.js",
+     "status": "covered",
+     "note": "a backdrop tap is the modals' Cancel: hideSurface on the tapped modal only; drive123 grades the modal surfaces' geometry and states; ran green locally"
+    },
+    {
+     "id": "caller:hideSurface:parts/create-pick.js:crModalNo:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from crModalNo:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "via crConfirmDismiss; drive170 grades it"
+    },
+    {
+     "id": "caller:hideSurface:parts/create-pick.js:crModalYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - hideSurface() is called from crModalYes:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the discard callback still fires synchronously on the click; the modal leaves over the action - drive170 grades it"
+    },
+    {
+     "id": "caller:nightBtnHTML:parts/app4.js:stampNightBtn",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - nightBtnHTML() is called from stampNightBtn in parts/app4.js",
+     "status": "covered",
+     "note": "the preserving stamp builds the stacked markup from nightBtnHTML; identical output, stamped only when it differs"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:bootMap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from bootMap in parts/app2.js",
+     "status": "covered",
+     "note": "the boot seat calls noteMapState as before; only the surface's show/hide mechanism changed underneath it"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:map:error",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from map:error in parts/app2.js",
+     "status": "covered",
+     "note": "a map error arms the notice through the same call; drive115 grades the error path"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:map:load",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from map:load in parts/app2.js",
+     "status": "covered",
+     "note": "the load seat re-evaluates the notice as before; mechanism-only change"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:map:sourcedata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from map:sourcedata in parts/app2.js",
+     "status": "covered",
+     "note": "a landed tile clears basemapDead and the notice leaves over 180ms; drive115 grades recovery (D2 fails identically on base on this rig: adjudicated environmental)"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the 15s arming timer calls noteMapState unchanged"
+    },
+    {
+     "id": "caller:openNote:parts/app2.js:selNote:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openNote() is called from selNote:click in parts/app2.js",
+     "status": "covered",
+     "note": "openNote now shows through showSurface (entrance unchanged); drive88 grades the note open path; ran green locally"
+    },
+    {
+     "id": "caller:openRouteMenu:parts/app2.js:routesBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openRouteMenu() is called from routesBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "the Routes tab opens the menu as before; only the opacity leg's curve under it changed (open rides --ease-open now) - drive163 grades the menu's open state"
+    },
+    {
+     "id": "caller:openRouteMenu:parts/create-pick.js:crOpenCityPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openRouteMenu() is called from crOpenCityPane in parts/create-pick.js",
+     "status": "covered",
+     "note": "the city pane returns to the menu through the same call; curve-only change underneath"
+    },
+    {
+     "id": "caller:openRouteMenu:parts/create-pick.js:openDoors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openRouteMenu() is called from openDoors in parts/create-pick.js",
+     "status": "covered",
+     "note": "the doors open through the same call; the boot pane arrival fade now rides --ease-open at its unchanged .35s"
+    },
+    {
+     "id": "caller:openRouteMenu:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openRouteMenu() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "post-save return to the menu is unchanged in shape; curve-only change"
+    },
+    {
+     "id": "caller:openRouteMenu:parts/create-save.js:pvSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openRouteMenu() is called from pvSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "preview-save return rides the same call; curve-only change"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "the Locate face flip re-mints icons; the night button restamps identically (its faces are theme-fixed), no visual change"
+    },
+    {
+     "id": "caller:renderIcons:parts/app3.js:stopGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from stopGps in parts/app3.js",
+     "status": "covered",
+     "note": "same restamp on stop; no visual change"
+    },
+    {
+     "id": "caller:renderIcons:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "the first mint stamps the stacked glyphs at load"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "applyNight's renderIcons call restamps the same markup its own stamp just wrote - redundant but harmless, and it keeps every other host themed in the same pass"
+    },
+    {
+     "id": "caller:renderIcons:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderIcons() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "a route load re-mints; the button restamps identically"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:deselect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from deselect in parts/app2.js",
+     "status": "covered",
+     "note": "deselect renders the panel closed through hideSurface now; drive199/drive128 grade deselect states"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:finishChange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from finishChange in parts/app2.js",
+     "status": "covered",
+     "note": "every marking re-render passes renderPanel; showSurface on a standing pop is a no-op (no entrance restart) - drive88/drive89 grade marking flows"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:refreshAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from refreshAll in parts/app2.js",
+     "status": "covered",
+     "note": "refresh re-renders the panel through the same seat; no behaviour change beyond the exit"
+    },
+    {
+     "id": "caller:renderPanel:parts/app2.js:refreshSelUI",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from refreshSelUI in parts/app2.js",
+     "status": "covered",
+     "note": "selection refresh re-renders through the same seat; the pop's entrance does not restart on a standing show"
+    },
+    {
+     "id": "caller:renderPanel:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderPanel() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "cancel clears the selection through renderPanel; the pop leaves over 180ms - drive196/drive198 grade cancel flows; ran green locally (drive196)"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "opening the Streets sheet reseats the pill under the current tab with no slide - drive88 opens the sheet and its F1 grades the seated pill after a tab tap"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:syncFilterTabs",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from syncFilterTabs in parts/app2.js",
+     "status": "covered",
+     "note": "every tab sync seats the pill: animated on a tap, still on a reset - drive88 F1 (mutation receipt transitions-1298-drive88)"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the first seat runs at load; the sheet is laid out even closed (visibility, not display), and the open/tap seats correct any early miss"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:window:resize",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from window:resize in parts/app2.js",
+     "status": "covered",
+     "note": "a resize reseats without animation so the pill never strands off its tab"
+    },
+    {
+     "id": "caller:setSpdNum:parts/app3.js:acceptFix",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setSpdNum() is called from acceptFix in parts/app3.js",
+     "status": "covered",
+     "note": "every fix prices the readout through the setter: changed digits cross-fade with the rise/fall shift, identical values no-op, reduced-motion writes plain - drive199 P4/P4b/P4c grade values and the swap (mutation receipt transitions-1298-drive199)"
+    },
+    {
+     "id": "caller:setSpdNum:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setSpdNum() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "the watch's start resets the readout to 0 through the same setter, so the standing value tracker never desyncs from the DOM"
+    },
+    {
+     "id": "caller:showBanner:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:finishChangeMarked",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishChangeMarked in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:clearAllMarks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from clearAllMarks in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:gpsError",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from gpsError in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:noteYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from noteYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:backupHandedOff",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from backupHandedOff in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from row:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:stDel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from stDel:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swAwake:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swAwake:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swChime:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swChime:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swVib:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swVib:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showConfirm:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showConfirm() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "cancel-start ask: the pill now rises over 420ms in step with its backdrop; drive196/drive198 grade the cancel-start confirmation flows"
+    },
+    {
+     "id": "caller:showConfirm:parts/app3.js:askClearAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showConfirm() is called from askClearAll in parts/app3.js",
+     "status": "covered",
+     "note": "clear-all ask rides the same showConfirm path; drive210/drive212 grade the pill's shows"
+    },
+    {
+     "id": "caller:showConfirm:parts/app3.js:checkStale",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showConfirm() is called from checkStale in parts/app3.js",
+     "status": "covered",
+     "note": "the stale-data ask rides the same showConfirm path; the pill entrance is the only change"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "pane seating is untouched; the brand layer's away/return fades now ride the house curves (out on --ease-close via .bye, back on --ease-open via the base rule)"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmBack2:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmBack2:click in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmBack:click in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmChoose:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmChoose:click in parts/app2.js",
+     "status": "covered",
+     "note": "the boot pick path: menu .bye fade now on --ease-close; the pick flow itself is untouched - drive214/drive218 grade boot picks"
+    },
+    {
+     "id": "caller:showRmPane:parts/app2.js:rmCreate:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmCreate:click in parts/app2.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "covered",
+     "note": "the picker return revives the menu and brand layer as before; their fades ride the house curves now"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crDoorList:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crDoorList:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:crOpenCityPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crOpenCityPane in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:openDoors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from openDoors in parts/create-pick.js",
+     "status": "covered",
+     "note": "the doors pane seating is unchanged; its arrival fade rides --ease-open now"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-pick.js:rmCityListBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from rmCityListBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "pane seating after save unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showRmPane:parts/create-save.js:pvSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showRmPane() is called from pvSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "pane seating after save unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:chimeBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from chimeBack:click in parts/app4.js",
+     "status": "covered",
+     "note": "Settings pane navigation unchanged; the menu's opacity legs ride the house curves (open --ease-open, close --ease-close) - drive145 grades the Settings panes"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:chimeRow:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from chimeRow:click in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath - drive145 grades it"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:jobBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from jobBack:click in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath - drive145 grades it"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:jobBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from jobBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath - drive145 grades it"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:openExport",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from openExport in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath - drive145 grades the Backup pane"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:setBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from setBack:click in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:setBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from setBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "the Settings button opens the menu as before; the open fade rides --ease-open now - drive145 grades the open state"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:stBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from stBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath - drive145 grades it"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:statusBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from statusBack:click in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showSetPane:parts/app4.js:updBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from updBtn:click in parts/app4.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showSetPane:parts/app5.js:aboutBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from aboutBack:click in parts/app5.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath"
+    },
+    {
+     "id": "caller:showSetPane:parts/app5.js:aboutBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSetPane() is called from aboutBtn:click in parts/app5.js",
+     "status": "covered",
+     "note": "pane navigation unchanged; curve-only change underneath - drive145 grades the About pane"
+    },
+    {
+     "id": "caller:showSurface:parts/app2.js:noteMapState",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSurface() is called from noteMapState in parts/app2.js",
+     "status": "covered",
+     "note": "the notice's arrival is unchanged (menuRise entrance); only its leave is new"
+    },
+    {
+     "id": "caller:showSurface:parts/app2.js:renderPanel",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSurface() is called from renderPanel in parts/app2.js",
+     "status": "covered",
+     "note": "the pop's arrival is unchanged (menuRiseC entrance); showSurface also cancels a pending leave when a new selection lands inside the 180ms"
+    },
+    {
+     "id": "caller:showSurface:parts/app3.js:openNote",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSurface() is called from openNote in parts/app3.js",
+     "status": "covered",
+     "note": "the helper's note-modal seat; drive88 grades it; ran green locally"
+    },
+    {
+     "id": "caller:showSurface:parts/app3.js:resetBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSurface() is called from resetBtn:click in parts/app3.js",
+     "status": "covered",
+     "note": "the helper's finish-modal seat; drive89 grades it; ran green locally"
+    },
+    {
+     "id": "caller:showSurface:parts/app3.js:showConfirm",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSurface() is called from showConfirm in parts/app3.js",
+     "status": "covered",
+     "note": "the helper's pill seat; drive210/drive212 grade the pill's arrival"
+    },
+    {
+     "id": "caller:showSurface:parts/create-pick.js:crConfirm",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showSurface() is called from crConfirm in parts/create-pick.js",
+     "status": "covered",
+     "note": "the helper's crModal seat; drive170 grades it; ran green locally"
+    },
+    {
+     "id": "caller:springSheet:parts/app2.js:sheet:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from sheet:pointerup in parts/app2.js",
+     "status": "covered",
+     "note": "the drag spring is JS-driven and untouched; it hands back to the CSS spec at rest, and the close it settles into now rides the 350ms transform spec"
+    },
+    {
+     "id": "caller:springSheet:parts/create-pick.js:crMorphTo",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from crMorphTo in parts/create-pick.js",
+     "status": "covered",
+     "note": "the create morph's spring is untouched by this commit (FIX 10 verified conforming at stage 0)"
+    },
+    {
+     "id": "caller:springSheet:parts/create-pick.js:head:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from head:pointerup in parts/create-pick.js",
+     "status": "covered",
+     "note": "the create sheet's drag spring is untouched"
+    },
+    {
+     "id": "caller:stampNightBtn:parts/app4.js:renderIcons",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - stampNightBtn() is called from renderIcons in parts/app4.js",
+     "status": "covered",
+     "note": "every icon re-mint calls the preserving stamp: across a theme flip the faces persist, so the crossfade actually runs - drive125 S7b samples the sun through mid opacities (mutation receipt transitions-1298-drive125-r4)"
+    },
+    {
+     "id": "caller:stampNightBtn:parts/app5.js:applyNight",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - stampNightBtn() is called from applyNight in parts/app5.js",
+     "status": "covered",
+     "note": "applyNight stamps through the same preserving path before renderIcons - the swap's own stamp, pinned by proof-1231 2c (re-pinned with receipt)"
+    },
+    {
+     "id": "caller:syncFilterTabs:parts/app2.js:resetStreetsSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncFilterTabs() is called from resetStreetsSession in parts/app2.js",
+     "status": "covered",
+     "note": "a route switch resets to Primaries and reseats the pill still - drive214/drive218 grade route switches at the gate"
+    },
+    {
+     "id": "caller:syncFilterTabs:parts/app2.js:selBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncFilterTabs() is called from selBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "a tab tap flips .on and slides the pill 250ms on --ease-open - drive88 F1 grades the terminal seat"
+    },
+    {
+     "id": "caller:syncNoteSheetRaise:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncNoteSheetRaise() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "the note raise/lower rides the OPEN spec's height legs, which this commit deliberately keeps; drive88 and drive135 grade the editor raise; both ran green locally"
+    },
+    {
+     "id": "caller:updateCount:parts/app2.js:finishChange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - updateCount() is called from finishChange in parts/app2.js",
+     "status": "covered",
+     "note": "every marking repaints the meter through updateCount; the fill now rides scaleX (same .7s --ease-open, same fraction) - drive198 P2/P5 grade the climb in and out of a run; receipts transitions-1298-drive198/-drive125/-drive190 pin the re-pointed observations"
+    },
+    {
+     "id": "caller:updateCount:parts/app2.js:refreshAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - updateCount() is called from refreshAll in parts/app2.js",
+     "status": "covered",
+     "note": "refresh repaints the meter through the same writer; drive125 T3/T5 grade the rendered fraction"
+    },
+    {
+     "id": "caller:updateCount:parts/app3.js:cancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - updateCount() is called from cancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "cancel zeroes the meter through updateCount; drive196/drive198 grade cancel flows (drive196 ran green locally)"
+    },
+    {
+     "id": "caller:updateCount:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - updateCount() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "opening a past clean repaints through the same writer; fraction semantics unchanged"
+    },
+    {
+     "id": "caller:updateCount:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - updateCount() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "a clean's start repaints the meter from zero through the same writer; drive125 T5 measures it inside a run"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:error",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map error handler in parts/app2.js touches noteMapState without dismissing it",
+     "status": "covered",
+     "note": "the error gesture path is untouched; it reaches the notice through noteMapState as before"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:load",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map load handler in parts/app2.js touches noteMapState without dismissing it",
+     "status": "covered",
+     "note": "the load gesture path is untouched"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:sourcedata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map sourcedata handler in parts/app2.js touches noteMapState without dismissing it",
+     "status": "covered",
+     "note": "the tile-landing path is untouched; it clears the notice through noteMapState as before"
+    },
+    {
+     "id": "gesture:parts/app2.js:window:resize",
+     "kind": "gesture",
+     "source": "derived: handler scan - the window resize handler in parts/app2.js touches seatFilterPill without dismissing it",
+     "status": "covered",
+     "note": "resize only reseats geometry; no gesture state is involved"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:pointerdown",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document pointerdown handler in parts/app5.js touches closeSheets without dismissing it",
+     "status": "covered",
+     "note": "the tap-away gesture path is untouched"
+    },
+    {
+     "id": "theme:banner",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #banner has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the banner's day/night faces are untouched; only its reduced-motion presentation changed (rest state + timer stay)"
+    },
+    {
+     "id": "theme:brandLayer",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #brandLayer has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the brand layer is one blue face in both themes (it lives on the splash blue); only its fade curves changed - out on --ease-close (.bye), back on --ease-open (base)"
+    },
+    {
+     "id": "theme:confirmBackdrop",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #confirmBackdrop has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no night rule exists: the backdrop is one theme-neutral dim; this round did not touch it - the pill beside it gained the motion"
+    },
+    {
+     "id": "theme:confirmPill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #confirmPill has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "the new keyframes animate opacity/transform only; the day and night face rules are untouched, so the faces cannot drift - drive210/drive212 grade the pill"
+    },
+    {
+     "id": "theme:countFill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #countFill has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the fill is a green bar in both themes (one rule, no night variant); only its animation property changed - drive125 grades the pill day and night"
+    },
+    {
+     "id": "theme:crModal",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crModal has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no per-id theme rules: crModal wears the shared .modal/.card theme vars; the exit keyframes are colour-free"
+    },
+    {
+     "id": "theme:filters",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #filters has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "the track keeps its day/night faces; the buttons lost the .on gradient (now the pill's) and keep position:relative so they paint above it - drives grade the tabs in both themes"
+    },
+    {
+     "id": "theme:filtersPill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #filtersPill has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the pill wears the one app gradient in both themes, exactly as the .on tab did before - no night variant existed or was added"
+    },
+    {
+     "id": "theme:finModal",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #finModal has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no per-id theme rules: finModal wears the shared .modal/.card theme vars; the exit keyframes are colour-free"
+    },
+    {
+     "id": "theme:mapNote",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #mapNote has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the exit keyframes animate opacity/transform only; the notice has one face in both themes (shared rules), nothing to drift"
+    },
+    {
+     "id": "theme:nightBtn",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #nightBtn has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the button is now a grid with both glyphs in one cell; visibility is CSS on body.night (sun by night, moon by day) and only the glyphs animate - colours still step instantly under the theme-swap guard"
+    },
+    {
+     "id": "theme:noteModal",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #noteModal has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no per-id theme rules: noteModal wears the shared .modal/.card theme vars; the exit keyframes are colour-free"
+    },
+    {
+     "id": "theme:pacePanel",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #pacePanel has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "pacePanel wears the shared .sheet rules in both themes; the change is a transition value, no colour or face rule moved"
+    },
+    {
+     "id": "theme:routeMenu",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeMenu has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the route menu is one blue face in both themes; only the opacity legs' curves changed, timings untouched (.3s, boot .5s/.35s as before)"
+    },
+    {
+     "id": "theme:selPop",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #selPop has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "the exit keyframes (menuRiseCOut) animate opacity/transform only and carry the -50% X shift like the entrance; day/night glass rules untouched - drive128 grades the card in both themes"
+    },
+    {
+     "id": "theme:setMenu",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #setMenu has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the Settings menu is one blue face in both themes; only the opacity legs' curves changed. The rule was split across lines for the PR limits and its history comments compressed (recorded in the round record)"
+    },
+    {
+     "id": "theme:sheet",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #sheet has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the sheet wears the shared .sheet rules in both themes; only the closing transition value changed - drive135 grades the sheet day and night"
+    },
+    {
+     "id": "theme:spdNum",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #spdNum has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the digit slots inherit the readout's ink in both themes; no theme-specific motion exists or was added - drive199 grades the circle day and night"
+    },
+    {
+     "id": "theme:spdPill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #spdPill has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "the circle itself is untouched; only the number inside it animates"
+    },
+    {
+     "id": "theme:swAwake",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #swAwake has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the switch wears the shared .m-switch rules in both themes; the thumb now travels on transform and the fades ride --ease-open - drive145 grades the Settings switches"
+    },
+    {
+     "id": "theme:swChime",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #swChime has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "same shared switch rules; see swAwake"
+    },
+    {
+     "id": "theme:swFixLog",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #swFixLog has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "same shared switch rules; see swAwake"
+    },
+    {
+     "id": "theme:swVib",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #swVib has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "same shared switch rules; see swAwake"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "e55a9aa328c0f081aa7f35bcafacfb93efd540486c02354337a402c31544f1f5",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "debbd19a55d304b914e386a9289636efd60f8dd3396af93a037d2bd584bb895a",
+    "parts/app4.js": "5ad883b9934eae961eeb4383801eb9a9a0086592ee0c07967d6958e8cbf58102",
+    "parts/app5.js": "d546a4a24ef3883a816f026444d211befc9e08eb37b9352f2f9bbe81b36acc89",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "8bd2ae35f74d588adc9116a7dfc4b90e927e6d95517a49be69b62d4e8b44eae3",
+    "parts/head.html": "b6c70d6c5e54f29f08086970deaca5d5e8665ca6a7b3d01952c21d39b13ec04d",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round consolidated census re-issued after the Codex P2 glyph-persistence fix: stampNightBtn's three rows join, nightBtnHTML's two direct-caller rows retire; 156 rows, pinned at the new final tree"
   }
  ]
 }

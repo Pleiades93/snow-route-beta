@@ -15489,6 +15489,54 @@
    "red": "the .leaving pointer-events rule removed: P6b fails with pe auto and the hit inside the pill",
    "green": "drive192 on the round tree: P6b passes (only the base-identical detents failures remain, adjudicated pre-existing environmental)",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-r4",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "5a99a55d59b6e892733708a2bd1811ac1cf3bf94f508af39abc4338f74ee88ea"
+   },
+   "mutation": "S7's read now polls the fade's terminal state (T4) and new check S7b samples the sun's opacity across the Day/Night tap: a real crossfade passes through mid opacities, a cut never does (Codex P2 fix: the glyph faces now persist across theme flips via stampNightBtn)",
+   "red": "stampNightBtn mutated to always re-stamp (the pre-fix behaviour): S7b fails alone - 11 samples, none mid - while S7's terminal assertions still pass, 28/29",
+   "green": "drive125 on the round tree: 29/29",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-r3",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "5d58d0bd8a45a222fc68ef92e5add5473983478b7acebc3e42d0de3e8acb0a68"
+   },
+   "mutation": "check 2c re-pinned: applyNight now stamps via stampNightBtn() (the preserving stamp, Codex P2 fix) instead of the nightBtnHTML assignment; the claim (the swap flips the theme-color meta and the night button icon) is unchanged",
+   "red": "the updated proof against the pre-fix app5 stamp fails exactly 2c (by construction of the pin; the C8 RED for 2a/2c stands in transitions-1298-proof-1231-c8)",
+   "green": "proof-1231 on the round tree: 23/23; full run-proofs 95/95",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1298-r2",
+   "check": "tests/proof/proof-1298.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1298.mjs": "4181df11c261def06f6e7c1776751b65cdf767674bbe43a94791e7771c3caba2"
+   },
+   "mutation": "header condensed to a short why (Codex P1 on PR #221: no history in code comments); the 15 checks are byte-identical - re-issued for the changed file",
+   "red": "the .sheet segment removed from the block: check 1 fails alone, 14/15 (observed for transitions-1298-proof-1298)",
+   "green": "proof-1298 on the round tree: 15/15; full run-proofs 95/95",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-r5",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "f59037329c839e30287c5e0c91c95a4933466aeab3a6b6415713e97790db93d6"
+   },
+   "mutation": "S7 terminal poll + S7b crossfade sampling (Codex P2 fix) - re-issued after comment/line formatting for the PR limits; semantically identical to transitions-1298-drive125-r4",
+   "red": "stampNightBtn mutated to always re-stamp: S7b fails alone (11 samples, none mid), 28/29",
+   "green": "drive125 on the final tree: 29/29",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }
