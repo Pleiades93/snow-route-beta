@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-eQDAAcWq2ozf9+pILzO7XmWJBLQ/8EiQZrjnimtIeyCw9KLkBw3Xhe+rtIwtUIuB' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-SEOBwtqF+9jmJv4RzQT6Bt+DDzxB3mN1yAQymErA12sDcJAqL/uOnmFOsk79T83b' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-4tKh6mAnQIb2x2v4LSxUR8Y67oC2WBQIbG5nQrI9fKjRe/J7Bedz5MtQqxmb8K+O' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-OU/oMvQ4hIg3ySsuUW5nIT41e6bvSktFCqs8gGNVsa8zuNmK42j5BPcavzlcceh/' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -99,7 +99,14 @@
   #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
   #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top was #nightBtn's own top expression (78px) through Beta 1.227 - the circle's top edge level with the moon button's, a level the drives measured in the rendered page. Beta 1.228 (Andrew) raised the moon button to the title's line; the circle keeps this 78px seat under the title, so it now stands 53px below the title's top edge - drive199 measures the new geometry (the moon level with the title, the circle at its seat). The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
-  #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; }
+  #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; --subtle-dir: 1; }
+  .subtleSlot { position: relative; display: inline-block; }
+  .subtleNew { display: inline-block; }
+  .subtleOld { position: absolute; inset: 0; text-align: center; pointer-events: none; }
+  #spdNum.animating .subtleNew { animation: subtleIn 455ms cubic-bezier(.22,1,.36,1) both; }
+  #spdNum.animating .subtleOld { animation: subtleOut 455ms cubic-bezier(.22,1,.36,1) both; }
+  @keyframes subtleIn { from { transform: translateY(calc(.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
+  @keyframes subtleOut { to { transform: translateY(calc(-.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
   #spdUnit { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-align: center; color: #5a5f6a; margin-top: 3px; } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
   body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   body.night #spdUnit { color: #ACBBF5; }
@@ -5578,6 +5585,28 @@ function fixLogOut(e) {
 function fixLogClose() { if (!fixLogSession) return; fixLogSession = null; markDirty('fixlog'); }
 // the record lands in e3 form (the codec note at the loader); in-memory sessions stay absolute
 /** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); }
+let spdShown = '0'; // the readout's standing value: slots double a digit mid-swap, so the DOM is never the source
+function setSpdNum(txt) { // the readout settles digit by digit instead of snapping (recipe 36)
+  const el = $('spdNum'); if (!el || txt === spdShown) return;
+  const prev = spdShown; spdShown = txt;
+  if (el._subtleT) { clearTimeout(el._subtleT); el._subtleT = 0; }
+  el.setAttribute('aria-label', txt);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.classList.remove('animating'); el.textContent = txt; return; }
+  const sameLen = prev.length === txt.length;
+  el.style.setProperty('--subtle-dir', parseInt(txt, 10) >= parseInt(prev, 10) ? '1' : '-1');
+  el.classList.remove('animating');
+  el.replaceChildren();
+  [...txt].forEach((ch, i) => {
+    if (sameLen && prev[i] === ch) { el.append(ch); return; }
+    const slot = document.createElement('span'); slot.className = 'subtleSlot';
+    if (sameLen) { const o = document.createElement('span'); o.className = 'subtleOld'; o.setAttribute('aria-hidden', 'true'); o.textContent = prev[i]; slot.appendChild(o); }
+    const n = document.createElement('span'); n.className = 'subtleNew'; n.textContent = ch; slot.appendChild(n);
+    el.appendChild(slot);
+  });
+  void el.offsetHeight;
+  el.classList.add('animating');
+  el._subtleT = setTimeout(() => { el._subtleT = 0; el.classList.remove('animating'); el.textContent = txt; }, 470); // the slots collapse to plain text once the swap lands
+}
 function acceptFix(pos) {
   // the fix is logged BEFORE every gate below - a refused fix is recorded as delivered, with no estimator output
   const fxEnt = fixLogRaw(pos);
@@ -5611,8 +5640,7 @@ function acceptFix(pos) {
   // the estimator has run: filtered position, display position and smoothed heading join the fix in the log
   fixLogOut(fxEnt);
   // the speed number updates per fix only: visibility is the watch's alone; at rest it reads 0 km/h
-  const spd = $('spdNum');
-  spd.textContent = String(Math.round(Math.max(0, speed || 0) * 3.6)); // the bare number - the KM/H unit is the circle's own centred label now
+  setSpdNum(String(Math.round(Math.max(0, speed || 0) * 3.6))); // the bare number - the KM/H unit is the circle's own centred label now
   // a teleport voids the springs; the map guard keeps this jump from starving the recording block
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); camVel = [0, 0]; camBVel = 0; camUncapped = false; }
   // outside-route note (route box + 400 m): no box means no area to be outside of, so no note
@@ -5688,7 +5716,7 @@ function startGps(fromRun, restart) {
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // recording wears red on the Locate tab; view-only wears blue
   renderIcons(); // the Locate face follows the state flip at once
   // the speed gate is the watch: it appears with location on, reading 0 until a fix prices speed
-  $('spdNum').textContent = '0'; $('spdPill').classList.remove('hidden');
+  setSpdNum('0'); $('spdPill').classList.remove('hidden');
 }
 function stopGps(silent) {
   watchGen++; // invalidate any callback still queued from this watcher

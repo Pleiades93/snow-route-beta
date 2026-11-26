@@ -15357,6 +15357,42 @@
    "red": "seatFilterPill stubbed to a no-op: F1 fails alone - the pill never seats (dx 196, dw 193, opacity 0), 16/17",
    "green": "drive88 on the final C6 tree: 17/17 (three local passes; one further run failed with its detail lost to output truncation - recorded as an unadjudicated flake sighting, CI decides)",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive199",
+   "check": "tests/browser/drive199.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive199.mjs": "3aeb03db3f522df823d2cf28380a01cd6ed1cd5e529f87fb2a7edf9954563675"
+   },
+   "mutation": "new checks P4b/P4c: a same-length speed rise (38 to 41) must swap digit by digit - changed digits ride old/new slots with --subtle-dir 1 (recipe 36) - and the readout must be plain text again after the swap",
+   "red": "setSpdNum reduced to a plain textContent write: P4b fails alone (no swap latched, {}), 27/28",
+   "green": "drive199 on the round tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive199-r2",
+   "check": "tests/browser/drive199.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive199.mjs": "e8fb50937204a22b6c79669166fdc167805818c797013326651a88a0a99e6eda"
+   },
+   "mutation": "checks P4b/P4c (the digit-by-digit speed swap, recipe 36) - re-issued after a formatting-only split of the observer line for the PR line limits; semantically identical to transitions-1298-drive199",
+   "red": "setSpdNum reduced to a plain textContent write: P4b fails alone (no swap latched, {}), 27/28",
+   "green": "drive199 on the final C7 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive199-r3",
+   "check": "tests/browser/drive199.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive199.mjs": "7538e061ef600feab84dd13b5de02b2b82bef8cb578ca78c7d3d08ec4ab59aff"
+   },
+   "mutation": "checks P4b/P4c (the digit-by-digit speed swap, recipe 36) - re-issued after further formatting-only splits of the observer lines for the PR line limits; semantically identical to transitions-1298-drive199",
+   "red": "setSpdNum reduced to a plain textContent write: P4b fails alone (no swap latched, {}), 27/28",
+   "green": "drive199 on the final C7 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }

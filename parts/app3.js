@@ -1309,6 +1309,28 @@ function fixLogOut(e) {
 function fixLogClose() { if (!fixLogSession) return; fixLogSession = null; markDirty('fixlog'); }
 // the record lands in e3 form (the codec note at the loader); in-memory sessions stay absolute
 /** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); }
+let spdShown = '0'; // the readout's standing value: slots double a digit mid-swap, so the DOM is never the source
+function setSpdNum(txt) { // the readout settles digit by digit instead of snapping (recipe 36)
+  const el = $('spdNum'); if (!el || txt === spdShown) return;
+  const prev = spdShown; spdShown = txt;
+  if (el._subtleT) { clearTimeout(el._subtleT); el._subtleT = 0; }
+  el.setAttribute('aria-label', txt);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.classList.remove('animating'); el.textContent = txt; return; }
+  const sameLen = prev.length === txt.length;
+  el.style.setProperty('--subtle-dir', parseInt(txt, 10) >= parseInt(prev, 10) ? '1' : '-1');
+  el.classList.remove('animating');
+  el.replaceChildren();
+  [...txt].forEach((ch, i) => {
+    if (sameLen && prev[i] === ch) { el.append(ch); return; }
+    const slot = document.createElement('span'); slot.className = 'subtleSlot';
+    if (sameLen) { const o = document.createElement('span'); o.className = 'subtleOld'; o.setAttribute('aria-hidden', 'true'); o.textContent = prev[i]; slot.appendChild(o); }
+    const n = document.createElement('span'); n.className = 'subtleNew'; n.textContent = ch; slot.appendChild(n);
+    el.appendChild(slot);
+  });
+  void el.offsetHeight;
+  el.classList.add('animating');
+  el._subtleT = setTimeout(() => { el._subtleT = 0; el.classList.remove('animating'); el.textContent = txt; }, 470); // the slots collapse to plain text once the swap lands
+}
 function acceptFix(pos) {
   // the fix is logged BEFORE every gate below - a refused fix is recorded as delivered, with no estimator output
   const fxEnt = fixLogRaw(pos);
@@ -1342,8 +1364,7 @@ function acceptFix(pos) {
   // the estimator has run: filtered position, display position and smoothed heading join the fix in the log
   fixLogOut(fxEnt);
   // the speed number updates per fix only: visibility is the watch's alone; at rest it reads 0 km/h
-  const spd = $('spdNum');
-  spd.textContent = String(Math.round(Math.max(0, speed || 0) * 3.6)); // the bare number - the KM/H unit is the circle's own centred label now
+  setSpdNum(String(Math.round(Math.max(0, speed || 0) * 3.6))); // the bare number - the KM/H unit is the circle's own centred label now
   // a teleport voids the springs; the map guard keeps this jump from starving the recording block
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); camVel = [0, 0]; camBVel = 0; camUncapped = false; }
   // outside-route note (route box + 400 m): no box means no area to be outside of, so no note
@@ -1419,7 +1440,7 @@ function startGps(fromRun, restart) {
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // recording wears red on the Locate tab; view-only wears blue
   renderIcons(); // the Locate face follows the state flip at once
   // the speed gate is the watch: it appears with location on, reading 0 until a fix prices speed
-  $('spdNum').textContent = '0'; $('spdPill').classList.remove('hidden');
+  setSpdNum('0'); $('spdPill').classList.remove('hidden');
 }
 function stopGps(silent) {
   watchGen++; // invalidate any callback still queued from this watcher

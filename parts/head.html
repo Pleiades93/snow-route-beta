@@ -98,7 +98,14 @@
   #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
   #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top was #nightBtn's own top expression (78px) through Beta 1.227 - the circle's top edge level with the moon button's, a level the drives measured in the rendered page. Beta 1.228 (Andrew) raised the moon button to the title's line; the circle keeps this 78px seat under the title, so it now stands 53px below the title's top edge - drive199 measures the new geometry (the moon level with the title, the circle at its seat). The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
-  #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; }
+  #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; --subtle-dir: 1; }
+  .subtleSlot { position: relative; display: inline-block; }
+  .subtleNew { display: inline-block; }
+  .subtleOld { position: absolute; inset: 0; text-align: center; pointer-events: none; }
+  #spdNum.animating .subtleNew { animation: subtleIn 455ms cubic-bezier(.22,1,.36,1) both; }
+  #spdNum.animating .subtleOld { animation: subtleOut 455ms cubic-bezier(.22,1,.36,1) both; }
+  @keyframes subtleIn { from { transform: translateY(calc(.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
+  @keyframes subtleOut { to { transform: translateY(calc(-.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
   #spdUnit { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-align: center; color: #5a5f6a; margin-top: 3px; } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
   body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   body.night #spdUnit { color: #ACBBF5; }
