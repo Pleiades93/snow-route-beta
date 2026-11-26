@@ -360,8 +360,12 @@
   #xPreBar { display: none; height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); width: 100%; overflow: hidden; }
   #xPreBar.on { display: block; }
   #xPreFill { height: 100%; width: 0%; background: #2ecc71; border-radius: 3px; }
-  #setMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: calc(88px + max(env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px))) 24px calc(88px + max(env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px))); /* Beta 1.223 (Andrew, from his 1.221 phone screenshot): breathing room at both ends - the top padding gains the safe-area inset so a pane's title never sits under the phone's top blur, and the bottom padding (88px) keeps every pane's last row clear of the fixed ✕ band (the ✕ box spans the bottom 26-70px), so the About pane's Update/Back rows can never slide under it, at any What's New length. justify-content is flex-start for the same reason: the panes centre through their auto margins when they fit, but a centred column clips an overflowing pane's top beyond the scroller's reach (measured in this round's QA at a forced 16-item What's New: the title sat at -269px with the menu already scrolled to 0); flex-start lets the menu's own overflow-y carry the whole pane from its padded top. Beta 1.256 (Andrew): the top padding is now the bottom's EQUAL (88px + the larger of the two insets, both ends) - the panes centre through their auto margins inside this padding box, so the old 24/88 asymmetry seated every fitting pane 32px above the screen's geometric centre (measured); equal ends seat them on the viewport centre line, the one #routeMenu's panes land on, and each end keeps at least its designed clearance (the top gains room, the bottom never drops below 88px + an inset, so the last row still clears the ✕ band at any length) */ opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.88 (Andrew): Settings is a blue full-screen takeover like the Routes menu - same slide-up, same panes, same bare X; the Day/Night row left for its own button, Summary/GPX/Clear trail left with the old Snow log */
-  #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
+  #setMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6); display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    padding: calc(88px + max(env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px))) 24px calc(88px + max(env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px)));
+    /* equal ends (88px + the larger inset) seat fitting panes on the centre line and clear the ✕ band */
+    opacity: 0; visibility: hidden; transform: translateY(103%); pointer-events: none;
+    transition: transform var(--anim-dur) var(--ease-close), opacity .3s var(--ease-close), visibility 0s linear var(--anim-dur); } /* a blue takeover like Routes; the opacity leg rides the close curve */
+  #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s var(--ease-open), visibility 0s; }
   /* fixed, not absolute: an absolute box inside the scrolling menu scrolls with the content; fixed anchors it to the screen */
   #setVer { position: fixed; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
   /* the settings card, switch and check language: values verbatim from the approved mockups, class names kept from them */
@@ -441,9 +445,11 @@
 /* the live first frame must match the launch still; the icon is inlined, so no fetch race precedes first paint */
 /* one block in #brandLayer: one column, one layer, nothing to mirror, nothing fading separately */
 #splash.go #splashBg { animation: splashBgOut .7s linear forwards; }
-#routeMenu.bye { opacity: 0 !important; transition: opacity .3s ease; } /* on a boot pick the menu fades while the splash dissolves; the menu stays parked below the screen */
+#routeMenu.bye { opacity: 0 !important; transition: opacity .3s var(--ease-close); } /* on a boot pick the menu fades while the splash dissolves; the menu stays parked below the screen */
 @keyframes splashBgOut { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
-#routeMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transform: translateY(103%); transition: transform var(--anim-dur) var(--ease-close), opacity .3s ease, visibility 0s linear var(--anim-dur); pointer-events: none; } /* Beta 1.78 (Andrew): the route menu is a top-level full-screen menu on the splash blue and OUTLIVES the splash - parked below the screen; the Routes tab slides it up (.open, the shared menu motion, mirrored on close). At boot the splash borrows it in place via .boot (next rule) */
+#routeMenu { position: fixed; inset: 0; z-index: 10000; background: linear-gradient(135deg, #3d65ef, #1b2fb6); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+  opacity: 0; visibility: hidden; transform: translateY(103%); pointer-events: none;
+  transition: transform var(--anim-dur) var(--ease-close), opacity .3s var(--ease-close), visibility 0s linear var(--anim-dur); } /* outlives the splash, parked below the screen; the opacity leg rides the close curve */
 #routeMenu { overflow-y: auto; } /* the Routes menu scrolls like Settings: the city list outgrew the screen and could not be moved at all */
 #routeMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; position: relative; } /* panes centre when they fit, scroll from the top when they do not; relative positioning lifts them above the snow */
 #rmCityListPane { height: 100%; justify-content: center; } /* full height, the block centred in the pane: the capped list no longer fills it; short screens scroll list inside */
@@ -471,18 +477,18 @@
 #snowCv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .3s ease; }
 #snowCv.away { opacity: 0; } /* the snow hides in the menu's sub-panes alongside the title and returns at the main pane */
 body.snow-scene #routeMenu.boot { background: transparent; } /* while the scene is live the menu background clears (the blue is a gradient), so the snow field shows through */
-#brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s ease; }
+#brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s var(--ease-open); }
 #brandBlock { display: flex; flex-direction: column; align-items: center; } /* no entrance of its own: entrances live on the children. One rigid unit, never reparented, and it no longer travels */
 #brandBlock > * { flex: none; }
 #brandLayer.cut { display: none; } /* the brand layer is gone in the flip's own frame: no fade, no drift; .cut is never removed this session */
-#brandLayer.bye { opacity: 0; transition: opacity .3s ease; }
+#brandLayer.bye { opacity: 0; transition: opacity .3s var(--ease-close); }
 #brandLayer.away { opacity: 0; } /* title lives only on the main pane: showRmPane carries .away on the layer whenever any other pane is active */
 #brandLayer.off, #brandLayer.parked { display: none; }
 /* the boot panes fade in beneath the title; visibility rides the same delay, so an invisible pane takes no tap */
 #routeMenu.boot .rmPane { opacity: 0; visibility: hidden; } /* no lowering before the show: the arrival is the plain fade on the .show rule below */
-#routeMenu.boot.show .rmPane { opacity: 1; visibility: visible; transition: opacity .35s ease, visibility 0s linear; } /* the doors menu's arrival: a .35s fade, no delay, no rise; the brand cuts away in the same moment */
+#routeMenu.boot.show .rmPane { opacity: 1; visibility: visible; transition: opacity .35s var(--ease-open), visibility 0s linear; } /* the doors menu's arrival: a .35s fade, no delay, no rise; the brand cuts away in the same moment */
 #routeMenu.boot.show, #routeMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
-#routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s ease, visibility 0s; }
+#routeMenu.open { transition: transform var(--anim-dur) var(--ease-open), opacity .3s var(--ease-open), visibility 0s; }
 #routeMenu.notrans { transition: none !important; } /* the boot-to-parked swap in finish() must not animate */
 #rmClose, #setClose { position: fixed; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; width: 44px; height: 44px; border: none; background: none; color: #fff; font-size: 30px; font-weight: 800; text-shadow: 0 1px 8px rgba(8,12,40,.45); line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; } /* Beta 1.80 (Andrew, picked from six rendered options A-F): a BARE white X at bottom centre - no circle, no frosting (the translucent circle was 1.79's). The 44px box stays as the invisible touch target; the soft shadow keeps the glyph readable on the blue. Sweep re-run E-05: fixed, not absolute - inside the scrolling menus an absolute X rode the content up across the pane on short screens (measured: a 34px scroll moved it exactly 34px); fixed parks it at the screen's bottom, and the menus are full-screen so the resting spot is unchanged */
 #routeMenu:not(.tab) #rmClose { display: none; } /* the X exists only in tab mode - at boot there is nowhere to go back to */
