@@ -20,7 +20,8 @@ ok('S0 app boots for the storage transaction tests', await poll120(`!!window.map
 const INSTALL_STUB = `(() => { window.__stubKey = null; const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (window.__stubKey && k === window.__stubKey) throw new Error('injected quota failure'); return orig.call(this, k, v); }; window.__stub = k => { window.__stubKey = k; }; window.__unstub = () => { window.__stubKey = null; }; return typeof window.__stub === 'function'; })()`;
 ok('S0b fault-injection stub installed', await ev(INSTALL_STUB) === true);
 const seed = async () => { await ev(`(() => { markDone('Velmar', 'test'); markDone('Mellings', 'test'); markDone('Astona', 'test'); return doneSet.size; })()`); await sleep(250); };
-const state = async () => JSON.parse(await ev(`JSON.stringify({ done: doneSet.size, label: $('resetBtn').textContent, toast: ($('bannerHead').textContent + ' ' + $('bannerLine').textContent), hist: history.length, lsHist: JSON.parse(localStorage.getItem('snowroute.5w.v2.history') || '[]').length })`));
+const state = async () => JSON.parse(await ev(`JSON.stringify({ done: doneSet.size, label: $('resetBtn').textContent, toast: ($('bannerHead').textContent + ' ' + $('bannerLine').textContent), hist: history.length,` +
+  ` lsHist: JSON.parse(localStorage.getItem('snowroute.5w.v2.history') || '[]').length })`));
 await seed();
 let st = await state();
 ok('S1 seeded clean: 3 streets done, nothing archived yet | ' + JSON.stringify(st), st.done === 3 && st.hist === 0 && st.lsHist === 0);
@@ -56,7 +57,8 @@ ok('F1b after reload the failed mark is absent and the seeded clean survives who
 await ev(`__stub('snowroute.5w.v4.notes')`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
-ok('F4 notes write fails: finish completes, archive landed, and the metadata gap rides SILENTLY since Beta 1.296 (its warning is cut - the retry machinery is F9) | ' + JSON.stringify(st), st.done === 0 && st.lsHist === 1 && st.label === 'FINISH' && !/could not be written/.test(st.toast));
+ok('F4 notes write fails: finish completes, archive landed, and the metadata gap rides SILENTLY since Beta 1.296 (its warning is cut - the retry machinery is F9) ' +
+  '| ' + JSON.stringify(st), st.done === 0 && st.lsHist === 1 && st.label === 'FINISH' && !/could not be written/.test(st.toast));
 await ev(`__unstub()`);
 // F8 (Beta 1.110): a finish with a LIVE run - the stored start is deleted as
 // a gate, the run's cancel snapshot goes with it, and NOTHING brings the run
@@ -85,7 +87,8 @@ await seed();
 await ev(`(() => { const orig = Storage.prototype.setItem; let histWrites = 0; Storage.prototype.setItem = function (k, v) { if (k === 'snowroute.5w.v5.sides') throw new Error('injected quota failure'); if (k === 'snowroute.5w.v2.history') { histWrites++; if (histWrites > 1) throw new Error('injected quota failure'); } return orig.call(this, k, v); }; window.__seqOrig = orig; return true; })()`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await state();
-ok('F6 rollback write fails: finish stops, run intact in memory, the divergence is REPORTED (archive persisted, no intact claim) | ' + JSON.stringify(st), st.done === 3 && st.lsHist === 1 && /Undoing the finish did not work/.test(st.toast) && !/clean is intact/.test(st.toast));
+ok('F6 rollback write fails: finish stops, run intact in memory, the divergence is REPORTED (archive persisted, no intact claim) ' +
+  '| ' + JSON.stringify(st), st.done === 3 && st.lsHist === 1 && /Undoing the finish did not work/.test(st.toast) && !/clean is intact/.test(st.toast));
 await ev(`(() => { Storage.prototype.setItem = window.__seqOrig; return true; })()`);
 await send('Page.navigate', { url: url }, S);
 await sleep(3000); await ev(`loadRoute('5w'); true`); await sleep(600); // Beta 1.76
@@ -174,7 +177,8 @@ await bootThrough(ev, poll);
 const toast11d = await ev(`(function(){ document.getElementById('xText').value = sessionStorage.getItem('f11bad'); doRestore(); return document.getElementById('banner').classList.contains('show'); })()`); await sleep(1500);
 await bootThrough(ev, poll);
 const f11d = JSON.parse(await ev(`(function(){ return JSON.stringify({ run: runStart > 0, velmar: doneSet.has('Velmar'), snapStored: localStorage.getItem(LS.snap) }); })()`));
-ok('F11d a corrupt snapshot inside a recovery file is dropped SILENTLY since Beta 1.296 (its warning is cut); the restore itself is unharmed (Beta 1.96, SR-195-02) | banner shown: ' + toast11d + ' ' + JSON.stringify(f11d), toast11d === false && f11d.run && f11d.velmar && f11d.snapStored === null);
+ok('F11d a corrupt snapshot inside a recovery file is dropped SILENTLY since Beta 1.296 (its warning is cut); the restore itself is unharmed (Beta 1.96, SR-195-02) | banner ' +
+  'shown: ' + toast11d + ' ' + JSON.stringify(f11d), toast11d === false && f11d.run && f11d.velmar && f11d.snapStored === null);
 await ev(`cancelStart()`); await sleep(200);
 
 
@@ -190,8 +194,10 @@ await ev(`__stub('snowroute.5w.v5.sides')`);
 await ev(`togglePiece('Velmar', 1, 0); true`); await sleep(200);
 await ev(`shareBackup(); true`);
 await poll(`!!window.__shared136`, 15000); await sleep(200);
-const f12a = JSON.parse(await ev(`(() => { try { const o = JSON.parse(window.__shared136); return JSON.stringify({ isRec: o.recovery === true, toast: ($('bannerHead').textContent + ' ' + $('bannerLine').textContent) }); } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
-ok('F12a with saving broken, the Backup press shares a RECOVERY file and the banner says so (row 80, shared path) | ' + JSON.stringify(f12a), f12a.isRec === true && f12a.toast.indexOf('recovery backup shared instead') >= 0 && f12a.toast.indexOf('Backup not saved') >= 0);
+const f12a = JSON.parse(await ev(`(() => { try { const o = JSON.parse(window.__shared136); return JSON.stringify({ isRec: o.recovery === true, toast: ($('bannerHead').textContent + ' ' + $('bannerLine').textContent) });` +
+  ` } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
+ok('F12a with saving broken, the Backup press shares a RECOVERY file and the banner says so (row 80, shared path) ' +
+  '| ' + JSON.stringify(f12a), f12a.isRec === true && f12a.toast.indexOf('recovery backup shared instead') >= 0 && f12a.toast.indexOf('Backup not saved') >= 0);
 await ev(`__unstub()`);
 await ev(`flushAux(true); window.__shared136 = null; true`); await sleep(200);
 await ev(`shareBackup(); true`);

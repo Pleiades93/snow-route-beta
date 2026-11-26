@@ -167,7 +167,8 @@ packDelayMs = 0;
 const wA = wire.slice(wireA0);
 const gridA = await J(`({ fromPack: crGrid && crGrid.fromPack, cells: crGrid ? crGrid.cells.length : -1 })`);
 ok('A3 PACK PATH: Vaughan readies with ZERO Overpass requests, exactly ONE pack-file download, the grid marked fromPack, and DURING the wait the hint shows NOTHING (Beta 1.176 - RE-DERIVED: through 1.175 this check pinned the pack readout naming the app\'s own library during the wait; the readout is now gated to loads past 5 s and the 2.5 s pack wait never reaches it) | overpass: ' + wA.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wA.filter(w => w.kind === 'packfile').length + ' | hint during: ' + JSON.stringify(hintDuringA) + ' | ' + JSON.stringify(gridA),
-  inPickA === true && prepA === true && hintDuringA.btnOn === false && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0 && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
+  inPickA === true && prepA === true && hintDuringA.btnOn === false && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0
+  && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
 ok('A3b (Beta 1.176) past the gate (the load\'s clock seeded) the SAME in-flight pack load offers Cancel and nothing else - the percentage readout is cut, no text on any surface | ' + JSON.stringify(hintGateA),
   hintGateA.btn === 'Cancel' && hintGateA.btnOn === true);
 await installFeatureSeam();
@@ -206,7 +207,9 @@ await clickChoice(VAUGHAN_NAME);
 const readyC = await poll(`crPrepState === 'ready'`, 60000);
 const wC = wire.slice(wireC0);
 const hintC = await J(`({ banner: document.getElementById('banner').classList.contains('show'), hintEl: !!document.getElementById('createHint') })`);
-ok('C1 PACK FAILURE FALLBACK: with the pack file 404ing, preparation falls back to the Overpass GRID (one POST per cell: ' + cellsTotal + '), the city still readies, the pack was tried exactly once, and the fallback is SILENT (no hint, no banner - the library failure is not announced) | overpass: ' + wC.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wC.filter(w => w.kind === 'packfile').length + ' | hint: ' + (hintC.hint || ''),
+ok('C1 PACK FAILURE FALLBACK: with the pack file 404ing, preparation falls back to the Overpass GRID (one POST per cell: ' + cellsTotal + '), the city still readies, ' +
+  'the pack was tried exactly once, and the fallback is SILENT (no hint, no banner - the library failure is not announced) | overpass: ' + wC.filter(w => w.kind === 'overpass').length
+  + ', packfiles: ' + wC.filter(w => w.kind === 'packfile').length + ' | hint: ' + (hintC.hint || ''),
   readyC === true && wC.filter(w => w.kind === 'overpass').length === cellsTotal && wC.filter(w => w.kind === 'packfile').length === 1 && hintC.banner === false && hintC.hintEl === false);
 packMode = 'ok';
 

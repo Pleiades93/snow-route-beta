@@ -264,8 +264,10 @@ const F0b = await J(`({ state: crPrepState, hint: !!document.getElementById('cre
 ok('F1b (Beta 1.176, re-derived 1.296: the percentage readout is cut) past the 5 s gate the SAME in-flight load offers its Cancel back and NO readout on any surface | ' + JSON.stringify(F0b),
   F0b.state === 'preparing' && F0b.hint === false && F0b.btn === 'Cancel' && F0b.btnOn === true);
 const fFailed = await poll(`crPrepState === 'failed'`, 45000).catch(() => false);
-const F1 = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, hint: !!document.getElementById('createHint'), banner: document.getElementById('banner').classList.contains('show'), btn: document.getElementById('crHintBtn').textContent, boxes: crCov ? crCov.boxes.length : -1, streets: draft ? Object.keys(draft.roads).length : -1, busy: crPickBusy })`);
-ok('F2 a shape service that refuses on BOTH instances (503) fails EVERY cell and ends FAILED SILENTLY since Beta 1.296 (the reason text is cut - no hint, no banner), a Retry button standing, NO coverage committed, nothing added, and the picker free (the 1.119/1.120 wedge cannot recur at the preparation layer) | ' + JSON.stringify(F1),
+const F1 = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, hint: !!document.getElementById('createHint'), banner: document.getElementById('banner').classList.contains('show'),` +
+  ` btn: document.getElementById('crHintBtn').textContent, boxes: crCov ? crCov.boxes.length : -1, streets: draft ? Object.keys(draft.roads).length : -1, busy: crPickBusy })`);
+ok('F2 a shape service that refuses on BOTH instances (503) fails EVERY cell and ends FAILED SILENTLY since Beta 1.296 (the reason text is cut - no hint, no banner), a Retry button standing, NO coverage committed, nothing added, ' +
+  'and the picker free (the 1.119/1.120 wedge cannot recur at the preparation layer) | ' + JSON.stringify(F1),
   fFailed === true && F1.kind === 'error' && F1.status === 503 && F1.hint === false && F1.banner === false && F1.btn === 'Retry' && F1.boxes === 0 && F1.streets === 0 && F1.busy === false);
 await ev(`window.__fHealthy = true`);
 await ev(`document.getElementById('crHintBtn').click()`); // Retry: resumes the grid's missing cells (all of them)
@@ -559,16 +561,23 @@ await ev(`window.__jDelayMs = 5000`);
 await jEnter();
 await sleep(3200);
 const S1mid = await J(`({ state: crPrepState, hint: !!document.getElementById('createHint'), hintOn: !!document.getElementById('createHint'), btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
-ok('J2a (Beta 1.176 - RE-DERIVED: through 1.175 this check pinned the in-flight "Loading Vaughan" part-count readout - part N of 4 with a seconds suffix - with Cancel) 3.2 s into a load whose answers take 5 s, no hint surface exists and no Cancel shows | ' + JSON.stringify(S1mid),
+ok('J2a (Beta 1.176 - RE-DERIVED: through 1.175 this check pinned the in-flight "Loading Vaughan" part-count readout - part N of 4 with a seconds suffix - with Cancel) 3.2 s into a load whose answers take 5 s, no hint surface ' +
+  'exists and no Cancel shows | ' + JSON.stringify(S1mid),
   S1mid.state === 'preparing' && S1mid.hint === false && S1mid.hintOn === false && S1mid.btnOn === false);
 await ev(`crGrid.startedAt = Date.now() - 6000; crRenderHint(); true`); // seeded past the gate, as at F1b - the load itself is untouched and still in flight (its answers land at 5 s)
 const S1gate = await J(`({ state: crPrepState, hint: !!document.getElementById('createHint'), btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
-const gapAt166 = async (w, h) => { await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S); await ev(`crRenderHint(); true`); return await J(`(() => { const hr = document.getElementById('createBar').getBoundingClientRect(), br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5 }; })()`); };
+const gapAt166 = async (w, h) => {
+  await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S);
+  await ev(`crRenderHint(); true`);
+  return await J(`(() => { const hr = document.getElementById('createBar').getBoundingClientRect(), `
+    + `br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5 }; })()`);
+};
 const g166a = await gapAt166(390, 844);
 const g166b = await gapAt166(430, 932);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await ev(`crRenderHint(); true`);
-ok('J2a1 (Beta 1.176, re-derived 1.296: the percentage readout is cut) past the gate the SAME in-flight load offers Cancel and no readout - and Cancel hangs BELOW the create bar BY MEASUREMENT (rendered bounding boxes: gap > 0, zero overlap) at 390 px (gap ' + g166a.gap + ' px) and 430 px (gap ' + g166b.gap + ' px) | ' + JSON.stringify(S1gate),
+ok('J2a1 (Beta 1.176, re-derived 1.296: the percentage readout is cut) past the gate the SAME in-flight load offers Cancel and no readout - and Cancel hangs BELOW the create bar BY MEASUREMENT (rendered bounding boxes: gap > 0, ' +
+  'zero overlap) at 390 px (gap ' + g166a.gap + ' px) and 430 px (gap ' + g166b.gap + ' px) | ' + JSON.stringify(S1gate),
   S1gate.state === 'preparing' && S1gate.hint === false && S1gate.btn === 'Cancel' && S1gate.btnOn === true && g166a.gap > 0 && g166a.overlap === false && g166b.gap > 0 && g166b.overlap === false);
 const s1Ready = await poll(`crPrepState === 'ready'`, 30000).catch(() => false);
 await ev(`window.__jDelayMs = 0`);
@@ -616,7 +625,8 @@ const s2Ready = await poll(`crPrepState === 'ready'`, 20000).catch(() => false);
 const s2Ms = Date.now() - bt0;
 await ev(`window.__jDelayMs = 0; CR_TIMING.budgetMs = window.__savedTimingS2[0]; CR_TIMING.attempt1Ms = window.__savedTimingS2[1]`);
 ok('J2a2 (latency, fallback box, scaled 10x via CR_TIMING - J0 pins the real caps) a CORRECT answer arriving at 64% of the attempt cap (4.5 s of 7 s; full-size 45 s of 70 s, the measured overpass-api.de profile) SUCCEEDS inside the budget - RE-DERIVED for Beta 1.176 (through 1.175 the mid-wait clause pinned the ticking seconds readout "Preparing street shapes for Vaughan… T s" with Cancel): mid-wait (2 s) the hint is EMPTY under the 5 s gate, and past the gate (clock seeded) the box readout is "Preparing street shapes for Vaughan…" - its truthful wording with NO seconds suffix and no percentage (one fetch has no countable parts) - with Cancel up; 1.120 killed this answer at its 40 s attempt cap | mid: ' + JSON.stringify(S2mid) + ', gated: ' + JSON.stringify(S2gate) + ', elapsed ' + s2Ms + ' ms',
-  S2mid.state === 'preparing' && S2mid.hint === false && S2mid.hintOn === false && S2mid.btnOn === false && S2gate.state === 'preparing' && S2gate.hint === false && S2gate.btn === 'Cancel' && S2gate.btnOn === true && s2Ready === true && s2Ms >= 4400);
+  S2mid.state === 'preparing' && S2mid.hint === false && S2mid.hintOn === false && S2mid.btnOn === false
+  && S2gate.state === 'preparing' && S2gate.hint === false && S2gate.btn === 'Cancel' && S2gate.btnOn === true && s2Ready === true && s2Ms >= 4400);
 await jExitDiscard();
 // S3: the failure matrix on the GRID - every cell failing ends honestly
 const failGrid = async (mode, status) => {
@@ -624,7 +634,8 @@ const failGrid = async (mode, status) => {
   const gc0 = await geoCount();
   await jEnter();
   const r = await poll(`crPrepState === 'failed' || crPrepState === 'degraded'`, 30000).catch(() => false);
-  const F = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, remark: crPrepFail && crPrepFail.remark, boxes: crCov ? crCov.boxes.length : -1, hint: !!document.getElementById('createHint'), btn: document.getElementById('crHintBtn').textContent })`);
+  const F = await J(`({ state: crPrepState, kind: crPrepFail && crPrepFail.kind, status: crPrepFail && crPrepFail.status, remark: crPrepFail && crPrepFail.remark, boxes: crCov ? crCov.boxes.length : -1,` +
+    ` hint: !!document.getElementById('createHint'), btn: document.getElementById('crHintBtn').textContent })`);
   const reqs = (await geoCount()) - gc0;
   await jExitDiscard();
   await ev(`window.__jMode = 'healthy'`);
@@ -908,7 +919,8 @@ await sleep(600); // the serialized cache writes settle
 const S12 = await J(`({ note: crCacheNote, hint: !!document.getElementById('createHint') })`);
 const s12Rec = await ev(`crIdbGet('Vaughan').then(r => r ? Object.keys(r.cells || {}).length : -1)`);
 await ev(`CR_TIMING.cityCapBytes = 60 * 1024 * 1024`);
-ok('J11b (cache cap, amendment C) with the storage cap shrunk below any city, the load still completes - and the refusal is RECORDED in the cache-note state ("Couldn\'t save Vaughan on this phone"; its hint display is cut since Beta 1.296), with nothing silently half-saved (record cells: ' + s12Rec + ') | ' + JSON.stringify(S12),
+ok('J11b (cache cap, amendment C) with the storage cap shrunk below any city, the load still completes - and the refusal is RECORDED in the cache-note state ("Couldn\'t save Vaughan on this phone"; its hint display is cut since ' +
+  'Beta 1.296), with nothing silently half-saved (record cells: ' + s12Rec + ') | ' + JSON.stringify(S12),
   s12Ready === true && S12.note.indexOf('Couldn’t save') === 0 && S12.hint === false && s12Rec <= 0);
 await jExitDiscard();
 // S13: Beta 1.229 - the last-city lookup race (CG-PF-11) retires WITH the feature.

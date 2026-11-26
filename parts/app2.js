@@ -18,7 +18,7 @@ function bootMap() {
 } // tiles melt in (200 ms); ratio 2 = 4/9 the pixels, the fluidity win; full gestures stay on
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
 let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
-// the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears itself on recovery
+// the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears on recovery
 function noteMapState() { $('mapNote').classList.toggle('hidden', !((mapNoteArmed && !glOk) || basemapDead)); }
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));

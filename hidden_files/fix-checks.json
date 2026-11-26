@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "462d4212e4b3c9d452f4e02aafd42380c1237dea0f908794bc5bec49491f17c8",
+  "canonical_registry_sha256": "1191da9d0bca5e13afc01bc7ff5655bea60cc5565f28d72b02daee3683586b01",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -7002,7 +7002,7 @@
    "fix": "Sweep re-run (sweep-20261115-171048) cap-deferred candidates A-06 + D-07, assessed REAL/LOW, plus the approved follow-camera line; landed as docs-only maintenance PR #74 (merge 5fcc6499a556c8ef26f5f424547e82369ecec011, no Beta bump). D-07: the create-cache module-table entry describes crCityPrepare with resume only (the Refresh affordance was removed in Beta 1.153). If this fails, the entry drifted - reconcile against create-cache.js. Re-pinned in the popup-round2 round (Beta 1.296): crFailText is deleted in 1.296 (its texts were cut by the notification audit); the module-table entry no longer names it.",
    "fix_id": "rerun-docs-a06-d07",
    "id": "rerun-docs-d07-createcache-resume-only",
-   "pattern": "`crCityPrepare` (cache-first whole-city preparation, with resume)",
+   "pattern": "`crCityPrepare` (cache-first preparation, with resume)",
    "type": "grep_present"
   },
   {

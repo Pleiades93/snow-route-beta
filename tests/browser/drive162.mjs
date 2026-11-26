@@ -32,7 +32,8 @@ await ev(`__failKey('snowroute.5w.v4.notes'); __failKey('snowroute.5w.v4.cov'); 
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await stored();
 const toastA = JSON.parse(await ev(`JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent })`));
-ok('A1 finish committed with NO finish/cleanup warning since Beta 1.296 (the could-not-be-written warning is cut - the obligation state in A2 is the honesty; the still-failing writes may honestly raise row 8 not-saving): archive landed | banner: ' + JSON.stringify(toastA) + ' ' + JSON.stringify(st), st.hist === 1 && toastA.head !== 'Finish stopped' && (toastA.shown === false || toastA.head === 'This clean is not saving' || toastA.head === 'Not saving'));
+ok('A1 finish committed with NO finish/cleanup warning since Beta 1.296 (the could-not-be-written warning is cut - the obligation state in A2 is the honesty; the still-failing writes may honestly raise row 8 not-saving): archive ' +
+  'landed | banner: ' + JSON.stringify(toastA) + ' ' + JSON.stringify(st), st.hist === 1 && toastA.head !== 'Finish stopped' && (toastA.shown === false || toastA.head === 'This clean is not saving' || toastA.head === 'Not saving'));
 ok('A2 the failed cleanup is exactly the DA-10 state: old note + coverage still stored, obligation armed | ' + JSON.stringify(st), !!st.notes && st.notes.includes('hazard') && !!st.cov && st.cov.includes('Velmar') && st.marker !== null);
 // Storage heals, and the route state is loaded again - loadRouteState is the
 // exact entry a cold boot runs. (A polite Page.navigate would MASK the defect

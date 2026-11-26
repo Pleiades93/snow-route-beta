@@ -43,7 +43,9 @@ const payload = (map, key, side) => {
 };
 
 // ---------- The bar markup ----------
-check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc) (Beta 1.236 roll: the input\'s placeholder is Andrew\'s shorter wording now - the markup claim is unchanged)', head.replace(/\n/g, '').includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Select a road or intersection" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
+check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc) (Beta 1.236 roll: the input\'s placeholder is Andrew\'s shorter wording now - the markup claim is unchanged)',
+   head.replace(/\n/g, '').includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span>' +
+     '<input id="crSearchInput" type="search" placeholder="Select a road or intersection" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
 check('1b: the Search button survives nowhere in the parts', !head.includes('crSearchBtn') && !app4.includes('crSearchBtn') && !pick.includes('crSearchBtn'));
 check('1c: the old x tile is gone (no text-glyph exit, no Exit creating title)', !head.includes('title="Exit creating"') && !head.includes('<button id="crExit" title'));
 
@@ -67,7 +69,8 @@ check('3e3: the hint pill is gone entirely - no surface can be painted beneath t
 check('3f: the pin host is a bare 17px glyph (no chip)', rule('.crPin img {').includes('width: 17px; height: 17px;'));
 
 // ---------- The press groups ----------
-const ruleText = (startFrag) => { const ls = head.split('\n'); const i = ls.findIndex(l => l.includes(startFrag)); if (i < 0) return ''; let out = ''; for (let k = i; k < ls.length; k++) { out += (out ? ' ' : '') + ls[k].trim(); if (ls[k].includes('}')) break; } return out; };
+const ruleText = (startFrag) => { const ls = head.split('\n'); const i = ls.findIndex(l => l.includes(startFrag)); if (i < 0) return '';
+  let out = ''; for (let k = i; k < ls.length; k++) { out += (out ? ' ' : '') + ls[k].trim(); if (ls[k].includes('}')) break; } return out; };
 const transLine = ruleText('.tabItem, .dockBtn, .runBtn,');
 const scaleLine = ruleText('.tabItem:active, .dockBtn:active, .runBtn:active,');
 check('4a: the clear disc joins the 1.226 press groups and the Search button is out of them', transLine.includes('#crClear') && scaleLine.includes('#crClear:active') && !transLine.includes('#crSearchBtn') && !scaleLine.includes('#crSearchBtn'));

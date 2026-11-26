@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-rJtQwltj8jxBigGLIko9O9yOZBcVMo087R00WLkh2tH2DzcoEUto5Fb5jsQ+7m7j' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-yhqkqu6yK06OYk09E95GWdFG1wTiiHlXSGyKuQT6Uk6NOcWARlCHiAp0i9dyWdtt' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-5QAO3X93y/oPeUK4kP5tMBIaAlLheOCWVOcn7ltbVNjFml5YFhVq86yjgmR8PFz7' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-favWJzh5SRn+3hUAvQ5ggAlfTrvbFvwdGPMrT4jdGJYtSRofccAd3AGtP68yrcJv' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -504,7 +504,8 @@ body.snow-scene #routeMenu.boot { background: transparent; } /* while the scene 
 .routeName { font-size: 17px; font-weight: 650; }
 .routeArea { font-size: 13px; opacity: .75; }
 #routeMenu .routeRow { background: rgba(255,255,255,.18); border: none; box-shadow: 0 2px 8px rgba(10,16,60,.25); color: #fff; margin-bottom: 10px; position: relative; justify-content: flex-end; height: 58px; padding: 8px 16px; }
-#routeMenu .rmPane .routeRow { transition: transform 150ms ease-out, border-bottom-left-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms, border-bottom-right-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms; } /* Corners stay square until the card is gone, then spring round. .rmPane scope outranks the later press-feedback shorthand */ /* Beta 1.158: the menu's list rows wear the unified pill family's tint + ring tokens (Beta 1.222: the family's soft fill + soft shadow tokens - the ring retired with the rest of the family). Beta 1.159 (Andrew, overruling the 1.158 note that kept the rows left-aligned): the rows are pills in full - see the .routeMeta rule below. The row becomes the positioning frame: the extras (chevron, badge, Delete) stay in flow at the right edge (flex-end), and the row keeps a pill's height even when it carries no extras (the meta no longer sets it) */
+/* Corners stay square until the card is gone, then spring round; .rmPane scope outranks the later press-feedback shorthand */
+#routeMenu .rmPane .routeRow { transition: transform 150ms ease-out, border-bottom-left-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms, border-bottom-right-radius 280ms cubic-bezier(.34,1.35,.5,1) 335ms; }
 /* name and sub centred on the pill itself, the meta spanning full width; pointer-events none: taps belong to the row */
 #routeMenu .routeMeta { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); align-items: center; text-align: center; padding: 0 54px; pointer-events: none; }
 #routeMenu .routeCheck { width: 25px; height: 25px; flex: none; } /* the loaded route's disc check: 25px at the right edge, clear of the meta's 54px padding */
@@ -3387,7 +3388,7 @@ function bootMap() {
 } // tiles melt in (200 ms); ratio 2 = 4/9 the pixels, the fluidity win; full gestures stay on
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
 let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
-// the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears itself on recovery
+// the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears on recovery
 function noteMapState() { $('mapNote').classList.toggle('hidden', !((mapNoteArmed && !glOk) || basemapDead)); }
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
@@ -9786,7 +9787,7 @@ async function pickStreet(osmName, lngLat) {
     }
     if (exists) {
       if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) return;
-      // an unheld run past verified coverage is never half-added over an existing pick; wider preparation + a fresh tap is the honest path
+      // an unheld run past verified coverage is never half-added over an existing pick; wider preparation + a fresh tap wins
       crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run: the sectors door is the answer
     }
     if (res0.status === 'absent') {

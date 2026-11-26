@@ -94,7 +94,8 @@ await ev(`cancelStart(); true`); await sleep(250);
 // toast rule) - a healthy save fires NO pill at all now. The gating
 // property survives on the failure side, which is the side CG-196-05
 // exists for: a failed save still warns, and never claims success.
-await ev(`(() => { $('bannerHead').textContent = ''; $('banner').classList.remove('show'); return true; })()`); // isolate the action's own pill (the D1/D2 idiom below): an ambient KEPT pill standing from boot (the rig's location-off warning) is not this save's pill
+await ev(`(() => { $('bannerHead').textContent = ''; $('banner').classList.remove('show'); return true;` +
+  ` })()`); // isolate the action's own pill (the D1/D2 idiom below): an ambient KEPT pill standing from boot (the rig's location-off warning) is not this save's pill
 await ev(`markDone('Boddy', 'tap'); true`); await sleep(200);
 ok('D0 healthy save: NO completion pill fires since Beta 1.221 | ' + await ev(`$('bannerHead').textContent`), (await ev(`$('bannerHead').textContent`)).indexOf('✓') !== 0 && (await ev(`$('banner').classList.contains('show')`)) === false);
 await ev(`(() => { window.__ls146 = lsSet; lsSet = () => false; $('bannerHead').textContent = ''; return true; })()`);
@@ -105,7 +106,8 @@ await ev(`(() => { $('bannerHead').textContent = ''; return true; })()`);
 await ev(`togglePiece('Astona', 0, 0); true`); await sleep(200);
 const d2 = await ev(`$('bannerHead').textContent`);
 ok('D2 a later failure in the same episode still says not saved (the episode warning only fires once) (CG-196-05) | ' + JSON.stringify(d2), d2 === 'Not saved');
-await ev(`(() => { lsSet = window.__ls146; $('bannerHead').textContent = ''; $('banner').classList.remove('show'); return true; })()`); // same isolation: D2's KEPT storage pill may still be standing inside its display window - it is not the unmark's pill
+await ev(`(() => { lsSet = window.__ls146; $('bannerHead').textContent = ''; $('banner').classList.remove('show'); return true;` +
+  ` })()`); // same isolation: D2's KEPT storage pill may still be standing inside its display window - it is not the unmark's pill
 await ev(`markUndone('Velmar'); true`); await sleep(200);
 ok('D3 healthy again: the unmark lands and no pill fires since Beta 1.221 | ' + await ev(`$('bannerHead').textContent`), (await ev(`!doneSet.has('Velmar') && !$('banner').classList.contains('show')`)) === true);
 
@@ -132,10 +134,12 @@ ok('E2b healthy again: the export carries the snapshot | snap ' + (typeof health
 await ev(`cancelStart(); true`); await sleep(250);
 
 // ---- S2: the snapshot save rides silently (Beta 1.296) ---- //
-await ev(`(() => { window.__os146 = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === LS.snap) throw new Error('rig: snap write fails'); return window.__os146.call(this, k, v); }; window.__pillLog146 = []; window.__pillRec146 = setInterval(() => { const t = $('banner'); window.__pillLog146.push(t.classList.contains('show') ? t.textContent : ''); }, 25); return true; })()`);
+await ev(`(() => { window.__os146 = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === LS.snap) throw new Error('rig: snap write fails'); return window.__os146.call(this, k, v); };` +
+  ` window.__pillLog146 = []; window.__pillRec146 = setInterval(() => { const t = $('banner'); window.__pillLog146.push(t.classList.contains('show') ? t.textContent : ''); }, 25); return true; })()`);
 await ev(`startClean(); true`); await sleep(1200);
 const S2 = JSON.parse(await ev(`(() => { clearInterval(window.__pillRec146); return JSON.stringify(window.__pillLog146); })()`));
-ok('S2 a FAILED snapshot save at Start is SILENT since Beta 1.296 (the snapshot rides silently; the board save is the only Start survivor; an in-page recorder samples the banner every 25 ms) | saw snapshot warning: ' + S2.some(x => x.indexOf('snapshot') >= 0), !S2.some(x => x.indexOf('snapshot') >= 0));
+ok('S2 a FAILED snapshot save at Start is SILENT since Beta 1.296 (the snapshot rides silently; the board save is the only Start survivor; an in-page recorder samples the banner every 25 ms) | saw snapshot ' +
+  'warning: ' + S2.some(x => x.indexOf('snapshot') >= 0), !S2.some(x => x.indexOf('snapshot') >= 0));
 await ev(`(() => { Storage.prototype.setItem = window.__os146; cancelStart(); return true; })()`); await sleep(250);
 
 R.exceptions = consoleLog.filter(l => l.type === 'error');

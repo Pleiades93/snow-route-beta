@@ -115,10 +115,15 @@ const corruptCycle = async (mutate) => {
   await ev(`markDone('Astona', 'test')`);
   await ev(`cancelStart()`);
   await sleep(300);
-  return JSON.parse(await ev(`(() => { const stored = JSON.parse(localStorage.getItem(LS.sides) || '{"p":{}}'); return JSON.stringify({ velmarDone: doneSet.has('Velmar'), astona: pieces.Astona ? pieces.Astona.every(v => v === 0) : 'missing', velmarVal: pieces.Velmar ? pieces.Velmar[0] : 'missing', stored99: JSON.stringify(stored).includes('99'), covBad: (coveredIdx.Velmar || []).some(i => typeof i !== 'number' || i < 0 || i > 5000), stray: doneSet.has('Nowhere Road'), toast: $('banner').classList.contains('show') }); })()`));
+  const rawSnap = await ev(`(() => { const stored = JSON.parse(localStorage.getItem(LS.sides) || '{"p":{}}'); `
+    + `return JSON.stringify({ velmarDone: doneSet.has('Velmar'), astona: pieces.Astona ? pieces.Astona.every(v => v === 0) : 'missing', `
+    + `velmarVal: pieces.Velmar ? pieces.Velmar[0] : 'missing', stored99: JSON.stringify(stored).includes('99'), covBad: (coveredIdx.Velmar || []).some(i => typeof i !== 'number' || i < 0 || i > 5000), `
+    + `stray: doneSet.has('Nowhere Road'), toast: $('banner').classList.contains('show') }); })()`);
+  return JSON.parse(rawSnap);
 };
 const S12a = await corruptCycle(`s => { s.pieces = { Velmar: [99] }; }`);
-ok('S12a a snapshot with an out-of-range value and missing streets is rejected whole - journal fallback, no corruption saved, and the cancel is SILENT since Beta 1.296 (the damaged-snapshot message is cut) (Beta 1.95, SR-194-03) | ' + JSON.stringify(S12a), S12a.velmarDone === true && S12a.astona === true && S12a.velmarVal === 3 && S12a.stored99 === false && S12a.toast === false);
+ok('S12a a snapshot with an out-of-range value and missing streets is rejected whole - journal fallback, no corruption saved, and the cancel is SILENT since Beta 1.296 (the damaged-snapshot message is cut) (Beta 1.95, SR-194-03) ' +
+  '| ' + JSON.stringify(S12a), S12a.velmarDone === true && S12a.astona === true && S12a.velmarVal === 3 && S12a.stored99 === false && S12a.toast === false);
 const S12b = await corruptCycle(`s => { s.pieces.Velmar = [3]; s.pieceTimes.Velmar = { 0: 'garbage' }; }`);
 ok('S12b a snapshot with a wrong-length street and garbage times is rejected whole | ' + JSON.stringify(S12b), S12b.velmarDone === true && S12b.astona === true && S12b.velmarVal === 3 && S12b.stored99 === false);
 const S12c = await corruptCycle(`s => { s.cov = { Velmar: [99999] }; s.done = ['Velmar', 'Nowhere Road']; }`);
@@ -147,7 +152,8 @@ await ev(`togglePiece('Velmar', 0, 0)`);
 await ev(`(function(){ const s2 = JSON.parse(localStorage.getItem(LS.snap)); s2.pieces = { Velmar: [99] }; localStorage.setItem(LS.snap, JSON.stringify(s2)); return true; })()`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x);` +
+  ` }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
 await ev(`(function(){ window.__lsSetOrig = lsSet; lsSet = (k, v) => (k === LS.trail || k === LS.sess) ? false : window.__lsSetOrig(k, v); return true; })()`);
 await ev(`cancelStart()`); await sleep(300);
@@ -168,7 +174,8 @@ await ev(`startClean()`);
 await ev(`(function(){ localStorage.removeItem(LS.snap); return true; })()`); // the snapshot never landed / was lost - the run itself is legitimately open
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x);` +
+  ` }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
 const S13a = JSON.parse(await ev(`(() => JSON.stringify({ toasts: window.__toasts133 || [], resumed: !!runStart, snapOk: validateSnap(parseJ(lsGet(LS.snap), null), runStart) }))()`));
 ok('S13a a resumed run with no snapshot: the resume lands, the snapshot on disk is unusable for it (Cancel is reduced to a rebuild), and no resume pill fires since Beta 1.221 | ' + JSON.stringify(S13a), S13a.resumed === true && !S13a.snapOk && !S13a.toasts.some(t => /no usable cancel snapshot/.test(t))); // Beta 1.221 gate fix: the unusable test is !snapOk, not === false - validateSnap's contract is a normalized copy or NULL (never false), so the strict-false form could never pass; the property (no usable snapshot for this run) is asserted at the same strength
@@ -176,7 +183,8 @@ await ev(`cancelStart()`); await sleep(300);
 await ev(`startClean()`); await sleep(300); // a fresh Start writes a fresh, valid snapshot
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x);` +
+  ` }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
 const S13b = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
 ok('S13b a resumed run WITH its snapshot stays silent | ' + JSON.stringify(S13b), !S13b.some(t => /no usable cancel snapshot/.test(t)));

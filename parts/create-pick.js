@@ -1734,7 +1734,7 @@ async function pickStreet(osmName, lngLat) {
     }
     if (exists) {
       if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) return;
-      // an unheld run past verified coverage is never half-added over an existing pick; wider preparation + a fresh tap is the honest path
+      // an unheld run past verified coverage is never half-added over an existing pick; wider preparation + a fresh tap wins
       crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run: the sectors door is the answer
     }
     if (res0.status === 'absent') {

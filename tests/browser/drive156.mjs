@@ -313,7 +313,8 @@ const secB = await poll(`crSectorSession.street === 'Alpha Street'`, 10000);
 const barB = await J(`document.getElementById('crSbSub').textContent`);
 await ev2(`crSectorTap({ lat: 43.79, lng: -79.578 })`); // dead on Alpha's only sector
 await sleep(500);
-const afterB = await J(`({ kept: !!(draft && draft.roads['Alpha Street']), roads: draft ? Object.keys(draft.roads).length : -1, sec: draft && draft.sectors ? draft.sectors['Alpha Street'] : undefined, toast: document.getElementById('banner').classList.contains('show'), mode: crSectorSession.street })`);
+const afterB = await J(`({ kept: !!(draft && draft.roads['Alpha Street']), roads: draft ? Object.keys(draft.roads).length : -1, sec: draft && draft.sectors ? draft.sectors['Alpha Street'] : undefined,` +
+  ` toast: document.getElementById('banner').classList.contains('show'), mode: crSectorSession.street })`);
 ok('157-B1 ONE-PIECE STREETS ARE HONEST: Alpha (nothing crosses it) computes one sector; its bar says "One piece, no cross-streets to split it at", and tapping that sole sector leaves the street picked, in sector mode, firing NO pill since Beta 1.221 (the bar itself says why - the tap pill was cut under Andrew\'s keep-list ruling, the bar text is the mechanism) | 2 picked: ' + twoB + ', mode: ' + secB + ' | bar: ' + barB + ' | ' + JSON.stringify(afterB),
   twoB === true && secB === true && barB.indexOf('One piece') === 0 && barB.indexOf('no cross-streets to split it at') > 0 && afterB.kept === true && afterB.roads === 2 && afterB.mode === 'Alpha Street' && afterB.toast === false);
 await ev2(`document.getElementById('crSbDone').click()`);

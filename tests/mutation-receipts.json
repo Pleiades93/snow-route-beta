@@ -13685,6 +13685,888 @@
    "red": "on the pre-port tree: 4/19 checks, 0 exceptions - FAIL; failing checks include: S1; TEETH1; TEETH2; S2a",
    "green": "on the ported tree: 19/19 checks, 0 exceptions - PASS",
    "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1223",
+   "check": "tests/proof/proof-1223.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1223.mjs": "2fe470849ce4034222ef093fb001c638b4cbf6e697f3294e9826cf5ccd6e6572",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 21 passed, 6 failed",
+   "green": "on the 1.296 tree: 27 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1225",
+   "check": "tests/proof/proof-1225.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1225.mjs": "7507ee4a6c104913c64f1be93b342b4ec2bfcd71449397382cde9c14c5c92941",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: FAILED; failing: 2a: the road message is cut; 2b: the GPS weak message is the banner pair now; 2c: the not-saved toast is the banner headline now",
+   "green": "on the 1.296 tree: exit 0",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1226",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1226.mjs": "e7d8af6d638f53b466c2d2c8a8ac334f4a08c60229f3d309b2c1fd85da057dfa",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the #routeMenu .routeRow selector removed from the press transition group (parts/head.html) on the 1.296 tree",
+   "red": "mutated 1.296 tree: FAILED; failing: 1a: the press transition group exists and carries the core families (t",
+   "green": "clean 1.296 tree: exit 0",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1227",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1227.mjs": "a200f5413022b0597dc5a11adb35d563f061d910bde72e58f516f0846037ad05",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: FAILED; failing: 3e3: the hint pill is gone entirely - no surface can be painted beneat",
+   "green": "on the 1.296 tree: exit 0",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1229",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1229.mjs": "ce76ebbcf761d8a8de18a0b05dcc9dd42583e391409e5d572ef624b5a43ffdfa",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 32 passed, 1 failed; failing: 6e: the confirm No button is red while it reads Cancel",
+   "green": "on the 1.296 tree: 33 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1231",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1231.mjs": "a4bc16435b9d335b06892e1d534f17332e824d18a66e40c5eddf016e5990f19d",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the press transition duration changed 150ms to 120ms on the group rule (parts/head.html) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 21 pass, 2 fail; failing: 1a: the press transition group stands at 150ms with its core families; 1c: no 120ms press timing survives in the page",
+   "green": "clean 1.296 tree: 23 pass, 0 fail",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1233",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1233.mjs": "0d954e8c06be570e5276bce025f3fa0396efce084b90a37884e55c912552dbc7",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 38 pass, 1 fail; failing: A2c: app1's save warning is the banner headline now, the old toast for",
+   "green": "on the 1.296 tree: 39 pass, 0 fail",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1242.mjs": "391518a158bd92a7b6a032af96006d96d0b8c1608108f2213f645bfa25a78fdb",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 14 pass, 3 fail; failing: 9: while trimming, the renderer offers no button (the early return sta; 13: the cancel chain's warnings are cut (audit v2 rows 11-13): the can; 14: the GPS trio are named keeps, reworded onto the banner",
+   "green": "on the 1.296 tree: 17 pass, 0 fail",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1245",
+   "check": "tests/proof/proof-1245.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1245.mjs": "46f5e6426805546efd6a0171a76ae69d06c78e51849be5761a6eb2e2550ac41f",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 11 pass, 1 fail; failing: 7: the edge path still fires its ONE top-up on the same budgets (the c",
+   "green": "on the 1.296 tree: 12 pass, 0 fail",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1253",
+   "check": "tests/proof/proof-1253.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1253.mjs": "ee838369fc0f1ffe1f7e65b03fa4d7f54f7f997c7855521d170fc7c126fc3f1c",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 10 passed, 2 failed; failing: 7: the renderer takes its label from the decision, once; 13: the failure-text function is retired with its texts (the dense rem",
+   "green": "on the 1.296 tree: 12 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-1272",
+   "check": "tests/proof/proof-1272.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1272.mjs": "2c8ce79b580a79d57e658b7f4c0171318d41c5583d2e1f4bf58d05e2a6812efe",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: exit 0",
+   "green": "on the 1.296 tree: 44 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-shader-glow-round",
+   "check": "tests/proof/proof-shader-glow-round.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-shader-glow-round.mjs": "ec04789fbbf998d158b8b84cf064ceb738d5860934261a6b17977030883e29ae",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 25 pass, 3 fail",
+   "green": "on the 1.296 tree: 28 pass, 0 fail",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-sweep-20261115-171048-e-01",
+   "check": "tests/proof/proof-sweep-20261115-171048-e-01.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-sweep-20261115-171048-e-01.mjs": "78417d79f62ec48644fb84ed172fabb85184ba5e58ee26a83f5497b07d244d76",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: exit 0",
+   "green": "on the 1.296 tree: exit 0",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-proof-tapguard",
+   "check": "tests/proof/proof-tapguard.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-tapguard.mjs": "707457be7f5598afcc9dd72015b499b60cf266bc6eb90090f71d72aaa858e900",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 9 passed, 1 failed; failing: 2a: 24 tapGuard occurrences in the parts (1 definition + 23 call sites",
+   "green": "on the 1.296 tree: 10 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive86",
+   "check": "tests/browser/drive86.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive86.mjs": "ad8807ce555884115f0b467cb2a280313170a526c3598f7c1096cf2fa5ed3c87",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired at the end of clearTrailAll (parts/app3.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 15/18 checks, 0 exceptions - FAIL",
+   "green": "green run on this rig crashed on the reload race that also hits the pristine base tree; sensitivity is carried by the mutation pair and the cloud gate is the green judge",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive89",
+   "check": "tests/browser/drive89.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive89.mjs": "b49cdf3ab7466ba55e0d27c2aebd2cf823447d115563d0ca418e015078f78293",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the reset button's text forced to 'Undo' after a finish (parts/app3.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 13/15 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 15/15 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive115",
+   "check": "tests/browser/drive115.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive115.mjs": "6772bac7ec44893d92786ef7053a960b237d74908c89cac5ba6a938b279adf96",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 13/18 checks, 0 exceptions - FAIL; failing checks include: A8 layout; B2 the notice cannot be dismissed; B3 the notice stays while the map stays dead; D2 night basemap loads, still no notice\n  FAILED: D6 night: t",
+   "green": "16/18 on this rig - the re-scoped banner checks (A8/B2/D6) pass; B3/D2 fail on proxy-dependent map-recovery premises that fail identically on the 1.295 base tree; the cloud gate is the judge",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive118",
+   "check": "tests/browser/drive118.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive118.mjs": "7637ad68951e512863fd4c93512dcb10aa35170f0a85b180e26ffa0d68543991",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 25/28 checks, 0 exceptions - FAIL; failing checks include: T5 failed restore reports the rollback through the banner; T6 unverifiable rollback is reported honestly\n  FAILED: T9 fi",
+   "green": "on the 1.296 tree: 28/28 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive121",
+   "check": "tests/browser/drive121.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive121.mjs": "47e35e947b6f93091da0f508b13ca0956990f343137e95df5c1f7ecc5961f20c",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired at the restoreBackup entry (parts/app4.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 14/18 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 18/18 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive123",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive123.mjs": "708045487fb317ab729be7d5d85e4008e8b173af7c4eb0519f468f701e320bef",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 16/18 checks, 0 exceptions - FAIL; failing checks include: A7 the dialogs carry NO corner X; A7b both dialog No buttons read Cancel\nBROWSER TESTS: FAIL",
+   "green": "on the 1.296 tree: 18/18 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive125",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "7a371265a07fa0cefa8694e579f6b01daf35d9c6be7b92771e4abbc6695f1953",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired on doRestore's JSON-parse refusal seat (parts/app4.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 27/28 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 28/28 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive128",
+   "check": "tests/browser/drive128.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive128.mjs": "47ed49c4e4c6f342a0d530b5ff58a86fb11675e9aa0a920938049fe393b86a70",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 25/27 checks, 0 exceptions - FAIL; failing checks include: M8 tapping away closes the sheet AND the same tap never reach; M12 Mark both sides on a failed save: NO success message - th",
+   "green": "26/27 on this rig - M8 fails identically on the 1.295 base tree (not a regression); the cloud gate is the judge",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive133",
+   "check": "tests/browser/drive133.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive133.mjs": "26bf453fa1af0ad608a2df12182aef311d92bffa42a45273ab09f1b83ab08e02",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired at the cancelStart entry (parts/app3.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 18/20 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 20/20 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive136",
+   "check": "tests/browser/drive136.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive136.mjs": "d97b3ce71bd00810bbf753d47ed2b3ae0b5ec9cd6a645b0f6c4367332bc2f2d7",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the row-1 'Not saving' banner neutered to null at its seat (parts/app2.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 22/24 checks, 0 exceptions - FAIL",
+   "green": "the green run crashed at this rig's reload wall AFTER its changed check F1 passed (the same wall hits the base tree); sensitivity is carried by the mutation pair (F1 fails under MF7) and the cloud gate is the green judge",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive142",
+   "check": "tests/browser/drive142.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive142.mjs": "720f35c34c1432aec68a02ce06ec777bb1b6e6d0cc0c4e9a8d5e1408cb44420d",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 5/6 checks, 0 exceptions - FAIL; failing checks include: T4 Cancel Start with storage broken warns instead of claiming",
+   "green": "on the 1.296 tree: 6/6 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive143",
+   "check": "tests/browser/drive143.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive143.mjs": "935a7cb0f4b3955166c7023ca713e238c82941dbc7cda8ed1342e21972776ef6",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired after a committed finish at the HIST.replaceView seat (parts/app3.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 21/21 checks, 0 exceptions - PASS",
+   "green": "clean 1.296 tree: 21/21 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive145",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive145.mjs": "9ff09ee2855654c0128b2e1faaa2ad8be0039b567b8633e427285972ecd83ff9",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired when the restore report lists dropped names (parts/app4.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 57/63 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 63/63 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive146",
+   "check": "tests/browser/drive146.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive146.mjs": "ce5f79b09ec09c9d7e6108ecafd3eb754c182f88c413ebd65504c4ef3cb13247",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 24/26 checks, 0 exceptions - FAIL; failing checks include: D1 failed save: NO success toast - the storage warning stands; D2 a later failure in the same episode still says not saved",
+   "green": "on the 1.296 tree: 26/26 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive149",
+   "check": "tests/browser/drive149.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive149.mjs": "6f00da1c52cbd3306855431cf0128b84e50cef9dca2e00ec9e42db4ea332a3b9",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired on the plan-refusal seats inside restoreBackup (parts/app4.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 20/21 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 21/21 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive150",
+   "check": "tests/browser/drive150.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive150.mjs": "2426468f70e7cc0227486eb43752b366b6c5d875974f441fa147b59c1d7049a8",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired on a map-tap miss and on a street add in crMapTap (parts/create-pick.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: no result block",
+   "green": "37/37 checks, 0 exceptions - PASS on the clean tree; under MF10 the drive aborted inside the mutated flow (the re-fired add-path banner broke the pick flow it drives), which is the sensitivity observation",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive151",
+   "check": "tests/browser/drive151.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive151.mjs": "7837d3650f7922ae7140d7e13466fffd52f3716f554247fbe7f457924c460f66",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 9/10 checks, 0 exceptions - FAIL; failing checks include: N7 PERSISTENCE ROUND-TRIP: after a full page reload, re-picki",
+   "green": "on the 1.296 tree: 10/10 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive152",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive152.mjs": "75a8e04394553d36cc3cf5311510fe057e2d40a6c004a66031af8feb22fd0ee3",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the 'Retry missing parts' button label shortened to 'Retry' (parts/create-pick.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 6/8 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 8/8 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive153",
+   "check": "tests/browser/drive153.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive153.mjs": "46048b4e95d63e1932d25c5487b75a936a4c3f9d99fe5475fa26b6404a30f8ac",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 14/15 checks, 0 exceptions - FAIL; failing checks include: C1 PACK FAILURE FALLBACK: with the pack file 404ing, preparat",
+   "green": "on the 1.296 tree: 15/15 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive154",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive154.mjs": "d387f9f89276c16d624233acfa998dc87b86a5b09051b16f0ca525ab7c4138ff",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 21/22 checks, 0 exceptions - FAIL; failing checks include: G1 STORAGE FAILURE: when the store delete throws, the banner",
+   "green": "on the 1.296 tree: 22/22 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive155",
+   "check": "tests/browser/drive155.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive155.mjs": "9ff389a9180e9199598e0a7bd40d1f5a03ff13ec154b1414b17721ec45ed1d96",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the #createBar shown-state display rule broken so the bar never displays (parts/head.html) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 4/6 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 6/6 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive156",
+   "check": "tests/browser/drive156.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive156.mjs": "c3b0bae77686c3466862ac7f47b79b0c8896a47c43c9d3cef2de5a18691b65ee",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 36/37 checks, 0 exceptions - FAIL; failing checks include: 158-B4 SECTOR BAR BACK TO PANEL: 12 frames; present in every",
+   "green": "35/37 then 34/37 on this rig - B1/B3/B4 are animation frame-sampling failures on an untouched code path on this throttled rig; CI-adjudicated per the round's standing directive, the cloud gate is the judge",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive162",
+   "check": "tests/browser/drive162.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive162.mjs": "d9be85e618610e76d0398d461020b301d7abde0970e6bb23cd60204ecf6d65a8",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 12/13 checks, 0 exceptions - FAIL; failing checks include: G1 unverifiable archive rollback: the banner says the undo co",
+   "green": "on the 1.296 tree: 13/13 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive163",
+   "check": "tests/browser/drive163.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive163.mjs": "f731195ee87792677c2c049a8f61bb2b0f9e24942c2e226cee4802d2b341a0f6",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 14/15 checks, 0 exceptions - FAIL; failing checks include: B1 DA-05 save with a FAILING store write: refusal banner",
+   "green": "on the 1.296 tree: 15/15 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive165",
+   "check": "tests/browser/drive165.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive165.mjs": "83abe3906c3898f93469952d919643a32489b65780ba4fa687e2bcb242fdc806",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired inside pickStreet on a direct pick (parts/create-pick.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 14/15 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 15/15 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive166",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive166.mjs": "24db17503a09edef886378f72362ded70f8e1ef2be66f927fe1773647f53abed",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 48/58 checks, 0 exceptions - FAIL; failing checks include: F1; F1b; F2 a shape service that refuses on BOTH instances; J2a",
+   "green": "on the 1.296 tree: 58/58 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive169",
+   "check": "tests/browser/drive169.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive169.mjs": "0565411f298a58cc01adf01e518027bbf220df596d0a777e0321cbca45b8b2d0",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 16/17 checks, 0 exceptions - FAIL; failing checks include: T2 page reloaded and route reloaded\nBROWSER TESTS: FAIL",
+   "green": "on the 1.296 tree: 42/42 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive171",
+   "check": "tests/browser/drive171.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive171.mjs": "d310d641acc57ad696663ab8750ea860c214e730d5cf2f603c111e6a54aef933",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 15/16 checks, 0 exceptions - FAIL; failing checks include: T5 control: a genuine epoch-ms start still resumes as a run\nB",
+   "green": "on the 1.296 tree: 16/16 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive176",
+   "check": "tests/browser/drive176.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive176.mjs": "a2d4d84b70d1af40fcfd70e0bd8000e52f373742795aefb1b2d0157a6e91636f",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the finish rollback banner made unconditional in the execute path (parts/app3.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 3/4 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 4/4 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive178",
+   "check": "tests/browser/drive178.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive178.mjs": "ff1f65ad8dfe42f01da2ec345b6f4a963aa330f6676b6db700f2d01080802af3",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 11/18 checks, 0 exceptions - FAIL; failing checks include: P1a; P1b; P1d; P1e",
+   "green": "on the 1.296 tree: 18/18 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive182",
+   "check": "tests/browser/drive182.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive182.mjs": "79edfa59b2e1bc9c1e59a1429f660d82d1fa9d8823fca928e3bb6dae3b84bcbd",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired on a map-tap miss and on a street add in crMapTap (parts/create-pick.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 12/13 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 13/13 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive185",
+   "check": "tests/browser/drive185.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive185.mjs": "f77c582e4f4001c773b94d6bd6a5a5a1bdfbbdb3023f609fab4a96ebe4b074ee",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 8/9 checks, 0 exceptions - FAIL; failing checks include: I1 the faulted save REFUSES with the banner",
+   "green": "on the 1.296 tree: 9/9 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive188",
+   "check": "tests/browser/drive188.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive188.mjs": "b0f5ff434cdf343dfda22ab85efe75c8ab14f22814a483b99e35fa4118855216",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 14/15 checks, 0 exceptions - FAIL; failing checks include: D2 a street-switch flush that fails with the episode warning",
+   "green": "on the 1.296 tree: 15/15 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive190",
+   "check": "tests/browser/drive190.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive190.mjs": "02929fe0bccb5dc7ed3a37c38badccba48a361dc960cc165ff99892a1f59c33c",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 18/20 checks, 0 exceptions - FAIL; failing checks include: C1 a failed Stay-awake save REVERTS the value and banners; C2 a failed theme-override write answers with the not-saved b",
+   "green": "on the 1.296 tree: 20/20 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive196",
+   "check": "tests/browser/drive196.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive196.mjs": "092c0ff56f661cf29d103ce77344b05871a4c5187781b5626c61c1e6d23abf1d",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 15/16 checks, 0 exceptions - FAIL; failing checks include: F3 the non-riding offsets hold: mapNote 240px - and both reti",
+   "green": "on the 1.296 tree: 16/16 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive204",
+   "check": "tests/browser/drive204.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive204.mjs": "dd7c1c6cd4b49285521e484e8fcf3369adbe8cfec73f20aa94c65b8c00a2c2c4",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: the #banner top offset moved from 25px to 400px (parts/head.html) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 25/36 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 36/36 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive208",
+   "check": "tests/browser/drive208.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive208.mjs": "86ef07c2ee28b8356c491fb91d2cc2003c4075d02538243ac61ac51bc33c50c4",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the re-derived check run against the Beta 1.295 base tree (e4b5dd2a), whose app still shows the culled notifications (toast element/function, create hint pill, modal X buttons, old wording)",
+   "red": "on the 1.295 tree: 8/9 checks, 0 exceptions - FAIL; failing checks include: W1 no failure text exists to name a different remedy",
+   "green": "on the 1.296 tree: 9/9 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296r-drive224",
+   "check": "tests/browser/drive224.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive224.mjs": "796f65654ad6660499799463108586a141e3dc45b5048d49ad6988a4758d76a7",
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "mutation: a banner re-fired at the restoreBackup entry (parts/app4.js) on the 1.296 tree",
+   "red": "mutated 1.296 tree: 15/18 checks, 0 exceptions - FAIL",
+   "green": "clean 1.296 tree: 18/18 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-proof-1226",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1226.mjs": "e7d8af6d638f53b466c2d2c8a8ac334f4a08c60229f3d309b2c1fd85da057dfa",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: FAILED; failing: 1h: the :active holds wear the rest fills (menu pills, cards, rows, cr",
+   "green": "on the ported tree: exit 0",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-proof-1235",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1235.mjs": "3078873db157ec69e7f5a764ca9be427d2ab9ec4a5117a8ba728b466de8ae2d6",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 18 passed, 0 failed - the pins do NOT discriminate the port (the merge and the render they pin are unchanged by it); this commit's change to the proof is the B8/B10 claim re-scope to the fallback-only flow, and this receipt records that honestly while tracking the file's new sha",
+   "green": "on the ported tree: 18 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-proof-city-search-owner",
+   "check": "tests/proof/proof-city-search-owner.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-city-search-owner.mjs": "7f21be79b0e3f2a5dfabe4004767ebb4c83ecb8c45f7af2d61f526e65e3683b5",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 9 passed, 1 failed; failing: 3: all five seats call the owner (pane open, short-query return, input",
+   "green": "on the ported tree: 10 passed, 0 failed",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-proof-soft-1222",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "655d4a761682d44597fd5ad6e70a49eb9d356631d727a938a4c7312af42d68bf",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 14 pass, 1 fail",
+   "green": "on the ported tree: 15 pass, 0 fail",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-drive151",
+   "check": "tests/browser/drive151.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive151.mjs": "7837d3650f7922ae7140d7e13466fffd52f3716f554247fbe7f457924c460f66",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: the drive aborted inside pickVaughan - the settled miss never fires a search there, so the result rows its helper waits for never render (no result block)",
+   "green": "on the ported tree: 10/10 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-drive152",
+   "check": "tests/browser/drive152.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive152.mjs": "75a8e04394553d36cc3cf5311510fe057e2d40a6c004a66031af8feb22fd0ee3",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 3/8 checks, 0 exceptions - FAIL; failing checks include: K1a; K1b; K2a; K2b",
+   "green": "on the ported tree: 8/8 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-drive153",
+   "check": "tests/browser/drive153.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive153.mjs": "46048b4e95d63e1932d25c5487b75a936a4c3f9d99fe5475fa26b6404a30f8ac",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 11/15 checks, 0 exceptions - FAIL; failing checks include: D1 MANUAL DOOR SEARCH; D2 tapping the typed-search result picks the city and enters; D3 NO-PACK CITY USES THE GRID: Caledon; D5 HONEST FAILURE",
+   "green": "on the ported tree: 15/15 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-drive154",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive154.mjs": "d387f9f89276c16d624233acfa998dc87b86a5b09051b16f0ca525ab7c4138ff",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 21/22 checks, 0 exceptions - FAIL; failing checks include: C1 MANUAL PATH PARITY: King readies through the grid and the",
+   "green": "on the ported tree: 22/22 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-drive164",
+   "check": "tests/browser/drive164.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive164.mjs": "2da22904746b1d516b2c2f5246705ff4fa37545ebe3e27d2b07c41ce28fcf00a",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 15/16 checks, 0 exceptions - FAIL; failing checks include: E1b DA-12: clearing through the input handler aborts IMMEDIAT",
+   "green": "on the ported tree: 16/16 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-drive166",
+   "check": "tests/browser/drive166.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive166.mjs": "24db17503a09edef886378f72362ded70f8e1ef2be66f927fe1773647f53abed",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: the run died in setup (page-evaluation TypeError in its boot seam, 0 checks ran) - the same rig premise that killed its ported-tree run; discrimination for the re-pointed helper is carried by drives 151/152/181, whose identical helper fails on the pre-port tree and passes on the ported tree",
+   "green": "the ported-tree run died in setup at the basemap-restack premise (0 checks ran; an unrelated map-rendering premise on this throttled rig - the same drive passed 58/58 in the round's commit-1 final runs and its re-pointed helper is the identical shape that passes in drives 151/152/181); the cloud gate is the judge",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296c2r-drive181",
+   "check": "tests/browser/drive181.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive181.mjs": "36c3f23a027f5e1bd203b61d07c52dc80c512d23646cac060c4aaf8842202cac",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93"
+   },
+   "mutation": "historical: the pre-port tree at the round's first commit (Beta 1.296 fix-2 state), whose city search still renders the Search online row and never fires the online search on a settled gazetteer miss",
+   "red": "on the pre-port tree: 4/19 checks, 0 exceptions - FAIL; failing checks include: S1; TEETH1; TEETH2; S2a",
+   "green": "on the ported tree: 19/19 checks, 0 exceptions - PASS",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
   }
  ]
 }

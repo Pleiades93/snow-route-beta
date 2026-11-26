@@ -95,7 +95,8 @@ const waitReload = async () => { await b.ev(`(() => { window.__preRestore = 1; r
 const waitApp = async () => !!(await until(async () => await b.ev(`typeof restoreBackup === 'function' && typeof buildBackup === 'function'`), 30000));
 await waitApp();
 const pollReload = async () => { const t0 = Date.now(); while (Date.now() - t0 < 25000) { const gone = await b.ev(`typeof window.__preRestore === 'undefined' && !!document.getElementById('ver')`); if (gone === true) return true; await sleep(400); } return false; };
-const pollSilent = async () => { let seen = false; for (let i = 0; i < 20; i++) { if (await b.ev(`$('banner').classList.contains('show')`)) { seen = true; break; } await sleep(100); } return !seen; }; // Beta 1.296: a no-addition restore is silent - no toast, no banner, no reload
+// Beta 1.296: a no-addition restore is silent - no toast, no banner, no reload
+const pollSilent = async () => { let seen = false; for (let i = 0; i < 20; i++) { if (await b.ev(`$('banner').classList.contains('show')`)) { seen = true; break; } await sleep(100); } return !seen; };
 const s4plan = await b.ev(`(() => { const p = RESTORE.plan(JSON.parse(${JSON.stringify(backupB)})); return p ? JSON.stringify(p.entries.map(e => e[0])) : 'null'; })()`);
 await waitReload();
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);

@@ -83,7 +83,8 @@ try {
   await sleep(1200);
   const same5 = await ev(`typeof window.__d224probe !== 'undefined'`);
   const after5 = await snap5w();
-  ok('M5 a malformed carried value refuses the restore whole, silently since Beta 1.296 - no reload, no key changes, the addable record in the same file does not land either, and the restore raises NO failure banner of its own (an ambient GPS banner may stand in this rig) | banner head: ' + toast5.head,
+  ok('M5 a malformed carried value refuses the restore whole, silently since Beta 1.296 - no reload, no key changes, the addable record in the same file does not land either, and the restore raises NO failure banner of its own (an ' +
+    'ambient GPS banner may stand in this rig) | banner head: ' + toast5.head,
     same5 === true && toast5.head !== 'Restore failed' && JSON.stringify(after5) === JSON.stringify(before5));
 
   // ---- M6: settings fill field by field; the resident field wins ----

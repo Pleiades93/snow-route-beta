@@ -17675,6 +17675,899 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-25 popup-round2 (Beta 1.296) commit 2"
+  },
+  {
+   "id": "popup-round2-c1-r5",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "showBanner",
+     "crRenderHint",
+     "crConfirm",
+     "showConfirm",
+     "finishRun",
+     "deleteRoute",
+     "askDeleteRoute",
+     "restoreBackup",
+     "doRestore",
+     "openNote",
+     "noteMapState",
+     "shareBackup",
+     "shareRecovery"
+    ],
+    "elements": [
+     "banner",
+     "bannerHead",
+     "bannerLine",
+     "bannerIco",
+     "toast",
+     "createHint",
+     "mapNote",
+     "mapNoteNo",
+     "crModal",
+     "crModalX",
+     "finModal",
+     "finYes",
+     "finNo",
+     "noteModal",
+     "noteNo",
+     "warn",
+     "crHintBtn",
+     "confirmBackdrop",
+     "confirmPill",
+     "cfDanger",
+     "cfKeep"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:askDeleteRoute:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askDeleteRoute() is called from container:click in parts/app2.js",
+     "status": "covered",
+     "note": "delete survivors on the banner, silence on success; drive154 G1/H1, proof-1253"
+    },
+    {
+     "id": "caller:crConfirm:parts/app5.js:askDeleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crConfirm() is called from askDeleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "two-button dialog contract (action + Cancel, no X); drives 123/143/146/204, proofs 1231/1245"
+    },
+    {
+     "id": "caller:crConfirm:parts/create-pick.js:askDiscard",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crConfirm() is called from askDiscard in parts/create-pick.js",
+     "status": "covered",
+     "note": "two-button dialog contract (action + Cancel, no X); drives 123/143/146/204, proofs 1231/1245"
+    },
+    {
+     "id": "caller:crConfirm:parts/create-pick.js:crClearAll:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crConfirm() is called from crClearAll:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "two-button dialog contract (action + Cancel, no X); drives 123/143/146/204, proofs 1231/1245"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-cache.js:crCacheDisclose",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crCacheDisclose in parts/create-cache.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crCityPrepare in parts/create-cache.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-cache.js:crGridArmTicker",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crGridArmTicker in parts/create-cache.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-cache.js:crGridFinish",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crGridFinish in parts/create-cache.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-cache.js:crGridPump",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crGridPump in parts/create-cache.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-cache.js:crGridResume",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crGridResume in parts/create-cache.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-citydata.js:crCancelPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crCancelPrep in parts/create-citydata.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-citydata.js:crPackServe",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crPackServe in parts/create-citydata.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-citydata.js:crPrepWatchdog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crPrepWatchdog in parts/create-citydata.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crStartPrep in parts/create-citydata.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crCloseSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:crEnterPickFromCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crEnterPickFromCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:crOpenSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crOpenSectors in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:crPendStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from crPendStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:map:moveend",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from map:moveend in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from setCreateStage in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:crRenderHint:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRenderHint() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "the hint render now drives only the crHintBtn label/visibility (the pill is deleted); states exercised by drives 151/152/153/166/178"
+    },
+    {
+     "id": "caller:deleteRoute:parts/app5.js:askDeleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - deleteRoute() is called from askDeleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "delete survivors on the banner, silence on success; drive154 G1/H1, proof-1253"
+    },
+    {
+     "id": "caller:doRestore:parts/app4.js:xFile:change",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - doRestore() is called from xFile:change in parts/app4.js",
+     "status": "covered",
+     "note": "restore survivors rows 52/54/55 on the banner, clean restores silent; drives 118/163/224, proof-1225/1272"
+    },
+    {
+     "id": "caller:doRestore:parts/app4.js:xImp:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - doRestore() is called from xImp:click in parts/app4.js",
+     "status": "covered",
+     "note": "restore survivors rows 52/54/55 on the banner, clean restores silent; drives 118/163/224, proof-1225/1272"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "finish survivors fire through showBanner after the save settles; drives 118/136/162"
+    },
+    {
+     "id": "caller:finishRun:parts/app3.js:performReset",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - finishRun() is called from performReset in parts/app3.js",
+     "status": "covered",
+     "note": "finish survivors fire through showBanner after the save settles; drives 118/136/162"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:bootMap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from bootMap in parts/app2.js",
+     "status": "covered",
+     "note": "mapNote keeps persistence, loses its X, clears on recovery; drive115 re-scoped"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:map:error",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from map:error in parts/app2.js",
+     "status": "covered",
+     "note": "mapNote keeps persistence, loses its X, clears on recovery; drive115 re-scoped"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:map:load",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from map:load in parts/app2.js",
+     "status": "covered",
+     "note": "mapNote keeps persistence, loses its X, clears on recovery; drive115 re-scoped"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:map:sourcedata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from map:sourcedata in parts/app2.js",
+     "status": "covered",
+     "note": "mapNote keeps persistence, loses its X, clears on recovery; drive115 re-scoped"
+    },
+    {
+     "id": "caller:noteMapState:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - noteMapState() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "mapNote keeps persistence, loses its X, clears on recovery; drive115 re-scoped"
+    },
+    {
+     "id": "caller:openNote:parts/app2.js:selNote:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openNote() is called from selNote:click in parts/app2.js",
+     "status": "covered",
+     "note": "note editor is a two-button dialog (Save + Cancel, no X); drive123"
+    },
+    {
+     "id": "caller:restoreBackup:parts/app4.js:doRestore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - restoreBackup() is called from doRestore in parts/app4.js",
+     "status": "covered",
+     "note": "restore survivors rows 52/54/55 on the banner, clean restores silent; drives 118/163/224, proof-1225/1272"
+    },
+    {
+     "id": "caller:shareBackup:parts/app4.js:xBak:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - shareBackup() is called from xBak:click in parts/app4.js",
+     "status": "covered",
+     "note": "row 80 wording matches the path (shared vs downloaded); drive118 T-family"
+    },
+    {
+     "id": "caller:shareRecovery:parts/app4.js:downloadBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - shareRecovery() is called from downloadBackup in parts/app4.js",
+     "status": "covered",
+     "note": "row 80 wording matches the path (shared vs downloaded); drive118 T-family"
+    },
+    {
+     "id": "caller:shareRecovery:parts/app4.js:shareBackup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - shareRecovery() is called from shareBackup in parts/app4.js",
+     "status": "covered",
+     "note": "row 80 wording matches the path (shared vs downloaded); drive118 T-family"
+    },
+    {
+     "id": "caller:showBanner:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:finishChangeMarked",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishChangeMarked in parts/app2.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:clearAllMarks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from clearAllMarks in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:gpsError",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from gpsError in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:noteYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from noteYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:backupHandedOff",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from backupHandedOff in parts/app4.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from row:click in parts/app4.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:stDel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from stDel:click in parts/app4.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swAwake:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swAwake:click in parts/app4.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swChime:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swChime:click in parts/app4.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swVib:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swVib:click in parts/app4.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showBanner:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "frozen-table survivor routed through the shared banner; wording pinned by proofs 1229/1233/1245/1253 and drives 118/136/142/154/162/163/188/190/224/225"
+    },
+    {
+     "id": "caller:showConfirm:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showConfirm() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "two-button dialog contract (action + Cancel, no X); drives 123/143/146/204, proofs 1231/1245"
+    },
+    {
+     "id": "caller:showConfirm:parts/app3.js:askClearAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showConfirm() is called from askClearAll in parts/app3.js",
+     "status": "covered",
+     "note": "two-button dialog contract (action + Cancel, no X); drives 123/143/146/204, proofs 1231/1245"
+    },
+    {
+     "id": "caller:showConfirm:parts/app3.js:checkStale",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showConfirm() is called from checkStale in parts/app3.js",
+     "status": "covered",
+     "note": "two-button dialog contract (action + Cancel, no X); drives 123/143/146/204, proofs 1231/1245"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:error",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map error handler in parts/app2.js touches noteMapState without dismissing it",
+     "status": "covered",
+     "note": "the handler touches the note state without dismissing it - the note has no dismiss control since this round; drive115"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:load",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map load handler in parts/app2.js touches noteMapState without dismissing it",
+     "status": "covered",
+     "note": "the handler touches the note state without dismissing it - the note has no dismiss control since this round; drive115"
+    },
+    {
+     "id": "gesture:parts/app2.js:map:sourcedata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map sourcedata handler in parts/app2.js touches noteMapState without dismissing it",
+     "status": "covered",
+     "note": "the handler touches the note state without dismissing it - the note has no dismiss control since this round; drive115"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:moveend",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map moveend handler in parts/create-pick.js touches crRenderHint without dismissing it",
+     "status": "covered",
+     "note": "moveend re-renders the hint button state; drives 151/152/153"
+    },
+    {
+     "id": "theme:banner",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #banner has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:bannerHead",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #bannerHead has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:bannerIco",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #bannerIco has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:bannerLine",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #bannerLine has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:cfDanger",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #cfDanger has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:cfKeep",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #cfKeep has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:confirmBackdrop",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #confirmBackdrop has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:confirmPill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #confirmPill has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:crHintBtn",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crHintBtn has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:crModal",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crModal has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:crModalX",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crModalX has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "element deleted in this round; the scan hit is a historical stylesheet comment or the absence of any rule - no live rule exists (grep-verified)"
+    },
+    {
+     "id": "theme:createHint",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #createHint has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "element deleted in this round; the scan hit is a historical stylesheet comment or the absence of any rule - no live rule exists (grep-verified)"
+    },
+    {
+     "id": "theme:finModal",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #finModal has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no per-id theme rule by design: the modal and its buttons are styled through the shared modal classes in both themes; drives 123/204 exercise them"
+    },
+    {
+     "id": "theme:finNo",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #finNo has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no per-id theme rule by design: the modal and its buttons are styled through the shared modal classes in both themes; drives 123/204 exercise them"
+    },
+    {
+     "id": "theme:finYes",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #finYes has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:mapNote",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #mapNote has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    },
+    {
+     "id": "theme:mapNoteNo",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #mapNoteNo has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "element deleted in this round; the scan hit is a historical stylesheet comment or the absence of any rule - no live rule exists (grep-verified)"
+    },
+    {
+     "id": "theme:noteModal",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #noteModal has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no per-id theme rule by design: the modal and its buttons are styled through the shared modal classes in both themes; drives 123/204 exercise them"
+    },
+    {
+     "id": "theme:noteNo",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #noteNo has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no per-id theme rule by design: the modal and its buttons are styled through the shared modal classes in both themes; drives 123/204 exercise them"
+    },
+    {
+     "id": "theme:toast",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #toast has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "element deleted in this round; the scan hit is a historical stylesheet comment or the absence of any rule - no live rule exists (grep-verified)"
+    },
+    {
+     "id": "theme:warn",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #warn has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "single rule serves both themes through the theme variables (or a night rule exists); day+night exercised by drives 115/204/225"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/app2.js": "6b8a47f1297077ac75443fce234623ade85ead3b2bdde1caa1b419fef42bf59a",
+    "parts/app3.js": "d50467b5994bdeb52c145de352224dfe389770e3aaf089415a66a0eb166737f4",
+    "parts/app4.js": "76aa7948ea241a42c382a5c25a7cc030e40a3272455cd4994714e9e27f8a0135",
+    "parts/app5.js": "79f14b5ee7ef9f406818eb07f7b914b4a79478862263d8d8ce3f10f8722a7d86",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "8a0f30c507453b2037ea2d52f3f4b27289f8feff3331a751239905688011890d",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup-round2-c2-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "crRunCityTypeahead",
+     "crRunCitySearch",
+     "crPickCity",
+     "crResetCitySearch",
+     "crCityLocalMatches",
+     "crCityResultRow",
+     "crCityShowSkeletons",
+     "crOpenCityPane"
+    ],
+    "elements": [
+     "crCityInput",
+     "crCityResults",
+     "crCityBack",
+     "banner"
+    ]
+   },
+   "changed": [
+    "parts/create-pick.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:crCityLocalMatches:parts/create-pick.js:crRunCityTypeahead",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityLocalMatches() is called from crRunCityTypeahead in parts/create-pick.js",
+     "status": "covered",
+     "note": "the typeahead's bundled matching; drives 151-154/164/166/181, proof-1235 B5"
+    },
+    {
+     "id": "caller:crCityLocalMatches:parts/create-pick.js:ctl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityLocalMatches() is called from ctl in parts/create-pick.js",
+     "status": "covered",
+     "note": "the search merge's local recompute (proof-1235 B8 re-scoped: reached only after a miss, fills nothing; the net stays as specified)"
+    },
+    {
+     "id": "caller:crCityResultRow:parts/create-pick.js:crRunCityTypeahead",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityResultRow() is called from crRunCityTypeahead in parts/create-pick.js",
+     "status": "covered",
+     "note": "bundled results render through the shared row builder; drive166 J10 (Toronto), drive153 phase F"
+    },
+    {
+     "id": "caller:crCityResultRow:parts/create-pick.js:ctl",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityResultRow() is called from ctl in parts/create-pick.js",
+     "status": "covered",
+     "note": "the search answer renders through the shared row builder; drives 151-154/181, proof-1235 B10"
+    },
+    {
+     "id": "caller:crCityShowSkeletons:parts/create-pick.js:crRunCitySearch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCityShowSkeletons() is called from crRunCitySearch in parts/create-pick.js",
+     "status": "covered",
+     "note": "the in-flight skeletons; drive153 D5 (they clear on failure), drives 151-154 flows"
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:crCityChange:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from crCityChange:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane open resets the search (owner proof check 3); drives 151-154/166 city sections"
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:crDoorManual:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from crDoorManual:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the manual door opens the pane through the same reset; every city drive enters here"
+    },
+    {
+     "id": "caller:crOpenCityPane:parts/create-pick.js:pvAddBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crOpenCityPane() is called from pvAddBtn:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "the preview add door opens the pane through the same reset; owner proof check 3"
+    },
+    {
+     "id": "caller:crPickCity:parts/create-pick.js:crPackPickCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPickCity() is called from crPackPickCity in parts/create-pick.js",
+     "status": "covered",
+     "note": "a pack chooser pick lands through crPickCity, whose apply now resets the search; drive154 phase B, drive153 E1"
+    },
+    {
+     "id": "caller:crPickCity:parts/create-pick.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPickCity() is called from row:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "every result row pick; drives 151-154/164/166/181"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:apply",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from apply in parts/create-pick.js",
+     "status": "covered",
+     "note": "the NEW seat this commit adds: a pick cancels a held search; proof-city-search-owner check 3 (five seats)"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crCityBack:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crCityBack:click in parts/create-pick.js",
+     "status": "covered",
+     "note": "leaving the pane kills a held search; owner proof check 3, drive164 E2"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crCityInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crCityInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "invalidation at the input event; drive164 E1b (abort is immediate at clear)"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crOpenCityPane",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crOpenCityPane in parts/create-pick.js",
+     "status": "covered",
+     "note": "pane open seat; owner proof check 3"
+    },
+    {
+     "id": "caller:crResetCitySearch:parts/create-pick.js:crRunCitySearch",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResetCitySearch() is called from crRunCitySearch in parts/create-pick.js",
+     "status": "covered",
+     "note": "the short-query return seat; drive164 cases 1-2 (direct calls), owner proof check 3"
+    },
+    {
+     "id": "caller:crRunCitySearch:parts/create-pick.js:crRunCityTypeahead",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRunCitySearch() is called from crRunCityTypeahead in parts/create-pick.js",
+     "status": "covered",
+     "note": "THE new seat: a settled zero-match word routes into the online search; drives 151/152/153/154/164/181 red-green pairs"
+    },
+    {
+     "id": "caller:crRunCityTypeahead:parts/create-pick.js:crCityInput:input",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crRunCityTypeahead() is called from crCityInput:input in parts/create-pick.js",
+     "status": "covered",
+     "note": "the 500 ms debounce seat (registry beta-1120 probe); every typing drive"
+    },
+    {
+     "id": "theme:banner",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #banner has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "anchor carried for context; the banner is commit 1's surface, untouched by fix 4 - its rows are census popup-round2-c1's"
+    },
+    {
+     "id": "theme:crCityBack",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crCityBack has NO day rule and NO body.night rule",
+     "status": "na",
+     "note": "no rule for the Back button changed in fix 4; the seat's behaviour is a caller row above"
+    },
+    {
+     "id": "theme:crCityInput",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crCityInput has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "no input rule changed in fix 4; typing behaviour is the caller rows above"
+    },
+    {
+     "id": "theme:crCityResults",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #crCityResults has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "no results-box rule changed in fix 4; the removed .crOnlineRow rules are pinned by probes popupfix4-no-online-row-css and proof-1226 1h / proof-soft-1222 A"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/app2.js": "6b8a47f1297077ac75443fce234623ade85ead3b2bdde1caa1b419fef42bf59a",
+    "parts/app3.js": "d50467b5994bdeb52c145de352224dfe389770e3aaf089415a66a0eb166737f4",
+    "parts/app4.js": "76aa7948ea241a42c382a5c25a7cc030e40a3272455cd4994714e9e27f8a0135",
+    "parts/app5.js": "79f14b5ee7ef9f406818eb07f7b914b4a79478862263d8d8ce3f10f8722a7d86",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "35b0181b76117fc7a661e6cdd0f65363320ad7d0f307e6fdd0c1a60c08b57344",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "8a0f30c507453b2037ea2d52f3f4b27289f8feff3331a751239905688011890d",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
   }
  ]
 }

@@ -13,7 +13,7 @@ const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 // simulating a total basemap outage: the vector style can never load.
 // Asserts the notice appears when no GL load ever lands, that the streets
 // list and marking keep working with no map at all (the beta has no raster
-// fallback, by design), that recovery auto-hides it, that it carries no dismiss control since Beta 1.296 (it clears only on recovery), that the
+// fallback, by design), that recovery auto-hides it, that it carries no dismiss control (it clears only on recovery), that the
 // session, and the Design QA layout measurements in both themes.
 const waitBoot = async () => { for (let i = 0; i < 25; i++) { try { if (await ev(`!!document.getElementById('ver')`)) return true; } catch (e) {} await sleep(400); } return false; };
 const reload = async (ms) => { await ev(`location.reload(); true`); await sleep(500); await waitBoot(); await sleep(ms || 4000); await ev(`loadRoute('5w'); true`); await sleep(600); }; // Beta 1.76: a reload lands on the route menu - load 5W (works with the map dead; GLP catches up via onStyleReady)

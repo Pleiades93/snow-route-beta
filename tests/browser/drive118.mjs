@@ -57,7 +57,8 @@ A = await J(`(() => { coveredIdx = {};
   return { pick: { n: pick.n, dn: pick.dn, dmin: Math.round(pick.dmin) }, gained }; })()`);
 ok('T4 fix covers only its own street (nearest other ' + (A.pick ? A.pick.dmin : '?') + 'm away)', A.gained && A.gained.length === 1 && A.pick && A.gained[0] === A.pick.n);
 
-// T5 (suite 5): a write failure mid-restore rolls everything back; the failing key also fails its rollback write, so the banner reports it (Restore failed) - a fully clean rollback is the silent case
+// T5 (suite 5): a write failure mid-restore rolls everything back
+// the failing key fails its rollback write, so banner reports it (Restore failed); a clean rollback stays silent
 // Velmar's resident sides entries are removed first, so the backup's completion is a genuine addition (current wins).
 await ev(`(() => { doneSet = new Set(['Velmar']); saveAll();
   window.__bak = buildBackup();

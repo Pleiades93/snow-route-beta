@@ -2,15 +2,10 @@ import { launchDrive, finish, bootThrough } from './harness.mjs';
 const { proc, ev, shot, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll); // boots end at the route menu - click through to a loaded route
 
-// drive204 (SESSION tier): Beta 1.296 - BANNER PLACEMENT QA. The toast pill
-// is retired; the one notification surface is the shared banner at the top.
-// Its placement property (the seat decided in Round 1, Andrew's Variant B):
-// ONE fixed seat in every state - the same box idle, mid-clean, in sheets,
-// in modals, in create mode, day and night - resting level with the title,
-// and never reaching the working controls at the bottom (Start / Cancel /
-// Finish / the dock) that the old bottom pill used to sit on. The failure
-// property is measured in the rendered page: the banner's own box, compared
-// across states, and its overlap against the bottom controls.
+// drive204 (SESSION tier): banner placement QA - the shared banner keeps
+// one fixed seat in every state, level with the title, clear of the bottom
+// controls. (Beta 1.296: the toast pill is retired; the banner is the one
+// notification surface.)
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -30,7 +25,8 @@ const measure = () => J(`(() => {
     const oy = Math.min(tr.bottom, r.bottom) - Math.max(tr.top, r.top);
     if (ox > 0 && oy > 0) hits.push((e.id || e.className || e.tagName) + ' ' + Math.round(ox) + 'x' + Math.round(oy));
   });
-  return { top: Math.round(tr.top), bottom: Math.round(tr.bottom), left: Math.round(tr.left), right: Math.round(tr.right), h: Math.round(tr.height), hits, vh: window.innerHeight };
+  return { top: Math.round(tr.top), bottom: Math.round(tr.bottom), left: Math.round(tr.left), right: Math.round(tr.right), h: Math.round(tr.height), hits,
+    shown: t.classList.contains('show') && vis(t), vh: window.innerHeight };
 })()`);
 
 // The measured scene as one comparable string: the pill's box plus every
@@ -54,10 +50,10 @@ const fire = async (state, head, line) => {
     if (!el) return false;
     const t0 = performance.now();
     for (;;) {
-      const running = el.getAnimations().filter(a => a.playState === 'running').length;
+      const running = el.getAnimations().filter(a => a.animationName === 'bannerDrop' && a.playState === 'running').length;
       if (running === 0) {
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-        return el.getAnimations().filter(a => a.playState === 'running').length === 0;
+        return el.getAnimations().filter(a => a.animationName === 'bannerDrop' && a.playState === 'running').length === 0;
       }
       if (performance.now() - t0 > 5000) return false;
       await new Promise(r => requestAnimationFrame(r));
@@ -71,9 +67,11 @@ const fire = async (state, head, line) => {
   }
   ok(state + ': the entrance settled before measuring (the banner\'s own animations finished, confirmed across two frames, and its box identical across two samples)', settled === true && stable === true);
   const m = await measure();
-  ok(state + ': the banner stands in its seat (shown, in the top band, clear of the bottom controls) | box ' + m.top + '-' + m.bottom + ' of ' + m.vh + ', hits: ' + (m.hits || []).join('; '), !!m.hits && m.hits.length === 0 && m.bottom < m.vh / 2);
+  ok(state + ': the banner stands in its seat (shown, in the top band, clear of the bottom controls) | box ' +
+    m.top + '-' + m.bottom + ' of ' + m.vh + ', hits: ' + (m.hits || []).join('; '), !!m.hits && m.hits.length === 0 && m.bottom < m.vh / 2 && m.shown === true);
   if (!fire.seat) fire.seat = m;
-  ok(state + ': the seat is FIXED (same top and side edges as the first state - one seat, one owner; the height alone varies with how the line wraps) | first ' + fire.seat.top + '/' + fire.seat.left + '-' + fire.seat.right + ', here ' + m.top + '/' + m.left + '-' + m.right,
+  ok(state + ': the seat is FIXED (same top and side edges as the first state - one seat, one owner; the height alone varies with how the line wraps) | first ' +
+     fire.seat.top + '/' + fire.seat.left + '-' + fire.seat.right + ', here ' + m.top + '/' + m.left + '-' + m.right,
     Math.abs(m.top - fire.seat.top) <= 2 && Math.abs(m.left - fire.seat.left) <= 2 && Math.abs(m.right - fire.seat.right) <= 2);
   await shot('banner-qa-' + state.replace(/[^a-z0-9]+/gi, '-') + '.png');
   await ev(`(() => { $('banner').classList.remove('show'); return true; })()`); await sleep(120);

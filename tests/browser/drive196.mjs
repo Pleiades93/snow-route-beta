@@ -58,7 +58,8 @@ ok('B3 all five items fill the content zone (44px tall, equal widths, no overlap
 // ---- the floaters' gaps over the bar's NEW top edge ----------------------
 ok('F1 dock gap above the bar top edge is the pre-change rendered gap: 16px (dock rode 74 -> 67) | gap ' + G.gapDock, G.gapDock !== null && Math.abs(G.gapDock - 16) <= 1);
 ok('F2 attribution chip gap above the bar top edge is the pre-change rendered gap: 10px (chip rode 68 -> 61) | gap ' + G.gapAttr, G.gapAttr !== null && Math.abs(G.gapAttr - 10) <= 1);
-ok('F3 the non-riding offsets hold: mapNote 240px - and both retired surfaces are gone entirely (the toast element since Beta 1.296, the banner slot since Beta 1.271; the live banner seat is drive225) | ' + JSON.stringify({ note: G.noteBottom, toastGone: G.toastGone, bannerGone: G.bannerGone }),
+ok('F3 the non-riding offsets hold: mapNote 240px - and both retired surfaces are gone entirely (the toast element since Beta 1.296, the banner slot since Beta 1.271; the live banner seat is drive225) ' +
+  '| ' + JSON.stringify({ note: G.noteBottom, toastGone: G.toastGone, bannerGone: G.bannerGone }),
   G.noteBottom === '240px' && G.toastGone === true && G.bannerGone === true);
 ok('F4 nothing overlaps the bar: dock and attribution chip clear it | dock ' + JSON.stringify(G.dock) + ' attr ' + JSON.stringify(G.attr),
   !!G.dock && !!G.attr && !overlaps(G.dock, G.bar) && !overlaps(G.attr, G.bar));

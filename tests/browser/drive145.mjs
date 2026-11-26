@@ -192,7 +192,9 @@ await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13c)}`, 30000); // the one write (the empty done record, the key was absent) still reloads
 await poll(`typeof loadRoute === 'function'`, 30000);
 await loadRoutePolled(ev, sleep);
-ok('N13c-b restoring an EMPTY completion list never clears the board under merge (the R03 replace-era clearing is superseded): it writes only the empty record for the absent key, and the side-derived board stands, and the restore is SILENT since Beta 1.296 (the restored announcement is cut) | banner shown: ' + toast13c, await ev(`(function(){ try { return doneSet.has('Velmar') && JSON.stringify(pieces.Velmar) === ${JSON.stringify(piecesBefore13c)}; } catch (e) { return false; } })()`) && toast13c === false);
+ok('N13c-b restoring an EMPTY completion list never clears the board under merge (the R03 replace-era clearing is superseded): it writes only the empty record for the absent key, and the side-derived board stands, and the restore ' +
+  'is SILENT since Beta 1.296 (the restored announcement is cut) | banner ' +
+  'shown: ' + toast13c, await ev(`(function(){ try { return doneSet.has('Velmar') && JSON.stringify(pieces.Velmar) === ${JSON.stringify(piecesBefore13c)}; } catch (e) { return false; } })()`) && toast13c === false);
 
 // --- F-05 (Beta 1.94): street names the route does not know are counted and
 // reported in the restore result, not silently dropped by the loaders ------
@@ -202,7 +204,8 @@ const toast13d = await ev(`(function(){ document.getElementById('xText').value =
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13d)}`, 30000);
 await loadRoutePolled(ev, sleep);
-ok('N13d a restore carrying unknown street names drops them SILENTLY since Beta 1.296 (the ignored-names count is cut - the F-05 announcement retires; the known names still land) | banner shown: ' + toast13d, toast13d === false && (await ev(`doneSet.has('Velmar')`)) === true);
+ok('N13d a restore carrying unknown street names drops them SILENTLY since Beta 1.296 (the ignored-names count is cut - the F-05 announcement retires; the known names still land) | banner ' +
+  'shown: ' + toast13d, toast13d === false && (await ev(`doneSet.has('Velmar')`)) === true);
 
 // --- SR-194-08 (Beta 1.95): the unknown-name count reads the RAW backup,
 // before any normalization filters names away, and counts each name once.
