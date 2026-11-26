@@ -1,19 +1,9 @@
-# Codex re-run trigger - refreshes the codex review gate verdict
-# for a pull request's current head without a new commit.
-#
-# Why this shape: the gate (codex-bridge.yml) must keep running
-# its verdict script from the BASE branch under read-only
-# permissions, and a workflow run triggered by a comment is
-# associated with the default branch - its own check could never
-# land on the PR head. So this workflow does exactly one thing:
-# when a maintainer comments '@codex review' on a pull request,
-# it re-runs the newest codex-bridge run for the PR's current
-# head. The re-run executes the original pull_request_target
-# run - base script, read-only token, verdict on the right sha.
-# The same comment is also Codex's own summon, so the fresh
-# review it produces lands inside the re-run bridge's poll
-# window. No code is checked out or executed here; the only
-# permission is actions: write, spent on that one re-run call.
+# Codex re-run trigger: a maintainer '@codex review' comment
+# re-runs the newest codex-bridge run for the PR's current head,
+# refreshing the gate verdict with no new commit. The bridge
+# itself stays base-script and read-only; a comment-triggered
+# run's own check could never land on the PR head, so this
+# workflow only spends actions: write on that one re-run call.
 name: codex-rerun
 
 on:
