@@ -21048,6 +21048,40 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26 transitions round C9 re-issue (the extension moved to a second reduced-motion block: the original block is one line over the PR line limit; same marks, fresh pins)"
+  },
+  {
+   "id": "transitions-1298-release",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "e55a9aa328c0f081aa7f35bcafacfb93efd540486c02354337a402c31544f1f5",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "debbd19a55d304b914e386a9289636efd60f8dd3396af93a037d2bd584bb895a",
+    "parts/app4.js": "2c1ac4d0796f2c8ce4b54ad82e1f79fae945ed177fe57a31f0c2fe93525e73bc",
+    "parts/app5.js": "cf110d96ed89d2d6bf0beeba6150826ef8b98beb3db58b9c99d56f505f1b143a",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "8bd2ae35f74d588adc9116a7dfc4b90e927e6d95517a49be69b62d4e8b44eae3",
+    "parts/head.html": "b85df66fd494c33deda1eb8f70eac9ea9b9703e7681442b5e20a4265e921a83b",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round release commit (Beta 1.298: changelog + What's New text only; the entry is data, stamped by the build's version checks)"
   }
  ]
 }
