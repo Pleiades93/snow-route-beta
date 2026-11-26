@@ -137,16 +137,16 @@ check('3b: labelpts is created exactly once and never removed in any part',
 check('3c: no part writes a title layer\'s properties by literal id (the specs in addStack are the only seat; the create backdrop\'s recorded-pair restore is the one sanctioned visibility writer and it names no title id literally)',
   !/set(?:Layout|Paint)Property\('streetnamespt/.test(allParts));
 
-// ---------- (4) the handover (Beta 1.294) ----------
-// The titles fade out across 15-16 in their spec; route-only clones
-// fade in across the same band (decision record: CHANGELOG 1.294).
-check('4a: the title spec fades out across 15-16 and is capped at maxzoom 16',
-  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0]") &&
-  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 16, filter:'));
-check('4b: the clones are built only in the handover state (titles on, not creating), from zoom 15, with the spec fade in across 15-16',
+// ---------- (4) the handover ----------
+// Titles and clones meet at one boundary, 15.2, with no fade on either side.
+check('4a: the title spec carries no fade stops and is capped at maxzoom 15.2',
+  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]") &&
+  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter:'));
+check('4b: the clones are built only in the handover state (titles on, not creating), from zoom 15.2, with no spec fade ramp',
   app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") &&
-  app2.includes('clone.id = cloneId; clone.minzoom = 15; clone.maxzoom = 24;') &&
-  app2.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1]"));
+  app2.includes('const routeLabelMinZoom = 15.2;') &&
+  app2.includes('clone.id = cloneId; clone.minzoom = routeLabelMinZoom; clone.maxzoom = 24;') &&
+  !app2.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1]"));
 check('4c: the clone filter is route-names only (the positive name test, never the exclusion), set once at creation',
   app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];") &&
   app2.includes("clone.filter = baseF0 ? ['all', baseF0, routeF] : routeF;"));

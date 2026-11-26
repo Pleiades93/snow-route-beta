@@ -21,8 +21,8 @@ if (!await poll(`!!(window.map && map.getLayer && map.getLayer('roads_labels_maj
 // label pass on both flips so the lift lands on entry and the restore
 // on exit; restacks (mid-create theme swaps) recompute from the same
 // state. No label layer is forked.
-// This drive grades the rendered behaviour at the 15.7 framing
-// drive214's M3 proved live (basemap rendering, titles placed):
+// Frame below the switch so route titles remain visible while
+// grading create-mode exclusions (basemap rendering, titles placed):
 // route mode = exclusion on, zero basemap route names, titles naming;
 // create mode = exclusion off, basemap names PRESENT on route streets,
 // title layers hidden (exactly one naming system - no doubles);
@@ -61,10 +61,10 @@ const snap = () => J(`(() => {
 const settle = async () => { await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000); await sleep(700); };
 const routeHitsPoll = () => poll(`(() => { try { const tileNames = ROUTE_TILE_NAMES; const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return tileNames.some(n => seen.has(n)); } catch (e) { return false; } })()`, 30000);
 
-// ---------- framing: home, then 15.7 (drive214 M3's proven-live frame) ----------
+// ---------- framing: home, then 14.8 (below the 15.2 switch) ----------
 await ev(`(() => { goHomeView(); return true; })()`);
 await settle();
-await ev(`(() => { map.jumpTo({ zoom: 15.7 }); return true; })()`);
+await ev(`(() => { map.jumpTo({ zoom: 14.8 }); return true; })()`);
 await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 5; } catch (e) { return false; } })()`, 30000); // basemap provably rendering before any exclusion read counts
 await poll(`(() => { try { let n = 0; for (const f of map.queryRenderedFeatures({ layers: ${JSON.stringify(TITLE_LAYERS)} })) n++; return n >= 5; } catch (e) { return false; } })()`, 30000); // titles provably placed
 await settle();

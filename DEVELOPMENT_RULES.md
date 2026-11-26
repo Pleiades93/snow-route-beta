@@ -81,11 +81,13 @@ writes a title layer's visibility or text-opacity, and nothing
 removes or rebuilds the labelpts source - it is created once in
 addStack and rewritten only by rebuildRoute's setData on a route
 switch. The zoom behaviour lives INSIDE the spec, which is not a code
-write: the title spec fades text-opacity out across zoom 15-16 and
-caps the layers at maxzoom 16, and glUnifyLabels builds a
-route-names-only clone of each basemap road-label layer (minzoom 15,
-its own spec fade in across 15-16) that takes route naming over above
-the band; creation builds no clones. The one exception is the
+write: the title spec caps the layers at maxzoom 15.2 with no fade
+stops (the low-zoom fade-in at 12.6 is the one ramp it carries), and
+glUnifyLabels builds a route-names-only clone of each basemap
+road-label layer (minzoom 15.2, no fade ramp) that takes route naming
+over above 15.2 - the handover is an instant switch at 15.2 (Beta
+1.297, Andrew's decision, superseding the 1.294 fade band); creation
+builds no clones. The one exception is the
 create-route backdrop, which may hide and restore the whole route
 stack's visibility while creation is open. A flip is a flags.js edit
 plus a rebuild (assemble + build-pages) and a push of the regenerated

@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-5QAO3X93y/oPeUK4kP5tMBIaAlLheOCWVOcn7ltbVNjFml5YFhVq86yjgmR8PFz7' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-favWJzh5SRn+3hUAvQ5ggAlfTrvbFvwdGPMrT4jdGJYtSRofccAd3AGtP68yrcJv' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-CdCJ++il1NtmQ40nIo0vTIMa2SEG3Cg2IDy7DsXMpmi9gBJxGhoQt6IddKxk3oBj' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-favWJzh5SRn+3hUAvQ5ggAlfTrvbFvwdGPMrT4jdGJYtSRofccAd3AGtP68yrcJv' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -699,7 +699,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
 <div id="hud">
   <div id="warn"><strong>Not saving</strong><br><span>Storage is full or blocked</span></div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.296</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.297</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -3221,7 +3221,11 @@ function addStack() {
   if (titlesOn()) for (let t = 1; t <= 4; t++) {
     const id = 'streetnamespt' + t;
     if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 16, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-anchor': 'center', 'text-radial-offset': 0, 'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1, 15, 1, 16, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack,
+        'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-anchor': 'center', 'text-radial-offset': 0,
+        'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333',
+        'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1],
+        'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
     }
   }
   // at 12.6 the paint and names pop out, the POI in: no fading (Andrew), never one alone
@@ -3406,7 +3410,8 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
-    // route names get their own label-layer copies (from 15, fading in 15-16): a filter cannot key on zoom
+    // route names get their own label-layer copies (from 15.2, no fade): a filter cannot key on zoom
+    const routeLabelMinZoom = 15.2;
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // no-op guards: this pass runs on every stack build, and a mutation re-triggers symbol placement - skip matches
@@ -3422,11 +3427,10 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
         const specL = (spec.layers || []).find(x => x.id === baseId);
         if (specL) {
           const clone = JSON.parse(JSON.stringify(specL));
-          clone.id = cloneId; clone.minzoom = 15; clone.maxzoom = 24;
+          clone.id = cloneId; clone.minzoom = routeLabelMinZoom; clone.maxzoom = 24;
           const baseF0 = specL.filter ? convF(specL.filter) : null;
           const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
           clone.filter = baseF0 ? ['all', baseF0, routeF] : routeF;
-          clone.paint = Object.assign({}, clone.paint, { 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1] });
           const live = m.getStyle().layers; const at = live.findIndex(x => x.id === baseId);
           const beforeId = at >= 0 && live[at + 1] ? live[at + 1].id : undefined; // the clone seats right after its base, so a remove-and-rebuild restores the same layer order
           try { m.addLayer(clone, beforeId); } catch (e2) {}
@@ -3456,9 +3460,9 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
       }
       if (kind === 'road') {
         const isClone = id === 'roads_labels_major-route' || id === 'roads_labels_minor-route';
-        if (isClone) { if ((L.minzoom || 0) !== 15 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 15, 24); }
+        if (isClone) { if ((L.minzoom || 0) !== routeLabelMinZoom || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, routeLabelMinZoom, 24); }
         else if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // guard: same no-op rule as setL/setP
-        // LABEL RULE: titles name the route below 15, fade out across 15-16; clones take route names over from 15
+        // LABEL RULE: titles name the route below 15.2; clones take route names over from 15.2
         setL(L.id, 'symbol-spacing', 250); // Andrew re-picked 250 on 2026-11-24: names repeat sooner when zoomed in.
         if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
           // while creating, the exclusion is simply not added (every street named); `creating` is the single condition
@@ -6747,9 +6751,9 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.296', items: [
-    "Notifications are now a banner at the top, and only the important ones appear",
-    "City search checks online on its own when a place is not in the built-in list"
+  v: 'Beta 1.297', items: [
+    "Street names now switch to the map's own names instantly as you zoom in",
+    "Route loads start moving right away, with no pause after the menu closes"
   ] }; // entries stay short: one plain line each (Beta 1.223 rule)
 
 function renderAbout() {
@@ -7081,8 +7085,8 @@ function introToRoute() { // a pick opens wide and flies in slowly as the splash
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above
   prefetchIntroTiles(b, fit.zoom); // after the wide jump lands, before the dwell: the destination's tiles stream while the wide view sits
-  // 1500 ms: exit finished, the wide view has sat; the flight in tilts to the 45-degree default
-  setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500);
+  // Let destination tiles prefetch during the splash fade so the flight starts as it clears.
+  setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 800);
 }
 let loadInGen = 0;
 

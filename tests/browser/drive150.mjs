@@ -367,6 +367,7 @@ await sleep(1500);
 await poll(`typeof ROUTE_PACKS !== 'undefined'`, 30000);
 await poll(`!!window.__bootAt`, 30000);
 await ev(`document.getElementById('rmChoose').click()`);
+await poll(`[...document.querySelectorAll('#rmRoutes .routeRow')].some(r => r.getAttribute('data-route') === 'route-6w')`, 30000); // poll the listing itself - a one-shot read convicts plain registration lag
 const P3 = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ rows: [...document.querySelectorAll('#rmRoutes .routeRow')].map(r => r.getAttribute('data-route')), rec: Object.keys(m || {}) }); })()`));
 ok('D4 restore re-registers the created route (definition back in the store, route listed after the restore reload)', P3.rows.includes('route-6w') && P3.rec.includes('route-6w'));
 await ev(`(() => { const r = document.querySelector('#rmRoutes .routeRow[data-route="route-6w"]'); if (r) { r.click(); const b = r.nextElementSibling && r.nextElementSibling.querySelector('.dropLoad'); if (b) b.click(); } return true; })()`);

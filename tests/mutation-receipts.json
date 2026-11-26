@@ -14942,6 +14942,301 @@
    "red": "gate fixtures 97 pass 3 fail with the gate disconnected; the repetitive-file case counts 401 added lines for a one-line change with autojunk on (git counts 1)",
    "green": "gate fixtures 102 pass 0 fail; unit plants: one changed line counts as one, matching git; all planted violations still refuse",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "round3-1297-proof-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "00273d42c7b85440eb1d360de39aa1e681319debbf765bef7743e89236352d79",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): titles capped at maxzoom 16 with the 15-16 fade stops; LABEL RULE comment at 15",
+   "red": "on base parts: FAIL check 2 (cap/fade form) and check 6 (LABEL RULE anchor at 15); 11 passed, 2 failed",
+   "green": "on the 1.297 tree: proof-1263 passes inside run-proofs 94/94",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-anchors",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "537d35d650ba997c6c9425e930838fa86f8c7dd0df7bb0968018f28057885e4e",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): title cap 16 with fade stops; clones from minzoom 15 with the 15-16 fade ramp",
+   "red": "on base parts: FAIL 4a and 4b only; 12 passed, 2 failed",
+   "green": "on the 1.297 tree: proof-anchors passes inside run-proofs 94/94",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-green-half-road",
+   "check": "tests/proof/proof-green-half-road.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-green-half-road.mjs": "91ab3d4bb10b3088ea0109c6625ec850f6671688d7109f31acd9e03b2cf05af3",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): title layers capped at maxzoom 16",
+   "red": "on base parts: FAIL R4 (maxzoom 16 pin) only; 1 check failed",
+   "green": "on the 1.297 tree: proof-green-half-road passes inside run-proofs 94/94",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive130",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive130.mjs": "3166e4666272b3fe6dac26d20ffc86c270484c5fd7fc9b45ecb90f3f49173c16",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): titles capped at 16 with the fade stops; clones from 15 with the ramp",
+   "red": "on base parts: 9/11 - FAIL L2 (opacity carries 15,1 and 16,0 stops, maxzoom 16) and L3 (clone minzoom 15, ramp present)",
+   "green": "on the 1.297 tree: drive130 11/11 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive214",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive214.mjs": "1e5d24b101b2ee9a2a479379c72464d44298b75a8e4e22f9704d5f38cd14f9f1",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): titles render at 15.7 inside the fade; title maxzoom 16; clone minzoom 15",
+   "red": "on base parts: 24/26 - FAIL M3 (13 title features at 15.7) and M4 (titleMax 16, cloneMin 15)",
+   "green": "on the 1.297 tree: drive214 26/26 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "8d707c6504826a52ca387f3eff222cee86b4566afc5d28d9dfee764e031f96e3",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "pre-1.297 tree (base 5866b2cb parts): clones from minzoom 15 with the 15-16 spec fade; titles fading across 15-16",
+   "red": "on base parts: 36/38 - FAIL N4 (clone min 15, ramp 15,0,16,1) and V2 (13 mid-band samples on each group across the journey)",
+   "green": "on the 1.297 tree: drive219 38/38 PASS (V2: zero mid-band samples, window crossed)",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219-r2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "a70c0d17fc0dc2cca272c75269326013243344cfb3b4d016ae4f97930072d36a",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "the 800 ms dwell tree (fix 3) with drive219's pre-round staging: phase F panned on the loaded/not-moving poll plus a fixed sleep, phase H staged its unload 900 ms after the pick",
+   "red": "on the 800 ms tree with the old staging: F1 failed twice (marginal titles Boddy/Bayside/Julian and two more read as pan losses - the flight now launches 700 ms earlier, before the prefetch warms the fit view, so placement is still churning when the pan starts); the 1500 ms tree passed the same staging the same night",
+   "green": "with the completion poll (same title set across samples 500 ms apart) before the pan and the phase H sleep inside the 800 ms dwell: drive219 38/38 PASS on the 800 ms tree",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive130-r2",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive130.mjs": "64b3e937f2305a7228d31de8c2001d8ac31859a1604c617b5a2d8c63fe3370e9",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "comment-only re-point: the intro-gate header now names the 800 ms timer (1500 before 1.297); the gate's 6000 ms elapsed bound is unchanged and still fires late, never early (800 + 3000 + margin); no check logic changed",
+   "red": "no red observation applies: no assertion changed - the L2/L3 red on the base tree is receipt round3-1297-drive130's record",
+   "green": "on the final 1.297 tree: drive130 11/11 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive145",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive145.mjs": "0d856652fc7cc8a2e9c97fd1ec8e5351691aa322dd4e92ecd62b88b905f62334",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "comment-only re-point: the N23 staging comment now names the flight start at +800 ms (1500 before 1.297); the 2200 ms sleep still lands mid-flight (flight ends at +3800 ms); no check logic changed",
+   "red": "no red observation applies: no assertion changed. Locally the drive's sheet-drag family (N25-N31) fails in varying subsets on BOTH the round tree and pristine base 5866b2cb the same night - rig-environmental; the cloud gate adjudicates",
+   "green": "N22/N23 (the checks this file's edit touches) pass on the round tree; the drag family's local failures reproduce identically on base - see red",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive218",
+   "check": "tests/browser/drive218.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive218.mjs": "6a1b80f3c2668f08d85ff4a64fcb424c8b06fa1981be1b2fea9e0e9d3157ea91",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "Beta 1.297's title cap: the drive's 15.7 framing sat above the new 15.2 switch, where the titles no longer exist (the clones name route streets there instead)",
+   "red": "on PR #220 head 1 in CI (shard 2): drive218 12/14 - FAIL A3 and D3, title features 0 at the 15.7 frame, all other checks passing",
+   "green": "framing moved to 14.8, below the switch, claims unchanged: drive218 14/14 PASS locally on the round tree",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219-r3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "4b4362a153f10e411c9a9f0a425e602f1ebed536dc545179a385ec5fe05a9cae",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "routeLabelMinZoom 15.2 -> 16.2 in parts/app2.js (a real 1-zoom nameless band: titles end at 15.2, clones start at 16.2), assembled and driven",
+   "red": "on the mutated tree: V2 FAILS on the new held-stop half (held-stop read: false - at 15.5 neither system names a route street) while the pre-fix predicate's halves read titles 0, clones 0 mid-band with the window crossed (best titles 32, best clone 6) - the old V2 would have PASSED the gapped tree (Codex P1 on PR #220, sustained and proven). An earlier sample-run form of the continuity half was discarded: it fired on the correct tree under tile starvation (15-sample both-empty run)",
+   "green": "on the correct tree: drive219 38/38 PASS (V2: mid-band 0/0, held-stop read true). The anti-vacuity window-max titles threshold moved 30 -> 25 in the same fix: the sampler's window max read 29 on correct trees three times in the round while V1's polled baseline read (>=30 on the last sample) carries the placement proof",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive214-r2",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive214.mjs": "25c05849790e8d01515df0030ce3f9e61b8c4f0ded984359ff0bd1a814def92e"
+   },
+   "mutation": "comment-only: the added Beta 1.297 REWORK header line removed (Codex P1 on PR #220, sustained - revision history belongs in the CHANGELOG, not a code comment); no check logic changed",
+   "red": "no red observation applies: no assertion changed - the M3/M4 red on the base tree is receipt round3-1297-drive214's record",
+   "green": "on the final 1.297 tree: drive214 26/26 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219-r4",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "2eb4bab2c3d90288aab0e020e8c1d647d7855ed9c4c3c96564577a6f2dc674c8"
+   },
+   "mutation": "comment-only: the phase F and rendered-continuity comments shortened to one short why each (Codex P1 on PR #220 head 4, sustained - investigation history belongs in the record and receipts, not code comments); no check logic changed",
+   "red": "no red observation applies: no assertion changed - the mutation red for V2's current form is receipt round3-1297-drive219-r3's record",
+   "green": "the identical code with the longer comments passed drive219 38/38 in the immediately preceding local run; with the shortened comments the drive passes 37/38, the one failure being A6's degenerate settled slice (gap -1, span 0 - the census-2 sampler-starvation signature, seen twice tonight on untouched code, CI-green on head 1)",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive218-r2",
+   "check": "tests/browser/drive218.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive218.mjs": "044ac1d44cfa2f017678d801e98ea02b364d91b85d37f40da144adf2471c7f4c"
+   },
+   "mutation": "comment-only: the framing header shortened to a short why (Codex P1 on PR #220 head 5, sustained); no check logic changed",
+   "red": "no red observation applies: no assertion changed - the A3/D3 red is receipt round3-1297-drive218's record",
+   "green": "on the final tree: drive218 14/14 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219-r5",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "c0068e9c35b821bc48f5b6fc899ce544c4d75199b0cc9d3b400f684003506fff"
+   },
+   "mutation": "comment-only: the phase H staging comment drops its version parenthetical; no check logic changed",
+   "red": "no red observation applies: no assertion changed",
+   "green": "the identical code passed drive219 38/38 earlier in the round (receipt round3-1297-drive219-r3's green run); the comment cannot change behaviour",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive130-r3",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive130.mjs": "d66a5ce4256c0b26392c1fa3a6e23bce2bf8edd462143e3481af47701e986511"
+   },
+   "mutation": "comment-only: the intro-gate header drops its version parenthetical; no check logic changed",
+   "red": "no red observation applies: no assertion changed",
+   "green": "on the final tree: drive130 11/11 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive145-r2",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive145.mjs": "884c0d22709bb8c5d846151f4a7f1cf0044db083f9a60e7f3878062ac5241fa0"
+   },
+   "mutation": "comment-only: the N23 staging comment drops its version parenthetical; no check logic changed",
+   "red": "no red observation applies: no assertion changed",
+   "green": "N22/N23 pass on the round tree (receipt round3-1297-drive145's record stands for the drag family's local environmental failures)",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive150",
+   "check": "tests/browser/drive150.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive150.mjs": "5fa9261d3ad8c7446c488812739bc3507668d90cc943c7033b078992336607f1",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "Beta 1.297's dwell (1500 -> 800 ms): the restore section's one-shot route-list read landed before the restored pack's boot registration rendered it (the dwell discriminator: the same drive passes 37/37 locally with the dwell reverted, fails D4/D5 with it)",
+   "red": "on the round tree: CI head 3 and head 6 (twice) - drive150 dies with no result block (an evaluation read crashes the run); locally D4/D5 fail with rows [5w] while the store already holds route-6w, and a re-read 4 s later shows both rows - registration lag, convicted by a one-shot read",
+   "green": "with D4 polling the listing itself until the restored row renders: drive150 37/37 PASS locally twice on the 800 ms tree",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive225",
+   "check": "tests/browser/drive225.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive225.mjs": "bfaf0529023ad1f2726b20f47baa407914efe55c882834cb8e856c3e5e3b6593"
+   },
+   "mutation": "gate repair on PR #220's head 6: G9 read the banner's night face once after a fixed 900 ms sleep; the night restyle lands after the body class, so the read took the day face",
+   "red": "CI head 6, twice (incl. the failed-jobs re-run): G9 fails with identical values - bg rgb(255, 255, 255), ratio 15.40 (the day face). The drive passed CI on heads 1 and 3 and locally; the read was always racy, that CI window exposed it",
+   "green": "with G9 polling the face itself until it reads dark (9 s budget): drive225 13/13 PASS locally",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive150-r2",
+   "check": "tests/browser/drive150.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive150.mjs": "bc31eb21cc9d625819566f7e4b83e64226c647ab333b7ba2f935a082aec17c27",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "same repair as receipt round3-1297-drive150, re-issued after the limits gate made the author wrap the poll line's comment; the staging is unchanged",
+   "red": "see receipt round3-1297-drive150 (CI heads 3/6 no-result-block crashes; local D4/D5 rows-vs-store split; dwell discriminator 37/37 at 1500 ms)",
+   "green": "drive150 37/37 PASS locally twice on the 800 ms tree with the polled listing read",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive225-r2",
+   "check": "tests/browser/drive225.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive225.mjs": "63ab638fffba69b812f67b094b155927c4b8258d015dc89a3823bc6c01debe33"
+   },
+   "mutation": "same repair as receipt round3-1297-drive225, re-issued after the limits gate made the author wrap the poll line's comment; the staging is unchanged",
+   "red": "see receipt round3-1297-drive225 (CI head 6 twice: G9 bg rgb(255, 255, 255), ratio 15.40)",
+   "green": "drive225 13/13 PASS locally with the polled face read",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-1263-r2",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1263.mjs": "164ca9886fe022a8e9cb6486bd09cf4c04de2537f90c21d2aa0245b39fc61c4c"
+   },
+   "mutation": "comment and check-name wording only: the premise header and section header shortened to short whys and check 2's history parenthetical trimmed (Codex P1 on PR #220 head 7, sustained); every pin and assertion unchanged",
+   "red": "no red observation applies: no pin changed - the red on base parts is receipt round3-1297-proof-1263's record",
+   "green": "run-proofs 94/94 on the final tree with the shortened wording",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-proof-anchors-r2",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "4191187d910fd5499044aa3f1deae9991281f19d09f80fcfd1dd1bb3e967e605"
+   },
+   "mutation": "comment wording only: the handover section header shortened to a short why (Codex P1 on PR #220 head 7, sustained); every pin and assertion unchanged",
+   "red": "no red observation applies: no pin changed - the red on base parts is receipt round3-1297-proof-anchors' record",
+   "green": "run-proofs 94/94 on the final tree with the shortened wording",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }

@@ -427,32 +427,37 @@ const m2mid = await basemapRouteNamesBelow15();
 ok('M2b no basemap route full-names below 15 at zoom 14.7 either (layer provably live first: ' + m2live + ') | full names rendered: ' + JSON.stringify(m2mid.hits),
   m2live === true && Array.isArray(m2mid.hits) && m2mid.hits.length === 0);
 
-// M3 (the handover form, Beta 1.294): at 15.7 the titles still render
-// (mid-fade) and the originals print no route name - never a double.
+// M3 (the switch form, Beta 1.297): at 15.7 the titles are gone (past
+// the 15.2 cap), the clones name route streets, originals print none.
 await ev(`(() => { map.jumpTo({ zoom: 15.7 }); return true; })()`);
 await poll(`(() => { try { return map.querySourceFeatures('protomaps', { sourceLayer: 'roads' }).length > 50; } catch (e) { return false; } })()`, 30000);
 await poll(`(() => { try { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major', 'roads_labels_minor'] })) { if (f.properties && f.properties.name) seen.add(f.properties.name); } return seen.size >= 5; } catch (e) { return false; } })()`, 30000); // the basemap layers must be provably rendering (non-route names) before an empty route-name read counts as the exclusion working
-await poll(`(() => { try { let n = 0; for (const f of map.queryRenderedFeatures({ layers: ${JSON.stringify(TITLE_LAYERS)} })) n++; return n >= 5; } catch (e) { return false; } })()`, 30000); // and the titles must have PLACED before their count is graded
+await poll(`(() => { try { const full = ${JSON.stringify(routeFullNames)}; const seen = new Set(); ` +
+  `for (const f of map.queryRenderedFeatures({ layers: ['roads_labels_major-route', 'roads_labels_minor-route'] })) { const nm = f.properties && f.properties.name; if (nm && full.includes(nm)) seen.add(nm); } ` +
+  `return seen.size >= 3; } catch (e) { return false; } })()`, 30000); // and the clones must be provably naming route streets before the titles' empty read counts as the switch
 await sleep(600);
 const m3 = await J(`(() => {
   const titleLayers = ${JSON.stringify(TITLE_LAYERS)}.filter(id => map.getLayer(id));
   let titleFeats = 0;
   for (const f of map.queryRenderedFeatures({ layers: titleLayers })) titleFeats++;
-  const baseLayers = ['roads_labels_major', 'roads_labels_minor'].filter(id => map.getLayer(id));
-  const seen = new Set();
-  for (const f of map.queryRenderedFeatures({ layers: baseLayers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
+  const namesOn = (ids) => { const seen = new Set(); for (const f of map.queryRenderedFeatures({ layers: ids.filter(id => map.getLayer(id)) })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); } return seen; };
   const full = ${JSON.stringify(routeFullNames)};
-  return { zoom: map.getZoom(), titleFeats, fullHits: full.filter(n => seen.has(n)) };
+  const baseSeen = namesOn(['roads_labels_major', 'roads_labels_minor']);
+  const cloneSeen = namesOn(['roads_labels_major-route', 'roads_labels_minor-route']);
+  return { zoom: map.getZoom(), titleFeats, fullHits: full.filter(n => baseSeen.has(n)), cloneHits: full.filter(n => cloneSeen.has(n)) };
 })()`);
-ok('M3 mid-band, no doubles: the app titles still render at zoom 15.7 (inside the 15-16 fade, below the cap) and the basemap originals print no route full name there (the exclusion holds at every zoom) | titles ' + m3.titleFeats + ', basemap route full-names: ' + JSON.stringify(m3.fullHits),
-  m3.titleFeats >= 5 && (m3.fullHits || []).length === 0);
+ok('M3 past the switch, no doubles: at zoom 15.7 the app titles render nothing (the 15.2 cap), the clones name route streets, ' +
+  'and the basemap originals print no route full name (the exclusion holds at every zoom) | titles ' + m3.titleFeats +
+  ', clone route names: ' + JSON.stringify(m3.cloneHits) + ', basemap route full-names: ' + JSON.stringify(m3.fullHits),
+  m3.titleFeats === 0 && (m3.cloneHits || []).length >= 3 && (m3.fullHits || []).length === 0);
 
-// M4 (the handover form, Beta 1.294): the live read-back - title
-// maxzoom 16, blanket 13-24 originals, exclusion on both, no '-pre15'.
+// M4 (the switch form, Beta 1.297): the live read-back - title
+// maxzoom 15.2, clone minzoom 15.2, blanket 13-24 originals, no '-pre15'.
 const m4 = await J(`(() => {
   const L = id => map.getLayer(id);
   return {
     titleMax: L('streetnamespt1') ? (L('streetnamespt1').maxzoom === undefined ? null : L('streetnamespt1').maxzoom) : 'absent',
+    cloneMin: L('roads_labels_major-route') ? L('roads_labels_major-route').minzoom : null,
     majorMin: L('roads_labels_major') ? L('roads_labels_major').minzoom : null,
     majorMax: L('roads_labels_major') ? (L('roads_labels_major').maxzoom === undefined ? null : L('roads_labels_major').maxzoom) : null,
     minorMin: L('roads_labels_minor') ? L('roads_labels_minor').minzoom : null,
@@ -461,8 +466,10 @@ const m4 = await J(`(() => {
     minorFilter: JSON.stringify(map.getFilter('roads_labels_minor')),
   };
 })()`);
-ok('M4 the handover shape live: title maxzoom 16, blanket 13-24 on both basemap originals, the route-name exclusion in both filters, no -pre15 layer | ' + JSON.stringify({ t: m4.titleMax, maj: [m4.majorMin, m4.majorMax], min: m4.minorMin, pre: m4.prePresent }),
-  m4.titleMax === 16 && m4.majorMin === 13 && (m4.majorMax === null || m4.majorMax === 24) && m4.minorMin === 13 && m4.prePresent === false && (m4.majorFilter || '').includes('Valeria Boulevard') && (m4.minorFilter || '').includes('Valeria Boulevard'));
+ok('M4 the switch shape live: title maxzoom 15.2, clone minzoom 15.2, blanket 13-24 on both basemap originals, ' +
+  'the route-name exclusion in both filters, no -pre15 layer | ' + JSON.stringify({ t: m4.titleMax, c: m4.cloneMin, maj: [m4.majorMin, m4.majorMax], min: m4.minorMin, pre: m4.prePresent }),
+  m4.titleMax === 15.2 && m4.cloneMin === 15.2 && m4.majorMin === 13 && (m4.majorMax === null || m4.majorMax === 24) &&
+  m4.minorMin === 13 && m4.prePresent === false && (m4.majorFilter || '').includes('Valeria Boulevard') && (m4.minorFilter || '').includes('Valeria Boulevard'));
 
 // M5 (INVERTED by the 1.263 revert): NO standing heal - after the pick
 // flight's one re-place (the restored 1.248 hook, long landed by this

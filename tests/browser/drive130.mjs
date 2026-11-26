@@ -3,7 +3,7 @@
 // to its 1.257 form above (titles at every zoom, originals excluding route
 // names, no clones), which is again the live rule. proof-1263 pins the
 // shape; drive216 grades presence during settles.
-// Beta 1.294: L2/L3/L7/L9 grade the handover (titles fade 15-16, capped at 16; clones name route streets above).
+// Beta 1.297: L2/L3/L7/L9 grade the instant switch at 15.2 (titles capped at 15.2, no fade; clones from 15.2).
 import { launchDrive, finish, bootThrough, forceRouteTitlesOn } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll: poll120, poll } = await launchDrive();
 await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - click through to a loaded route
@@ -46,7 +46,7 @@ const jread = async (expr) => {
 };
 // 2026-11-09 (L7 root hardening, part 1 - the camera thief; tests-only): picking the
 // route started introToRoute's choreography (app4): a jumpTo to the wide view, then -
-// on a 1500 ms timer - a 3000 ms flyTo to the fitted view. bootThrough's readiness
+// on an 800 ms timer - a 3000 ms flyTo to the fitted view. bootThrough's readiness
 // poll reads !map.isMoving(), which holds BEFORE the timer fires: the flight is
 // still PENDING and invisible to every readiness signal, so a drive that jumps the
 // camera inside that window has its view stolen back mid-check (diag4 trace, run
@@ -56,8 +56,8 @@ const jread = async (expr) => {
 // straddled the timer - the family's bimodality across identical code. The gate
 // below waits for the choreography's own terminal state before ANY check reads
 // the map: the flight's moveend, or - when the flight already ended before this
-// listener armed, or never ran - the choreography's own constants (1500 ms timer
-// + 3000 ms flight + margin) elapsed since bootThrough returned (which is after
+// listener armed, or never ran - the choreography's own constants (800 ms timer
+// + 3000 ms flight + margin, inside the same 6000 ms bound) elapsed since bootThrough returned (which is after
 // the pick, so the elapsed test can only fire late, never early) with the map at
 // rest. An expired gate fails the drive here, like bootThrough's own readiness.
 await ev(`(() => { window.__introMoved = false; map.once('moveend', () => { window.__introMoved = true; }); return true; })()`);
@@ -79,6 +79,7 @@ const S1 = await jread(`(() => {
     ptMax: pt ? pt.maxzoom : null,
     cloneMaj: !!map.getLayer('roads_labels_major-route'),
     cloneMin: !!map.getLayer('roads_labels_minor-route'),
+    cloneMinZ: map.getLayer('roads_labels_major-route') ? map.getLayer('roads_labels_major-route').minzoom : null,
     cloneOpacity: map.getLayer('roads_labels_major-route') ? JSON.stringify(map.getPaintProperty('roads_labels_major-route', 'text-opacity')) : '',
     cloneFilter: map.getLayer('roads_labels_minor-route') ? JSON.stringify(map.getFilter('roads_labels_minor-route')) : '',
     origFilter: JSON.stringify(map.getFilter('roads_labels_major')),
@@ -88,10 +89,12 @@ const S1 = await jread(`(() => {
   });
 })()`);
 ok('L1 our line-following streetnames layer is retired | streetnamesGone ' + S1.streetnamesGone, S1.streetnamesGone === true);
-ok('L2 our titles fade out across 15-16 and end at maxzoom 16 (Beta 1.294 handover: the 1.208 no-fade form is superseded by Andrew\'s decision) | opacity ' + S1.ptOpacity + ' maxzoom ' + S1.ptMax,
-  S1.ptOpacity.includes('15,1') && S1.ptOpacity.includes('16,0') && S1.ptMax === 16);
-ok('L3 the handover clones are built (Beta 1.294: the 1.208 retirement is superseded) with the spec fade in across 15-16 and a route-only filter | clones ' + S1.cloneMaj + '/' + S1.cloneMin + ' opacity ' + S1.cloneOpacity + ' filter ' + S1.cloneFilter.slice(0, 60),
-  S1.cloneMaj === true && S1.cloneMin === true && S1.cloneOpacity.includes('15,0') && S1.cloneOpacity.includes('16,1') && S1.cloneFilter.includes('Velmar Drive') && !S1.cloneFilter.includes('"!"'));
+ok('L2 our titles end at maxzoom 15.2 with no fade stops in the spec, the 12.6 fade-in untouched (Beta 1.297 instant switch: the 1.294 fade band is superseded by Andrew\'s decision) | opacity ' + S1.ptOpacity + ' maxzoom ' + S1.ptMax,
+  S1.ptMax === 15.2 && S1.ptOpacity.includes('12.59,0') && S1.ptOpacity.includes('12.62,1') && !S1.ptOpacity.includes('15,1') && !S1.ptOpacity.includes('16,0'));
+ok('L3 the handover clones are built (Beta 1.294: the 1.208 retirement is superseded) from minzoom 15.2 with no spec fade ramp and a route-only filter | clones ' +
+  S1.cloneMaj + '/' + S1.cloneMin + ' minzoom ' + S1.cloneMinZ + ' opacity ' + S1.cloneOpacity + ' filter ' + S1.cloneFilter.slice(0, 60),
+  S1.cloneMaj === true && S1.cloneMin === true && S1.cloneMinZ === 15.2 && !String(S1.cloneOpacity).includes('15,0') &&
+  !String(S1.cloneOpacity).includes('16,1') && S1.cloneFilter.includes('Velmar Drive') && !S1.cloneFilter.includes('"!"'));
 ok('L4 originals exclude route names by a valid combined filter | orig ' + S1.origFilter.slice(0, 60),
   S1.origFilter.startsWith('["all"') && S1.origFilter.includes('Velmar Drive'));
 ok('L5 day road names wear the readable restyle | color ' + S1.dayColor + ' halo ' + S1.dayHalo, S1.dayColor === '#333333' && S1.dayHalo === '1.5');
@@ -99,8 +102,8 @@ ok('L6 the reference source draws nothing (West link off the map) | ref features
 const poiTxt = await ev(`map.getLayer('routepoi-txt') ? JSON.stringify(map.getLayoutProperty('routepoi-txt', 'text-field')) : 'missing'`);
 ok('L6b the point of interest wears the route name, not the app name (Beta 1.79, Andrew) | poi ' + poiTxt, poiTxt === '"Route 5W"');
 
-// The rendered proof at close zoom (Beta 1.294 form): at zoom 17.5 the titles are
-// gone (maxzoom 16), the route name prints on the clones, the originals print none.
+// The rendered proof at close zoom (Beta 1.297 form): at zoom 17.5 the titles are
+// gone (maxzoom 15.2), the route name prints on the clones, the originals print none.
 // Clone repeats are the renderer's own placement and are not counted.
 // 2026-11-09 (L7 root hardening, part 2 - Andrew's flake-gate order; tests-only): with
 // the camera provably at rest (part 1, the intro gate at the top of this drive), the
