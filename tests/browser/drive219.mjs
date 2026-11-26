@@ -31,7 +31,7 @@ const bootToPicker = async () => {
   await ev(`document.getElementById('rmChoose') && document.getElementById('rmChoose').click()`);
   const styleLanded = `!!(typeof map !== 'undefined' && map && map.getStyle && map.getStyle().layers && map.getStyle().layers.length > 10)`;
   // the bare binding only: window.map is a stale handle that stays
-  // truthy while the binding sits at null between maps (census 2)
+  // truthy while the binding sits at null between maps
   if (!await poll(styleLanded, 45000)) throw new Error('drive219: the basemap style never landed - the sampler would measure an empty map and pass vacuously');
 };
 

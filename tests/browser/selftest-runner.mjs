@@ -113,9 +113,8 @@ try {
     const r1 = spawnSync(process.execPath, [path.join(HERE, 'run.mjs'), 'fixture-startup'], { cwd: HERE, env: { ...process.env, CHROME_BIN: flaky, RUNNER_TIMEOUT_MS: '120000' }, encoding: 'utf8', timeout: 180000 });
     const startupOk = r1.status === 0 && /fixture-startup:.*PASS/.test(r1.stdout || '');
     check('fixture-startup: a first-launch failure is retried and the drive passes', startupOk);
-    // On failure, print what the run captured: this fixture burned
-    // six gate runs (flake census 2, 2026-11-25) with the evidence
-    // discarded, so every burn was undiagnosable.
+    // On failure, print what the run captured - a failure whose
+    // evidence was discarded is undiagnosable.
     if (!startupOk) console.log('fixture-startup r1 status ' + r1.status + ' stdout tail:\n' + String(r1.stdout || '').slice(-1200) + '\nstderr tail:\n' + String(r1.stderr || '').slice(-1200));
     const t0d = Date.now();
     const r2 = spawnSync(process.execPath, [path.join(HERE, 'run.mjs'), 'fixture-startup'], { cwd: HERE, env: { ...process.env, CHROME_BIN: '/bin/false', RUNNER_TIMEOUT_MS: '120000' }, encoding: 'utf8', timeout: 180000 });

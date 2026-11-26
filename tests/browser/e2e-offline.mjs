@@ -45,12 +45,9 @@ async function fulfil(sessionId, p) {
   } catch (e) { noteTile(url, true); await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); }
 }
 async function launchBrowser() {
-  // Browser STARTUP gets the harness's bounded retry (Beta 1.96's
-  // shape): a cold runner's first launch can die with no DevTools
-  // URL while every later launch works (flake census 2, 2026-11-25:
-  // this file's single-attempt launch burned two runs that way).
-  // The retry covers only the spawn-to-DevTools window, before any
-  // page exists; a permanently dead browser still fails the run.
+  // Browser STARTUP gets the harness's bounded retry: a cold
+  // runner's first launch can die with no DevTools URL while
+  // later launches work. Startup only - a dead browser fails.
   let wsUrl = null, lastLaunchErr = null;
   for (let attempt = 1; attempt <= 3 && !wsUrl; attempt++) {
     proc = spawn(CHROME, [
@@ -140,15 +137,10 @@ let baseKeys = await capturePackKeys(); // the pristine post-preload PACK key se
 // 2026-11-03, work/e12b-probe. Those fetches now fall through
 // to the browsing cache, so the pack census is exact.)
 ok('E6 the offline pack cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-offline-v1'] >= OFFLINE_FIXTURE.count - 14; } catch (e) { return false; } })());
-// E6b's completion path (flake census 2, 2026-11-25): every census
-// sighting of an E6b failure was exactly ONE file short (896 of
-// 897) - a transient fetch loss on the first pass. A partial pack
-// is a designed, disclosed app state (E5's bar; a re-press fetches
-// only the missing pieces since Beta 1.292), so exactness is
-// judged on the COMPLETED pack: name what the first pass lost,
-// complete it through the app's own re-press, then judge. A file
-// that is systematically unreachable fails both passes and now
-// fails BY NAME instead of as an unexplained count.
+// E6b completion: a partial pack is a designed state (E5's
+// bar), so a short first pass names its missing files and
+// completes through the app's own re-press before exactness
+// is judged. A file unreachable on both passes fails by name.
 const missingOf = (ks) => { const have = new Set(ks); return [...FIX_SET].filter(u => !have.has(u)); };
 let missing6 = missingOf(baseKeys);
 if (missing6.length) {

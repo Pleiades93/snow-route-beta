@@ -14722,6 +14722,59 @@
    "red": "drive219 crashed at bootToPicker, no result block: page evaluation threw TypeError: Cannot read properties of null (reading 'getStyle') - window.map truthy while the map binding sat at null; mechanism proven by probe",
    "green": "drive219 local run 38/38 checks, 0 exceptions - PASS after the poll fix (a throw reads as not-yet; a permanent throw still times out to the caller's named failure); CI build-and-test green on PR #218",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-a6-sync-wave-r3",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "290a374bb6e809118fb25f6232fbc322ae3c0a2e17b389744e703923836cd2e9",
+    "tests/browser/lane-judge.mjs": "468fb89aa311acfb91cf1409d55760d8048a98aacd2cb1b3a57890288c22d18b",
+    "tests/browser/drive219.mjs": "0c329cb7ccfa1c5243eba5382d2f28e45d32c7f605f6642e3038165c5352ccdd"
+   },
+   "mutation": "two mutations, one receipt set: (1) syncVerdict span rule removed - flat gap <= 3000 ms bracket; (2) the zero-max completion guard removed - an all-zero series completes at its first sample (the Codex PR #218 P2 shape)",
+   "red": "(1) selftest 17 passed 1 failed - exactly S1 (road names at +3155 ms against titles at +0); (2) selftest 18 passed 2 failed - exactly S7/S8 (all-zero group acquitted); each observed twice 2026-11-25",
+   "green": "selftest-lane219 20 passed 0 failed on the shipped judge; drive219 local 38/38 PASS; CI checks green on PR #218 head 030c2766 (run 45745585008)",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-lane-run-bound-r3",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "290a374bb6e809118fb25f6232fbc322ae3c0a2e17b389744e703923836cd2e9",
+    "tests/browser/lane-judge.mjs": "468fb89aa311acfb91cf1409d55760d8048a98aacd2cb1b3a57890288c22d18b",
+    "tests/browser/drive219.mjs": "0c329cb7ccfa1c5243eba5382d2f28e45d32c7f605f6642e3038165c5352ccdd"
+   },
+   "mutation": "laneViolations restored to the pre-fix strict form (any single missing/dim sample convicts); re-issue of -r2 after the judge comment trims and the syncVerdict zero-max guard",
+   "red": "selftest-lane219 15 passed 3 failed - exactly F1b/F1c/F2b fail; observed twice 2026-11-25",
+   "green": "selftest-lane219 20 passed 0 failed on the shipped judge; drive219 local 38/38 PASS; CI checks green on PR #218",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-poll-notyet-r4",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "0c329cb7ccfa1c5243eba5382d2f28e45d32c7f605f6642e3038165c5352ccdd",
+    "tests/browser/harness.mjs": "2860678c57cb7d06630e98c11f61708e4dc9f54e039df39b82182c1f6aafcdd7"
+   },
+   "mutation": "pre-fix harness poll (historical); re-issue of -r3 after the drive219 boot comment trim",
+   "red": "drive219 crashed at bootToPicker: page evaluation threw TypeError: Cannot read properties of null (reading 'getStyle') - window.map truthy while the map binding sat at null; mechanism proven by probe",
+   "green": "drive219 local 38/38 PASS after the poll fix; CI checks green on PR #218 head 030c2766 (run 45745585008), drive219 in shard green",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-fixture-startup-diag-r2",
+   "check": "tests/browser/selftest-runner.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-runner.mjs": "4952381e96d0a336624911996149f03eb032cde39ab0a55f29ce2ae11de5c12d"
+   },
+   "mutation": "none - diagnosability change only; re-issue after the comment trim in selftest-runner.mjs",
+   "red": "fixture-startup burned 6 gate runs (flake census 2), each with the captured output discarded",
+   "green": "selftest-runner full suite PASS in 2 local rounds under 4x CPU load 2026-11-25; CI build-and-test green on PR #218",
+   "issued": "2026-11-25"
   }
  ]
 }
