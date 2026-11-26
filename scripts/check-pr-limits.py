@@ -34,6 +34,7 @@ Usage:
   python3 scripts/check-pr-limits.py <root> --base <sha> [--labels a,b]
 """
 import argparse
+import difflib
 import fnmatch
 import re
 import subprocess
@@ -282,6 +283,18 @@ def changed_line_errors(path, old_text, new_text, added, deletions):
                     touched.add(boundary - 1)
                 if first < end <= last:
                     touched.add(boundary)
+    if old_text:
+        # A replace/delete that removed comment lines judges the
+        # comment surviving at its boundaries (Codex P2, PR #225).
+        old_comment = set()
+        for f0, l0, _b in comment_spans(path, old_text):
+            old_comment.update(range(f0, l0 + 1))
+        sm = difflib.SequenceMatcher(None, old_text.split("\n"),
+                                     new_text.split("\n"), autojunk=False)
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if tag in ("replace", "delete") and \
+                    any(i in old_comment for i in range(i1, i2)):
+                touched.update((j1 - 1, j2))
     for first, last, body in comment_spans(path, new_text):
         if not any(i in touched for i in range(first, last + 1)):
             continue
@@ -495,7 +508,10 @@ def main():
         prev_files = changed
 
     for path, (added, deletions) in changed_line_ranges(root, args.base).items():
-        old_text = git(root, "show", f"{args.base}:{path}") if deletions else ""
+        exists = subprocess.run(["git", "-C", str(root), "cat-file", "-e",
+                                 f"{args.base}:{path}"],
+                                capture_output=True).returncode == 0
+        old_text = git(root, "show", f"{args.base}:{path}") if exists else ""
         new_text = git(root, "show", f"HEAD:{path}")
         errors.extend(changed_line_errors(path, old_text, new_text, added, deletions))
 

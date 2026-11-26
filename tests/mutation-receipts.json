@@ -16587,6 +16587,58 @@
    "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (114 pass, 1 fail)",
    "green": "shipped scanner: gate fixtures 115 pass, 0 fail",
    "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r5",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "364a0b8b0ee70b0b804fb9237a199c09b1273152df3d1323d93d1387087851f3",
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the replacement-hunk boundary fix, Codex P2 round 3)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge restored byte-identical: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54",
+    "scripts/check-pr-limits.py": "364a0b8b0ee70b0b804fb9237a199c09b1273152df3d1323d93d1387087851f3"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the replacement-hunk boundary fix and its new fixture)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r3",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "364a0b8b0ee70b0b804fb9237a199c09b1273152df3d1323d93d1387087851f3"
+   },
+   "mutation": "module probe on the shipped push.py _limits_verdict vs the per-line stand-in (re-issued for the replacement-hunk boundary fix in the shared judge)",
+   "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for either pair: without the shared touched-comment verdict the push gate accepts both a rewritten 32-word comment and a 22-word comment whose last line was replaced by code",
+   "green": "shipped verdict names both: 'touched comment of 32 words' for the rewritten pair and 'touched comment of 22 words' for the replacement pair, from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r5",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (pins refreshed for the enlarged fixture file)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (115 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }

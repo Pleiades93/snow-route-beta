@@ -1319,6 +1319,15 @@ with tempfile.TemporaryDirectory() as td:
                                          ("c2", {"parts/a.js": "const re = /[/*]/;\n" + long_block.replace("whiskey", "whisky") + "const a = 1;\n"})])
     check("pr-limits: a long comment beside a regex literal still fails",
           run_limits(repo, head1(repo)), 1)
+    # Replacement hunks (Codex P2 on PR #225): replacing a comment's
+    # last line with code still judges the surviving comment.
+    l1 = "// alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo\n"
+    l2 = "// lima mike november oscar papa quebec romeo sierra tango uniform victor\n"
+    l3 = "// whiskey xray yankee zulu apple banana cherry dragon eagle falcon\n"
+    repo, _ = git_repo(t / "replacetail", [("c1", {"parts/a.js": l1 + l2 + l3 + "const a = 1;\n"}),
+                                           ("c2", {"parts/a.js": l1 + l2 + "const x = 1;\nconst a = 1;\n"})])
+    check("pr-limits: a comment whose last line is replaced by code still fails",
+          run_limits(repo, head1(repo)), 1)
     # Fetch shallow ancestry so the size rule sees the product commit.
     src, b = git_repo(t / "mergesrc", [])
     genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
@@ -1410,6 +1419,6 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: a baselined clone pair passes",
           run_scan(clone_tree), 0)
 
-total = 115
+total = 116
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
