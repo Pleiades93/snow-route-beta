@@ -108,7 +108,7 @@ def main():
     ap.add_argument("--repo", help="owner/name (live mode)")
     ap.add_argument("--pr", type=int, help="PR number (live mode)")
     ap.add_argument("--head-sha", required=True)
-    ap.add_argument("--timeout-seconds", type=int, default=900)
+    ap.add_argument("--timeout-seconds", type=int, default=1800)
     ap.add_argument("--interval-seconds", type=int, default=45)
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--comments-file", help="saved comments JSON (--once)")

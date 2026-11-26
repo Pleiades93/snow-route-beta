@@ -306,7 +306,7 @@ sharded suite on `main` as the environment-drift audit.
     the BASE branch and reports Codex's verdict as the `codex review gate`
     check. The gate passes only when Codex's review of the exact head
     commit completed with no unresolved findings; findings, an unreadable
-    state, or a 15-minute timeout all fail closed. Because the workflow and
+    state, or a 30-minute timeout all fail closed. Because the workflow and
     script come from the base branch, a PR cannot rewrite its own gate.
   - With auto-merge enabled on a PR, GitHub merges it itself once all four
     checks are green and the branch is up to date — nobody merges by hand
