@@ -15453,6 +15453,18 @@
    "red": "the body.night .nbSun rule removed: the extended S7 check fails alone (the sun never fades in), 27/28",
    "green": "drive125 on the final C8 tree: 28/28",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1298",
+   "check": "tests/proof/proof-1298.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1298.mjs": "a9e5b4780668b006f935887e2008278a6f7154a472c52f74b372d5d3622b7930"
+   },
+   "mutation": "new proof for FIX 12: the reduced-motion block must flatten every surface the audit enumerated (plus this round's own motions) at matching specificity, and showBanner must carry the reduced-motion stay timer",
+   "red": "the .sheet segment removed from the block: check 1 fails alone, 14/15",
+   "green": "proof-1298 on the round tree: 15/15; full run-proofs 95/95; a rendered probe under emulated reduced motion also passed 5/5 (computed transitions 0s across sheet/fill/switch/pill/glyph/press/arrow, the banner resting visible then leaving on its timer, a modal entering with no animation and hiding at once)",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }

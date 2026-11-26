@@ -99,9 +99,11 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
   $('bannerLine').textContent = line || '';
   $('bannerIco').innerHTML = icon && ICONS[icon] ? ICONS[icon] : '';
   b.onanimationend = e => { if (e.animationName === 'bannerExit') b.classList.remove('show'); };
+  if (b._rmT) { clearTimeout(b._rmT); b._rmT = 0; }
   b.classList.remove('show');
   void b.getBoundingClientRect(); // restart the drop on a re-fire
   b.classList.add('show');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) b._rmT = setTimeout(() => { b._rmT = 0; b.classList.remove('show'); }, 3000); // no exit animation runs under reduced motion, so a timer keeps the 3s stay
 }
 // overlay exits: a surface leaves over 180ms, then hides; a re-show cancels the leave
 /** @param {HTMLElement} el @returns {void} */

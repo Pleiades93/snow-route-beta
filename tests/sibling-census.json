@@ -20632,6 +20632,422 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26 transitions round C8 re-issue (lines split for the PR limits after c8; same marks, fresh pins)"
+  },
+  {
+   "id": "transitions-1298-c9",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "banner"
+    ],
+    "functions": [
+     "showBanner"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:showBanner:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:finishChangeMarked",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishChangeMarked in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:clearAllMarks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from clearAllMarks in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:gpsError",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from gpsError in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:noteYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from noteYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:backupHandedOff",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from backupHandedOff in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from row:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:stDel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from stDel:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swAwake:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swAwake:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swChime:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swChime:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swVib:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swVib:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "theme:banner",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #banner has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the banner's day/night faces are untouched; only its reduced-motion presentation changed (rest state + timer stay)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "e55a9aa328c0f081aa7f35bcafacfb93efd540486c02354337a402c31544f1f5",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "debbd19a55d304b914e386a9289636efd60f8dd3396af93a037d2bd584bb895a",
+    "parts/app4.js": "2c1ac4d0796f2c8ce4b54ad82e1f79fae945ed177fe57a31f0c2fe93525e73bc",
+    "parts/app5.js": "cf110d96ed89d2d6bf0beeba6150826ef8b98beb3db58b9c99d56f505f1b143a",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "22f718209cdb163dd732094758e372b124e2b68ccf6357adfa92d6e234671ebe",
+    "parts/head.html": "4e2e2a19643a50c1b6e38635cdf0fd8a77f08935569203b81ffce71c88bbe0f8",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round C9 (FIX 12: reduced-motion coverage extended to the surfaces; the banner gains a timer-kept stay), issued by the builder before the C9 push"
+  },
+  {
+   "id": "transitions-1298-c9b",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "banner"
+    ],
+    "functions": [
+     "showBanner"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:showBanner:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:finishChangeMarked",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishChangeMarked in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:clearAllMarks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from clearAllMarks in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:gpsError",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from gpsError in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:noteYes:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from noteYes:click in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app3.js:startGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from startGps in parts/app3.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:backupHandedOff",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from backupHandedOff in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:row:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from row:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:stDel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from stDel:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swAwake:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swAwake:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swChime:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swChime:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:swVib:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from swVib:click in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from pickStreet in parts/create-pick.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "caller:showBanner:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - showBanner() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "this caller's banner behaves exactly as before in normal motion; under reduced motion it rests in its end state and leaves on showBanner's 3s timer instead of the exit animation (proof-1298 check 14; rendered probe passed)"
+    },
+    {
+     "id": "theme:banner",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #banner has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the banner's day/night faces are untouched; only its reduced-motion presentation changed (rest state + timer stay)"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "e55a9aa328c0f081aa7f35bcafacfb93efd540486c02354337a402c31544f1f5",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "debbd19a55d304b914e386a9289636efd60f8dd3396af93a037d2bd584bb895a",
+    "parts/app4.js": "2c1ac4d0796f2c8ce4b54ad82e1f79fae945ed177fe57a31f0c2fe93525e73bc",
+    "parts/app5.js": "cf110d96ed89d2d6bf0beeba6150826ef8b98beb3db58b9c99d56f505f1b143a",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "22f718209cdb163dd732094758e372b124e2b68ccf6357adfa92d6e234671ebe",
+    "parts/head.html": "b85df66fd494c33deda1eb8f70eac9ea9b9703e7681442b5e20a4265e921a83b",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round C9 re-issue (the extension moved to a second reduced-motion block: the original block is one line over the PR line limit; same marks, fresh pins)"
   }
  ]
 }

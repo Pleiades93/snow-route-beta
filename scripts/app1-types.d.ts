@@ -190,6 +190,8 @@ interface AppElement {
   innerHTML: string;
   /** The overlay-exit timer hideSurface stores on the element it is leaving (0 when no leave is pending). */
   _exitT: number;
+  /** The reduced-motion stay timer showBanner stores on the banner (0 when none is pending). */
+  _rmT: number;
   onanimationend: ((e: { animationName: string }) => void) | null;
   classList: AppClassList;
   style: { bottom: string };
