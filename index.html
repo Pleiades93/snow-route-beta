@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-8In8WfBMEqO60dVil6gzese41HaL+1kwEDedbCzhnx8nrXTzTvfwOCOc5/9vso1D' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-eGuv8/VercyrdqJVtxrtxvPceRcQCKXqHMTtPialNL+MTkyKDEaZu7wovZZHHnBu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-X06habAJTBRNulSEgAOkLM5nuTH+6k95UBA0OWVWo74ZOlRpd5jQmNGFHo4cILnn' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -662,9 +662,8 @@
 /* the poses land the whole brand block, not the title alone; the icon occupies the layer itself, no spacer */
 /* one snow canvas at body level: above the splash's blue, below the menus. The engine lives in brand-snow.js. */
 #snowCv { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; visibility: hidden; transition: opacity .3s ease; }
-#snowCv.away { opacity: 0; } /* the snow hides in the menu's sub-panes alongside the title and returns at the main pane */
 body.snow-scene #snowCv { visibility: visible; background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* while snow is live the canvas wears the menu blue, so the field is the menus' ground */
-body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.away) ~ #setMenu { background: transparent; } /* menus step aside only while the field shows; hidden snow leaves them their own blue */
+body.snow-scene #snowCv ~ #routeMenu, body.snow-scene #snowCv ~ #setMenu { background: transparent; } /* while the scene is live the menus step aside for the one field */
 #brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s var(--ease-open); }
 #brandBlock { display: flex; flex-direction: column; align-items: center; } /* no entrance of its own: entrances live on the children. One rigid unit, never reparented, and it no longer travels */
 #brandBlock > * { flex: none; }
@@ -4725,7 +4724,12 @@ function ddClose(drop) { // close runs 335 ms on --ease-close; only when it has 
   clearTimeout(drop._ddT);
   drop._ddT = setTimeout(() => { if (!drop.classList.contains('open')) { drop.style.display = 'none'; const l = drop.closest('.routeList'); if (l) menuListFade(l); } }, 345);
 }
-function showRmPane(id) { document.querySelectorAll('.rmPane').forEach(p => { if (p._ddPin) { p._ddPin = false; p.style.marginTop = ''; } }); ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id)); menuListFade($('crCityList')); menuListFade($('rmRoutes')); const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away); const __cv = $('snowCv'); if (__cv) __cv.classList.toggle('away', __away); } // Beta 1.159 (Andrew, title lifetime rule): the "Snow Route" title - and the snowfall with it - appears ONLY on the main pane; every other pane carries .away on the title's layer and the snow canvas, and returning to rmMain clears it. This function is the ONE pane choke point (every menu navigation in boot and tab mode passes through it), so the rule lives here and nowhere else; in tab mode the brand layer is parked (.off) and the canvas is gone with the splash, so both toggles are inert there. Beta 1.239 (Andrew's ruling, 2026-11-18): the 1.236 citySheet toggle and the 1.238 boot exemption that rode on this seat are both reverted - the toggle is the plain 1.159 form again in every mode, and no pane is exempted.
+function showRmPane(id) { // the one pane choke point; the title hides off the main pane, the snow never does
+  document.querySelectorAll('.rmPane').forEach(p => { if (p._ddPin) { p._ddPin = false; p.style.marginTop = ''; } });
+  ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id));
+  menuListFade($('crCityList')); menuListFade($('rmRoutes'));
+  const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away);
+}
 // showing the menu warms the catalogue (Create lives behind it): the download is nearly done by the list tap
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
@@ -11143,10 +11147,7 @@ async function saveDraftRoute() {
     render(settleAmount());
     raf = window.requestAnimationFrame(loop);
   }
-  function syncSnow() { // Beta 1.299: .away belongs to the Routes panes - derive it, never inherit it (Settings)
-    var rm = document.getElementById('routeMenu'), bl = document.getElementById('brandLayer');
-    var routesUp = !!(rm && (rm.classList.contains('open') || rm.classList.contains('show')));
-    cvS.classList.toggle('away', !!(routesUp && bl && bl.classList.contains('away')));
+  function syncSnow() { // menu flips re-judge the scene: resume if live, park if not
     if (live()) resume(); else park();
   }
   function loop(ts) {
@@ -11156,7 +11157,6 @@ async function saveDraftRoute() {
     if (!lastTs) lastTs = ts;
     var dt = Math.min(0.05, (ts - lastTs) / 1000);
     lastTs = ts;
-    if (cvS && cvS.classList.contains('away')) { raf = window.requestAnimationFrame(loop); return; } // Beta 1.254 (O-09): the canvas is hidden (.away - a menu sub-pane is up, showRmPane in app2.js) - skip the simulation and the paint entirely until the main pane returns. The scene is NOT dead (sceneLive stays true: the splash/menu are up), so nothing stops or restarts; lastTs already advanced, and dt clamps on the return frame
     clock += dt;
     var amount = settleAmount();
     var i, f;

@@ -7,6 +7,14 @@
         "parts/engine.js/<callback>/segLenM"
       ],
       "why": "The app-global uses distM. The engine-local uses the junction-adjusted H.jDistM."
+    },
+    {
+      "name": "transparent step-aside",
+      "pair": [
+        "parts/head.html/.crResult:active",
+        "parts/head.html/body.snow-scene #snowCv ~ #routeMenu, body.snow-scene #snowCv ~ #setMenu"
+      ],
+      "why": "Each block is the single declaration background: transparent on an unrelated surface; no shared rule exists to compose."
     }
   ],
   "pairs": [

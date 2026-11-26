@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "6d939b15beb85459c17ace197aa215b389d94d4d9508446333efbb258cfc1ab3",
+  "canonical_registry_sha256": "b41d8695b63eb236dc785ae6d824e993ee96636d53228cf3eade96437be6bdb7",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1596,
-   "included": 1566,
+   "canonical": 1599,
+   "included": 1569,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -4284,7 +4284,7 @@
     "sheet-boot-1238"
    ],
    "file": "parts/app2.js",
-   "fix": "Beta 1.159 (Andrew's title lifetime rule): showRmPane - the one pane choke point - carries .away on the title's #brandLayer (and the snow canvas) for every pane except rmMain, so the \"Snow Route\" title appears only in the main menu and returns on navigating back. If this hook disappears the title leaks into every following menu again. Beta 1.238 refinement (ops fix:sheet-boot-1238): the canvas half of this toggle carries one exemption - the Select City sheet at boot keeps its snowfall, because the 1.236 sheet floats over the boot scene and hiding the canvas left the splash's flat blue ground (the menu's own gradient) standing around it. The brand-layer half is unchanged, and this probe's pattern (the __away definition) stands.",
+   "fix": "Beta 1.159 (Andrew's title lifetime rule): showRmPane - the one pane choke point - carries .away on the title's #brandLayer (and the snow canvas) for every pane except rmMain, so the \"Snow Route\" title appears only in the main menu and returns on navigating back. If this hook disappears the title leaks into every following menu again. Beta 1.238 refinement (ops fix:sheet-boot-1238): the canvas half of this toggle carries one exemption - the Select City sheet at boot keeps its snowfall, because the 1.236 sheet floats over the boot scene and hiding the canvas left the splash's flat blue ground (the menu's own gradient) standing around it. The brand-layer half is unchanged, and this probe's pattern (the __away definition) stands. Beta 1.301 (Andrew, 2026-11-26): the canvas half of the toggle retired - the snow stands on every pane; the brand-layer half and this pattern are unchanged.",
    "fix_id": "title-lifetime",
    "id": "title-lifetime-main-pane-only",
    "pattern": "const __away = id !== 'rmMain';",
@@ -10204,11 +10204,11 @@
   {
    "added": "2026-11-18",
    "file": "parts/app2.js",
-   "fix": "Beta 1.239 (Andrew's ruling, 2026-11-18): showRmPane's snow-canvas toggle is the plain Beta 1.159 form again - the canvas hides on every non-main pane in every mode; the 1.238 boot exemption for the Select City pane is reverted (the snow belongs on the splash and load screens only, never behind a menu). This is the exact literal sheetboot1238-plain-canvas-toggle-absent guarded AGAINST in 1.238; that guard retires with the exemption and this probe stands in its place.",
+   "fix": "Beta 1.239 (Andrew's ruling, 2026-11-18): showRmPane's snow-canvas toggle is the plain Beta 1.159 form again - the canvas hides on every non-main pane in every mode; the 1.238 boot exemption for the Select City pane is reverted (the snow belongs on the splash and load screens only, never behind a menu). This is the exact literal sheetboot1238-plain-canvas-toggle-absent guarded AGAINST in 1.238; that guard retires with the exemption and this probe stands in its place. Superseded in part by Beta 1.301 (Andrew, 2026-11-26: snow on every blue menu, no exceptions): the canvas toggle itself retired, and this probe was re-pinned in that round as a grep_absent guard on its return.",
    "fix_id": "sheet-correction-1239",
    "id": "sheetcorr1239-plain-canvas-toggle",
-   "pattern": "__cv.classList.toggle('away', __away);",
-   "type": "grep_present"
+   "pattern": "__cv.classList.toggle('away'",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-18",
@@ -11228,10 +11228,10 @@
   {
    "added": "2026-11-20",
    "file": "parts/brand-snow.js",
-   "fix": "O-09: the snow scene skips while hidden (Beta 1.254)",
+   "fix": "O-09: the snow scene skips while hidden (Beta 1.254). Re-pinned in Beta 1.301: the .away skip retired with the canvas step-aside (Andrew, 2026-11-26 - snow on every blue menu); the probe now pins the surviving O-09 speck cap.",
    "fix_id": "audit-r5-batch",
    "id": "auditr5-snow-away",
-   "pattern": "cvS.classList.contains('away')",
+   "pattern": "Math.min(1000, Math.round(area / SPECK.per))",
    "type": "grep_present"
   },
   {
@@ -13846,10 +13846,10 @@
   {
    "added": "2026-11-26",
    "file": "parts/head.html",
-   "fix": "Snow on every blue menu (Beta 1.299): while the snow scene is live AND the field is showing, both blue menus step aside for the one shared field behind them. The rule is sibling-gated on the canvas not carrying .away (Codex P2 on PR #223: on a sub-pane the faded canvas plus a stepped-aside menu would leave the map showing through the menu's ground in tab mode, where no splash sits behind).",
+   "fix": "Snow on every blue menu (Beta 1.299): while the snow scene is live AND the field is showing, both blue menus step aside for the one shared field behind them. The rule is sibling-gated on the canvas not carrying .away (Codex P2 on PR #223: on a sub-pane the faded canvas plus a stepped-aside menu would leave the map showing through the menu's ground in tab mode, where no splash sits behind). Re-pinned in Beta 1.301: Andrew retired the canvas .away, so the step-aside keys on the scene alone; the canvas is opaque blue whenever the scene is live, so the map still never shows through.",
    "fix_id": "snow-menus-1299",
    "id": "snow-menus-1299-step-aside",
-   "pattern": "body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.away) ~ #setMenu { background: transparent; }",
+   "pattern": "body.snow-scene #snowCv ~ #routeMenu, body.snow-scene #snowCv ~ #setMenu { background: transparent; }",
    "type": "grep_present"
   },
   {
@@ -13950,6 +13950,33 @@
    "id": "phase1-scan-judge-path",
    "pattern": "\"scripts/scan-parts.cjs\",",
    "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/brand-snow.js",
+   "fix": "Snow on every blue menu (Beta 1.301, Andrew 2026-11-26): the snow loop never suspends for a pane again - the .away read that froze simulation and paint on route sub-panes is gone.",
+   "fix_id": "snow-everywhere",
+   "id": "snow-everywhere-loop-never-away",
+   "pattern": "classList.contains('away')",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/head.html",
+   "fix": "Snow on every blue menu (Beta 1.301, Andrew 2026-11-26): the CSS rule that faded the snow canvas out on sub-panes is deleted; the brand layer's own .away rule is a separate seat and stands.",
+   "fix_id": "snow-everywhere",
+   "id": "snow-everywhere-no-canvas-hide-rule",
+   "pattern": "#snowCv.away",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app2.js",
+   "fix": "Snow on every blue menu (Beta 1.301, Andrew 2026-11-26): showRmPane never touches the snow canvas - it toggles only the brand title's .away, so no pane switch can hide the snow again.",
+   "fix_id": "snow-everywhere",
+   "id": "snow-everywhere-pane-choke-canvas-free",
+   "pattern": "$('snowCv')",
+   "type": "grep_absent"
   }
  ]
 }

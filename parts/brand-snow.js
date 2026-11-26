@@ -237,10 +237,7 @@
     render(settleAmount());
     raf = window.requestAnimationFrame(loop);
   }
-  function syncSnow() { // Beta 1.299: .away belongs to the Routes panes - derive it, never inherit it (Settings)
-    var rm = document.getElementById('routeMenu'), bl = document.getElementById('brandLayer');
-    var routesUp = !!(rm && (rm.classList.contains('open') || rm.classList.contains('show')));
-    cvS.classList.toggle('away', !!(routesUp && bl && bl.classList.contains('away')));
+  function syncSnow() { // menu flips re-judge the scene: resume if live, park if not
     if (live()) resume(); else park();
   }
   function loop(ts) {
@@ -250,7 +247,6 @@
     if (!lastTs) lastTs = ts;
     var dt = Math.min(0.05, (ts - lastTs) / 1000);
     lastTs = ts;
-    if (cvS && cvS.classList.contains('away')) { raf = window.requestAnimationFrame(loop); return; } // Beta 1.254 (O-09): the canvas is hidden (.away - a menu sub-pane is up, showRmPane in app2.js) - skip the simulation and the paint entirely until the main pane returns. The scene is NOT dead (sceneLive stays true: the splash/menu are up), so nothing stops or restarts; lastTs already advanced, and dt clamps on the return frame
     clock += dt;
     var amount = settleAmount();
     var i, f;
