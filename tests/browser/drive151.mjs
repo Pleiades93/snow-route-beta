@@ -80,19 +80,19 @@ const rig = await startCreateRig({ profile: '/tmp/d151profile-' + Date.now(), fu
 const { proc, send, PAGE_S, ev2, poll, consoleLog, J, bootRoute } = rig;
 // Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city results
 // from .rmBtn boxes to .routeRow rows; the selectors in this helper follow.
-// Issue #180 TEST-PREMISE UPDATE (Beta 1.286): typing now answers from the
-// on-device gazetteer and the public search fires only from the Search online
-// row - this drive grades the WIRE path (its N2 claim names the intercepted
-// Nominatim answer), so the helper taps that row and picks from the merged
-// results, exactly the door a user without a gazetteer hit would take.
+// Fix 4 TEST-PREMISE UPDATE (Beta 1.296): typing answers instantly from the
+// on-device gazetteer and the online search fires on its own only when a
+// settled word has zero bundled matches - the Search online row is gone.
+// This drive grades the WIRE path (its N2 claim names the intercepted
+// Nominatim answer), so the helper types a deliberate gazetteer miss
+// ('Vaughann'); the settled miss fires the fallback and the intercepted
+// answer picks Vaughan - the door a user with no gazetteer hit takes.
 const pickVaughan = async () => {
   await ev2(`openRouteMenu()`);
   await ev2(`document.getElementById('rmCreate').click()`);
   await ev2(`document.getElementById('crDoorManual').click()`);
   await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
-  await ev2(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughan'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-  await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 15000);
-  await ev2(`document.querySelector('#crCityResults .crOnlineRow').click()`);
+  await ev2(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughann'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
   await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 15000);
   await ev2(`document.querySelector('#crCityResults .routeRow').click()`);
   return await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
@@ -147,9 +147,9 @@ await bootRoute();
 const inPick2 = await pickVaughan();
 const ready2 = await poll(`crPrepState === 'ready'`, 20000);
 const phase2Overpass = wire.slice(wireMark).filter(w => w.kind === 'overpass').length;
-const NH = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent, on: document.getElementById('createHint').classList.contains('on') })`);
+const NH = await J(`({ fromCache: crGrid && crGrid.fromCache, hintEl: !!document.getElementById('createHint'), btn: document.getElementById('crHintBtn').style.display })`);
 ok('N7 PERSISTENCE ROUND-TRIP: after a full page reload, re-picking Vaughan is ready from the ON-DEVICE CACHE with ZERO Overpass requests on the wire (phase 2 count: ' + phase2Overpass + ') and the hint says NOTHING (Beta 1.223: the loaded-city confirmation is removed - silence means it loaded, from cache as from the wire) | ' + JSON.stringify(NH) + ' | record complete before reload: ' + savedAll,
-  inPick2 === true && ready2 === true && phase2Overpass === 0 && NH.fromCache === true && NH.hint === '' && NH.on === false && savedAll === true);
+  inPick2 === true && ready2 === true && phase2Overpass === 0 && NH.fromCache === true && NH.hintEl === false && NH.btn === 'none' && savedAll === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
 const gotB2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);

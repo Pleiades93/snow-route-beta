@@ -43,7 +43,9 @@ const payload = (map, key, side) => {
 };
 
 // ---------- The bar markup ----------
-check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc) (Beta 1.236 roll: the input\'s placeholder is Andrew\'s shorter wording now - the markup claim is unchanged)', head.includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span><input id="crSearchInput" type="search" placeholder="Select a road or intersection" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
+check('1a: the bar markup is the pill + bar (back button first, magnifier host, input, clear disc) (Beta 1.236 roll: the input\'s placeholder is Andrew\'s shorter wording now - the markup claim is unchanged)',
+   head.replace(/\n/g, '').includes('<div id="createBar"><button id="crExit" aria-label="Back"></button><div id="crSearchWrap"><span id="crSearchIco" aria-hidden="true"></span>' +
+     '<input id="crSearchInput" type="search" placeholder="Select a road or intersection" autocomplete="off"><button id="crClear" aria-label="Clear search"></button></div></div>'));
 check('1b: the Search button survives nowhere in the parts', !head.includes('crSearchBtn') && !app4.includes('crSearchBtn') && !pick.includes('crSearchBtn'));
 check('1c: the old x tile is gone (no text-glyph exit, no Exit creating title)', !head.includes('title="Exit creating"') && !head.includes('<button id="crExit" title'));
 
@@ -63,12 +65,14 @@ check('3c: rows are pin + name (flex, sampled padding and hairlines; Beta 1.233:
 check('3d: the first row wears the tint in both modes and holds it on press (Beta 1.232: the day tint went neutral with the bar)', rule('.crResult:first-child {').includes('background: #f2f3f5;') && rule('body.night .crResult:first-child {').includes('background: rgba(255,255,255,.06);') && rule('.crResult:first-child:active {').includes('background: #f2f3f5;'));
 check('3e: the name is semibold and WRAPS in the rows, and the area tail is gone (Beta 1.233 supersedes the 1.227 split row)', rule('.crName {').includes('font-weight: 600;') && head.includes('white-space: normal; overflow: visible; text-overflow: clip;') && !head.includes('.crArea'));
 check('3e2: the pick-list .crName rule cannot leak into the rows (scoped colour + size; Beta 1.233: the wrap rides the same scoped rule)', head.includes('#createResults .crName { color: inherit; font-size: 15.5px; white-space: normal; overflow: visible; text-overflow: clip; }'));
-check('3e3: while the results card is open the hint pill is not painted beneath it', head.includes('#createResults.on ~ #createHint { visibility: hidden; }'));
+check('3e3: the hint pill is gone entirely - no surface can be painted beneath the results card', !head.includes('#createHint'));
 check('3f: the pin host is a bare 17px glyph (no chip)', rule('.crPin img {').includes('width: 17px; height: 17px;'));
 
 // ---------- The press groups ----------
-const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition: transform 150ms ease-out;')) || '';
-const scaleLine = head.split('\n').find(l => l.includes('.tabItem:active, .dockBtn:active, .runBtn:active,') && l.includes('transform: scale(.97);')) || '';
+const ruleText = (startFrag) => { const ls = head.split('\n'); const i = ls.findIndex(l => l.includes(startFrag)); if (i < 0) return '';
+  let out = ''; for (let k = i; k < ls.length; k++) { out += (out ? ' ' : '') + ls[k].trim(); if (ls[k].includes('}')) break; } return out; };
+const transLine = ruleText('.tabItem, .dockBtn, .runBtn,');
+const scaleLine = ruleText('.tabItem:active, .dockBtn:active, .runBtn:active,');
 check('4a: the clear disc joins the 1.226 press groups and the Search button is out of them', transLine.includes('#crClear') && scaleLine.includes('#crClear:active') && !transLine.includes('#crSearchBtn') && !scaleLine.includes('#crSearchBtn'));
 check('4b: the back pill keeps its press shrink', transLine.includes('#crExit') && scaleLine.includes('#crExit:active'));
 

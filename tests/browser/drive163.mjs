@@ -57,7 +57,8 @@ await ev(`(() => { localStorage.setItem('${UPKEY}', 'corrupt{json'); return true
 await armDraft('Route C');
 await ev(`saveDraftRoute()`);
 await sleep(300);
-const aRes = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ keys: m ? Object.keys(m).sort() : null, legacy: localStorage.getItem('${UPKEY}'), toast: $('toast').textContent, registered: ROUTE_PACKS.some(p => p.id === 'route-c') }); })()`));
+const aRes = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ keys: m ? Object.keys(m).sort() : null, legacy: localStorage.getItem('${UPKEY}'), toast: $('banner').classList.contains('show'),` +
+  ` registered: ROUTE_PACKS.some(p => p.id === 'route-c') }); })()`));
 ok('A1 DA-05 save with a CORRUPT legacy record present: the save LANDS in the store (no record is read to save one route), route-a + route-b stay, and the corrupt record is left exactly as found | ' + JSON.stringify(aRes.keys) + ' ' + aRes.toast,
   JSON.stringify(aRes.keys) === JSON.stringify(['route-a', 'route-b', 'route-c']) && aRes.legacy === 'corrupt{json' && aRes.registered === true);
 await ev(`(() => { localStorage.removeItem('${UPKEY}'); return true; })()`);
@@ -67,9 +68,10 @@ await ev(`(() => { const orig = IDBObjectStore.prototype.put; window.__origPut =
 await ev(`saveDraftRoute()`);
 await sleep(300);
 await ev(`(() => { IDBObjectStore.prototype.put = window.__origPut; return true; })()`);
-const bRes = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ keys: m ? Object.keys(m).sort() : null, toast: $('toast').textContent, registered: ROUTE_PACKS.some(p => p.id === 'route-d') }); })()`));
-ok('B1 DA-05 save with a FAILING store write: refusal toast, the store keeps exactly route-a + route-b + route-c, the new pack is never registered | ' + JSON.stringify(bRes.keys) + ' ' + bRes.toast,
-  JSON.stringify(bRes.keys) === JSON.stringify(['route-a', 'route-b', 'route-c']) && /could not be saved/.test(bRes.toast) && bRes.registered === false);
+const bRes = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ keys: m ? Object.keys(m).sort() : null, toast: ($('bannerHead').textContent + ' ' + $('bannerLine').textContent),` +
+  ` registered: ROUTE_PACKS.some(p => p.id === 'route-d') }); })()`));
+ok('B1 DA-05 save with a FAILING store write: refusal banner (Route not saved), the store keeps exactly route-a + route-b + route-c, the new pack is never registered | ' + JSON.stringify(bRes.keys) + ' ' + bRes.toast,
+  JSON.stringify(bRes.keys) === JSON.stringify(['route-a', 'route-b', 'route-c']) && /Route not saved/.test(bRes.toast) && bRes.registered === false);
 
 // ---------- C: a merge restore is judged against the RESIDENT definition ----------
 // The resident geometry governs: the snapshot is judged against it, dropped with disclosure when it does not fit.
@@ -90,12 +92,13 @@ const cRes = JSON.parse(await ev(`(async () => {
   await restoreBackup(backup);
   const rk = routeKeys('route-x');
   const stored = await upGet('route-x');
-  return JSON.stringify({ snap: localStorage.getItem(rk.snap), done: localStorage.getItem(rk.done), storedNew: !!stored && !!stored.roads && !!stored.roads['New Street'], storedOld: !!stored && !!stored.roads && !!stored.roads['Old Street'], toast: $('toast').textContent });
+  return JSON.stringify({ snap: localStorage.getItem(rk.snap), done: localStorage.getItem(rk.done), storedNew: !!stored && !!stored.roads && !!stored.roads['New Street'],
+    storedOld: !!stored && !!stored.roads && !!stored.roads['Old Street'], toast: $('banner').classList.contains('show') });
 })()`));
-ok('C1 DA-01 merge form: the carried snapshot is judged against the RESIDENT geometry and dropped with disclosure (it names the new street, which the resident route does not have) | ' + JSON.stringify(cRes).slice(0, 300),
-  !cRes.setupFail && cRes.snap === null && /snapshot was unusable/.test(cRes.toast));
+ok('C1 DA-01 merge form: the carried snapshot is judged against the RESIDENT geometry and dropped SILENTLY since Beta 1.296 (the disclosure is cut) | ' + JSON.stringify(cRes).slice(0, 300),
+  !cRes.setupFail && cRes.snap === null && cRes.toast === false);
 ok('C2 DA-01 merge form: the done list is name-filtered against the RESIDENT street set - New Street is filtered out and counted (legacy OBJECT form: the only form pushField name-filters; an array would pass unfiltered and prove nothing) | done=' + cRes.done,
-  !cRes.setupFail && cRes.done === '[]' && /1 unknown street name/.test(cRes.toast));
+  !cRes.setupFail && cRes.done === '[]' && cRes.toast === false);
 ok('C3 DA-01 merge form: the RESIDENT definition stays installed in the store - the incoming one never replaces it | ' + cRes.toast,
   !cRes.setupFail && cRes.storedNew === false && cRes.storedOld === true);
 await reboot5w(); // absorb the restore's reload
@@ -107,11 +110,11 @@ await ev(`(() => { const orig = window.upGet; window.__origUpGet = orig; let n =
 const dRes = JSON.parse(await ev(`(async () => {
   const backup = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes: { '5w': { done: '["Velmar"]' } }, userpacks: { 'route-z': ${JSON.stringify(PACK('Route Z', 'Zeta Street'))} } };
   await restoreBackup(backup);
-  return JSON.stringify({ done: localStorage.getItem(routeKeys('5w').done), toast: $('toast').textContent });
+  return JSON.stringify({ done: localStorage.getItem(routeKeys('5w').done), toast: $('banner').classList.contains('show') });
 })()`));
 await ev(`(() => { window.upGet = window.__origUpGet; return true; })()`);
-ok('D1 DA-05 restore with a FAILED store prior-read: refusal toast naming the unreadable store | ' + dRes.toast,
-  /created-routes store could not be read/.test(dRes.toast));
+ok('D1 DA-05 restore with a FAILED store prior-read: refused SILENTLY since Beta 1.296 (the refusal toast is cut - the plan is never built) | banner shown: ' + dRes.toast,
+  dRes.toast === false);
 ok('D2 DA-05 nothing was written - the 5W board is untouched and the store gained no route-z | keys=' + JSON.stringify(await storeKeys()),
   dRes.done === doneBefore && JSON.stringify(await storeKeys()) === JSON.stringify(keysBeforeD));
 await reboot5w();
@@ -164,10 +167,11 @@ const e3Res = JSON.parse(await ev(`(async () => {
   const absent = localStorage.getItem(rk.start) === null && localStorage.getItem(rk.snap) === null && !(await upGet('route-r'));
   await restoreBackup(JSON.parse(${JSON.stringify(JSON.stringify(recov))}));
   const stored = await upGet('route-r');
-  return JSON.stringify({ absent, stored: !!stored && !!stored.roads && !!stored.roads['Test Street'], snap: localStorage.getItem(routeKeys('route-r').snap), toast: $('toast').textContent });
+  return JSON.stringify({ absent, stored: !!stored && !!stored.roads && !!stored.roads['Test Street'], snap: localStorage.getItem(routeKeys('route-r').snap), toast: $('banner').classList.contains('show') });
 })()`));
-ok('E3 DA-09+DA-08 fresh-device restore of the recovery file: definition + slots proven absent first, definition rebuilt IN THE STORE, snapshot lands | ' + e3Res.toast,
-  e3Res.absent === true && e3Res.stored === true && !!e3Res.snap && e3Res.snap.includes('Test Street') && /Backup added data to /.test(e3Res.toast));
+ok('E3 DA-09+DA-08 fresh-device restore of the recovery file: definition + slots proven absent first, definition rebuilt IN THE STORE, snapshot lands - silently since Beta 1.296 (the added-data report is cut) | banner ' +
+  'shown: ' + e3Res.toast,
+  e3Res.absent === true && e3Res.stored === true && !!e3Res.snap && e3Res.snap.includes('Test Street') && e3Res.toast === false);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);

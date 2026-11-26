@@ -28,7 +28,7 @@ ok('B0 an idle backup asserts idle explicitly (start: null, not an omitted key) 
 // ---- A: snapshot in a normal backup ---- //
 // (the pre-Start mark is the fixture's Velmar side, marked above)
 await ev(`startClean(); true`); await sleep(250);
-const S1 = JSON.parse(await ev(`(() => JSON.stringify({ show: $('toast').classList.contains('show'), text: $('toast').textContent }))()`));
+const S1 = JSON.parse(await ev(`(() => JSON.stringify({ show: $('banner').classList.contains('show'), text: $('bannerHead').textContent }))()`));
 ok('S1 a HEALTHY Start shows NO snapshot-failure warning (Beta 1.221 gate regression - Codex P2 on PR #98: cutting the success pill left the warning branch unguarded, so every healthy Start cried storage failure) | ' + JSON.stringify(S1), !(S1.show && S1.text.indexOf('cancel safety snapshot') >= 0));
 await ev(`togglePiece('Velmar', 0, 0); true`); await sleep(250); // unmark it mid-run - the journal-blind act
 const bkA = JSON.parse(JSON.parse(JSON.stringify(await ev(`buildBackup()`))));
@@ -89,25 +89,27 @@ const c6 = JSON.parse(await ev(`(() => JSON.stringify({ run: runStart > 0, h: hi
 ok('C6 starting a new run after the finish begins cleanly; the archived cleans stay archived | ' + JSON.stringify(c6), c6.run === true && c6.h === hC + 4);
 await ev(`cancelStart(); true`); await sleep(250);
 
-// ---- D: toast gating on save failure ---- //
+// ---- D: banner gating on save failure ---- //
 // Beta 1.221 re-derivation: the marking outcome pills are CUT (Andrew's
 // toast rule) - a healthy save fires NO pill at all now. The gating
 // property survives on the failure side, which is the side CG-196-05
 // exists for: a failed save still warns, and never claims success.
-await ev(`(() => { $('toast').textContent = ''; $('toast').classList.remove('show'); return true; })()`); // isolate the action's own pill (the D1/D2 idiom below): an ambient KEPT pill standing from boot (the rig's location-off warning) is not this save's pill
+await ev(`(() => { $('bannerHead').textContent = ''; $('banner').classList.remove('show'); return true;` +
+  ` })()`); // isolate the action's own pill (the D1/D2 idiom below): an ambient KEPT pill standing from boot (the rig's location-off warning) is not this save's pill
 await ev(`markDone('Boddy', 'tap'); true`); await sleep(200);
-ok('D0 healthy save: NO completion pill fires since Beta 1.221 | ' + await ev(`$('toast').textContent`), (await ev(`$('toast').textContent`)).indexOf('✓') !== 0 && (await ev(`$('toast').classList.contains('show')`)) === false);
-await ev(`(() => { window.__ls146 = lsSet; lsSet = () => false; $('toast').textContent = ''; return true; })()`);
+ok('D0 healthy save: NO completion pill fires since Beta 1.221 | ' + await ev(`$('bannerHead').textContent`), (await ev(`$('bannerHead').textContent`)).indexOf('✓') !== 0 && (await ev(`$('banner').classList.contains('show')`)) === false);
+await ev(`(() => { window.__ls146 = lsSet; lsSet = () => false; $('bannerHead').textContent = ''; return true; })()`);
 await ev(`markDone('Velmar', 'tap'); true`); await sleep(200);
-const d1 = await ev(`$('toast').textContent`);
+const d1 = await ev(`$('bannerHead').textContent`);
 ok('D1 failed save: NO success toast - the storage warning stands instead (CG-196-05) | ' + JSON.stringify(d1), d1.indexOf('✓') !== 0 && /not saving|storage/i.test(d1));
-await ev(`(() => { $('toast').textContent = ''; return true; })()`);
+await ev(`(() => { $('bannerHead').textContent = ''; return true; })()`);
 await ev(`togglePiece('Astona', 0, 0); true`); await sleep(200);
-const d2 = await ev(`$('toast').textContent`);
-ok('D2 a later failure in the same episode still says not saved (the episode warning only fires once) (CG-196-05) | ' + JSON.stringify(d2), d2 === 'Not saved - storage problem');
-await ev(`(() => { lsSet = window.__ls146; $('toast').textContent = ''; $('toast').classList.remove('show'); return true; })()`); // same isolation: D2's KEPT storage pill may still be standing inside its display window - it is not the unmark's pill
+const d2 = await ev(`$('bannerHead').textContent`);
+ok('D2 a later failure in the same episode still says not saved (the episode warning only fires once) (CG-196-05) | ' + JSON.stringify(d2), d2 === 'Not saved');
+await ev(`(() => { lsSet = window.__ls146; $('bannerHead').textContent = ''; $('banner').classList.remove('show'); return true;` +
+  ` })()`); // same isolation: D2's KEPT storage pill may still be standing inside its display window - it is not the unmark's pill
 await ev(`markUndone('Velmar'); true`); await sleep(200);
-ok('D3 healthy again: the unmark lands and no pill fires since Beta 1.221 | ' + await ev(`$('toast').textContent`), (await ev(`!doneSet.has('Velmar') && !$('toast').classList.contains('show')`)) === true);
+ok('D3 healthy again: the unmark lands and no pill fires since Beta 1.221 | ' + await ev(`$('bannerHead').textContent`), (await ev(`!doneSet.has('Velmar') && !$('banner').classList.contains('show')`)) === true);
 
 // ---- E: verify-cycle-1 corrections (Codex, 2026-11-04) ---- //
 await ev(`startClean(); true`); await sleep(250);
@@ -131,11 +133,13 @@ const healthy = JSON.parse(JSON.parse(JSON.stringify(await ev(`buildBackup()`)))
 ok('E2b healthy again: the export carries the snapshot | snap ' + (typeof healthy.routes['5w'].snap), typeof healthy.routes['5w'].snap === 'string');
 await ev(`cancelStart(); true`); await sleep(250);
 
-// ---- S2: the snapshot warning lives, gated on the failure (Beta 1.221 gate fix) ---- //
-await ev(`(() => { window.__os146 = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === LS.snap) throw new Error('rig: snap write fails'); return window.__os146.call(this, k, v); }; window.__pillLog146 = []; window.__pillRec146 = setInterval(() => { const t = $('toast'); window.__pillLog146.push(t.classList.contains('show') ? t.textContent : ''); }, 25); return true; })()`);
+// ---- S2: the snapshot save rides silently (Beta 1.296) ---- //
+await ev(`(() => { window.__os146 = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === LS.snap) throw new Error('rig: snap write fails'); return window.__os146.call(this, k, v); };` +
+  ` window.__pillLog146 = []; window.__pillRec146 = setInterval(() => { const t = $('banner'); window.__pillLog146.push(t.classList.contains('show') ? t.textContent : ''); }, 25); return true; })()`);
 await ev(`startClean(); true`); await sleep(1200);
 const S2 = JSON.parse(await ev(`(() => { clearInterval(window.__pillRec146); return JSON.stringify(window.__pillLog146); })()`));
-ok('S2 a FAILED snapshot save at Start DOES warn - the warning is gated on !okSnap.ok, not deleted (Beta 1.221 gate fix; an in-page recorder samples the pill every 25 ms because the ambient location-off pill legitimately overwrites it within a second) | saw snapshot warning: ' + S2.some(x => x.indexOf('cancel safety snapshot could not be saved') >= 0), S2.some(x => x.indexOf('cancel safety snapshot could not be saved') >= 0));
+ok('S2 a FAILED snapshot save at Start is SILENT since Beta 1.296 (the snapshot rides silently; the board save is the only Start survivor; an in-page recorder samples the banner every 25 ms) | saw snapshot ' +
+  'warning: ' + S2.some(x => x.indexOf('snapshot') >= 0), !S2.some(x => x.indexOf('snapshot') >= 0));
 await ev(`(() => { Storage.prototype.setItem = window.__os146; cancelStart(); return true; })()`); await sleep(250);
 
 R.exceptions = consoleLog.filter(l => l.type === 'error');

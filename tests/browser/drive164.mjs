@@ -134,12 +134,12 @@ ok('E3 guard: a normal city search still renders its row', e3 === true);
 // happen at the input event itself, not when the 500 ms debounce would
 // next run the search. A response landing inside that window renders
 // nothing, and the request is already aborted at clear time.
-// Issue #180 re-point: typing now runs the on-device type-ahead (no
-// public request); the in-flight search here is the explicit online
-// search, started by tapping the type-ahead's Search online row.
-await ev(`(() => { const i = $('crCityInput'); i.value = 'Vaug'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
-await sleep(750); // the debounce fires; the type-ahead renders its rows
-await ev(`(() => { const r = $('crCityResults').querySelector('.crOnlineRow'); if (r) r.click(); return !!r; })()`); // the explicit online search starts
+// Fix 4 re-point: typing runs the on-device type-ahead, and a settled
+// word with zero bundled matches fires the online search on its own -
+// the in-flight search here is started by typing a deliberate gazetteer
+// miss ('Vaughann') through the real input handler.
+await ev(`(() => { const i = $('crCityInput'); i.value = 'Vaughann'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+await sleep(750); // the debounce fires; the settled miss starts the online search
 const e1bStart = await poll(`window.__pend.filter(x => x.url.includes('nominatim')).length === 4`, 8000);
 await ev(`(() => { const i = $('crCityInput'); i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`); // the clear - invalidation must be immediate
 const e1bAborted = await ev(`(() => { const p = window.__pend.filter(x => x.url.includes('nominatim'))[3]; return !!(p && p.signal && p.signal.aborted); })()`);

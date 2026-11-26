@@ -1,4 +1,4 @@
-// silence means the city loaded (no success text); a load's readout renders only past the gate; terminal states never gated
+// the load readout is gone (audit v2): only the action button renders, and only past its five-second gate
 const CR_LOAD_GATE_MS = 5000;
 function crHintAction() { // the one decision for the hint button: label and click action both read it, so they can never diverge
   if (crPrepState === 'preparing') return { label: 'Cancel', act: 'cancel' };
@@ -16,42 +16,16 @@ function crHintAction() { // the one decision for the hint button: label and cli
   if (map && map.getZoom() >= 14) return { label: 'Prepare this area', act: 'prepare-centre' };
   return { label: '', act: '' };
 }
-function crRenderHint() { // the one writer of the hint, its button and the city chip: state-driven, so no stale text survives
+function crRenderHint() { // the one writer of the action button and the city chip: state-driven, so no stale state survives
   if (!creating || crStage !== 'pick') return;
-  const hint = $('createHint'), btn = $('crHintBtn');
-  if (crSectorSession.street) { hint.textContent = ''; hint.classList.remove('on'); btn.style.display = 'none'; return; } // while trimming, the hint stays silent and offers no button: the sector bar's own line already tells him
-  let text = '', btnLabel = '';
-  let gated = false; // true inside the gate: the render paints nothing (notes are state, riding the first render past it)
-  const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS; // the gate reads the load's own start (an appearing readout carries true progress); the tickers re-render through this writer
-  if (crPrepState === 'preparing' && crPrep) { // the fallback box, when in flight, outranks the grid text: a settled grid must not label its wait
-    gated = !pastGate(crPrep.startedAt);
-    if (!gated) { text = 'Preparing street shapes for ' + (crCity ? crCity.name : 'this area') + '…'; } // gated like every readout; past the gate, no elapsed-seconds suffix: the box is one fetch, no honest percentage exists
-  }
-  else if (crPrepState === 'preparing' && crGrid) { // the grid: the live service or the app's own library behind the one seam, one readout for both
-    gated = !pastGate(crGrid.startedAt);
-    // name + percentage only: no part counts, no elapsed seconds, no failed tally (failures surface in terminal states)
-    if (!gated) { const done = crGridDoneCount(), total = crGrid.cells.length; text = 'Loading ' + crGrid.name + ', ' + (total > 0 ? Math.round(done / total * 100) : 0) + '%'; }
-  }
-  else if (crPrepState === 'degraded' && crGrid) {
-    // readouts speak in percentages: the stopped state names how much landed as a percentage of cells, not parts
-    if (crGrid.stopped === 'cancelled') { text = 'Loading stopped - ' + crGrid.name + ' ' + (crGrid.cells.length ? Math.round(crGridDoneCount() / crGrid.cells.length * 100) : 0) + '% loaded'; }
-    else { text = crGrid.name + ' loaded except ' + (crGridFailedCount() + crGridPendingCount()) + ' part' + ((crGridFailedCount() + crGridPendingCount()) === 1 ? '' : 's') + ' - streets there may be missing'; }
-  }
-  else if (crPrepState === 'failed') { text = crFailText(crPrepFail); } // the failed state's button is crHintAction's (above): the label and the click can never diverge
-  else if (crPrepState === 'ready') {
-    // NO success text in the ready state: silence means it loaded; a disclosure note or an outstanding offer's button speaks
-  }
-  else { text = crCity ? 'Search for a street in ' + crCity.name + ', or zoom in and prepare this area' : 'Search, fly to a street, then tap it on the map'; }
-  if (!gated) btnLabel = crHintAction().label; // the button's label is the one decision's (crHintAction); inside the gate the label stays empty
-  if (!gated) { // inside the gate the pill renders nothing: notes ride the first ungated render or the terminal state, never swallowed
-    if (crCacheNote && crCity && crCacheNoteCity === crCity.name) text = text ? text + ' · ' + crCacheNote : crCacheNote; // the cache note rides the hint only for the city on screen; alone, it stands alone
-    if (crPackNote && crCity) text = text ? text + ' · ' + crPackNote : crPackNote; // the disclosed pack state rides the hint the same way: a fallen-back load says the library didn't load
-  }
-  hint.textContent = text; hint.classList.toggle('on', !!text); // no text, no pill: an empty render never paints an empty pill
+  const btn = $('crHintBtn');
+  if (crSectorSession.street) { btn.style.display = 'none'; return; } // while trimming, no button: the sector bar's own line already tells him
+  const load = crPrep || crGrid; // the in-flight load, box or grid: its start times the gate
+  const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS;
+  const gated = crPrepState === 'preparing' && !!load && !pastGate(load.startedAt); // inside the gate the button stays hidden
+  const btnLabel = gated ? '' : crHintAction().label; // the button's label is the one decision's (crHintAction)
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
-  btn.classList.toggle('danger', btnLabel === 'Cancel'); // anything Cancel is red: while the button reads Cancel it wears the destructive red; Resume/Retry/Prepare keep the blue
-  // the button hangs from pill bottom +8 px, recomputed each render: a fixed offset let wrapped pills cover it
-  if (btnLabel && hint.classList.contains('on')) { const hb = hint.getBoundingClientRect(); btn.style.top = Math.round(hb.bottom + 8) + 'px'; } else btn.style.top = '';
+  btn.classList.toggle('danger', btnLabel === 'Cancel'); // anything Cancel is red: while the button reads Cancel it wears the destructive red
   const cc = $('crCityChange'); if (cc) { if (crCity) { // the city bar above Done, built from text nodes: the typed city name never becomes markup
       cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
   crRefreshSearch(); // every coverage landing renders this hint as it lands, so the open street search refreshes with it (guards at crRunSearch)
@@ -335,7 +309,6 @@ function crPendStreet(name, lngLat, run, boundary) { // fail-closed: a shape pas
   crPending[name] = { osmName: name, lngLat, openEnd };
   if (openEnd) crWanted = { anchor: openEnd, label: 'Prepare wider area' }; // the wider preparation is a real button: it prepares around the street's own open end
   renderCrLists(); crRenderHint();
-  toast(shortStreetName(name) + ' runs past the prepared area, it is pending, not added - prepare a wider area to complete it', 4200);
 }
 // ---- the city step (Andrew's amendment) STARTS here ----
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
@@ -360,6 +333,7 @@ function crPickCity(it) {
   let bbox = null;
   if (Array.isArray(it.boundingbox) && it.boundingbox.length === 4) { const bb = it.boundingbox.map(Number); if (bb.every(isFinite)) bbox = { s: bb[0], n: bb[1], w: bb[2], e: bb[3] }; }
   const apply = () => {
+    crResetCitySearch(); // a pick cancels any held search: its late answer must not land after the pick
     crCity = { name, lat, lon, bbox };
     crAreaGuess = name;
     if (draft && !draft.area) draft.area = name;
@@ -859,30 +833,28 @@ function crCityResultRow(it, i) { // one city result row, shared by the type-ahe
   row.addEventListener('click', () => crPickCity(it));
   return row;
 }
-function crRunCityTypeahead() { // typing answers from the on-device gazetteer only: the service prohibits autocomplete and caps one request per second
+function crRunCityTypeahead() { // typing answers from the gazetteer; the online search fires only on a settled zero-match word
   const q = $('crCityInput').value.trim();
   if (q.length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the input event already invalidated through the owner; this seat only clears
   const places = crCityLocalMatches(q);
+  if (!places.length) { crRunCitySearch(); return; } // zero bundled matches: the settled word goes to the service on its own
   crCityBoxSwap(b => {
     b.innerHTML = '';
     places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
-    if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
-    const on = routeRowShell('button', 'Search online', 'Ask the live service about \u201c' + q + '\u201d');
-    on.classList.remove('routeRow'); on.classList.add('crOnlineRow'); // this row is an action, not a result: it never wears .routeRow, so row counts count results only
-    on.addEventListener('click', () => crRunCitySearch());
-    b.appendChild(on);
   });
 }
 async function crRunCitySearch() {
-  const q = $('crCityInput').value.trim(), box = $('crCityResults');
+  const input = $('crCityInput'), settledText = input.value;
+  const q = settledText.trim();
   if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // a cleared query invalidates like every change (bump + abort via crResetCitySearch); the clear leaves through animation
   const seq = ++crCitySeq, session = crSession;
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
   crCityShowSkeletons();
   try {
-    const waitMs = 1000 - (Date.now() - crCityOnlineAt); // the one-per-second cap, honoured at the seat firing it: a tap inside the second waits out the remainder
-    if (waitMs > 0) { await new Promise(r => setTimeout(r, waitMs)); if (!crCitySearchCurrent(seq, session)) return; }
+    const waitMs = 1000 - (Date.now() - crCityOnlineAt); // the service caps one request per second: a search inside the second waits out the remainder
+    if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+    if (!crCitySearchCurrent(seq, session) || input.value !== settledText) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
     crCityOnlineAt = Date.now();
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined }); // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
@@ -1227,13 +1199,15 @@ function renderCrLists() {
   syncCrPanel();
 }
 let crConfirmCb = null;
-let crConfirmOneBtn = false; // true while the current confirm wears the one-button shape (the discard ask)
-function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb; crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard'; $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn); $('crModalNo').textContent = (labels && labels.no) || '✕'; $('crModalNo').classList.toggle('cancelRed', !!labels && labels.no === 'Cancel'); $('crModalNo').style.display = crConfirmOneBtn ? 'none' : ''; $('crModalX').style.display = crConfirmOneBtn ? '' : 'none'; $('crModal').classList.remove('hidden'); } // Beta 1.229 (Andrew's universal rule): when the No button reads 'Cancel' it wears the red too (the #crModalNo.cancelRed rule, head.html) - the toggle rides the label, so the plain ✕ form is untouched // Beta 1.124: labels are optional; route deletion passes {yes:'Delete', no:'Cancel', danger:true}. Beta 1.132 (Andrew): the DISCARD ask (askDiscard) passes {oneBtn:true} and changes shape - ONE red Discard button, nothing else in the row; dismissal lives on the card's plain red corner X (crModalX, styled by the shared corner-X rule in head.html) and on a tap of the backdrop, and dismissing always means keep editing. Every other confirm keeps its two-button row exactly as before. The card itself is the --card token surface in BOTH themes - the confirm never hardcodes a light background.
+let crConfirmOneBtn = false; // true while the current confirm is the discard ask (its No reads Cancel, like every two-button confirm)
+function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb;
+  crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard';
+  $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn);
+  $('crModalNo').textContent = crConfirmOneBtn ? 'Cancel' : ((labels && labels.no) || '✕');
+  $('crModalNo').classList.toggle('cancelRed', crConfirmOneBtn || (!!labels && labels.no === 'Cancel')); $('crModal').classList.remove('hidden'); } // two buttons are the only doors
 function crConfirmDismiss() { $('crModal').classList.add('hidden'); crConfirmCb = null; }
 $('crModalYes').addEventListener('click', () => { $('crModal').classList.add('hidden'); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
-$('crModalX').addEventListener('click', crConfirmDismiss);
-$('crModal').addEventListener('click', (e) => { if (crConfirmOneBtn && e.target === $('crModal')) crConfirmDismiss(); }); // a backdrop tap dismisses ONLY in the one-button shape
 function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); const bl = $('brandLayer'); if (bl) bl.classList.add('parked'); /* Beta 1.155: the title lives in its own layer now, not inside the menu - the park hides it explicitly (through 1.154 it hid as the menu's child) */ crBootParked = true; }
 function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('parked'); /* Beta 1.155: revive the title layer with the picker */ }
 function setCreateStage(stage) {
@@ -1244,8 +1218,7 @@ function setCreateStage(stage) {
   $('createSheet').classList.toggle('on', stage === 'pick');
   $('previewSheet').classList.toggle('on', stage === 'preview');
   $('createResults').classList.remove('on');
-  $('createHint').classList.toggle('on', stage === 'pick');
-  if (stage === 'pick') crRenderHint(); else $('crHintBtn').style.display = 'none'; // the hint is state-driven (crRenderHint owns it): the preparation state must survive stage changes, not be overwritten
+  if (stage === 'pick') crRenderHint(); else $('crHintBtn').style.display = 'none'; // the button is state-driven (crRenderHint owns it): the preparation state must survive stage changes, not be overwritten
   renderCrLists(); renderDraft();
   if (stage === 'preview') fitDraft();
 }
@@ -1276,7 +1249,7 @@ function exitCreate() {
   crResetSearch(); // the close ends the search through the owner: no in-flight suggestion lands after the flow closes
   crIsectClear(); // the street text dies with the session: emptying runs through crIsectClear, so a crossing's marker dies too
   document.body.classList.remove('creating');
-  for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults', 'createHint']) $(id).classList.remove('on');
+  for (const id of ['createBar', 'createSheet', 'previewSheet', 'createResults']) $(id).classList.remove('on');
   crSetBackdrop(false); // the loaded route's paint returns exactly as it was
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
@@ -1306,9 +1279,8 @@ $('crCityInput').addEventListener('input', () => { // every input change invalid
   crResetCitySearch(); // the invalidation runs through crResetCitySearch, the one owner; the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the clear animates like every other results change
   const armSeq = crCitySeq; // the invalidation settled the sequence; a search starting first bumps it again and the type-ahead stands down
-  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // the debounce runs the on-device type-ahead: the public search fires only from its own row
+  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // the 500 ms debounce is the settle point: only a settled word can reach the service
 });
-// no path resolves a name to a place at search time: names answer from gazetteer or catalogue
 $('crCityBack').addEventListener('click', () => {
   crResetCitySearch(); // leaving the pane kills a held city search too (request AND pending debounce), through crResetCitySearch, the one owner
   if (crCityReturn === 'preview' || crCityReturn === 'pick') { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage(crCityReturn); }
@@ -1750,7 +1722,7 @@ async function pickStreet(osmName, lngLat) {
   const name = osmName; // the draft key IS the full map name; the short form appears only in display text
   const exists = Object.prototype.hasOwnProperty.call(draft.roads, name); // own-property, not a bare read: 'constructor' on a plain object reads as already picked and misroutes the tap
   if (exists && (crPickBusy || !(crCov && crCov.boxes.length))) { crOpenSectors(name); return; } // picked, with no extract to resolve against or a pick in flight: the sectors door, as before
-  if (Object.prototype.hasOwnProperty.call(crPending, name)) { toast(shortStreetName(name) + ' is pending, it runs past the prepared area and is not in your route yet', 3400); return; } // the same own-property rule for the pending read
+  if (Object.prototype.hasOwnProperty.call(crPending, name)) return; // the same own-property rule for the pending read
   if (crPickBusy) return;
   // taps resolve locally (no network); before the extract lands, a tap identifies its street, never pretending to add
   if (crCov && crCov.boxes.length) {
@@ -1761,18 +1733,14 @@ async function pickStreet(osmName, lngLat) {
       crAddRun(name, res0.segs); return; // the tap landed on a DIFFERENT disconnected run of the picked street: it joins the same street entry
     }
     if (exists) {
-      if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) { toast('The other part of ' + shortStreetName(name) + ' runs past the prepared area, it was not added - prepare a wider area, then tap it again', 4200); return; } // an unheld run that reaches past verified coverage is never half-added over an existing pick; the wider preparation + a fresh tap is the honest path
+      if (res0.status === 'edge' && res0.run && !crRunHeld(name, res0.run.exact ? res0.run.segments : [res0.run.line])) return;
+      // an unheld run past verified coverage is never half-added over an existing pick; wider preparation + a fresh tap wins
       crOpenSectors(name); return; // absent/nocov against committed coverage, or an edge tap on the held run: the sectors door is the answer
     }
     if (res0.status === 'absent') {
-      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) { toast('No shape found for ' + shortStreetName(name) + ' here - the map data holds no line for it', 3600); return; }
-      if (crGrid && crInBox(crGrid.bbox, lngLat.lat, lngLat.lng)) {
-        const cell = crGrid.cells.find(c => crInBox(c.box, lngLat.lat, lngLat.lng));
-        if (cell && cell.state === 'failed') toast('That part of ' + crGrid.name + ' didn’t load - ' + shortStreetName(name) + ' can be added after Retry missing parts', 3800);
-        else toast('That part of ' + (crCity ? crCity.name : 'the city') + ' is still loading - ' + shortStreetName(name) + ' can be added as soon as it lands', 3400);
-        return;
-      }
-      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint(); toast(shortStreetName(name) + ' is outside the prepared area - prepare this area, then tap it again', 3800);
+      if (crInAnyBox(crCov.boxes, lngLat.lat, lngLat.lng)) return;
+      if (crGrid && crInBox(crGrid.bbox, lngLat.lat, lngLat.lng)) return;
+      crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng }; crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; crRenderHint();
       return;
     }
     // past coverage: one fetch for this name over an area, merged by id, resolved again; still past, pending
@@ -1780,7 +1748,6 @@ async function pickStreet(osmName, lngLat) {
     if (crToppedUp[topKey]) { crPendStreet(name, lngLat, res0.run, null); return; }
     crToppedUp[topKey] = true;
     crPickBusy = true;
-    const hint = $('createHint'); hint.textContent = 'Checking the whole of ' + shortStreetName(name) + '…'; hint.classList.add('on');
     const op = {}; crTopOp = op; // exitCreate can stop this download too (CG-PF-10)
     try {
       let openEnd = { lat: lngLat.lat, lng: lngLat.lng };
@@ -1789,9 +1756,8 @@ async function pickStreet(osmName, lngLat) {
       const got = await crSourceExtract(box, osmName, CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms, () => creating && crSession === session && crCovGen === gen, op);
       if (!creating || crSession !== session || crCovGen !== gen || !draft) return; // obsolete: land nowhere (CG-PF-05)
       if (!got.ok) {
-        if (got.kind === 'dense') toast('That area is too dense to check ' + shortStreetName(name) + ' against - it stays out of your route for now', 4000);
-        else if (got.kind === 'error' || got.kind === 'badjson') toast('The street-shape service answered with an error - ' + shortStreetName(name) + ' was not added', 3800);
-        else if (got.kind !== 'stale') toast('The street-shape service didn’t answer - ' + shortStreetName(name) + ' was not added', 3800);
+        if (got.kind === 'error' || got.kind === 'badjson') showBanner(shortStreetName(name) + ' not added', 'The street service answered with an error');
+        else if (got.kind !== 'stale' && got.kind !== 'dense') showBanner(shortStreetName(name) + ' not added', 'The street service did not answer');
         crRenderHint();
         return;
       }
@@ -1802,10 +1768,9 @@ async function pickStreet(osmName, lngLat) {
     return;
   }
   if (exists) { crOpenSectors(name); return; } // an extract exists but holds no verified box yet - the picked street's sectors are still the honest door
-  if (crPrepState === 'preparing') { toast('Still preparing street shapes - ' + shortStreetName(name) + ' can be added as soon as they are ready', 3200); return; }
+  if (crPrepState === 'preparing') return;
   crPrepAnchor = { lat: lngLat.lat, lng: lngLat.lng };
   crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; // the offer names THIS tap's area, and the hint button prepares exactly there (CG-PF-09)
-  toast('Street shapes aren’t ready for this area yet - tap Prepare this area, then tap ' + shortStreetName(name) + ' again', 3800);
   crRenderHint();
 }
 function crFeatDistM(lngLat, geom) { // metres from tap to a feature line's nearest point: choice only (which street was meant), never stored
@@ -1860,7 +1825,7 @@ function crMapTap(e) {
     if (!pick) pick = named[0].properties.name; // a named road whose tile line is unusable still names the street - the name is the identity
     break; // the first box that names any road decides
   }
-  if (!pick) { toast('No road there - tap on a road line', 2400); return; }
+  if (!pick) return;
   pickStreet(pick, e.lngLat);
 }
 onMapReady(() => map.on('click', crMapTap));

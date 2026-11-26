@@ -35,11 +35,11 @@ await ev(`(() => { $('finNo').click(); return true; })()`);
 ok('U1 the finished clean stays finished - the button opens the pop-up for the empty board, nothing is restored | ' + JSON.stringify(u1), u1.open === true && /Nothing is marked yet/.test(u1.msg) && u1.h === 1 && u1.done === 0);
 // C1: cancel a clean that has coverage but no marks - the coverage dies with it.
 await ev(`(() => { runStart = Date.now(); coveredIdx = { Velmar: [0, 1, 2] }; cancelStart(); return true; })()`);
-const c1 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, shown: $('toast').classList.contains('show') }))()`));
+const c1 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, shown: $('banner').classList.contains('show') }))()`));
 ok('C1 cancel clears the cancelled run coverage | ' + JSON.stringify(c1), c1.cov === 0 && c1.shown === false); // Beta 1.91: the contract - cancel erases the clean (Beta 1.211 wording sweep: a clean is not a run). Beta 1.96 (SR-195-06): this scenario sets runStart directly, so no snapshot exists by construction and the board rebuilds from the marks. Beta 1.221: the erasure pill is cut (Andrew's toast rule) - the cleared state itself is the report, and no pill fires on a clean cancel
 // C2: Clear with coverage-only state clears it instead of claiming nothing to do.
 await ev(`(() => { coveredIdx = { Velmar: [0] }; clearAllMarks(); return true; })()`);
-const c2 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, shown: $('toast').classList.contains('show') }))()`));
+const c2 = JSON.parse(await ev(`(() => JSON.stringify({ cov: Object.keys(coveredIdx).length, shown: $('banner').classList.contains('show') }))()`));
 ok('C2 clear counts coverage-only state as something to clear | ' + JSON.stringify(c2), c2.cov === 0 && c2.shown === false); // Beta 1.221: neither the old nothing-to-clear claim nor a success pill fires - the clear simply lands
 // G1/G2: a segment straddling the run start is not counted; only whole in-run segments are.
 const g = JSON.parse(await ev(`(() => { const t0 = 1700000000; trail = [[43.82, -79.560, t0 - 60], [43.82, -79.559, t0 + 60], [43.82, -79.558, t0 + 120]]; const km = trailKm(t0 * 1000); const segIn = distM(trail[1], trail[2]) / 1000; const segStraddle = distM(trail[0], trail[1]) / 1000; return JSON.stringify({ km, segIn, segStraddle }); })()`));

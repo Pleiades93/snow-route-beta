@@ -27,7 +27,9 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
 // ---------- Piece 1: the press at 150ms ----------
-const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition:')) || '';
+const ruleText = (startFrag) => { const ls = head.split('\n'); const i = ls.findIndex(l => l.includes(startFrag)); if (i < 0) return '';
+  let out = ''; for (let k = i; k < ls.length; k++) { out += (out ? ' ' : '') + ls[k].trim(); if (ls[k].includes('}')) break; } return out; };
+const transLine = ruleText('.tabItem, .dockBtn, .runBtn,');
 check('1a: the press transition group stands at 150ms with its core families', transLine.includes('transition: transform 150ms ease-out;') && transLine.includes('#selPop button') && transLine.includes('.rmBtn') && transLine.includes('#routeMenu .routeRow'));
 check('1b: the switch merged rule stands at 150ms', head.includes('.m-switch { transition: background .18s ease, transform 150ms ease-out; }'));
 check('1c: no 120ms press timing survives in the page', !head.includes('transform 120ms ease-out'));

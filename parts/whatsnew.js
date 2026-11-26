@@ -1,6 +1,6 @@
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
   v: '@@VERSION@@', items: [
-    "If GPS drops out during a clean, a banner tells you after you finish and the clean is marked",
-    "The app checks for a newer version each time it starts and updates itself on the spot"
+    "Notifications are now a banner at the top, and only the important ones appear",
+    "City search checks online on its own when a place is not in the built-in list"
   ] }; // entries stay short: one plain line each (Beta 1.223 rule)
 

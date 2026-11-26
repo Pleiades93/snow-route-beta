@@ -164,16 +164,15 @@ await ev2(`exitCreate()`);
 // ---- phase C: the manual path's street search (parity) ----
 // Beta 1.126 TEST-PREMISE UPDATE: 1.125 restyled the manual-search city
 // results from .rmBtn to .routeRow; the selectors below follow.
-// Issue #180 TEST-PREMISE UPDATE (Beta 1.286): typing answers from the
+// Fix 4 TEST-PREMISE UPDATE (Beta 1.296): typing answers instantly from the
 // on-device gazetteer (the real King City box); C1 grades the grid
-// against the fixture's King, so the pick goes through the Search
-// online row and the merged results - the fixture's city, as before.
+// against the fixture's King, so the helper types a deliberate gazetteer
+// miss ('King Cityy') - the settled miss fires the online fallback on
+// its own and the results are the fixture's city, as before.
 await openDoorsTab();
 await ev2(`document.getElementById('crDoorManual').click()`);
 await poll(`document.getElementById('rmCityPane').classList.contains('on')`, 10000);
-await typeCity('King City');
-await poll(`!!document.querySelector('#crCityResults .crOnlineRow')`, 15000);
-await ev2(`document.querySelector('#crCityResults .crOnlineRow').click()`);
+await typeCity('King Cityy');
 await poll(`document.querySelectorAll('#crCityResults .routeRow').length >= 1`, 15000);
 await ev2(`(() => { const b = document.querySelector('#crCityResults .routeRow'); if (b) b.click(); return true; })()`);
 const readyC = await poll(`crPrepState === 'ready'`, 30000);
@@ -276,10 +275,10 @@ await ev2(`(() => { const orig = IDBObjectStore.prototype.delete; window.__origD
 await ev2(`(() => { const d = document.querySelector('#rmRoutes .routeDrop[data-route="route-4"]'); const r = document.querySelector('#rmRoutes .routeRow[data-route="route-4"]'); if (d && !d.classList.contains('open') && r) r.click(); const b = d && d.querySelector('.dropDel'); if (b) b.click(); return true; })()`);
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
-const toastG = await poll(`/Storage problem/.test(document.getElementById('toast').textContent)`, 15000);
+const toastG = await poll(`document.getElementById('bannerHead').textContent === 'Route not deleted' && document.getElementById('banner').classList.contains('show')`, 15000);
 const stateG = JSON.parse(await ev2(`(async () => { const rec = await upGet('route-4'); return JSON.stringify({ rec: !!rec, pack: ROUTE_PACKS.some(p => p.id === 'route-4'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-4"]'), key: localStorage.getItem(routeKeys('route-4').done) }); })()`));
 await ev2(`(() => { IDBObjectStore.prototype.delete = window.__origDel; return true; })()`);
-ok('G1 STORAGE FAILURE: when the store delete throws, deletion toasts the storage problem and NOTHING is removed - the record, the pack, the row and the route\'s keys all stay | ' + JSON.stringify(stateG),
+ok('G1 STORAGE FAILURE: when the store delete throws, the banner names it (Route not deleted - it stays in your list) and NOTHING is removed - the record, the pack, the row and the route\'s keys all stay | ' + JSON.stringify(stateG),
   toastG === true && stateG.rec === true && stateG.pack === true && stateG.row === true && stateG.key === '[]');
 
 // ---- phase H: Beta 1.146 (census C2) - the slot wipe is VERIFIED ----
@@ -299,11 +298,16 @@ await ev2(`(() => { window.__origRm = Storage.prototype.removeItem; Storage.prot
 await ev2(`(() => { const d = document.querySelector('#rmRoutes .routeDrop[data-route="route-5"]'); const r = document.querySelector('#rmRoutes .routeRow[data-route="route-5"]'); if (d && !d.classList.contains('open') && r) r.click(); const b = d && d.querySelector('.dropDel'); if (b) b.click(); return true; })()`);
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
-const toastH = await poll(`/could not be deleted/.test(document.getElementById('toast').textContent)`, 15000);
-const stateH = JSON.parse(await ev2(`(async () => { const rec = await upGet('route-5'); return JSON.stringify({ toast: document.getElementById('toast').textContent, rec: !!rec, pack: ROUTE_PACKS.some(p => p.id === 'route-5'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-5"]'), histLeft: localStorage.getItem(routeKeys('route-5').hist), doneLeft: localStorage.getItem(routeKeys('route-5').done), notesLeft: localStorage.getItem(routeKeys('route-5').notes) }); })()`));
+await sleep(800); const toastH = await ev2(`document.getElementById('banner').classList.contains('show')`);
+const stateHRaw = await ev2(`(async () => { const rec = await upGet('route-5'); `
+  + `return JSON.stringify({ toast: document.getElementById('banner').classList.contains('show'), rec: !!rec, pack: ROUTE_PACKS.some(p => p.id === 'route-5'), `
+  + `row: !!document.querySelector('#rmRoutes .routeRow[data-route="route-5"]'), histLeft: localStorage.getItem(routeKeys('route-5').hist), `
+  + `doneLeft: localStorage.getItem(routeKeys('route-5').done), notesLeft: localStorage.getItem(routeKeys('route-5').notes) }); })()`);
+const stateH = JSON.parse(stateHRaw);
 await ev2(`(() => { Storage.prototype.removeItem = window.__origRm; return true; })()`);
-ok('H1 VERIFIED WIPE, ONE KEY FAILS: the failure is SURFACED (toast says some saved data could not be deleted, never the plain success toast), the definition removal stands (record, pack and row all gone), every other key was still attempted and deleted, and the one failing key remains as the reported residue | ' + JSON.stringify(stateH),
-  toastH === true && /could not be deleted/.test(stateH.toast || '') && stateH.toast !== 'Route deleted' && stateH.rec === false && stateH.pack === false && stateH.row === false && stateH.histLeft === '[]' && stateH.doneLeft === null && stateH.notesLeft === null);
+ok('H1 VERIFIED WIPE, ONE KEY FAILS: the failure is SILENT since Beta 1.296 (its message is cut - no banner, never a success claim), the definition removal stands (record, pack and row all gone), every other key was still ' +
+  'attempted and deleted, and the one failing key remains as the residue | ' + JSON.stringify(stateH),
+  toastH === false && stateH.toast === false && stateH.rec === false && stateH.pack === false && stateH.row === false && stateH.histLeft === '[]' && stateH.doneLeft === null && stateH.notesLeft === null);
 await ev2(`(() => { const d = document.querySelector('#rmRoutes .routeDrop[data-route="route-4"]'); const r = document.querySelector('#rmRoutes .routeRow[data-route="route-4"]'); if (d && !d.classList.contains('open') && r) r.click(); const b = d && d.querySelector('.dropDel'); if (b) b.click(); return true; })()`);
 await poll(`!document.getElementById('crModal').classList.contains('hidden')`, 10000);
 await ev2(`document.getElementById('crModalYes').click()`);
@@ -352,15 +356,18 @@ ok('H4 SHIPPED IDS STAY RESERVED: with 5W tombstoned, a new route named 5W is as
 // and reported, the surviving created route's data lands, and the shipped
 // route stays deleted through the restore's own reload.
 const preH5 = JSON.parse(await ev2(`(() => { const live = ROUTE_PACKS.find(p => !SHIPPED_PACK_IDS.has(p.id)); const bk = { app: 'snowroute-backup', v: 2, routes: { '5w': { notes: '{}' } }, userpacks: {} }; if (live) { const st = [...packGeometry(live).set][0]; bk.routes[live.id] = { notes: JSON.stringify({ [st]: [{ k: 'note', at: '2026-01-05T12:00:00.000Z', text: 'h5 note' }] }) }; } document.getElementById('xText').value = JSON.stringify(bk); return JSON.stringify({ live: live ? live.id : null }); })()`)); // field values ride in their stored STRING form - pushField refuses anything else ('bad value', restore aborts), as drive136's real exports show. Beta 1.287: the live route's entry carries a REAL note - under merge an empty notes record adds nothing, so the note is what proves the rest still lands
-await ev2(`(() => { sessionStorage.removeItem('__h5toast'); const iv = setInterval(() => { const t = document.getElementById('toast').textContent; if (t) sessionStorage.setItem('__h5toast', t); }, 50); setTimeout(() => clearInterval(iv), 25000); return true; })()`); // the result toast lives only 600ms before the restore's own reload replaces the page - record it into sessionStorage (which survives the reload) instead of polling the doomed element
+await ev2(`(() => { sessionStorage.removeItem('__h5toast'); const iv = setInterval(() => { const t = document.getElementById('banner'); if (t && t.classList.contains('show')) sessionStorage.setItem('__h5toast',` +
+  ` document.getElementById('bannerHead').textContent); }, 50); setTimeout(() => clearInterval(iv), 25000); return true;` +
+  ` })()`); // the result toast lives only 600ms before the restore's own reload replaces the page - record it into sessionStorage (which survives the reload) instead of polling the doomed element
 await ev2(`doRestore(); true`);
-await poll(`!!sessionStorage.getItem('__h5toast')`, 20000);
+await sleep(6000);
 const toastH5txt = await ev2(`sessionStorage.getItem('__h5toast')`);
-const toastH5 = !!toastH5txt && /Backup added data to/.test(toastH5txt) && /deleted on this phone/.test(toastH5txt);
+const toastH5 = toastH5txt === null; // Beta 1.296: the tombstone-skip disclosure is cut - the restore is silent; the state below carries the claim
 await ev2(`window.__userPacksReady`);
 await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 30000);
 const stH5 = JSON.parse(await ev2(`(() => { const live = ROUTE_PACKS.find(p => !SHIPPED_PACK_IDS.has(p.id)); return JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), row: !!document.querySelector('#rmRoutes .routeRow[data-route="5w"]'), notes: live ? localStorage.getItem(routeKeys(live.id).notes) : null }); })()`));
-ok('H5 RESTORE SKIPS THE TOMBSTONED ROUTE, RESTORES THE REST: the result names the skip, the live route note lands, the restore completes and reloads, and 5W stays deleted | ' + JSON.stringify({ preH5, toastH5, toastH5txt, stH5 }),
+ok('H5 RESTORE SKIPS THE TOMBSTONED ROUTE, RESTORES THE REST: silently since Beta 1.296 (the skip announcement is cut), the live route note lands, the restore completes and reloads, and 5W stays deleted ' +
+  '| ' + JSON.stringify({ preH5, toastH5, toastH5txt, stH5 }),
   !!preH5.live && toastH5 === true && stH5.pack === false && stH5.row === false && !!stH5.notes && stH5.notes.includes('h5 note'));
 
 // ---- phase H6: the v1 backup door gets the same tombstone rule (Codex P2, PR #167, third review) ----
@@ -368,15 +375,18 @@ ok('H5 RESTORE SKIPS THE TOMBSTONED ROUTE, RESTORES THE REST: the result names t
 // one must write NOTHING into the deleted slot (pre-fix it did - outside the
 // rollback scope, so a later failure could not put it back), and must name
 // the skip. The backup's night value fills only an absent resident one.
-await ev2(`(() => { localStorage.setItem('snowroute.v2.night', '1'); const bk = { app: 'snowroute-backup', v: 1, data: {} }; bk.data[LEGACY_KEYS.notes] = '{"Test Street":"planted by the v1 backup"}'; bk.data['snowroute.v2.night'] = '0'; document.getElementById('xText').value = JSON.stringify(bk); sessionStorage.removeItem('__h6toast'); const iv = setInterval(() => { const t = document.getElementById('toast').textContent; if (t) sessionStorage.setItem('__h6toast', t); }, 50); setTimeout(() => clearInterval(iv), 25000); return true; })()`);
+await ev2(`(() => { localStorage.setItem('snowroute.v2.night', '1'); const bk = { app: 'snowroute-backup', v: 1, data: {} }; bk.data[LEGACY_KEYS.notes] = '{"Test Street":"planted by the v1 backup"}'; bk.data['snowroute.v2.night'] = '0';` +
+  ` document.getElementById('xText').value = JSON.stringify(bk); sessionStorage.removeItem('__h6toast'); const iv = setInterval(() => { const t = document.getElementById('banner');` +
+  ` if (t && t.classList.contains('show')) sessionStorage.setItem('__h6toast', document.getElementById('bannerHead').textContent); }, 50); setTimeout(() => clearInterval(iv), 25000); return true; })()`);
 await ev2(`doRestore(); true`);
-await poll(`!!sessionStorage.getItem('__h6toast')`, 20000);
+await sleep(6000);
 const toastH6txt = await ev2(`sessionStorage.getItem('__h6toast')`);
-const toastH6 = !!toastH6txt && /Backup added nothing/.test(toastH6txt) && /deleted on this phone/.test(toastH6txt);
+const toastH6 = toastH6txt === null; // Beta 1.296: the skip announcement is cut - the v1 restore is silent; the state below carries the claim
 await ev2(`window.__userPacksReady`);
 await poll(`document.querySelectorAll('#rmRoutes .routeRow').length > 0`, 30000);
 const stH6 = JSON.parse(await ev2(`(() => JSON.stringify({ pack: ROUTE_PACKS.some(p => p.id === '5w'), notes: localStorage.getItem(routeKeys('5w').notes), fin: localStorage.getItem(routeKeys('5w').finclean), night: localStorage.getItem('snowroute.v2.night') }))()`));
-ok('H6 V1 RESTORE HONOURS THE TOMBSTONE: the skip is named, the resident night value stands (merge fills settings only when absent - the backup 0 does not displace the resident 1), and the deleted slot takes no writes at all (notes and finclean stay absent) | ' + JSON.stringify({ toastH6, toastH6txt, stH6 }),
+ok('H6 V1 RESTORE HONOURS THE TOMBSTONE: silently since Beta 1.296 (the skip announcement is cut), the resident night value stands (merge fills settings only when absent - the backup 0 does not displace the resident 1), and the ' +
+  'deleted slot takes no writes at all (notes and finclean stay absent) | ' + JSON.stringify({ toastH6, toastH6txt, stH6 }),
   toastH6 === true && stH6.pack === false && stH6.notes === null && stH6.fin === null && stH6.night === '1');
 
 R.exceptions = consoleLog.filter(l => l.indexOf('EXCEPTION') === 0);

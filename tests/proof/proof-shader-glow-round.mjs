@@ -129,10 +129,10 @@ if (buildSrc && stitchSrc && rgbSrc && ringsM) {
 console.log('W - no user-facing string calls the in-progress clean a run');
 check('W: Pace header reads Current clean', app3.includes("phT.textContent = 'Current clean'"));
 check('W: Pace empty line says finish a clean', app3.includes('When you finish a clean and tap Finish'));
-check('W: start warning says the clean state', app3.includes('the clean state could not be saved'));
-check('W: the surviving cancel warnings say clean / during the clean / clean may return (the plain erased pill was cut in 1.221)',
-  app3.includes("toast('Start cancelled - erased here, but the trail cleanup could not be saved yet") && app3.includes('the board was rebuilt from the marks made during the clean') && app3.includes('the clean may return on reload'));
-check('W: finish storage toast says clean intact', app3.includes('finish stopped, clean intact'));
+check('W: the start survivor is the banner and says this clean', app3.includes("showBanner('This clean is not saving', 'Storage problem - keep a backup of your marks')"));
+check('W: the cancel warnings are cut entirely (1.296) - no cancel wording remains to misname the clean',
+  !app3.includes('Start cancelled'));
+check('W: finish storage banner says clean intact', app3.includes("'Finish stopped', 'Storage is full - your clean is intact'"));
 check('W: the resume pill is gone since 1.221 and no resume wording calls it a run', !app4.includes("toast('Resumed clean") && !app4.includes("toast('Resumed run"));
 check('W: none of the old run strings remain in UI literals',
   !app3.includes("phT.textContent = 'This run'") && !app3.includes('finish a run and tap Finish') &&

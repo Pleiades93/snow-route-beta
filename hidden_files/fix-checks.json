@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "0c9e15c73c67616db8be68c88ace57aa131995da0ceb95cd6477b69e17203ed4",
+  "canonical_registry_sha256": "1191da9d0bca5e13afc01bc7ff5655bea60cc5565f28d72b02daee3683586b01",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1546,
-   "included": 1516,
+   "canonical": 1559,
+   "included": 1529,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -649,9 +649,9 @@
   {
    "added": "2026-11-01",
    "file": "parts/head.html",
-   "fix": "ONE corner-X rule styles every sheet/dialog close (Beta 1.30/1.31, completed 1.34): a plain red X, no box, top-right. The 1.34 bug was dialogs carrying their own overrides that repainted the X as a red box; a NEW menu's X joins this selector the day the menu is built.",
+   "fix": "ONE corner-X rule styles every sheet/dialog close (Beta 1.30/1.31, completed 1.34): a plain red X, no box, top-right. The 1.34 bug was dialogs carrying their own overrides that repainted the X as a red box; a NEW menu's X joins this selector the day the menu is built. Re-pinned in the popup-round2 round (Beta 1.296): the dialog closes (finNo, noteNo, crModalX) are retired - the blurred-backdrop dialogs carry two buttons and no X now; this rule styles the three sheet closes only.",
    "id": "beta-cornerx-rule-sheets-dialogs",
-   "pattern": "#sheetClose, #paceClose, #finNo, #noteNo, #xClose, #crModalX {",
+   "pattern": "#sheetClose, #paceClose, #xClose {",
    "type": "grep_present"
   },
   {
@@ -855,9 +855,9 @@
   {
    "added": "2026-11-03",
    "file": "parts/head.html",
-   "fix": "During boot the app chrome DOES NOT EXIST in the paint (Beta 1.86): html.boot hides every body child except splash/route menu/map \u2014 the splash is not a lid over a finished app; boot is a STATE, so no unsettled frame can contain chrome. Re-pinned 2026-11-16 (Monday prune): the 1.211 sweep re-run (E-01) added the #crModal/#toast exceptions to the boot hide rule; literal followed.",
+   "fix": "During boot the app chrome DOES NOT EXIST in the paint (Beta 1.86): html.boot hides every body child except splash/route menu/map \u2014 the splash is not a lid over a finished app; boot is a STATE, so no unsettled frame can contain chrome. Re-pinned 2026-11-16 (Monday prune): the 1.211 sweep re-run (E-01) added the #crModal/#toast exceptions to the boot hide rule; literal followed. Re-pinned in the popup-round2 round (Beta 1.296): the boot exemption passes from the deleted #toast to the shared #banner.",
    "id": "beta-boot-chrome-absent",
-   "pattern": "html.boot body > *:not(#splash):not(#routeMenu):not(#brandLayer):not(#map):not(#crModal):not(#toast) { display: none !important; }",
+   "pattern": "html.boot body > *:not(#splash):not(#routeMenu):not(#brandLayer):not(#map):not(#crModal):not(#banner) { display: none !important; }",
    "type": "grep_present"
   },
   {
@@ -991,9 +991,9 @@
   {
    "added": "2026-11-03",
    "file": "parts/head.html",
-   "fix": "The toast rides ABOVE the takeovers (z-index 10001, Beta 1.93 F03) \u2014 a toast under the blue menus is an answer Andrew never sees.",
+   "fix": "The toast rides ABOVE the takeovers (z-index 10001, Beta 1.93 F03) \u2014 a toast under the blue menus is an answer Andrew never sees. Re-pinned in the popup-round2 round (Beta 1.296): the surface is the shared #banner now (z-index 10003 in its rule) - the invariant stands: the critical-message surface rides above the takeovers.",
    "id": "beta-toast-above-takeovers",
-   "pattern": "z-index: 10001; /* Beta 1.93 (deep audit F03)",
+   "pattern": "z-index: 10003",
    "type": "grep_present"
   },
   {
@@ -1063,10 +1063,10 @@
   {
    "added": "2026-11-03",
    "file": "parts/app3.js",
-   "fix": "The Cancel toast is HONEST about a damaged snapshot: it says the board was rebuilt from the run's marks \u2014 never a quiet 'restored' claim for a rebuild. Re-pinned 2026-11-16 (Monday prune): the 1.211/1.212 wording sweep renamed run -> clean in the toast; the honest-wording guard stands. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged).",
+   "fix": "The Cancel toast is HONEST about a damaged snapshot: it says the board was rebuilt from the run's marks \u2014 never a quiet 'restored' claim for a rebuild. Re-pinned 2026-11-16 (Monday prune): the 1.211/1.212 wording sweep renamed run -> clean in the toast; the honest-wording guard stands. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). Re-pinned in the popup-round2 round (Beta 1.296): the cancel warnings are CUT by the notification audit (rows 11-13) - the cancel runs silent; this probe now guards that the warning never returns.",
    "id": "beta-cancel-toast-honest",
    "pattern": "Start cancelled - clean erased (the saved snapshot was damaged, so the",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-03",
@@ -1219,10 +1219,10 @@
   {
    "added": "2026-11-04",
    "file": "parts/app3.js",
-   "fix": "A snapshot that exists but FAILS validation is reported as damaged at resume/cancel (snapDamaged) \u2014 the closing message must not claim an exact restore that never happened.",
+   "fix": "A snapshot that exists but FAILS validation is reported as damaged at resume/cancel (snapDamaged) \u2014 the closing message must not claim an exact restore that never happened. Re-pinned in the popup-round2 round (Beta 1.296): the snapshot-damage tracking fed only the cancel messages, which the notification audit cut (rows 11-13); the cancel runs silent and the tracking is deleted with them.",
    "id": "beta-resume-snap-warning",
    "pattern": "if (persisted) snapDamaged = true; else snapAbsent = true;",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-04",
@@ -1243,10 +1243,10 @@
   {
    "added": "2026-11-04",
    "file": "parts/app3.js",
-   "fix": "The Cancel closing message is COMPOSED, not chained (Beta 1.96, SR-195-01): 1.95's if-chain let the damage branch mask the storage warning entirely in the combined case. The storage warning leads whenever it applies.",
+   "fix": "The Cancel closing message is COMPOSED, not chained (Beta 1.96, SR-195-01): 1.95's if-chain let the damage branch mask the storage warning entirely in the combined case. The storage warning leads whenever it applies. Re-pinned in the popup-round2 round (Beta 1.296): the composed cancel message is cut by the notification audit (rows 11-13); this probe now guards that it never returns.",
    "id": "beta-cancel-message-composed",
    "pattern": "const rebuiltWhy = snapDamaged ? 'the saved snapshot was damaged'",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-04",
@@ -1893,9 +1893,9 @@
   {
    "added": "2026-11-05",
    "file": "parts/head.html",
-   "fix": "Route rows give pressed feedback (the :active rule, Beta 1.105): a route row that doesn't react to the tap reads as a dead button on the phone. Re-pinned in Beta 1.226 (PR #104): the .28 :active flash is deliberately superseded - the press feedback is now the shrink (proof-1226) and the row HOLDS its rest soft fill (.18) on press; this probe now pins the hold form. Repointed 2026-11-23 (sweep round, coding-discipline rule 3): the rule now groups the Search online row beside the route rows; the pressed-fill claim is unchanged.",
+   "fix": "Route rows give pressed feedback (the :active rule, Beta 1.105): a route row that doesn't react to the tap reads as a dead button on the phone. Re-pinned in Beta 1.226 (PR #104): the .28 :active flash is deliberately superseded - the press feedback is now the shrink (proof-1226) and the row HOLDS its rest soft fill (.18) on press; this probe now pins the hold form. Repointed 2026-11-23 (sweep round, coding-discipline rule 3): the rule now groups the Search online row beside the route rows; the pressed-fill claim is unchanged. Re-pinned in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed, so the hold rule names the route row alone; the pressed-fill claim is unchanged.",
    "id": "beta-1105-route-row-pressed",
-   "pattern": "#routeMenu .routeRow:active, #routeMenu .crOnlineRow:active { background: rgba(255,255,255,.18); }",
+   "pattern": "#routeMenu .routeRow:active { background: rgba(255,255,255,.18); }",
    "type": "grep_present"
   },
   {
@@ -2544,7 +2544,7 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete. The timer also carries the armSeq stand-down (Beta 1.286, drive153 D5): a public search started before the timer fires supersedes the type-ahead, whose render must not land on the search's answer or re-fill the empty box its failure honestly leaves.",
+   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete. The timer also carries the armSeq stand-down (Beta 1.286, drive153 D5): a public search started before the timer fires supersedes the type-ahead, whose render must not land on the search's answer or re-fill the empty box its failure honestly leaves. Re-pinned in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed - the 500 ms debounce is now the settle point, and a settled word with zero bundled matches fires the capped search on its own; a bundled match means the service never runs. The timer line itself is unchanged.",
    "id": "beta-1120-autocomplete-debounce",
    "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500);",
    "type": "grep_present"
@@ -2592,9 +2592,9 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "The pick-stage hint has ONE writer (crRenderHint, Beta 1.121): competing writers left the hint describing a state two operations ago.",
+   "fix": "The pick-stage hint has ONE writer (crRenderHint, Beta 1.121): competing writers left the hint describing a state two operations ago. Re-pinned in the popup-round2 round (Beta 1.296): the renderer is still the one writer of the create button and the city chip; it writes no hint text any more (the hint pill is deleted).",
    "id": "create-prep-hint",
-   "pattern": "function crRenderHint() { // the one writer of the hint, its button and the city chip",
+   "pattern": "function crRenderHint() {",
    "type": "grep_present"
   },
   {
@@ -2712,9 +2712,9 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "The hint BOX outranks grid text (Beta 1.121): a settled or loading grid must not label a box wait with stale part counts \u2014 the hint priority order is written in the code and stays.",
+   "fix": "The hint BOX outranks grid text (Beta 1.121): a settled or loading grid must not label a box wait with stale part counts \u2014 the hint priority order is written in the code and stays. Re-pinned in the popup-round2 round (Beta 1.296): the hint text precedence is gone with the hint; the surviving precedence is the button decision's - a live preparation outranks every state remedy in crHintAction.",
    "id": "create-hint-box-outranks-grid",
-   "pattern": "the fallback box, when in flight, outranks the grid text",
+   "pattern": "if (crPrepState === 'preparing') return { label: 'Cancel', act: 'cancel' };",
    "type": "grep_present"
   },
   {
@@ -2776,18 +2776,18 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-citydata.js",
-   "fix": "A failed pack load leaves a NOTE the hint carries: the app's street library failing must degrade to the service WITH the user told, not silently. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged).",
+   "fix": "A failed pack load leaves a NOTE the hint carries: the app's street library failing must degrade to the service WITH the user told, not silently. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). Re-pinned in the popup-round2 round (Beta 1.296): the disclosure text is cut by the notification audit; the fallback is still recorded as state (crPackNote = 'service'), never announced.",
    "id": "create-pack-fallback-note",
-   "pattern": "crPackNote = 'The app\u2019s street library didn\u2019t load - loading from the ",
+   "pattern": "crPackNote = 'service'",
    "type": "grep_present"
   },
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "The pack note reaches the HINT line: a fallback note that never renders is a silent fallback with extra steps. Beta 1.175 pattern update (disclosed): the append gained the stand-alone form \u2014 since the ready-state hint texts were removed, a note riding an otherwise empty hint IS the text instead of appending after a dangling separator; in every state with text the rendering is unchanged.",
+   "fix": "The pack note reaches the HINT line: a fallback note that never renders is a silent fallback with extra steps. Beta 1.175 pattern update (disclosed): the append gained the stand-alone form \u2014 since the ready-state hint texts were removed, a note riding an otherwise empty hint IS the text instead of appending after a dangling separator; in every state with text the rendering is unchanged. Re-pinned in the popup-round2 round (Beta 1.296): the pack note no longer reaches any surface - the hint it rode is deleted; this probe now guards that the composition never returns.",
    "id": "create-pack-hint-wording",
    "pattern": "if (crPackNote && crCity) text = text ? text + ' \u00b7 ' + crPackNote : crPackNote;",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-06",
@@ -3512,10 +3512,10 @@
     "release-stamp-arch1"
    ],
    "file": "parts/app5.js",
-   "fix": "Beta 1.146 (census C2): deleteRoute's slot wipe goes through txDel (verified deletes), every key attempted, failures collected - the old lsDel loop ignored every result and could leave residue a same-named new route would inherit. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
+   "fix": "Beta 1.146 (census C2): deleteRoute's slot wipe goes through txDel (verified deletes), every key attempted, failures collected - the old lsDel loop ignored every result and could leave residue a same-named new route would inherit. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.) Re-pinned in the popup-round2 round (Beta 1.296): the wipe still attempts every key through txDel; the failure tracking existed only to fire the row-22 message, which the notification audit cut, so the loop stands bare.",
    "fix_id": "census-c2-delete-verified",
    "id": "census-c2-delete-verified-wipe",
-   "pattern": "if (!txDel(k).ok) wipeFailed = true;",
+   "pattern": "for (const k of Object.values(rk)) txDel(k);",
    "type": "grep_present"
   },
   {
@@ -3524,11 +3524,11 @@
     "release-stamp-arch1"
    ],
    "file": "parts/app5.js",
-   "fix": "Beta 1.146 (census C2): on a wipe failure the success toast does NOT fire - this honest message says the route was removed but some of its saved data could not be deleted. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
+   "fix": "Beta 1.146 (census C2): on a wipe failure the success toast does NOT fire - this honest message says the route was removed but some of its saved data could not be deleted. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.) Re-pinned in the popup-round2 round (Beta 1.296): the wipe-failure message is CUT by the notification audit (row 22) - the wipe still runs, silently; this probe now guards that the message never returns.",
    "fix_id": "census-c2-delete-verified",
    "id": "census-c2-delete-wipe-warning",
    "pattern": "Route deleted, but some of its saved data could not be deleted (stora",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-08",
@@ -4490,10 +4490,10 @@
   {
    "added": "2026-11-11",
    "file": "parts/app2.js",
-   "fix": "A-01: the street-switch note flush applies the Beta 1.97 finishChangeMarked contract - a failed finalization with the episode warning already spent is owed the plain 'not saved' toast.",
+   "fix": "A-01: the street-switch note flush applies the Beta 1.97 finishChangeMarked contract - a failed finalization with the episode warning already spent is owed the plain 'not saved' toast. Re-pinned in the popup-round2 round (Beta 1.296): the surface is the banner: showBanner('Not saved') with no line.",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-a01-note-switch-toast",
-   "pattern": "const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast(",
+   "pattern": "const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) showBanner('Not saved');",
    "type": "grep_present"
   },
   {
@@ -4607,11 +4607,11 @@
   {
    "added": "2026-11-11",
    "file": "parts/head.html",
-   "fix": "D-09: #createHint is width-capped and wraps, centred - no clipping at narrow widths. Hint pill only.",
+   "fix": "D-09: #createHint is width-capped and wraps, centred - no clipping at narrow widths. Hint pill only. Re-pinned in the popup-round2 round (Beta 1.296): the hint pill is deleted whole in 1.296; this probe now guards that it never returns.",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-d09-hint-wrap",
-   "pattern": "max-width: min(94vw, 560px); white-space: normal; text-align: center;",
-   "type": "grep_present"
+   "pattern": "#createHint {",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-11",
@@ -4652,10 +4652,10 @@
   {
    "added": "2026-11-11",
    "file": "parts/app1.js",
-   "fix": "A-08: setThemeOverride surfaces a failed write with the not-saved toast like every sibling save path (the override still applies for the session). Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged).",
+   "fix": "A-08: setThemeOverride surfaces a failed write with the not-saved toast like every sibling save path (the override still applies for the session). Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). Re-pinned in the popup-round2 round (Beta 1.296): the surface is the banner: showBanner('Not saved').",
    "fix_id": "carbon-phase2",
    "id": "carbon-b170-a08-theme-toast",
-   "pattern": "if (!okNight || !okExp) toast('Not saved - storage problem');",
+   "pattern": "if (!okNight || !okExp) showBanner('Not saved');",
    "type": "grep_present"
   },
   {
@@ -4697,10 +4697,10 @@
   {
    "added": "2026-11-11",
    "file": "parts/app4.js",
-   "fix": "C-02: the Stay-awake switch obeys the Beta 1.113 save-honesty contract - a failed save reverts the value and toasts (the value stays session-only by design). Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged).",
+   "fix": "C-02: the Stay-awake switch obeys the Beta 1.113 save-honesty contract - a failed save reverts the value and toasts (the value stays session-only by design). Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). Re-pinned in the popup-round2 round (Beta 1.296): the surface is the banner: showBanner('Not saved').",
    "fix_id": "carbon-phase2",
    "id": "carbon-b170-c02-awake-honesty",
-   "pattern": "if (!saveSettings()) { settings.awake = prevAwake; toast('Not saved - storage problem');",
+   "pattern": "if (!saveSettings()) { settings.awake = prevAwake; showBanner('Not saved');",
    "type": "grep_present"
   },
   {
@@ -4940,11 +4940,11 @@
   {
    "added": "2026-11-11",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.175: the hint's visibility toggle requires text \u2014 an empty render (fresh ready city, nothing to disclose, no offer) never paints an empty pill. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (piece 4: the pillKey/crPillGone clock machinery retired with the confirmation; the gate invariant - no text, no pill - survives in the plain toggle).",
+   "fix": "Beta 1.175: the hint's visibility toggle requires text \u2014 an empty render (fresh ready city, nothing to disclose, no offer) never paints an empty pill. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (piece 4: the pillKey/crPillGone clock machinery retired with the confirmation; the gate invariant - no text, no pill - survives in the plain toggle). Re-pinned in the popup-round2 round (Beta 1.296): the hint pill is deleted whole; there is no pill left to gate. This probe now guards that the writer never returns.",
    "fix_id": "hint-pill-trim",
    "id": "hint-pill-trim-empty-pill-gate",
    "pattern": "hint.textContent = text; hint.classList.toggle('on', !!text);",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-11",
@@ -4967,11 +4967,11 @@
   {
    "added": "2026-11-11",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.176 (Andrew's amendment + standing rule): the gated readout is 'Loading <City> \u2014 <pct>%' - the percentage of cells done, name + percentage only.",
+   "fix": "Beta 1.176 (Andrew's amendment + standing rule): the gated readout is 'Loading <City> \u2014 <pct>%' - the percentage of cells done, name + percentage only. Re-pinned in the popup-round2 round (Beta 1.296): the percentage readout was hint text, cut by the notification audit; the preparing gate now reads elapsed time, not a percentage.",
    "fix_id": "slow-load-pill",
    "id": "slow-load-pill-percentage-format",
    "pattern": "Math.round(done / total * 100)",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-11",
@@ -5003,20 +5003,20 @@
   {
    "added": "2026-11-11",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.176: the hint's action button is placed BY MEASUREMENT 8 px below the pill's rendered bottom edge at every render - the fixed offset that let it overlap a wrapped pill is retired (drive-measured gap 8 px, zero overlap, in the progress/failed/degraded states).",
+   "fix": "Beta 1.176: the hint's action button is placed BY MEASUREMENT 8 px below the pill's rendered bottom edge at every render - the fixed offset that let it overlap a wrapped pill is retired (drive-measured gap 8 px, zero overlap, in the progress/failed/degraded states). Re-pinned in the popup-round2 round (Beta 1.296): the button is no longer placed by measurement under a pill - there is no pill; it keeps its fixed CSS seat under the search bar.",
    "fix_id": "slow-load-pill",
    "id": "slow-load-pill-button-placement",
    "pattern": "btn.style.top = Math.round(hb.bottom + 8) + 'px';",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-11",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.176 (standing percentage rule): the cancelled terminal state names the landed share as a percentage of the city's cells ('Loading stopped \u2014 <City> <pct>% loaded'), not a part count; Resume is unchanged. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged).",
+   "fix": "Beta 1.176 (standing percentage rule): the cancelled terminal state names the landed share as a percentage of the city's cells ('Loading stopped \u2014 <City> <pct>% loaded'), not a part count; Resume is unchanged. Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). Re-pinned in the popup-round2 round (Beta 1.296): the cancelled readout was hint text, cut by the notification audit; a cancelled preparation is silent now.",
    "fix_id": "slow-load-pill",
    "id": "slow-load-pill-cancelled-percentage",
    "pattern": "'Loading stopped - ' + crGrid.name",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-11",
@@ -6999,10 +6999,10 @@
   {
    "added": "2026-11-15",
    "file": "docs/ARCHITECTURE.md",
-   "fix": "Sweep re-run (sweep-20261115-171048) cap-deferred candidates A-06 + D-07, assessed REAL/LOW, plus the approved follow-camera line; landed as docs-only maintenance PR #74 (merge 5fcc6499a556c8ef26f5f424547e82369ecec011, no Beta bump). D-07: the create-cache module-table entry describes crCityPrepare with resume only (the Refresh affordance was removed in Beta 1.153). If this fails, the entry drifted - reconcile against create-cache.js.",
+   "fix": "Sweep re-run (sweep-20261115-171048) cap-deferred candidates A-06 + D-07, assessed REAL/LOW, plus the approved follow-camera line; landed as docs-only maintenance PR #74 (merge 5fcc6499a556c8ef26f5f424547e82369ecec011, no Beta bump). D-07: the create-cache module-table entry describes crCityPrepare with resume only (the Refresh affordance was removed in Beta 1.153). If this fails, the entry drifted - reconcile against create-cache.js. Re-pinned in the popup-round2 round (Beta 1.296): crFailText is deleted in 1.296 (its texts were cut by the notification audit); the module-table entry no longer names it.",
    "fix_id": "rerun-docs-a06-d07",
    "id": "rerun-docs-d07-createcache-resume-only",
-   "pattern": "`crCityPrepare` (cache-first whole-city preparation, with resume), and `crFailText`",
+   "pattern": "`crCityPrepare` (cache-first preparation, with resume)",
    "type": "grep_present"
   },
   {
@@ -8078,11 +8078,11 @@
   {
    "added": "2026-11-16",
    "file": "parts/app3.js",
-   "fix": "Beta 1.211 (PR #86, merge 13d003d0; rollback: revert the merge -> Beta 1.210 at 09cfe7f5). Three Andrew-approved changes. (1) The create map's blur-stack glow (crGlow1-5) is ONE custom WebGL layer now (crGlowShader): a ribbon mesh built in metres (rings -20/-13/-9.9/-4.95/0/+4.95/+9.9/+13/+20) with a per-vertex distance attribute, the fragment shader at full strength inside the 4.95 m kerb and decaying (1-t)^2 across a breathing reach (4.0 s, 5<->9 m, peak 0.50<->0.80), premultiplied 'over' blending (crossings saturate, never blow out); a measured reach floor - (casingHalfM - 4.95) x 2.21, casingHalfM at max(z, 15) - keeps the halo visible past the create casing's z15 metre ballooning; at z16+ the approved sample form runs untouched. syncCrGlow's chosen-sectors computation is byte-identical; only its sink changed (setData -> crGlowSetFeatures). (2) Wording: every user-facing string calling the in-progress clean a 'run' now says 'clean' (Pace header 'Current clean', cancel/finish/resume toasts); two finished-clean strings listed and left ('Archived run (finished ...)', 'or the run start'). (3) Icons: Streets = the straight-on road (one evenodd path); Settings = the spoked cog (one nonzero path, 18 subpaths, spokes connected by construction, filled-pixel ratio 1.0002 vs the approved sample). Scope 2 (POI pins to shader) closed on its census with no code change: the pins are MapLibre circle (SDF vector) layers, resolution-independent, no raster asset - no quality gap to close. Proof: tests/proof/proof-shader-glow-round.mjs (32 checks, 22 fail on 1.210, wired into CI). Rendered QA: transect smooth, breathing phase-locked (rank correlation 1.00), removed sector's halo exactly 0, corner B/R 0.29, night plateau on phase prediction, icons crisp day+night. Gate: all four contexts SUCCESS first head, Codex zero findings; key drives name-checked (drive125 28/28, drive128 18/18, drive143 21/21, drive156 36/36, drive182 13/13, drive194 39/39, drive198 11/11); merged tree == tested tree; live page byte-identical (sha256 487c9885). Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged).",
+   "fix": "Beta 1.211 (PR #86, merge 13d003d0; rollback: revert the merge -> Beta 1.210 at 09cfe7f5). Three Andrew-approved changes. (1) The create map's blur-stack glow (crGlow1-5) is ONE custom WebGL layer now (crGlowShader): a ribbon mesh built in metres (rings -20/-13/-9.9/-4.95/0/+4.95/+9.9/+13/+20) with a per-vertex distance attribute, the fragment shader at full strength inside the 4.95 m kerb and decaying (1-t)^2 across a breathing reach (4.0 s, 5<->9 m, peak 0.50<->0.80), premultiplied 'over' blending (crossings saturate, never blow out); a measured reach floor - (casingHalfM - 4.95) x 2.21, casingHalfM at max(z, 15) - keeps the halo visible past the create casing's z15 metre ballooning; at z16+ the approved sample form runs untouched. syncCrGlow's chosen-sectors computation is byte-identical; only its sink changed (setData -> crGlowSetFeatures). (2) Wording: every user-facing string calling the in-progress clean a 'run' now says 'clean' (Pace header 'Current clean', cancel/finish/resume toasts); two finished-clean strings listed and left ('Archived run (finished ...)', 'or the run start'). (3) Icons: Streets = the straight-on road (one evenodd path); Settings = the spoked cog (one nonzero path, 18 subpaths, spokes connected by construction, filled-pixel ratio 1.0002 vs the approved sample). Scope 2 (POI pins to shader) closed on its census with no code change: the pins are MapLibre circle (SDF vector) layers, resolution-independent, no raster asset - no quality gap to close. Proof: tests/proof/proof-shader-glow-round.mjs (32 checks, 22 fail on 1.210, wired into CI). Rendered QA: transect smooth, breathing phase-locked (rank correlation 1.00), removed sector's halo exactly 0, corner B/R 0.29, night plateau on phase prediction, icons crisp day+night. Gate: all four contexts SUCCESS first head, Codex zero findings; key drives name-checked (drive125 28/28, drive128 18/18, drive143 21/21, drive156 36/36, drive182 13/13, drive194 39/39, drive198 11/11); merged tree == tested tree; live page byte-identical (sha256 487c9885). Re-pinned in round-1223 (PR #100) after adjudication against the 1.222 tree: the pattern's absence is a deliberate 1.223 change (noted per probe), the invariant survives in the new form. (the 1.223 em-dash sweep: the dash became a period/comma per sense, facts unchanged). Re-pinned in the popup-round2 round (Beta 1.296): the cancel toasts are CUT by the notification audit (rows 11-13); this probe now guards that they never return.",
    "fix_id": "shader-glow-round",
    "id": "sgr-cancel-toast",
    "pattern": "Start cancelled - clean erased",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-16",
@@ -8403,20 +8403,20 @@
   {
    "added": "2026-11-17",
    "file": "parts/app1.js",
-   "fix": "Beta 1.221 (PR #98, merge 265e0caa). Toast placement is MEASURED, not fixed: placeToast() in app1.js starts the pill at its CSS floor (188px) and hops it above any control it would cover (6px gap) against the app's interactive inventory, judging entrance-animating controls by their resting band and reading the pill's own band through its live transform; noteMapState() in app2.js re-places a shown pill when the map-failure banner lands mid-pill. drive204 measures zero overlap + >=4px gap in 11 state/theme combinations and is wired into checks.yml shard 7. Andrew's bar: the pill never sits on a control.",
+   "fix": "Beta 1.221 (PR #98, merge 265e0caa). Toast placement is MEASURED, not fixed: placeToast() in app1.js starts the pill at its CSS floor (188px) and hops it above any control it would cover (6px gap) against the app's interactive inventory, judging entrance-animating controls by their resting band and reading the pill's own band through its live transform; noteMapState() in app2.js re-places a shown pill when the map-failure banner lands mid-pill. drive204 measures zero overlap + >=4px gap in 11 state/theme combinations and is wired into checks.yml shard 7. Andrew's bar: the pill never sits on a control. Re-pinned in the popup-round2 round (Beta 1.296): placeToast is deleted with the toast in 1.296; placement is the banner's fixed seat. This probe now guards that it never returns.",
    "fix_id": "toast-placement-1221",
    "id": "gts-place-toast",
    "pattern": "function placeToast",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-17",
    "file": "parts/app2.js",
-   "fix": "Beta 1.221 (PR #98, merge 265e0caa). Toast placement is MEASURED, not fixed: placeToast() in app1.js starts the pill at its CSS floor (188px) and hops it above any control it would cover (6px gap) against the app's interactive inventory, judging entrance-animating controls by their resting band and reading the pill's own band through its live transform; noteMapState() in app2.js re-places a shown pill when the map-failure banner lands mid-pill. drive204 measures zero overlap + >=4px gap in 11 state/theme combinations and is wired into checks.yml shard 7. Andrew's bar: the pill never sits on a control.",
+   "fix": "Beta 1.221 (PR #98, merge 265e0caa). Toast placement is MEASURED, not fixed: placeToast() in app1.js starts the pill at its CSS floor (188px) and hops it above any control it would cover (6px gap) against the app's interactive inventory, judging entrance-animating controls by their resting band and reading the pill's own band through its live transform; noteMapState() in app2.js re-places a shown pill when the map-failure banner lands mid-pill. drive204 measures zero overlap + >=4px gap in 11 state/theme combinations and is wired into checks.yml shard 7. Andrew's bar: the pill never sits on a control. Re-pinned in the popup-round2 round (Beta 1.296): placeToast is deleted with the toast in 1.296. This probe now guards that it never returns.",
    "fix_id": "toast-placement-1221",
    "id": "gts-note-replace-hook",
    "pattern": "placeToast(",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-17",
@@ -8448,10 +8448,10 @@
   {
    "added": "2026-11-17",
    "file": "parts/app3.js",
-   "fix": "Beta 1.221 GATE FIX (Codex P2, PR #98): cutting the 'Clean started' success pill left startClean's warning chain with an UNGUARDED final branch - every healthy Start showed the false 'cancel safety snapshot could not be saved' warning. The branch is gated on !okSnap.ok again; the healthy path is silent, the warning fires only on a real snapshot-save failure. Regressions: drive146 S1 (healthy Start silent) + S2 (snap write forced to fail, warning fires).",
+   "fix": "Beta 1.221 GATE FIX (Codex P2, PR #98): cutting the 'Clean started' success pill left startClean's warning chain with an UNGUARDED final branch - every healthy Start showed the false 'cancel safety snapshot could not be saved' warning. The branch is gated on !okSnap.ok again; the healthy path is silent, the warning fires only on a real snapshot-save failure. Regressions: drive146 S1 (healthy Start silent) + S2 (snap write forced to fail, warning fires). Re-pinned in the popup-round2 round (Beta 1.296): the snapshot warning chain is CUT by the notification audit (rows 9/10 ride silently); the start still saves the snapshot and session marker silently, and the one start survivor is the saveAllWarned banner.",
    "fix_id": "startclean-snap-guard",
    "id": "gts-snap-guard",
-   "pattern": "else if (!okSnap.ok) toast(",
+   "pattern": "saveSnap(); noteSessionStart();",
    "type": "grep_present"
   },
   {
@@ -8484,11 +8484,11 @@
   {
    "added": "2026-11-17",
    "file": "parts/app3.js",
-   "fix": "Beta 1.221 GATE ADJUDICATION (CI shard 3, drive133 S12a / drive143 C1-C2): the cancel closing disclosure for a DAMAGED snapshot was cut with the plain success pill - restored (exact Beta 1.220 wording) because it is the only surface telling him the cancel REBUILT the board approximately instead of restoring it exactly (Beta 1.95 SR-194-03 design). The PLAIN form stays cut (Andrew's named cut) and the ABSENT form stays cut (drive143 asserts a no-snapshot cancel fires no pill; through the real Start path an absent snapshot already warned at Start). drive133 20/20 + drive143 21/21 both green on the merged tree.",
+   "fix": "Beta 1.221 GATE ADJUDICATION (CI shard 3, drive133 S12a / drive143 C1-C2): the cancel closing disclosure for a DAMAGED snapshot was cut with the plain success pill - restored (exact Beta 1.220 wording) because it is the only surface telling him the cancel REBUILT the board approximately instead of restoring it exactly (Beta 1.95 SR-194-03 design). The PLAIN form stays cut (Andrew's named cut) and the ABSENT form stays cut (drive143 asserts a no-snapshot cancel fires no pill; through the real Start path an absent snapshot already warned at Start). drive133 20/20 + drive143 21/21 both green on the merged tree. Re-pinned in the popup-round2 round (Beta 1.296): the damaged-snapshot cancel message is cut by the notification audit (rows 11-13); this probe now guards that it never returns.",
    "fix_id": "cancel-damaged-disclosure",
    "id": "gts-cancel-damaged",
    "pattern": "the saved snapshot was damaged, so the board was rebuilt",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-17",
@@ -8601,11 +8601,11 @@
   {
    "added": "2026-11-17",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.223 (PR #100, merge 2b54a25f; rollback: revert the merge -> Beta 1.222 at 34181a2c). ONE pop-up style (option A, Andrew's pick): the app blue gradient pill (linear-gradient(135deg, #3d65ef, #1b2fb6)), white bold text, one size standard, day and night, on #toast, #createHint and #crHintBtn. Wording audit: the road message is 'No road there. Tap on a road line' (Andrew 2026-11-17, supersedes the Nov 16 verbatim lock); NO em dashes in any user-facing string (sweep in RECORD.md); the city-loaded success confirmation is REMOVED (silence means loaded; preparing/failed states still speak). The three .banner button bars were OUT of this piece (excluded pending decision). Wording superseded by Andrew's 2026-11-17 pill ruling (Beta 1.225, PR #103, merge 97cb7974): the two parts now join with a dash; this probe pins his current exact wording.",
+   "fix": "Beta 1.223 (PR #100, merge 2b54a25f; rollback: revert the merge -> Beta 1.222 at 34181a2c). ONE pop-up style (option A, Andrew's pick): the app blue gradient pill (linear-gradient(135deg, #3d65ef, #1b2fb6)), white bold text, one size standard, day and night, on #toast, #createHint and #crHintBtn. Wording audit: the road message is 'No road there. Tap on a road line' (Andrew 2026-11-17, supersedes the Nov 16 verbatim lock); NO em dashes in any user-facing string (sweep in RECORD.md); the city-loaded success confirmation is REMOVED (silence means loaded; preparing/failed states still speak). The three .banner button bars were OUT of this piece (excluded pending decision). Wording superseded by Andrew's 2026-11-17 pill ruling (Beta 1.225, PR #103, merge 97cb7974): the two parts now join with a dash; this probe pins his current exact wording. Re-pinned in the popup-round2 round (Beta 1.296): the road message is CUT by the notification audit (row 70); this probe now guards that it never returns.",
    "fix_id": "popup-style-1223",
    "id": "popup1223-road-message",
    "pattern": "No road there - tap on a road line",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-17",
@@ -8754,11 +8754,11 @@
   {
    "added": "2026-11-17",
    "file": "parts/app4.js",
-   "fix": "Beta 1.225 (PR #103, merge 97cb7974). Andrew's pill ruling (2026-11-17): two-part pop-up messages join with ' - ', second part lower-cased. The backup/restore validation family now ends ' - nothing was changed'.",
+   "fix": "Beta 1.225 (PR #103, merge 97cb7974). Andrew's pill ruling (2026-11-17): two-part pop-up messages join with ' - ', second part lower-cased. The backup/restore validation family now ends ' - nothing was changed'. Re-pinned in the popup-round2 round (Beta 1.296): the restore result tails are cut by the notification audit (rows 34-51); a restore that changes nothing is silent now.",
    "fix_id": "pill-dash-join-1225",
    "id": "pill1225-restore-tail",
    "pattern": " - nothing was changed",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-17",
@@ -8772,20 +8772,20 @@
   {
    "added": "2026-11-17",
    "file": "parts/create-save.js",
-   "fix": "Beta 1.225 (PR #103, merge 97cb7974). The storage-problem pill family wears the dash join (representative pin in create-save.js).",
+   "fix": "Beta 1.225 (PR #103, merge 97cb7974). The storage-problem pill family wears the dash join (representative pin in create-save.js). Re-pinned in the popup-round2 round (Beta 1.296): the storage family is reworded onto the banner in the frozen table form: headline 'Route not saved', the reason as its line where one exists.",
    "fix_id": "pill-dash-join-1225",
    "id": "pill1225-storage-family",
-   "pattern": "Storage problem - the route could not be saved",
+   "pattern": "showBanner('Route not saved')",
    "type": "grep_present"
   },
   {
    "added": "2026-11-17",
    "file": "parts/create-cache.js",
-   "fix": "Beta 1.225 (PR #103, merge 97cb7974). The create-hint failure texts (crFailText) wear the dash join: ' - tap Retry'.",
+   "fix": "Beta 1.225 (PR #103, merge 97cb7974). The create-hint failure texts (crFailText) wear the dash join: ' - tap Retry'. Re-pinned in the popup-round2 round (Beta 1.296): crFailText is deleted in 1.296 with the hint texts; this probe now guards that they never return.",
    "fix_id": "pill-dash-join-1225",
    "id": "pill1225-hint-failures",
    "pattern": " - tap Retry",
-   "type": "grep_present"
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-17",
@@ -8989,11 +8989,11 @@
   {
    "added": "2026-11-17",
    "file": "parts/head.html",
-   "fix": "Beta 1.227 (PR #105, merge 8a62af4c). The hint pill is not painted while the results card owns its slot.",
+   "fix": "Beta 1.227 (PR #105, merge 8a62af4c). The hint pill is not painted while the results card owns its slot. Re-pinned in the popup-round2 round (Beta 1.296): the hint pill is deleted whole in 1.296; this probe now guards that it never returns.",
    "fix_id": "search-bar-1227",
    "id": "searchbar1227-hint-slot",
-   "pattern": "#createResults.on ~ #createHint { visibility: hidden; }",
-   "type": "grep_present"
+   "pattern": "#createHint",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-17",
@@ -10393,10 +10393,10 @@
   {
    "added": "2026-11-19",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.242 (PR #124, merge 9ba5d84b; rollback: revert the merge -> Beta 1.241 at 7fd50737). Andrew's black buttons round: the night dock recipe he picked 2026-11-18 (Bar black, rim light), the three pop-up cuts (the sector pill removed here; 'Clean in progress' and the plain 'Start cancelled' confirmed still absent - both were cut in Beta 1.221), and the hint wording (his exact words, styling untouched). Pinned in tests by proof-1242 and the round's rendered QA (DOM 9/9, pixels 3/3: night button face == tab bar face, diff 0). While trimming, crRenderHint renders silence - the sector bar's line is the one instruction.",
+   "fix": "Beta 1.242 (PR #124, merge 9ba5d84b; rollback: revert the merge -> Beta 1.241 at 7fd50737). Andrew's black buttons round: the night dock recipe he picked 2026-11-18 (Bar black, rim light), the three pop-up cuts (the sector pill removed here; 'Clean in progress' and the plain 'Start cancelled' confirmed still absent - both were cut in Beta 1.221), and the hint wording (his exact words, styling untouched). Pinned in tests by proof-1242 and the round's rendered QA (DOM 9/9, pixels 3/3: night button face == tab bar face, diff 0). While trimming, crRenderHint renders silence - the sector bar's line is the one instruction. Re-pinned in the popup-round2 round (Beta 1.296): the renderer writes no hint text at all now; the trimming early return offers no button, as before.",
    "fix_id": "buttons-1242",
    "id": "buttons1242-sector-silence",
-   "pattern": "if (crSectorSession.street) { hint.textContent = ''; hint.classList.remove('on'); btn.style.display = 'none'; return; }",
+   "pattern": "if (crSectorSession.street) { btn.style.display = 'none'; return; }",
    "type": "grep_present"
   },
   {
@@ -10438,10 +10438,10 @@
   {
    "added": "2026-11-19",
    "file": "parts/app3.js",
-   "fix": "Beta 1.242 (PR #124, merge 9ba5d84b; rollback: revert the merge -> Beta 1.241 at 7fd50737). Andrew's black buttons round: the night dock recipe he picked 2026-11-18 (Bar black, rim light), the three pop-up cuts (the sector pill removed here; 'Clean in progress' and the plain 'Start cancelled' confirmed still absent - both were cut in Beta 1.221), and the hint wording (his exact words, styling untouched). Pinned in tests by proof-1242 and the round's rendered QA (DOM 9/9, pixels 3/3: night button face == tab bar face, diff 0). Named keep under Andrew's toast policy - the GPS trio is untouched by this round. (The trio lives in app3.js; first form of this probe named the wrong file and text and was corrected the same day against the code.)",
+   "fix": "Beta 1.242 (PR #124, merge 9ba5d84b; rollback: revert the merge -> Beta 1.241 at 7fd50737). Andrew's black buttons round: the night dock recipe he picked 2026-11-18 (Bar black, rim light), the three pop-up cuts (the sector pill removed here; 'Clean in progress' and the plain 'Start cancelled' confirmed still absent - both were cut in Beta 1.221), and the hint wording (his exact words, styling untouched). Pinned in tests by proof-1242 and the round's rendered QA (DOM 9/9, pixels 3/3: night button face == tab bar face, diff 0). Named keep under Andrew's toast policy - the GPS trio is untouched by this round. (The trio lives in app3.js; first form of this probe named the wrong file and text and was corrected the same day against the code.) Re-pinned in the popup-round2 round (Beta 1.296): the GPS trio are named keeps, reworded onto the banner in the frozen table form (headline + quiet line).",
    "fix_id": "buttons-1242",
    "id": "buttons1242-gps-keep-verbatim",
-   "pattern": "toast('GPS signal weak - still trying', 2600)",
+   "pattern": "showBanner('GPS signal weak', 'Still trying - marks may be off until it improves')",
    "type": "grep_present"
   },
   {
@@ -11129,10 +11129,10 @@
   {
    "added": "2026-11-20",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.253 (PR #138, merge 09b515d0; rollback: a revert PR restoring the Beta 1.252 behaviour under Beta 1.254). Cross-audit fix round 4 (#20): the create pick-stage hint button's label (crRenderHint) and its click handler interpreted the preparation state independently - the renderer keyed the failed state on crGrid's existence, the handler on crFailFromGrid (the failure's source) - so a fallback-box failure landing while a grid existed read 'Retry' while the click prepared a new area at the map centre, and crFailText's dense branch keyed its instructions the same wrong way. Both sides now consume ONE decision (crHintAction in create-pick.js: renderer takes the label, handler dispatches on the action and interprets no state; precedence Cancel > outstanding offer > state remedies; the failed state keys on crFailFromGrid), and crFailText's dense branch keys on crFailFromGrid too. The ready state offers no button and no dispatch (the Beta 1.153 design); degraded without a grid offers no button. Pinned in tests by proof-1253 (13 checks) + drive208 (both-ways: the dense-over-grid label and hint text fail on the 1.252 tree). If a probe here fails, the round has regressed - restore the shipped form.",
+   "fix": "Beta 1.253 (PR #138, merge 09b515d0; rollback: a revert PR restoring the Beta 1.252 behaviour under Beta 1.254). Cross-audit fix round 4 (#20): the create pick-stage hint button's label (crRenderHint) and its click handler interpreted the preparation state independently - the renderer keyed the failed state on crGrid's existence, the handler on crFailFromGrid (the failure's source) - so a fallback-box failure landing while a grid existed read 'Retry' while the click prepared a new area at the map centre, and crFailText's dense branch keyed its instructions the same wrong way. Both sides now consume ONE decision (crHintAction in create-pick.js: renderer takes the label, handler dispatches on the action and interprets no state; precedence Cancel > outstanding offer > state remedies; the failed state keys on crFailFromGrid), and crFailText's dense branch keys on crFailFromGrid too. The ready state offers no button and no dispatch (the Beta 1.153 design); degraded without a grid offers no button. Pinned in tests by proof-1253 (13 checks) + drive208 (both-ways: the dense-over-grid label and hint text fail on the 1.252 tree). If a probe here fails, the round has regressed - restore the shipped form. Re-pinned in the popup-round2 round (Beta 1.296): the renderer still takes its label from the one decision, once; the preparing gate blanks it while a preparation is live.",
    "fix_id": "audit-r4-hint",
    "id": "auditr4-renderer-label",
-   "pattern": "btnLabel = crHintAction().label",
+   "pattern": "const btnLabel = gated ? '' : crHintAction().label;",
    "type": "grep_present"
   },
   {
@@ -11146,11 +11146,11 @@
   },
   {
    "added": "2026-11-20",
-   "file": "parts/create-cache.js",
-   "fix": "Beta 1.253 (PR #138, merge 09b515d0; rollback: a revert PR restoring the Beta 1.252 behaviour under Beta 1.254). Cross-audit fix round 4 (#20): the create pick-stage hint button's label (crRenderHint) and its click handler interpreted the preparation state independently - the renderer keyed the failed state on crGrid's existence, the handler on crFailFromGrid (the failure's source) - so a fallback-box failure landing while a grid existed read 'Retry' while the click prepared a new area at the map centre, and crFailText's dense branch keyed its instructions the same wrong way. Both sides now consume ONE decision (crHintAction in create-pick.js: renderer takes the label, handler dispatches on the action and interprets no state; precedence Cancel > outstanding offer > state remedies; the failed state keys on crFailFromGrid), and crFailText's dense branch keys on crFailFromGrid too. The ready state offers no button and no dispatch (the Beta 1.153 design); degraded without a grid offers no button. Pinned in tests by proof-1253 (13 checks) + drive208 (both-ways: the dense-over-grid label and hint text fail on the 1.252 tree). If a probe here fails, the round has regressed - restore the shipped form.",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.253 (PR #138, merge 09b515d0; rollback: a revert PR restoring the Beta 1.252 behaviour under Beta 1.254). Cross-audit fix round 4 (#20): the create pick-stage hint button's label (crRenderHint) and its click handler interpreted the preparation state independently - the renderer keyed the failed state on crGrid's existence, the handler on crFailFromGrid (the failure's source) - so a fallback-box failure landing while a grid existed read 'Retry' while the click prepared a new area at the map centre, and crFailText's dense branch keyed its instructions the same wrong way. Both sides now consume ONE decision (crHintAction in create-pick.js: renderer takes the label, handler dispatches on the action and interprets no state; precedence Cancel > outstanding offer > state remedies; the failed state keys on crFailFromGrid), and crFailText's dense branch keys on crFailFromGrid too. The ready state offers no button and no dispatch (the Beta 1.153 design); degraded without a grid offers no button. Pinned in tests by proof-1253 (13 checks) + drive208 (both-ways: the dense-over-grid label and hint text fail on the 1.252 tree). If a probe here fails, the round has regressed - restore the shipped form. Re-pinned in the popup-round2 round (Beta 1.296): crFailText is deleted; the dense remedy keys on the failure source inside crHintAction itself (create-pick.js), which is what this probe pins now.",
    "fix_id": "audit-r4-hint",
    "id": "auditr4-failtext-key",
-   "pattern": "f.kind === 'dense') return crFailFromGrid ? 'Parts of '",
+   "pattern": "kind === 'dense') return { label: 'Prepare this area', act: 'prepare-centre' };",
    "type": "grep_present"
   },
   {
@@ -13081,7 +13081,7 @@
   {
    "added": "2026-11-23",
    "file": "parts/create-pick.js",
-   "fix": "Issue #180 (Beta 1.286): city search typing answers from the on-device gazetteer (crRunCityTypeahead); the public Nominatim service is asked only from the explicit Search online row, at most once per second (its policy prohibits client-side autocomplete).",
+   "fix": "Issue #180 (Beta 1.286): city search typing answers from the on-device gazetteer (crRunCityTypeahead); the public Nominatim service is asked only from the explicit Search online row, at most once per second (its policy prohibits client-side autocomplete). Updated in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed - the type-ahead itself routes a settled zero-match word into the online search, and bundled matches never reach the service.",
    "fix_id": "sweep-180-nominatim-typeahead",
    "id": "sweep-180-nominatim-typeahead-local",
    "pattern": "function crRunCityTypeahead()",
@@ -13499,6 +13499,123 @@
    "fix_id": "startup-version-check",
    "id": "startup-version-check-guard",
    "pattern": "snowroute.bootUpdateReloaded",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app1.js",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-no-toast-fn",
+   "pattern": "function toast(",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-no-toast-el",
+   "pattern": "id=\"toast\"",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-no-hint-el",
+   "pattern": "id=\"createHint\"",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-modal-no-x",
+   "pattern": "crModalX",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-mapnote-no-x",
+   "pattern": "mapNoteNo",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-warn-two-part",
+   "pattern": "<div id=\"warn\"><strong>Not saving</strong>",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-no-backdrop-dismiss",
+   "pattern": "$('crModal').addEventListener('click'",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 2): the notification audit cull - the toast, the create hint pill and every non-critical pop-up are deleted; the 26 survivors speak through the shared banner; the blurred-backdrop dialogs carry two buttons and no X.",
+   "fix_id": "popup-cull-1296",
+   "id": "popup1296-finish-cancel",
+   "pattern": "<button id=\"finNo\">Cancel</button>",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-no-online-row-js",
+   "pattern": "crOnlineRow",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/head.html",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-no-online-row-css",
+   "pattern": "crOnlineRow",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-zero-match-routes",
+   "pattern": "if (!places.length) { crRunCitySearch(); return; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-settled-guard",
+   "pattern": "input.value !== settledText",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/create-pick.js",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix_id": "popup-fix4-1296",
+   "id": "popupfix4-pick-resets",
+   "pattern": "crResetCitySearch(); // a pick cancels any held search",
    "type": "grep_present"
   }
  ]

@@ -17,6 +17,11 @@ function lineOf(src, marker, label) {
   if (!l) throw new Error('line not found: ' + label);
   return l;
 }
+function linesOf(src, marker, n, label) {
+  const ls = src.split('\n'); const i = ls.findIndex(x => x.includes(marker));
+  if (i < 0) throw new Error('line not found: ' + label);
+  return ls.slice(i, i + n).join('\n');
+}
 let pass = 0, fail = 0;
 const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL', name); } };
 
@@ -61,8 +66,8 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
     let handler = null;
     const $ = () => ({ addEventListener: (ev, fn) => { handler = fn; } });
     const cachesStub = { delete: del, has: async () => has };
-    new Function('$', 'caches', 'window', 'lsDel', 'toast', 'renderStatus', 'tapGuard', 'preloadRunning', 'PACKMIG_KEY', 'LS', 'ROUTE_PACKS', 'routeKeys', 'takePackWriteTurn',
-      body)($, cachesStub, { caches: cachesStub }, k => { dels.push(k); return true; }, m => toasts.push(m), () => {}, () => true, false,
+    new Function('$', 'caches', 'window', 'lsDel', 'showBanner', 'renderStatus', 'tapGuard', 'preloadRunning', 'PACKMIG_KEY', 'LS', 'ROUTE_PACKS', 'routeKeys', 'takePackWriteTurn',
+      body)($, cachesStub, { caches: cachesStub }, k => { dels.push(k); return true; }, h => toasts.push(h), () => {}, () => true, false,
       'snowroute.v5.packmig', { pre: 'snowroute.5w.v5.preload' }, [{ id: '5w' }], id => ({ pre: 'snowroute.' + id + '.v5.preload' }),
       async () => () => {}); // pack-cache C-02 fix (2026-11-15): the handler now takes the pack writers' turn before deleting - the stub grants it at once (turn CONTENTION is proof-pack-cache-c02's subject, with the shipped turn verbatim; this fixture's subject is the delete-verification honesty below, whose assertions are unchanged)
     await handler();
@@ -121,10 +126,11 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
 {
   const region = extract(app1, 'function loadSettings() {', '// Tap guard', 'settings region');
   const renderSwitch = extract(app4, 'function renderSwitch(el, on) {', '// ---- Display and Sound ----', 'renderSwitch');
-  const vibLine = lineOf(app4, "$('swVib').addEventListener('click'", 'swVib line');
-  const chimeLine = lineOf(app4, "$('swChime').addEventListener('click'", 'swChime line');
-  const rowLine = app4.split('\n').find(x => x.includes('row.addEventListener') && x.includes('chimeSound'));
-  if (!rowLine) throw new Error('line not found: chime row line');
+  const vibLine = linesOf(app4, "$('swVib').addEventListener('click'", 2, 'swVib line');
+  const chimeLine = linesOf(app4, "$('swChime').addEventListener('click'", 2, 'swChime line');
+  const rowIdx = app4.split('\n').findIndex(x => x.includes('row.addEventListener') && x.includes('chimeSound'));
+  if (rowIdx < 0) throw new Error('line not found: chime row line');
+  const rowLine = app4.split('\n').slice(rowIdx, rowIdx + 2).join('\n');
   const env = (writesOk) => {
     const store = new Map();
     const lsGet = k => store.has(k) ? store.get(k) : null;
@@ -136,9 +142,9 @@ const t = (name, cond) => { if (cond) pass++; else { fail++; console.log('FAIL',
     const body = [region, renderSwitch, vibLine, chimeLine,
       "const row = __row; const key = 'rising';", rowLine,
       'return { settings };'].join('\n');
-    const api = new Function('lsGet', 'lsSet', 'parseJ', 'SETTINGS_KEY', 'SETTINGS_DEF', 'CHIME_KEYS', '$', 'toast', 'renderChime', 'renderJob', 'playChime', 'navigator', '__row',
+    const api = new Function('lsGet', 'lsSet', 'parseJ', 'SETTINGS_KEY', 'SETTINGS_DEF', 'CHIME_KEYS', '$', 'showBanner', 'renderChime', 'renderJob', 'playChime', 'navigator', '__row',
       body)(lsGet, lsSet, parseJ, 'snowroute.v2.settings', { vib: false, chime: false, chimeSound: 'two' },
-      ['bell', 'two', 'rising', 'pop', 'melody'], $, m => toasts.push(m), () => {}, () => {}, k => plays.push(k), {}, row);
+      ['bell', 'two', 'rising', 'pop', 'melody'], $, h => toasts.push(h), () => {}, () => {}, k => plays.push(k), {}, row);
     return { api, els, toasts, plays, store, handlers };
   };
   const bad = env(false);

@@ -125,9 +125,9 @@ ok('E2 switching back from the empty pack restores 5W whole | ' + JSON.stringify
 await ev(`loadRoute('fx149')`); // the fixture is the OPEN route; the backup below belongs to 5W
 const sidesBefore = await ev(`localStorage.getItem('snowroute.5w.v5.sides')`);
 await ev(`restoreBackup({ app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes: { nope149: { done: '[]' } } })`);
-const F6Atoast = await J(`document.getElementById('toast').textContent`);
+const F6Atoast = await J(`document.getElementById('banner').classList.contains('show')`); // Beta 1.296: refusals are silent
 const sidesAfterBad = await ev(`localStorage.getItem('snowroute.5w.v5.sides')`);
-ok('F6a an unknown-route backup still fails closed (nothing written) | ' + JSON.stringify(F6Atoast), typeof F6Atoast === 'string' && F6Atoast.indexOf('unknown route') >= 0 && sidesAfterBad === sidesBefore);
+ok('F6a an unknown-route backup still fails closed (nothing written) | ' + JSON.stringify(F6Atoast), F6Atoast === false && sidesAfterBad === sidesBefore);
 const F6B = await J(`(() => { const iso = new Date().toISOString(); const bk = { app: 'snowroute-backup', v: 2, at: iso, routes: { '5w': { done: JSON.stringify(['Velmar', 'Astona']), times: JSON.stringify({ Velmar: iso, Astona: iso }) } } }; restoreBackup(bk); const sides = JSON.parse(localStorage.getItem('snowroute.5w.v5.sides') || '{}'); const exp = packGeometry(ROUTE_PACKS.find(p => p.id === '5w')).stretch; const pv = (sides.p || {}).Velmar, pa = (sides.p || {}).Astona; return { vLen: pv ? pv.length : -1, vExp: exp.Velmar.parts.length, vAll3: !!pv && pv.every(v => v === 3), aLen: pa ? pa.length : -1, aExp: exp.Astona.parts.length, aAll3: !!pa && pa.every(v => v === 3) }; })()`);
 ok('F6b a done-only 5W backup restored WHILE THE FIXTURE IS OPEN derives 5W sides through 5W geometry (Velmar/Astona at their true stretch counts, all sides done) | ' + JSON.stringify(F6B),
   F6B.vLen === F6B.vExp && F6B.vAll3 === true && F6B.aLen === F6B.aExp && F6B.aAll3 === true);

@@ -48,7 +48,8 @@ $('xRes').addEventListener('click', () => showX('restore'));
 $('swFixLog').addEventListener('click', () => { fixLogSetEnabled(!fixLogIsEnabled()); renderSwitch($('swFixLog'), fixLogIsEnabled()); });
 $('xImpText').addEventListener('click', () => showX('text'));
 $('xImpFile').addEventListener('click', () => $('xFile').click());
-$('xFile').addEventListener('change', async () => { const f = $('xFile').files && $('xFile').files[0]; $('xFile').value = ''; if (!f) return; let t = ''; try { t = await f.text(); } catch (e) { toast('That file could not be read', 3200); return; } $('xText').value = t; doRestore(); }); // Import JSON: the picked file feeds the SAME restore path as pasted text - one validator, one verdict, no second door to keep honest
+$('xFile').addEventListener('change', async () => { const f = $('xFile').files && $('xFile').files[0]; $('xFile').value = ''; if (!f) return; let t = ''; try { t = await f.text(); } catch (e) { return; } $('xText').value = t;
+doRestore(); }); // Import JSON: the picked file feeds the SAME restore path as pasted text - one validator, one verdict, no second door to keep honest
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
 function packGeometry(pack) { // a pack's geometry built purely from its own data (the live builders, no live state touched)
   const roads = (pack && pack.roads) || {};
@@ -146,18 +147,16 @@ const ENVELOPE = {
 };
 function backupObj() { return ENVELOPE.strict(); } // the doorway - the strict policy is ENVELOPE.strict (above)
 function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
-let recoveryDisclosure = null; // routes the last recovery build could not carry; shareRecovery names them in its message, never silent
+let recoveryDisclosure = null; // Routes excluded from the last recovery build.
 function recoveryObj() { return ENVELOPE.recovery(); } // the doorway - the recovery policy is ENVELOPE.recovery (above)
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
 // downloadBackup follows the one-button rule: a build failure is the recovery fallback, never a dead-end refusal
 function downloadBackup() { const b = buildBackup(); if (!b) { shareRecovery(true); return; } dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported(); }
 function clearTrailAll() { // the clearing stays as a callable piece (guard, storage honesty intact) so a re-homed button wires to it
   trail = []; trailSessions = []; const okSessClr = saveSess().ok; if (!okSessClr) markDirty('sess'); // the markers describe this trail - clearing the trail clears them; the marker write is CHECKED like the trail write
-  // a failed clear would resurrect on load: say so and keep the clear pending (trailDirty) for the retry
   const okTrailClr = saveTrail().ok;
   if (okTrailClr && okSessClr) { markClean('trail'); PERSIST.noteWrite('trail'); } // the trail window is PERSIST's - the stamp goes through its doorway, not a foreign write
-  else if (okTrailClr) { toast('Trail cleared, but the session markers could not be saved; will keep retrying', 3200); }
-  else { markDirty('trail'); toast('Trail cleared on screen, but saving failed; will keep retrying', 3200); }
+  else if (!okTrailClr) markDirty('trail');
 }
 function countUnknownNames(parsed, packs = ROUTE_PACKS) { // unknown-name count: from the RAW backup, each name once, judged per route against its own pack's streets
   const bad = new Set();
@@ -442,49 +441,44 @@ function mergeRestoreEntries(entries, allPacks) {
   }
   return [...merged];
 }
-function restoreDisclosures({ snapDropped, droppedNames, deadSkipped }) {
-  return (droppedNames ? ' · ' + droppedNames + ' unknown street name' + (droppedNames === 1 ? '' : 's') + ' in the backup' : '')
-    + (snapDropped ? ' · the saved start snapshot was unusable and was skipped' : '')
-    + (deadSkipped.length ? ' · ' + deadSkipped.join(', ') + ' was deleted on this phone, so its saved data was not restored' : '');
-}
 // two halves: the planner validates and writes nothing; the coordinator transacts (fence, snapshot, writes, rollback, commit, report)
 const RESTORE = {
   /** @param {*} parsed @returns {object|Promise<object|null>|null} */ plan(parsed) {
-    if (!parsed || parsed.app !== 'snowroute-backup') { toast('That is not a Snow Route backup', 3200); return null; }
+    if (!parsed || parsed.app !== 'snowroute-backup') { return null; }
     const FIELD_SHAPES = { done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' };
     const entries = []; // validated backup candidates, before merge
     const pushField = (targetKey, field, v, label, nameSet) => {
-      if (typeof v !== 'string') { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; }
+      if (typeof v !== 'string') { return false; }
       if (field === 'start') { // the start validates semantically (epoch-ms digits, the loader's band): a crafted '1' once became a phantom run
-        if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; }
+        if (!/^\d+$/.test(v) || !isFinite(+v) || +v < 946684800000 || +v > 4102444800000) { return false; }
       }
       // night's writer stores only '0'/'1'; both keys land in this write set, so the pair stays atomic
-      if (field === 'night' && v !== '0' && v !== '1') { toast('Backup has a bad value for ' + label + ' - nothing was changed', 3200); return false; }
+      if (field === 'night' && v !== '0' && v !== '1') { return false; }
       const shape = FIELD_SHAPES[field];
       if (shape) {
-        let pv; try { pv = JSON.parse(v); } catch (e) { toast('Backup value for ' + label + ' is not valid JSON - nothing was changed', 3200); return false; }
+        let pv; try { pv = JSON.parse(v); } catch (e) { return false; }
         if (field === 'done' && pv && typeof pv === 'object' && !Array.isArray(pv)) {
           v = JSON.stringify(Object.keys(pv).filter(nm => pv[nm] && (nameSet || STREETSET).has(nm))); // legacy done-set was a street->time map; migrate like the loader, filtered against the TARGET route's names
-        } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { toast('Backup value for ' + label + ' has the wrong shape - nothing was changed', 3200); return false; }
+        } else if (shape === 'arr' ? !Array.isArray(pv) : !(pv && typeof pv === 'object' && !Array.isArray(pv))) { return false; }
         if (field === 'sess' && Array.isArray(pv) && pv.length > TRAIL_MAX) { // the caps enforced in validation (the stored value is the capped one); history stores whole, markers keep newest
           const cs = [...new Set(pv.map(x => Number(x)).filter(x => Number.isFinite(x)))].sort((a, b) => a - b); v = JSON.stringify(cs.slice(Math.max(0, cs.length - TRAIL_MAX)));
         }
       }
       entries.push([targetKey, v]); return true;
     };
-    let snapDropped = false; // set when a carried snapshot cannot be restored with its run: the result message must say so
-    const deadSkipped = []; // tombstoned routes this restore skips: this phone's deletion wins, and the skip is reported, never silent
+    let snapDropped = false;
+    const deadSkipped = [];
     let restoredPacks = null; // the created-route definitions this backup carries, validated before anything is written
     let allPacks = ROUTE_PACKS; // the routes this restore knows about: the runtime list, plus restoredPacks once validated
     if (parsed.v === 2) {
-      if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { toast('That is not a Snow Route backup', 3200); return null; }
+      if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { return null; }
       if (parsed.userpacks !== undefined) { // validate definitions first (they register before state applies); an id colliding with a shipped pack is rejected
-        if (!parsed.userpacks || typeof parsed.userpacks !== 'object' || Array.isArray(parsed.userpacks)) { toast('Backup has a bad created-routes record - nothing was changed', 3200); return null; }
+        if (!parsed.userpacks || typeof parsed.userpacks !== 'object' || Array.isArray(parsed.userpacks)) { return null; }
         restoredPacks = {};
         for (const rid of Object.keys(parsed.userpacks)) {
-          if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(rid) || SHIPPED_PACK_IDS.has(rid)) { toast('Backup has a bad created route id (' + rid + ') - nothing was changed', 3200); return null; }
+          if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(rid) || SHIPPED_PACK_IDS.has(rid)) { return null; }
           const v = normalizePack(parsed.userpacks[rid], {});
-          if (!v.ok) { toast('Backup has a bad created route (' + rid + ': ' + v.error + ') - nothing was changed', 3200); return null; }
+          if (!v.ok) { return null; }
           v.pack.id = rid; restoredPacks[rid] = v.pack;
         }
       }
@@ -493,10 +487,10 @@ const RESTORE = {
     const finishPlan = () => {
       if (parsed.v === 2) {
         for (const id of Object.keys(parsed.routes)) {
-          if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; } // a shipped route deleted on this phone: its backup data is skipped and reported (not an unknown-route abort)
+          if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; } // a shipped route deleted on this phone: its backup data is skipped
           // use the destination definition for name filtering and snapshot validation
-          const pack = allPacks.find(p => p.id === id); if (!pack) { toast('Backup mentions an unknown route (' + id + ') - nothing was changed', 3200); return null; }
-          const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('That is not a Snow Route backup', 3200); return null; }
+          const pack = allPacks.find(p => p.id === id); if (!pack) { return null; }
+          const data = parsed.routes[id]; if (!data || typeof data !== 'object' || Array.isArray(data)) { return null; }
           const rk = routeKeys(id);
           const pg = packGeometry(pack); // this route's own geometry, for its name filter and snapshot validation below
           for (const f of ROUTE_FIELDS) { if (data[f] === undefined) continue; if (f === 'start' && data[f] === null) continue; if (!pushField(rk[f], f, data[f], pack.name + ' ' + f, pg.set)) return null; }
@@ -511,28 +505,27 @@ const RESTORE = {
         }
         if (parsed.night !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.night, 'night')) return null;
 
-        if (parsed.nightExp !== undefined) { const ne = parsed.nightExp; if (typeof ne !== 'string' || !isFinite(+ne) || +ne <= 0) { toast('Backup has a bad value for night override expiry - nothing was changed', 3200); return null; } if (!pushField(LS_GLOBAL.nightExp, 'nightExp', ne, 'night override expiry')) return null; } // Beta 1.92 (audit F01): the expiry must be a finite positive epoch string - any other text used to sail through and poison the next boot
+        if (parsed.nightExp !== undefined) { const ne = parsed.nightExp; if (typeof ne !== 'string' || !isFinite(+ne) || +ne <= 0) { return null;
+        } if (!pushField(LS_GLOBAL.nightExp, 'nightExp', ne, 'night override expiry')) return null;
+        } // Beta 1.92 (audit F01): the expiry must be a finite positive epoch string - any other text used to sail through and poison the next boot
         // toggles restore inside this write set (rollback scope included); a backup without the field leaves them untouched
-        if (parsed.settings !== undefined) { const cs = canonicalSettings(parsed.settings); if (cs === null) { toast('Backup has a bad settings value - nothing was changed', 3200); return null; } entries.push([SETTINGS_KEY, cs]); }
+        if (parsed.settings !== undefined) { const cs = canonicalSettings(parsed.settings); if (cs === null) { return null; } entries.push([SETTINGS_KEY, cs]); }
         // validate and cap the incoming record even when the resident log wins whole
-        if (parsed.fixlog !== undefined) { const cf = canonicalFixLog(parsed.fixlog); if (cf === null) { toast('Backup has a bad fix log value - nothing was changed', 3200); return null; } entries.push([LS.fixlog, cf]); }
+        if (parsed.fixlog !== undefined) { const cf = canonicalFixLog(parsed.fixlog); if (cf === null) { return null; } entries.push([LS.fixlog, cf]); }
       } else if (parsed.v === 1) { // a v1 backup's data map belongs to Route 5W and lands in the 5W slot
-        if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { toast('That is not a Snow Route backup', 3200); return null; }
+        if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) { return null; }
         const rk5 = routeKeys('5w');
         const pack5 = ROUTE_PACKS.find(p => p.id === '5w'); const pg5 = pack5 ? packGeometry(pack5) : null; // a v1 backup's names filter against the 5W pack's own set
-        const dead5 = SHIPPED_PACK_IDS.has('5w') && !pack5; if (dead5) deadSkipped.push('5w'); // v1 data belongs to 5W alone: tombstoned here, its fields are skipped and reported like the v2 skip
+        const dead5 = SHIPPED_PACK_IDS.has('5w') && !pack5; if (dead5) deadSkipped.push('5w'); // v1 data belongs to 5W alone: tombstoned here, its fields are skipped
         if (!dead5) for (const f of ROUTE_FIELDS) { const lv = parsed.data[LEGACY_KEYS[f]]; if (lv === undefined) continue; if (!pushField(rk5[f], f, lv, 'Route 5W ' + f, pg5 ? pg5.set : null)) return null; }
         if (parsed.data['snowroute.v2.night'] !== undefined && !pushField(LS_GLOBAL.night, 'night', parsed.data['snowroute.v2.night'], 'night')) return null;
 
-      } else { toast('Unsupported backup version (' + String(parsed.v) + ') - nothing was changed', 3200); return null; }
+      } else { return null; }
       let writes;
       try { writes = mergeRestoreEntries(entries, allPacks); }
-      catch (e) { toast('Restore stopped - your current data could not be read for merging (' + e.message + '), so nothing was changed', 3600); return null; }
+      catch (e) { return null; }
       const report = { snapDropped, droppedNames: countUnknownNames(parsed, allPacks), deadSkipped };
-      if (!writes.length && !restoredPacks) {
-        toast('Backup added nothing' + restoreDisclosures(report), deadSkipped.length || snapDropped ? 4600 : 3000);
-        return null;
-      }
+      if (!writes.length && !restoredPacks) return null;
       const scope = allPacks.flatMap(p => [...slotKeys(p.id), routeKeys(p.id).finclean]);
       if (restoredPacks) scope.push(USERPACKS_KEY);
       scope.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, SETTINGS_KEY, LS.fixlog);
@@ -543,11 +536,11 @@ const RESTORE = {
       const stored = {};
       for (const rid of packIds) {
         const cur = await upGet(rid);
-        if (cur === UP_READ_FAILED) { toast('Restore stopped - your created-routes store could not be read, so nothing was changed', 3600); return null; }
+        if (cur === UP_READ_FAILED) { return null; }
         stored[rid] = cur;
       }
       const legacy = readUserPacks();
-      if (legacy === null) { toast('Restore stopped - your created-routes record could not be read, so nothing was changed', 3600); return null; }
+      if (legacy === null) { return null; }
       const additions = {};
       packPriors = {};
       allPacks = ROUTE_PACKS.slice();
@@ -558,7 +551,7 @@ const RESTORE = {
         const current = shadowed ? legacy[rid] : stored[rid];
         if (shadowed || current !== null) {
           const checked = normalizePack(current, {});
-          if (!checked.ok) { toast('Restore stopped - your current created route (' + rid + ') could not be read, so nothing was changed', 3600); return null; }
+          if (!checked.ok) { return null; }
           const pack = { ...checked.pack, id: rid };
           if (index < 0) allPacks.push(pack); else allPacks[index] = pack;
         } else if (index < 0) {
@@ -574,13 +567,13 @@ const RESTORE = {
     return finishPlan();
   },
   /** @param {object} plan @returns {Promise<void>} */ async execute(plan) {
-    const entries = plan.entries, restoredPacks = plan.restoredPacks, packPriors = plan.packPriors, SCOPE = plan.scope, snapDropped = plan.snapDropped, deadSkipped = plan.deadSkipped;
+    const entries = plan.entries, restoredPacks = plan.restoredPacks, packPriors = plan.packPriors, SCOPE = plan.scope;
     PERSIST.fenceUp(); // the fence rises before the snapshot: a flush landing unfenced writes records rollback would silently discard
     // failure exits end here: fence down, flags re-armed - fenced work lives only in memory until flushed
     const restoreFenceDown = () => { PERSIST.fenceDown(); markDirty('trail'); markDirty('sess'); markDirty('aux'); markDirty('primary'); markDirty('fixlog'); };
     const snap = {}; let snapOk = true;
     for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
-    if (!snapOk) { restoreFenceDown(); toast('Restore stopped - your current data could not be read for safekeeping, so nothing was changed', 3600); return; }
+    if (!snapOk) { restoreFenceDown(); return; }
     const rollback = () => { // the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
       let okBack = true;
       for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
@@ -604,8 +597,7 @@ const RESTORE = {
         if (!back || back === UP_READ_FAILED || upCanon(back) !== upCanon(pack)) { packFail = rid; break; }
       }
       if (packFail) {
-        if (await rollbackPacks()) toast('Restore failed while saving the created route (' + packFail + ') - your current data was put back, nothing was changed', 3800);
-        else toast('Restore failed while saving the created route (' + packFail + ') - and your previous data could NOT be fully put back - restore from a known-good backup', 4200);
+        if (!(await rollbackPacks())) showBanner('Restore failed', 'Your old data could not be fully put back - restore from a known-good backup');
         restoreFenceDown();
         return;
       }
@@ -613,7 +605,7 @@ const RESTORE = {
       if (SCOPE.some(k => rawRead(k) !== snap[k])) {
         const restored = await rollbackPacks();
         restoreFenceDown();
-        toast(restored ? 'Restore stopped - current data changed while adding routes' : 'Restore failed - the newly added routes could not be fully rolled back', 4200);
+        if (!restored) showBanner('Restore failed', 'The new routes could not be fully removed');
         return;
       }
     }
@@ -622,8 +614,7 @@ const RESTORE = {
       const wr = v === null ? txDel(k) : txSet(k, v); // a null entry discharges an armed finish-cleanup obligation - every entry written and verified by the same primitives
       if (!wr.ok) {
         const lsOk = rollback(); const pkOk = restoredPacks ? await rollbackPacks() : true; // a failure after phase 1 rolls both homes back; 'put back' is claimed only when both verifiably are
-        if (lsOk && pkOk) toast('Restore failed while writing ' + k + ' - your current data was put back, nothing was changed', 3800);
-        else toast('Restore failed while writing ' + k + ' - and your previous data could NOT be fully put back - restore from a known-good backup', 4200);
+        if (!lsOk || !pkOk) showBanner('Restore failed', 'Your old data could not be fully put back - restore from a known-good backup');
         restoreFenceDown();
         return;
       }
@@ -631,10 +622,6 @@ const RESTORE = {
     if (restoredPacks) for (const rid of Object.keys(restoredPacks)) userPackCache[rid] = restoredPacks[rid]; // the cache joins the commit: it must never describe a state that was rolled back or never written
     // Only a slot that gained data discharges its finish-cleanup obligation, inside the verified write set.
     PERSIST.fenceUp(); markClean('trail'); markClean('aux'); markClean('sess'); // the reload's pagehide flush must not write the old in-memory trail/coverage over the restored data
-    const added = entries.filter(([, value]) => value !== null).length;
-    const packsAdded = Object.keys(restoredPacks || {}).length;
-    const summary = [added ? added + (added === 1 ? ' data field' : ' data fields') : '', packsAdded ? packsAdded + (packsAdded === 1 ? ' created route' : ' created routes') : ''].filter(Boolean).join(' and ');
-    toast('Backup added data to ' + summary + ' - reloading' + restoreDisclosures(plan), (snapDropped || deadSkipped.length) ? 4600 : undefined);
     setTimeout(() => location.reload(), 600);
   },
 };
@@ -643,7 +630,7 @@ let restoreInFlight = false; // single-flight: a second tap or file pick mid-res
 function doRestore() {
   if (restoreInFlight) return;
   let parsed;
-  try { parsed = JSON.parse($('xText').value); } catch (e) { toast('That is not a valid backup - paste the whole backup text', 3200); return; }
+  try { parsed = JSON.parse($('xText').value); } catch (e) { return; }
   restoreInFlight = true;
   Promise.resolve(restoreBackup(parsed)).catch(() => {}).finally(() => { restoreInFlight = false; }); // restoreBackup reports its own refusals; this catch is belt-and-braces so the flag can never wedge the door
 }
@@ -797,7 +784,6 @@ $('updBtn').addEventListener('click', async ev => {
     if (sv && mv) {
       if (sv[0] < mv[0] || (sv[0] === mv[0] && sv[1] < mv[1])) { updState = 'older'; updDone(); return; }
       updState = 'avail';
-      toast('New version found - reloading…', 2600);
       setTimeout(() => location.replace(location.pathname + '?updnav=1&v=' + Date.now()), 900); // the reload carries updnav: the worker loads the version over its network path, not the cached shell
       return;
     }
@@ -901,7 +887,7 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
   { const bx = $('crExit'); if (bx) bx.innerHTML = `<img class="crBackIco" alt="" src="${night ? GLYPH_CREATE.back.n : GLYPH_CREATE.back.d}">`; const si = $('crSearchIco'); if (si) si.innerHTML = `<img class="crMagIco" alt="" src="${night ? GLYPH_CREATE.search.n : GLYPH_CREATE.search.d}">`; const cl = $('crClear'); if (cl) cl.innerHTML = `<img class="crClrIco" alt="" src="${night ? GLYPH_CREATE.cancel.n : GLYPH_CREATE.cancel.d}">`; } // Beta 1.227: the create bar's hosts - the back pill wears the theme variant of the arrow. Beta 1.232: the bar is monochrome now, so the magnifier and the clear disc wear the theme variant too - dark on the white day bar, white on the night glass. Beta 1.243: the search wrap wears the white pill in BOTH themes now, so the magnifier and the clear disc wear the DARK variant in both themes - they follow the bar's surface, not the app theme (white glyphs would vanish on the white night bar); the back pill still flips with the theme, so its arrow keeps the theme variant. Beta 1.244: the bar is dark at night again (the shared token black), so the magnifier and the clear disc wear the theme variant once more - the 1.232 stamps restored; the 1.243 both-themes dark stamps retire with the scope error they served
   document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // the result rows' pins re-stamp with the extras, like the note hosts above
   document.querySelectorAll('.statgrid .ic[data-ic]').forEach(el => { el.innerHTML = PACE_ICONS[el.getAttribute('data-ic')]; });
-  for (const id of ['sheetClose', 'paceClose', 'finNo', 'noteNo', 'xClose', 'crModalX', 'mapNoteNo']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.corner}">`; } // Beta 1.219: the close ✕ wears the pack too (Andrew) - the corner family: the shared red job (every pack stamps its own cancel artwork, the corner job in the close red). xClose is a selector seat in the shared rule with no element today - the guard skips it until a menu carries one The artwork carries alt="Close": the text it replaces was the button's only accessible name, so the name survives the swap (Codex P2, PR #96).
+  for (const id of ['sheetClose', 'paceClose', 'xClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.corner}">`; } // the corner closes wear the pack artwork
   for (const id of ['rmClose', 'setClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.bottom}">`; } // the bottom-centre pair on the blue full-screen menus: the white job (Glyph's white fill - the knocked-out ✕ shows the blue through it)
   document.querySelectorAll('.rmBack').forEach(el => { el.innerHTML = `<img class="rmBackIco" alt="" src="${GLYPH_MENU.back}"> Back`; }); // Beta 1.233: every blue-menu Back wears the Back To disc beside its word (the sample's treatment); the static arrow in the markup is the no-JS fallback only
 }
@@ -930,15 +916,17 @@ async function shareBackup() { // one tap backs up and asks where to save (file 
   if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported();
 }
-async function shareRecovery(viaFallback) { // the recovery export: same share sheet, file named recovery, message repeating it holds not-fully-saved live state
+async function shareRecovery(viaFallback) {
   const b = buildRecovery();
-  if (!b) { toast('Recovery backup unavailable - open the route first', 3600); return; }
-  // an excluded route is named in the result - the file is honest about what it lacks
-  const disc = (recoveryDisclosure && recoveryDisclosure.length) ? ' · WARNING: the definition for ' + recoveryDisclosure.join(', ') + ' could not be carried, so that route is NOT in this file' : '';
+  if (!b) { return; }
+  const backupHandedOff = how => { // the fallback banner names what actually happened: shared, or downloaded
+    noteExported();
+    if (viaFallback) showBanner('Backup not saved', 'A recovery backup was ' + how + ' instead');
+  };
   let f = null; try { f = new File([b], 'snowroute-recovery.json', { type: 'application/json' }); } catch (e) { /* older engine: the text share below still works */ }
-  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); noteExported(); toast((viaFallback ? 'Backup could not be saved - recovery backup shared instead: ' : 'Recovery backup shared - ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); toast((viaFallback ? 'Backup could not be saved - recovery backup shared instead: ' : 'Recovery backup shared - ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); noteExported(); toast((viaFallback ? 'Backup could not be saved - recovery backup downloaded instead: ' : 'Recovery backup downloaded - ') + 'the open route is the live on-screen state, not fully saved on this device; other routes are included as last saved' + disc, 4200); // Beta 1.96 (audit-2, N-5b): the wording distinguishes what the file actually holds - the ACTIVE route is serialized from live memory; any other route pack in the same file is read from storage, as last saved
+  if (f && navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f] }); backupHandedOff('shared'); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  if (navigator.share) { try { await navigator.share({ text: b }); backupHandedOff('shared'); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  dl(new Blob([b], { type: 'application/json' }), 'snowroute-recovery.json'); backupHandedOff('downloaded');
 }
 $('updBtn').addEventListener('click', () => $('setMenu').classList.remove('open')); // the menu steps aside for the update check: its result reads in the System Health version row
 
@@ -962,8 +950,10 @@ function renderJob() {
   renderSwitch($('swVib'), settings.vib);
   $('chimeVal').textContent = settings.chime ? CHIME_SOUNDS[settings.chimeSound].name : 'Off';
 }
-$('swAwake').addEventListener('click', () => { const prevAwake = settings.awake; settings.awake = !settings.awake; if (!saveSettings()) { settings.awake = prevAwake; toast('Not saved - storage problem'); } renderSwitch($('swAwake'), settings.awake); if (settings.awake !== prevAwake) syncWake(); }); // syncWake applies the new gate at once: ON mid-run requests the lock, OFF (or a run ending) releases it; an absent WakeLock API makes the request a silent no-op while the toggle still saves (app3). Beta 1.170 (Carbon fix round Phase 2, C-02): the Beta 1.113 save-honesty contract applied to the one Settings switch that skipped it - through 1.169 a failed save still flipped the switch and synced the wake lock on a value storage never took; a failure now reverts the value and toasts, and syncWake runs only when the value actually changed. The awake value itself stays session-only by design (Beta 1.112); this is failure-surfacing only, and saveSettings is still the write the handler owes its answer to.
-$('swVib').addEventListener('click', () => { const prevVib = settings.vib; settings.vib = !settings.vib; if (!saveSettings()) { settings.vib = prevVib; renderSwitch($('swVib'), settings.vib); toast('Not saved - storage problem'); return; } renderSwitch($('swVib'), settings.vib); if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }); // Beta 1.113 (round 112, CG-112-03): a failed save reverts the value AND the switch and warns - the 1.101 save-honesty contract every other save path honours; on a saved flip, a confirming buzz where the platform supports vibration at all
+$('swAwake').addEventListener('click', () => { const prevAwake = settings.awake; settings.awake = !settings.awake; if (!saveSettings()) { settings.awake = prevAwake; showBanner('Not saved');
+} renderSwitch($('swAwake'), settings.awake); if (settings.awake !== prevAwake) syncWake(); }); // a failed save reverts the switch and says so; syncWake runs only on a saved flip
+$('swVib').addEventListener('click', () => { const prevVib = settings.vib; settings.vib = !settings.vib; if (!saveSettings()) { settings.vib = prevVib; renderSwitch($('swVib'), settings.vib); showBanner('Not saved'); return;
+} renderSwitch($('swVib'), settings.vib); if (settings.vib && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }); // a failed save reverts the value and the render; a saved flip buzzes where supported
 $('chimeRow').addEventListener('click', () => { renderChime(); showSetPane('setChimePane'); });
 $('jobBtn').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
 $('jobBack').addEventListener('click', () => showSetPane('setMainPane'));
@@ -1025,11 +1015,13 @@ function renderChime() {
     row.className = 'm-card m-sndRow' + (sel ? ' sel' : ''); row.dataset.snd = key;
     // one fixed 30px right slot per row: the tick on the selected row, the play affordance on the rest
     row.innerHTML = '<div class="m-togTxt"><div class="m-togLbl">' + snd.name + '</div><div class="m-togDesc">' + snd.desc + '</div></div>' + (sel ? '<div class="m-selTick">&#10003;</div>' : '<div class="m-play">&#9654;</div>');
-    row.addEventListener('click', () => { const prevSnd = settings.chimeSound; settings.chimeSound = key; if (!saveSettings()) { settings.chimeSound = prevSnd; renderChime(); renderJob(); toast('Not saved - storage problem'); return; } renderChime(); renderJob(); playChime(key, 1); }); // a tap PREVIEWs and selects (the mockup's contract). The preview is a deliberate tap, so it sounds even while the chime toggle is off - the toggle gates only the in-clean playback. Beta 1.113 (round 112, CG-112-03): an unsaved pick reverts and warns instead of previewing a selection storage never took
+    row.addEventListener('click', () => { const prevSnd = settings.chimeSound; settings.chimeSound = key; if (!saveSettings()) { settings.chimeSound = prevSnd; renderChime(); renderJob(); showBanner('Not saved'); return;
+    } renderChime(); renderJob(); playChime(key, 1); }); // a tap previews and selects; a failed save reverts and says so
     list.appendChild(row);
   }
 }
-$('swChime').addEventListener('click', () => { const prevChime = settings.chime; settings.chime = !settings.chime; if (!saveSettings()) { settings.chime = prevChime; renderSwitch($('swChime'), settings.chime); renderJob(); toast('Not saved - storage problem'); return; } renderSwitch($('swChime'), settings.chime); renderJob(); }); // Beta 1.113 (round 112, CG-112-03): same save-honesty as the vibration switch - a failed save reverts and warns
+$('swChime').addEventListener('click', () => { const prevChime = settings.chime; settings.chime = !settings.chime; if (!saveSettings()) { settings.chime = prevChime; renderSwitch($('swChime'), settings.chime); renderJob();
+showBanner('Not saved'); return; } renderSwitch($('swChime'), settings.chime); renderJob(); }); // Beta 1.113 (round 112, CG-112-03): same save-honesty as the vibration switch - a failed save reverts and warns
 $('chimeBack').addEventListener('click', () => { renderJob(); showSetPane('setJobPane'); });
 // ---- Status: maps + health, every value read live at pane open ----
 async function packState() { // how much of the manifest is in the pack cache (record as fallback), with per-route counts and bytes
@@ -1109,7 +1101,7 @@ $('stDel').addEventListener('click', async ev => {
       if ('caches' in window) gone = (await caches.delete('snowroute-offline-v1')) || !(await caches.has('snowroute-offline-v1'));
       else gone = true; // no Cache Storage in this browser: no pack exists to delete
     } catch (e) { gone = false; }
-    if (!gone) { toast('Offline maps could not be deleted - they are still on this device'); renderStatus(true); return; }
+    if (!gone) { showBanner('Offline maps not deleted', 'They are still on this device'); renderStatus(true); return; }
     lsDel(PACKMIG_KEY); for (const p of ROUTE_PACKS) lsDel(routeKeys(p.id).pre); // every route's record goes with the pack; the browsing tile cache is a cache, not the pack
     renderStatus(true);
   } finally { releaseDel(); }

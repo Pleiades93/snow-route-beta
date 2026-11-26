@@ -128,12 +128,12 @@ try {
     c01pre.pts === 11 && c01pre.segs === 1 && c01pre.sess.length === 1 && c01pre.sess[0] === C01B);
   const bkSessOnly = JSON.stringify({ app: 'snowroute-backup', v: 2, at: C01B * 1000, routes: { '5w': { sess: JSON.stringify([C01B + 300]) } } });
   await injectBackup(bkSessOnly);
-  const c01toast = await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return $('toast').textContent; })()`);
+  const c01toast = await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return $('banner').classList.contains('show'); })()`); // Beta 1.296: a no-op merge is silent
   await sleep(1200);
   const c01same = await ev(`typeof window.__d169probe !== 'undefined'`);
   const c01post = await sessTrailState();
   ok('C-01 merge: a markers-only restore writes nothing and reloads nothing - the resident pair stands exactly, the foreign markers never land | ' + c01toast + ' ' + JSON.stringify(c01post),
-    c01same === true && c01toast.includes('Backup added nothing') && c01post.pts === 11 && c01post.segs === 1 && c01post.sess.length === 1 && c01post.sess[0] === C01B);
+    c01same === true && c01toast === false && c01post.pts === 11 && c01post.segs === 1 && c01post.sess.length === 1 && c01post.sess[0] === C01B);
   // Codex gate round on PR #25: a resident trail spanning TWO cleans, where the
   // resident markers are the only thing keeping the cleans apart (their boundary
   // points sit inside trailSegments' 300 s / 1000 m join). The first cut of this
@@ -143,20 +143,20 @@ try {
   ok('C-01 staged: the resident trail with TWO markers (two cleans) reads as TWO segments - the markers alone keep the cleans apart | ' + JSON.stringify(c01two),
     c01two.pts === 11 && c01two.segs === 2 && c01two.sess.length === 2);
   await injectBackup(bkSessOnly);
-  const c01twoToast = await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return $('toast').textContent; })()`);
+  const c01twoToast = await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return $('banner').classList.contains('show'); })()`); // Beta 1.296: a no-op merge is silent
   await sleep(1200);
   const c01twoSame = await ev(`typeof window.__d169probe !== 'undefined'`);
   const c01twoPost = await sessTrailState();
   ok('C-01 merge: the markers-only restore over a two-clean resident trail changes nothing - both cleans stand, foreign markers never land | ' + c01twoToast + ' ' + JSON.stringify(c01twoPost),
-    c01twoSame === true && c01twoToast.includes('Backup added nothing') && c01twoPost.pts === 11 && c01twoPost.segs === 2 && c01twoPost.sess.length === 2);
+    c01twoSame === true && c01twoToast === false && c01twoPost.pts === 11 && c01twoPost.segs === 2 && c01twoPost.sess.length === 2);
   const bkPair = JSON.stringify({ app: 'snowroute-backup', v: 2, at: C01B * 1000, routes: { '5w': { trail: JSON.stringify(C01PTS), sess: JSON.stringify([C01B]) } } });
   await injectBackup(bkPair);
-  const c01ctlToast = await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return $('toast').textContent; })()`);
+  const c01ctlToast = await ev(`(() => { window.__d169probe = 1; restoreBackup(JSON.parse(window.__d169b)); return $('banner').classList.contains('show'); })()`); // Beta 1.296: a no-op merge is silent
   await sleep(1200);
   const c01ctlSame = await ev(`typeof window.__d169probe !== 'undefined'`);
   const c01ctlPre = await sessTrailState();
   ok('C-01 control merge: a backup carrying the pair does not displace the resident pair (current wins) | ' + c01ctlToast + ' ' + JSON.stringify(c01ctlPre),
-    c01ctlSame === true && c01ctlToast.includes('Backup added nothing') && c01ctlPre.pts === 11 && c01ctlPre.segs === 2 && c01ctlPre.sess.length === 2);
+    c01ctlSame === true && c01ctlToast === false && c01ctlPre.pts === 11 && c01ctlPre.segs === 2 && c01ctlPre.sess.length === 2);
   await ev(`(() => { window.__d169probe = 1; location.reload(); return true; })()`);
   ok('C-01 control: the page reloaded for the load-retirement read', await afterReload());
   await ev(`flushAux(true); true`);

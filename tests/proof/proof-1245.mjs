@@ -62,7 +62,7 @@ check('6b: the piece is chosen by distance to its SEGMENTS (crSegProjM), not its
 
 // ---------- the top-up path is untouched ----------
 check('7: the edge path still fires its ONE top-up on the same budgets (the clip narrows when it is reached, it does not remove it)',
-  pick.includes('const got = await crSourceExtract(box, osmName, CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms,') && pick.includes("'Checking the whole of ' + shortStreetName(name) + '…'"));
+  pick.includes('const got = await crSourceExtract(box, osmName, CR_TIMING.topupBudgetMs, CR_TIMING.topupAttempt1Ms,') && !pick.includes('Checking the whole of'));
 
 // ---------- chainWays: lengths computed once ----------
 check('8: the seed scan reads precomputed lengths (computed once per way)',

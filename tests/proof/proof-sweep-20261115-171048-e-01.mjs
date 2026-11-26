@@ -127,12 +127,12 @@ const modalClosed = computeDisplayAndOpacity('crModal', { boot: true });
 assert.equal(modalClosed.display, 'none', `#crModal resting during html.boot should stay display:none, got ${modalClosed.display}`);
 console.log('PASS: #crModal resting during html.boot stays display:none via .hidden');
 
-// Check 3: #toast shown during boot (class 'show' added by toast()) is rendered and opaque
-const toastShown = computeDisplayAndOpacity('toast', { boot: true, mutator: el => el.classes.add('show') });
-assert.notEqual(toastShown.display, 'none', `#toast during html.boot must not be display:none, got ${toastShown.display}`);
-assert.equal(toastShown.opacity, '1', `#toast.show opacity should be 1, got ${toastShown.opacity}`);
-assert(Number(toastShown.zIndex) > 10000, `#toast z-index (${toastShown.zIndex}) sits above #routeMenu (10000)`);
-console.log('PASS: #toast.show during html.boot renders visible (opacity:1) above #routeMenu');
+// Check 3: the banner shown during boot (class 'show' added by showBanner) is rendered and opaque -
+// it inherited the toast's boot exemption in Beta 1.296 (the toast element itself is deleted)
+const toastShown = computeDisplayAndOpacity('banner', { boot: true, mutator: el => el.classes.add('show') });
+assert.notEqual(toastShown.display, 'none', `#banner during html.boot must not be display:none, got ${toastShown.display}`);
+assert.equal(toastShown.opacity, '1', `#banner.show opacity should be 1, got ${toastShown.opacity}`);
+console.log('PASS: #banner.show during html.boot renders visible (opacity:1)');
 
 // Check 4: Working app chrome (#hud, #dock, #tabBar, #finModal) still stays display:none during html.boot
 for (const chromeId of ['hud', 'dock', 'tabBar', 'finModal']) {

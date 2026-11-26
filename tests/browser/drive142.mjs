@@ -56,9 +56,9 @@ await sleep(200);
 // T4: Cancel Start honesty - break storage, cancel, read the message.
 await ev(`(() => { runStart = Date.now(); saveAll(); window.__realLsSet = lsSet; lsSet = () => false; return true; })()`);
 await ev(`(() => { cancelStart(); return true; })()`);
-const t4 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, mem: runStart }))()`));
+const t4 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('bannerHead').textContent, mem: runStart }))()`));
 await ev(`(() => { lsSet = window.__realLsSet; return true; })()`);
-ok('T4 Cancel Start with storage broken warns instead of claiming success | ' + JSON.stringify(t4), t4.mem === 0 && t4.toast.indexOf('could not be saved') >= 0);
+ok('T4 Cancel Start with storage broken warns instead of claiming success (the storage survivor: Not saving) | ' + JSON.stringify(t4), t4.mem === 0 && t4.toast === 'Not saving');
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');
 finish(R, proc);
 

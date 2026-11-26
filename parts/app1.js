@@ -92,36 +92,6 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
 /** @param {Date} d @returns {string} */ function fmtClock(d) { let h = d.getHours(), m = d.getMinutes(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + String(m).padStart(2, '0') + ' ' + ap; }
 /** @param {number} ms @returns {string} */ function fmtDur(ms) { const s = Math.round(ms / 1000); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + ' min'; return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; }
 /** @param {LatLng[]} pts @returns {number} */ function segLenM(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; } // the APP-global segment length (plain distM) - workDoneM's progress math. NOT a duplicate of the paint engine's private segLenM inside the GLP closure, which sums jDistM for label/anchor geometry: different scope, different metric, both load-bearing (third audit's 'delete one' was wrong - removing this one broke the progress meter, drive141 F07b caught it)
-// Toast (native dialogs are banned)
-let toastTimer = 0;
-// placement is by measurement at fire time: no fixed offset can promise the pill never covers a control
-const TOAST_CLEAR_OF = ['#dock button', '#tabBar button', '#setMenu button', '#setMenu input', '#setMenu .swRow', '.sheet button', '#sheet .srow', '#mapNote', '#mapNote button', '#mapNote textarea', '#finModal .card', '#finModal button', '#createSheet button', '#createBar input', '#createBar button', '#selPop', '#selPop button', '#spdPill', '#nightBtn', '#centreBtn'];
-/** @param {HTMLElement} t @returns {void} */ function placeToast(t) {
-  t.style.bottom = ''; // back to the CSS floor; re-measured on every fire
-  for (let hop = 0; hop < 8; hop++) {
-    const r = t.getBoundingClientRect();
-    // the band: a re-fire can land mid-fade, so read the live transform offset (shown lands at 0)
-    let ty = 0;
-    try { ty = new DOMMatrixReadOnly(getComputedStyle(t).transform).m42 || 0; } catch (e) { /* transform 'none' reads as 0 */ }
-    const top = r.top - ty, bottom = r.bottom - ty;
-    let raise = 0;
-    for (const sel of TOAST_CLEAR_OF) document.querySelectorAll(sel).forEach(e => {
-      if (e === t) return;
-      const b = e.getBoundingClientRect(), cs = getComputedStyle(e);
-      if (!(b.width > 0 && b.height > 0) || cs.display === 'none' || cs.visibility === 'hidden') return;
-      // one mid-entrance counts as the obstruction it is becoming: judge its resting top, not its first frame
-      let restTop = b.top;
-      const rising = (e.getAnimations ? e.getAnimations() : []).some(a => a.animationName);
-      if (cs.opacity === '0' && !rising) return;
-      if (rising) { try { restTop = b.top - (new DOMMatrixReadOnly(cs.transform).m42 || 0); } catch (err) { /* keep the live top */ } }
-      const ox = Math.min(r.right, b.right) - Math.max(r.left, b.left);
-      if (ox > 0 && top < restTop + b.height && restTop < bottom) raise = Math.max(raise, bottom - restTop + 6);
-    });
-    if (!raise) return;
-    t.style.bottom = (window.innerHeight - bottom + raise) + 'px';
-  }
-}
-/** @param {string} msg @param {number} [ms] @returns {void} */ function toast(msg, ms) { const t = $('toast'); t.textContent = msg; placeToast(t); t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2400); }
 // THE notification banner: the one advisory surface; a new call replaces the showing one
 /** @param {string} head @param {string} [line] @param {string} [icon] @returns {void} */ function showBanner(head, line, icon) {
   const b = $('banner');
@@ -705,7 +675,9 @@ let themeOverride = null, themeOverrideUntil = 0; // null = automatic
 /** @param {number} ms @returns {number} */ function nextSunBoundary(ms) { const p = themePos(), out = []; for (let d = 0; d <= 1; d++) { const st = sunTimes(ms + d * 86400000, p[0], p[1]); if (st) { if (st.rise != null) out.push(st.rise); if (st.set != null) out.push(st.set); } } const nx = out.filter(t => t > ms).sort((a, b) => a - b)[0]; return nx || ms + 12 * 3600000; }
 /** @returns {boolean} */ function isNight() { return themeOverride !== null ? themeOverride : autoNightAt(Date.now()); }
 /** @returns {void} */ function clearThemeOverride() { themeOverride = null; themeOverrideUntil = 0; lsDel(LS.night); lsDel(LS.nightExp); }
-/** @param {boolean} night @returns {void} */ function setThemeOverride(night) { themeOverride = night; themeOverrideUntil = nextSunBoundary(Date.now()); const okNight = lsSet(LS.night, night ? '1' : '0'); const okExp = lsSet(LS.nightExp, String(themeOverrideUntil)); if (!okNight || !okExp) toast('Not saved - storage problem'); } // Beta 1.170 (Carbon fix round Phase 2, A-08): a failed write is SURFACED, per the storage layer's rule - through 1.169 both writes rode bare lsSet, whose only signal was the storage banner, while every sibling save path pairs its toast. The override itself still applies for this session (it lives in memory); what failed is only its persistence, and a reload that finds the flag without its expiry recomputes the boundary (Beta 1.92, F01).
+/** @param {boolean} night @returns {void} */ function setThemeOverride(night) { themeOverride = night; themeOverrideUntil = nextSunBoundary(Date.now());
+  const okNight = lsSet(LS.night, night ? '1' : '0'); const okExp = lsSet(LS.nightExp, String(themeOverrideUntil));
+  if (!okNight || !okExp) showBanner('Not saved'); } // a failed write is surfaced; the override still applies for this session
 /** @returns {void} */ function themeTick() { // the boundary hand-back, and the automatic cycle itself: if the effective theme no longer matches the screen, repaint
   if (themeOverride !== null && Date.now() >= themeOverrideUntil) clearThemeOverride();
   if (typeof document !== 'undefined' && document.body && typeof applyNight === 'function' && isNight() !== document.body.classList.contains('night')) { applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); }

@@ -39,12 +39,12 @@ try {
 
   // ---- M2: the same backup again writes nothing and reloads nothing ----
   const before2 = await snap5w();
-  const toast2 = await ev(`(() => { window.__d224probe = 1; restoreBackup(${JSON.stringify(bk1)}); return $('toast').textContent; })()`);
+  const toast2 = JSON.parse(await ev(`(() => { window.__d224probe = 1; restoreBackup(${JSON.stringify(bk1)}); return JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent }); })()`));
   await sleep(1500);
   const same2 = await ev(`typeof window.__d224probe !== 'undefined'`);
   const after2 = await snap5w();
-  ok('M2 double import reports added-nothing, does not reload, and every key is byte-identical | ' + toast2,
-    toast2.includes('Backup added nothing') && same2 === true && JSON.stringify(after2) === JSON.stringify(before2));
+  ok('M2 double import adds nothing, SILENTLY since Beta 1.296 (the added-nothing report is cut), does not reload, and every key is byte-identical | banner shown: ' + toast2.head,
+    toast2.shown === false && same2 === true && JSON.stringify(after2) === JSON.stringify(before2));
 
   // ---- M3: pre-ID history imports by fingerprint; exact duplicates are skipped ----
   const legA = { at: T2, via: 'manual', items: { Velmar: T1 }, notes: {}, km: 2.4 };
@@ -79,12 +79,13 @@ try {
   // ---- M5: a malformed carried value refuses the whole restore; nothing is lost ----
   const before5 = await snap5w();
   const bk5 = { app: 'snowroute-backup', v: 2, at: T4, routes: { '5w': { notes: '{"Velmar": [broken', done: '["Galloway"]' } } };
-  const toast5 = await ev(`(() => { window.__d224probe = 1; restoreBackup(${JSON.stringify(bk5)}); return $('toast').textContent; })()`);
+  const toast5 = JSON.parse(await ev(`(() => { window.__d224probe = 1; restoreBackup(${JSON.stringify(bk5)}); return JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent }); })()`));
   await sleep(1200);
   const same5 = await ev(`typeof window.__d224probe !== 'undefined'`);
   const after5 = await snap5w();
-  ok('M5 a malformed carried value refuses the restore whole - no reload, no key changes, the addable record in the same file does not land either | ' + toast5,
-    same5 === true && /not valid JSON|Restore stopped/.test(toast5) && JSON.stringify(after5) === JSON.stringify(before5));
+  ok('M5 a malformed carried value refuses the restore whole, silently since Beta 1.296 - no reload, no key changes, the addable record in the same file does not land either, and the restore raises NO failure banner of its own (an ' +
+    'ambient GPS banner may stand in this rig) | banner head: ' + toast5.head,
+    same5 === true && toast5.head !== 'Restore failed' && JSON.stringify(after5) === JSON.stringify(before5));
 
   // ---- M6: settings fill field by field; the resident field wins ----
   await ev(`(() => { localStorage.setItem('${RK.settings}', '{"vib":true}'); return true; })()`);
@@ -98,11 +99,11 @@ try {
   // ---- M7: a trail carried alone does not land beside resident markers ----
   await ev(`(() => { const rk = routeKeys('5w'); localStorage.removeItem(rk.trail); localStorage.setItem(rk.sess, '[1762000000]'); localStorage.removeItem(rk.start); return true; })()`);
   const bk7 = { app: 'snowroute-backup', v: 2, at: T4, routes: { '5w': { trail: '[[43.8,-79.5,1762000100]]' } } };
-  const toast7 = await ev(`(() => { window.__d224probe = 1; restoreBackup(${JSON.stringify(bk7)}); return $('toast').textContent; })()`);
+  const toast7 = JSON.parse(await ev(`(() => { window.__d224probe = 1; restoreBackup(${JSON.stringify(bk7)}); return JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent }); })()`));
   await sleep(1200);
   const m7 = await snap5w();
-  ok('M7 a trail-only backup adds nothing beside resident markers (markers stand, no trail lands) | ' + toast7,
-    toast7.includes('Backup added nothing') && m7[RK.sess] === '[1762000000]' && m7[RK.trail] === null);
+  ok('M7 a trail-only backup adds nothing beside resident markers, silently since Beta 1.296 (markers stand, no trail lands) and the restore raises NO failure banner of its own | banner head: ' + toast7.head,
+    toast7.head !== 'Restore failed' && m7[RK.sess] === '[1762000000]' && m7[RK.trail] === null);
   // ---- M13: an imported run's Cancel baseline keeps resident marks ----
   // Build a genuine running backup in-page: Velmar marked before Start, unmarked mid-run.
   await ev(`(() => { localStorage.clear(); location.reload(); return true; })()`); await sleep(1500);

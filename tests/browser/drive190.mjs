@@ -85,19 +85,19 @@ try {
     const orig = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error('quota'); };
     document.getElementById('swAwake').click();
     Storage.prototype.setItem = orig;
-    const t = document.getElementById('toast');
-    return { before, after: settings.awake, toast: t.textContent, shown: t.classList.contains('show') };
+    const t = document.getElementById('banner');
+    return { before, after: settings.awake, toast: document.getElementById('bannerHead').textContent, shown: t.classList.contains('show') };
   })()`);
-  ok('C1 a failed Stay-awake save REVERTS the value and toasts (the 1.113 contract) | ' + JSON.stringify(c1), c1.after === c1.before && c1.toast === 'Not saved - storage problem' && c1.shown === true);
+  ok('C1 a failed Stay-awake save REVERTS the value and banners (the 1.113 contract) | ' + JSON.stringify(c1), c1.after === c1.before && c1.toast === 'Not saved' && c1.shown === true);
   const c2 = await J(`(() => {
     const orig = Storage.prototype.setItem;
     Storage.prototype.setItem = function (k, v) { if (k === LS.night || k === LS.nightExp) throw new Error('quota'); return orig.call(this, k, v); };
     setThemeOverride(true);
     Storage.prototype.setItem = orig;
-    const t = document.getElementById('toast');
-    return { toast: t.textContent, shown: t.classList.contains('show'), override: themeOverride };
+    const t = document.getElementById('banner');
+    return { toast: document.getElementById('bannerHead').textContent, shown: t.classList.contains('show'), override: themeOverride };
   })()`);
-  ok('C2 a failed theme-override write answers with the not-saved toast; the override still applies for the session | ' + JSON.stringify(c2), c2.toast === 'Not saved - storage problem' && c2.shown === true && c2.override === true);
+  ok('C2 a failed theme-override write answers with the not-saved banner; the override still applies for the session | ' + JSON.stringify(c2), c2.toast === 'Not saved' && c2.shown === true && c2.override === true);
 
   // ---- D: C-06 Back walks xMode only on the backup pane ----
   const d = await J(`(() => {

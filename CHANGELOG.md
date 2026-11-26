@@ -1,5 +1,22 @@
 # Changelog
 
+## Beta 1.296 — 2026-11-25
+
+The pop-up round, from Andrew's notification audit (86 pop-ups reviewed; the bar: absolutely critical only). (1) The cull: 54 pop-ups are gone - hints, suggestions,
+confirmations, explanations, internal bookkeeping (trail, session markers, safety snapshots, retry loops) and every refusal where nothing was changed and nothing
+was lost. The behaviour underneath continues silently: writes, retries, rollbacks and reloads all still happen, they just no longer announce themselves. (2) The
+26 survivors all speak through the one notification banner built in Beta 1.295 (showBanner), reworded to the audit's frozen table: a short bold headline plus at
+most one quiet line, fragments not sentences. The old blue toast pill, the create hint pill and placeToast are deleted; the create-mode action button (Prepare,
+Cancel, Resume, Retry) stays as a control and now wears the card face, its Cancel still red. The storage warning strip keeps its red strip with the new two-part
+wording; the maps-cannot-load notice keeps its persistence, loses its X, and clears itself when the map recovers. (3) No X on any blurred-backdrop pop-up: the
+discard-draft dialog, the Finish dialog and the note editor now carry two buttons each (the action, red when destructive, and Cancel). The discard dialog also
+loses its backdrop-tap dismissal, an exception to Andrew's backdrop rule (a tap on the backdrop does nothing) - it now dismisses on its buttons only; named here
+so it can be reversed on his word. (4) City search: the "Search online" row is removed. Typing answers instantly from the bundled gazetteer as before; the online
+search now fires on its own, only when a complete-word query finds zero matches in the bundled list, and a guard re-checks the input after the rate-cap wait so
+typing on, clearing, or picking cancels the request. If the bundled list finds a match, the service never runs.
+
+Editorial: this entry; What's New replaced with the pop-up and city-search lines; the #ver label reads Beta 1.296. plus no maintenance PRs since Beta 1.295.
+
 ## Beta 1.295 — 2026-11-25
 
 The spin-out pair from the issue #180 sweep. (1) GPS gap surfacing: when a clean's GPS watch goes silent past the stale window and the watchdog restarts it, the gap is recorded against the run and stamped onto the archived clean record

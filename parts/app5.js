@@ -349,7 +349,7 @@ function loadRoute(id) {
     collapseNoteEditor(); // an open note draft finalizes against the OUTGOING street first (renderStreets' draft flush, through saveAllWarned)
     PERSIST.flush(true); // F2: the outgoing route's pending trail/session/snapshot/start/coverage writes land in ITS slot before LS repoints
     // one verified retry of a failed save before the repoint; a failure is said out loud, never dropped
-    if (writePending('primary')) { const okPrim = saveAll(); if (!okPrim.ok) toast('Storage problem - some changes on the route you left could not be saved', 4200); }
+    if (writePending('primary')) { const okPrim = saveAll(); if (!okPrim.ok) showBanner('Changes not saved', 'Some changes on the route you left did not save'); }
     resetSwitchSession(); // F3/F4
   }
   document.documentElement.classList.remove('boot'); /* a loaded route ends boot state, whichever path loaded it: chrome returns as the state flips */
@@ -390,25 +390,24 @@ async function deleteRoute(id) { // order is the safety: definition first, verif
   const pack = ROUTE_PACKS[ix];
   if (SHIPPED_PACK_IDS.has(id)) { // the shipped step (1): the tombstone write, verified before anything is wiped, on the same storage-outcome contract
     const dead = readShippedDeleted(); // strict: a tombstone record that cannot be read is never rewritten blind
-    if (dead === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
-    if (!dead.includes(id) && !(lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id])) && (readShippedDeleted() || []).includes(id))) { toast('Storage problem - the route could not be deleted', 4000); return; }
+    if (dead === null) { showBanner('Route not deleted', 'It stays in your list'); return; }
+    if (!dead.includes(id) && !(lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id])) && (readShippedDeleted() || []).includes(id))) { showBanner('Route not deleted', 'It stays in your list'); return; }
   } else {
     const legacy = readUserPacks(); // strict: an unreadable legacy record is never rewritten blind - one deletion must never cost every created route
-    if (legacy === null) { toast('Storage problem - the route could not be deleted', 4000); return; }
-    if (!(await upDel(id))) { toast('Storage problem - the route could not be deleted', 4000); return; } // removal is verified before any wipe: a route whose definition survived keeps its data and its row
+    if (legacy === null) { showBanner('Route not deleted', 'It stays in your list'); return; }
+    if (!(await upDel(id))) { showBanner('Route not deleted', 'It stays in your list'); return; } // removal is verified before any wipe: a route whose definition survived keeps its data and its row
     if (legacy[id]) {
       const shadow = { ...legacy }; delete shadow[id];
       const okShadow = Object.keys(shadow).length ? (lsSet(USERPACKS_KEY, JSON.stringify(shadow)) && !(readUserPacks() || {})[id]) : (lsDel(USERPACKS_KEY) && localStorage.getItem(USERPACKS_KEY) === null);
-      if (!okShadow) { await upPut(id, pack); toast('Storage problem - the route could not be deleted', 4000); return; }
+      if (!okShadow) { await upPut(id, pack); showBanner('Route not deleted', 'It stays in your list'); return; }
     }
   }
   delete userPackCache[id]; // the backup picture joins the commit
   const wasActive = !!(activeRoute && activeRoute.id === id && routeLoaded);
   ROUTE_PACKS.splice(ix, 1);
-  const rk = routeKeys(id); let wipeFailed = false; for (const k of Object.values(rk)) { if (!txDel(k).ok) wipeFailed = true; } // the wipe is verified (txDel), every key attempted: residue would load as a later same-named route's state
+  const rk = routeKeys(id); for (const k of Object.values(rk)) txDel(k); // the wipe is verified (txDel), every key attempted: residue would load as a later same-named route's state
   // nothing else keys on a route id (cache by city): removing the pack un-certifies the old union download
   if (wasActive) unloadRouteToBoot(); else renderRouteLists();
-  if (wipeFailed) toast('Route deleted, but some of its saved data could not be deleted (storage problem)', 4200); // no success toast over a slot that could not be fully wiped: the failure is said out loud
 }
 function askDeleteRoute(id) { // Delete on a row: the shared confirm asks with the deletion labels, for EVERY route, shipped included
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;

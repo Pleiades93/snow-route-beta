@@ -57,7 +57,8 @@ A = await J(`(() => { coveredIdx = {};
   return { pick: { n: pick.n, dn: pick.dn, dmin: Math.round(pick.dmin) }, gained }; })()`);
 ok('T4 fix covers only its own street (nearest other ' + (A.pick ? A.pick.dmin : '?') + 'm away)', A.gained && A.gained.length === 1 && A.pick && A.gained[0] === A.pick.n);
 
-// T5 (suite 5): a write failure mid-restore rolls everything back and says so
+// T5 (suite 5): a write failure mid-restore rolls everything back
+// the failing key fails its rollback write, so banner reports it (Restore failed); a clean rollback stays silent
 // Velmar's resident sides entries are removed first, so the backup's completion is a genuine addition (current wins).
 await ev(`(() => { doneSet = new Set(['Velmar']); saveAll();
   window.__bak = buildBackup();
@@ -69,9 +70,9 @@ await ev(`(() => { doneSet = new Set(['Velmar']); saveAll();
   restoreBackup(JSON.parse(window.__bak));
   return true; })()`);
 await sleep(400);
-A = await J(`({ toast: $('toast').textContent, done: localStorage.getItem(LS.done) })`);
+A = await J(`({ banner: $('banner').classList.contains('show'), head: $('bannerHead').textContent, done: localStorage.getItem(LS.done) })`);
 await ev(`(() => { Storage.prototype.setItem = window.__origSI; return true; })()`);
-ok('T5 failed restore reports the rollback', /put back/.test(A.toast || ''));
+ok('T5 failed restore reports the rollback through the banner (Restore failed - the rollback write of the same key fails too)', A.banner === true && A.head === 'Restore failed');
 ok('T5 current data intact after rollback', A.done === '["Mellings"]');
 
 // T6 (suite 6): when the rollback itself cannot be verified, the app says so - never claims success
@@ -81,9 +82,9 @@ await ev(`(() => { window.__origGI = Storage.prototype.getItem;
   restoreBackup(JSON.parse(window.__bak));
   return true; })()`);
 await sleep(400);
-A = await J(`({ toast: $('toast').textContent })`);
+A = await J(`({ head: $('bannerHead').textContent, line: $('bannerLine').textContent, show: $('banner').classList.contains('show') })`);
 await ev(`(() => { Storage.prototype.setItem = window.__origSI; Storage.prototype.getItem = window.__origGI; delete window.__rbBad; return true; })()`);
-ok('T6 unverifiable rollback is reported honestly', /could NOT be fully put back/.test(A.toast || ''));
+ok('T6 unverifiable rollback is reported honestly', A.show === true && A.head === 'Restore failed' && /could not be fully put back/.test(A.line || ''));
 
 // T7 (suite 3): nested-invalid history in a backup is sanitized on load, valid entries keep their meaning
 {
@@ -132,9 +133,9 @@ await ev(`(() => { doneSet = new Set(); doneTimes = {}; doneVia = {}; history = 
   $('resetBtn').click(); return true; })()`);
 await sleep(300);
 await ev(`(() => { $('finYes').click(); return true; })()`); await sleep(400);
-A = await J(`({ toast: $('toast').textContent, done: doneSet.size, run: !!runStart, label: $('resetBtn').textContent })`);
+A = await J(`({ head: $('bannerHead').textContent, line: $('bannerLine').textContent, done: doneSet.size, run: !!runStart, label: $('resetBtn').textContent })`);
 await ev(`(() => { Storage.prototype.setItem = window.__origSI2; return true; })()`);
-ok('T9 finish stopped honestly on history write failure', /finish stopped/.test(A.toast || ''));
+ok('T9 finish stopped honestly on history write failure', A.head === 'Finish stopped' && /clean is intact/.test(A.line || ''));
 ok('T9 run intact after stopped finish', A.done === 3 && A.run === true && A.label === 'FINISH');
 
 // T10 (suite 12): a partial multi-key save cannot leave phantom state after reload
@@ -216,7 +217,7 @@ await bootThrough(ev, poll); // Beta 1.76: boots end at the route menu now - cli
 // drive66 tail: v5.39 restore suite only (drive65 Phase B fix: recapture backup after reload)
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
-const toast = async () => await ev(`(() => $('toast').textContent)()`);
+const bannerShown = async () => await ev(`(() => $('banner').classList.contains('show'))()`); // Beta 1.296: restore outcomes are silent unless a rollback fails
 await sleep(3200);
 
 await ev(`(() => { markDone('Columbus', 'tap'); saveAll(); HIST.save(); window.__good = buildBackup(); return true; })()`);
@@ -226,10 +227,10 @@ await ev(`(() => { markDone('Galloway', 'tap'); saveAll(); return true; })()`);
 await sleep(300);
 await ev(`(() => { $('xText').value = window.__good; doRestore(); return true; })()`);
 await sleep(2200);
-const B1toast = await toast();
+const B1banner = await bannerShown();
 await loadRoutePolled(ev, sleep); // Beta 1.76: the restore reload lands on the route menu
 const B1 = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
-ok('B1 a contained backup adds nothing and the resident marks survive', JSON.stringify(B1) === '["Columbus","Galloway"]' && B1toast.includes('Backup added nothing'));
+ok('B1 a contained backup adds nothing and the resident marks survive (silently - no banner)', JSON.stringify(B1) === '["Columbus","Galloway"]' && B1banner === false);
 
 // recapture AFTER the reload wiped window.__good (the drive65 bug)
 await ev(`(() => { saveAll(); HIST.save(); window.__good = buildBackup(); markDone('Galloway', 'tap'); return true; })()`);
@@ -237,13 +238,13 @@ await sleep(300);
 
 await ev(`(() => { const p = JSON.parse(window.__good); p.v = 99; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
 await sleep(400);
-ok('B2 unsupported version rejected', (await toast()).includes('Unsupported backup version'));
+ok('B2 unsupported version rejected (silently - no banner)', (await bannerShown()) === false);
 const B2s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
 ok('B2 state untouched', JSON.stringify(B2s) === '["Columbus","Galloway"]');
 
 await ev(`(() => { const p = JSON.parse(window.__good); p.routes['5w'].times = 'not json'; $('xText').value = JSON.stringify(p); doRestore(); return true; })()`);
 await sleep(400);
-ok('B3 corrupt value rejected', (await toast()).includes('not valid JSON'));
+ok('B3 corrupt value rejected (silently - no banner)', (await bannerShown()) === false);
 const B3s = JSON.parse(await ev(`(() => JSON.stringify([...doneSet].sort()))()`));
 ok('B3 state untouched', JSON.stringify(B3s) === '["Columbus","Galloway"]');
 

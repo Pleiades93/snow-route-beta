@@ -211,10 +211,10 @@ await ev(`(() => { deselect(); STRETCH.Velmar.parts.forEach((_, i) => tapStretch
 const sel12 = JSON.parse(await ev(`JSON.stringify({ n: selSet.length, total: STRETCH.Velmar.parts.length })`));
 await ev(`(() => { window.__origSI12 = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === LS.sides) throw new Error('injected quota failure'); return window.__origSI12.call(this, k, v); }; return true; })()`);
 await ev(`$('selAllBtn').click()`); await sleep(400);
-const toast12 = await ev(`$('toast').textContent`);
+const toast12 = await ev(`$('bannerHead').textContent + '|' + $('banner').classList.contains('show')`);
 await ev(`(() => { Storage.prototype.setItem = window.__origSI12; saveAll(); return true; })()`); await sleep(200);
-ok('M12 Mark both sides on a failed save: NO success toast - the storage warning stands alone (selection was all ' + sel12.n + ' of ' + sel12.total + ' Velmar stretches) | toast: ' + JSON.stringify(toast12),
-  sel12.n === sel12.total && sel12.total >= 2 && !/✓/.test(toast12) && /Storage is not saving|Not saved/.test(toast12));
+ok('M12 Mark both sides on a failed save: NO success message - the not-saved banner stands alone (selection was all ' + sel12.n + ' of ' + sel12.total + ' Velmar stretches) | banner: ' + JSON.stringify(toast12),
+  sel12.n === sel12.total && sel12.total >= 2 && !/✓/.test(toast12) && /Not saving\|true/.test(toast12));
 await ev(`(() => { markUndone('Velmar'); deselect(); return true; })()`);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION').map(c => String(c.text || '').slice(0, 200));

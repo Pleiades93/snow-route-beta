@@ -37,7 +37,7 @@ check('1d: a stored timestamp of 0 counts - the stored-check is !== undefined, n
 
 // ---------- 2: every call site passes its event ----------
 const all = app1 + '\n' + others;
-check('2a: 25 tapGuard occurrences in the parts (1 definition + 24 call sites)', (all.match(/tapGuard\(/g) || []).length === 25);
+check('2a: 24 tapGuard occurrences in the parts (1 definition + 23 call sites)', (all.match(/tapGuard\(/g) || []).length === 24);
 check('2b: no single-argument call survives - every site passes its event', !/tapGuard\('[^']*'( \+ [A-Za-z]+)?\)/.test(all));
 
 // ---------- 3: the shipped guard, run verbatim on event-time sequences ----------

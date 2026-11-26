@@ -36,10 +36,11 @@ await ev(`(() => { draft = newDraft(); draft.roads['Isolated Street'] = [[[43.8,
 await ev(`(() => { const orig = IDBObjectStore.prototype.put; window.__origPut = orig; IDBObjectStore.prototype.put = function (rec) { if (this.name === 'packs' && rec && rec.name === 'Isolated Route') throw new DOMException('drive185 injected save failure', 'QuotaExceededError'); return orig.apply(this, arguments); }; return true; })()`);
 await ev(`saveDraftRoute()`);
 await sleep(300);
-const i1 = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ toast: $('toast').textContent, registered: ROUTE_PACKS.some(p => p.id === 'isolated-route'), storeKeys: m ? Object.keys(m).sort() : null }); })()`));
+const i1 = JSON.parse(await ev(`(async () => { const m = await upGetAll(); return JSON.stringify({ toast: ($('bannerHead').textContent + ' ' + $('bannerLine').textContent), registered: ROUTE_PACKS.some(p => p.id === 'isolated-route'),` +
+  ` storeKeys: m ? Object.keys(m).sort() : null }); })()`));
 const afterFail = await storeCanon();
-ok('I1 the faulted save REFUSES with the storage toast and the route is never registered | ' + i1.toast,
-  /could not be saved/.test(i1.toast) && i1.registered === false && JSON.stringify(i1.storeKeys) === JSON.stringify(['route-a', 'route-b', 'route-c']));
+ok('I1 the faulted save REFUSES with the banner (Route not saved) and the route is never registered | ' + i1.toast,
+  /Route not saved/.test(i1.toast) && i1.registered === false && JSON.stringify(i1.storeKeys) === JSON.stringify(['route-a', 'route-b', 'route-c']));
 ok('I1b every other route\'s stored record is byte-identical after the failed save', JSON.stringify(afterFail) === JSON.stringify(before));
 await ev(`(() => { IDBObjectStore.prototype.put = window.__origPut; return true; })()`);
 await ev(`saveDraftRoute()`);

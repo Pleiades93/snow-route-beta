@@ -74,10 +74,6 @@ const srcs = [
   extractFn(app4, 'canonicalSettings(raw)'),
   extractFn(app4, 'canonicalFixLog(raw)'),
   extractFn(app4, 'mergeRestoreEntries(entries, allPacks)'),
-  // restoreDisclosures takes a destructured parameter, so extractFn's
-  // first-brace rule would stop at the parameter list; slice to its
-  // closing brace line instead.
-  app4.slice(app4.indexOf('function restoreDisclosures'), app4.indexOf('\n}\n', app4.indexOf('function restoreDisclosures')) + 3),
   extractFn(packsSrc, 'upCanon(v)'),
   extractObj(app4, 'RESTORE'),
 ].join('\n');
@@ -89,6 +85,8 @@ let __store = {};
 function rawRead(k) { return Object.prototype.hasOwnProperty.call(__store, k) ? __store[k] : null; }
 function nextSunBoundary(ms) { return ms + 43200000; }
 function toast(m, ms) { __toasts.push(String(m)); }
+let __banners = [];
+function showBanner(h, l) { __banners.push(String(h)); }
 const SHIPPED_PACK_IDS = new Set(['5w']);
 const PACK5W = { id: '5w', name: 'Route 5W', roads: { Velmar: {}, Mellings: {} } };
 let ROUTE_PACKS = [PACK5W];
@@ -126,7 +124,7 @@ async function runCase(setup, parsed) {
   vm.runInContext(srcs, ctx);
   if (setup) vm.runInContext(setup, ctx);
   vm.runInContext('__toasts = []', ctx);
-  const out = await vm.runInContext(`(async () => { const p = await RESTORE.plan(${JSON.stringify(parsed)}); return { plan: p, toasts: __toasts }; })()`, ctx);
+  const out = await vm.runInContext(`(async () => { const p = await RESTORE.plan(${JSON.stringify(parsed)}); return { plan: p, toasts: __toasts, banners: __banners }; })()`, ctx);
   return out;
 }
 
@@ -166,8 +164,8 @@ const REFUSALS = [
 for (const [name, frag, parsed, setup] of REFUSALS) {
   let out, err = null;
   try { out = await runCase(setup, parsed); } catch (e) { err = e; }
-  check('refuses: ' + name, !err && out && out.plan === null && out.toasts.length >= 1 && (!frag || out.toasts.some(t => t.includes(frag))),
-    err ? String(err && err.message || err) : 'plan: ' + JSON.stringify(out && out.plan && Object.keys(out.plan)) + ' toasts: ' + JSON.stringify(out && out.toasts));
+  check('refuses: ' + name, !err && out && out.plan === null && out.toasts.length === 0 && out.banners.length === 0,
+    err ? String(err && err.message || err) : 'plan: ' + JSON.stringify(out && out.plan && Object.keys(out.plan)) + ' toasts: ' + JSON.stringify(out && out.toasts) + ' banners: ' + JSON.stringify(out && out.banners));
 }
 
 const has = (plan, k, v) => plan.entries.some(e => e[0] === k && (v === undefined || e[1] === v));
@@ -188,7 +186,7 @@ const has = (plan, k, v) => plan.entries.some(e => e[0] === k && (v === undefine
 {
   const out = await runCase(`__store = { 'snowroute.5w.v5.start': '${START}' }`, V2({ '5w': { start: null, snap: '{"x":1}' } }));
   check('control: an explicit idle assertion over a resident run plans nothing', out.plan === null, 'plan: ' + JSON.stringify(out.plan));
-  check('control: the idle outcome is reported, snapshot drop included', out.toasts.some(t => t.includes('Backup added nothing') && t.includes('snapshot was unusable')), 'toasts: ' + JSON.stringify(out.toasts));
+  check('control: the idle outcome is silent now (audit v2: no pop-up when nothing changed)', out.toasts.length === 0 && out.banners.length === 0, 'toasts: ' + JSON.stringify(out.toasts));
 }
 // C3: an unparseable carried snapshot is dropped, not fatal
 {
@@ -215,7 +213,7 @@ const has = (plan, k, v) => plan.entries.some(e => e[0] === k && (v === undefine
 // C7: C-01 — markers arriving without their trail add nothing under a merge
 {
   const out = await runCase(null, V2({ '5w': { sess: '[1762000000000]' } }));
-  check('control: markers without their trail plan nothing (C-01)', out.plan === null && out.toasts.some(t => t.includes('Backup added nothing')), 'plan: ' + JSON.stringify(out.plan) + ' toasts: ' + JSON.stringify(out.toasts));
+  check('control: markers without their trail plan nothing (C-01)', out.plan === null && out.toasts.length === 0 && out.banners.length === 0, 'plan: ' + JSON.stringify(out.plan) + ' toasts: ' + JSON.stringify(out.toasts));
 }
 // C8: F06 — done without sides derives the side-marks in the plan
 {

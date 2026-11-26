@@ -20,8 +20,10 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i) + 1); };
 // The two 1.226 group rules, isolated so the exclusion checks read rules, not prose.
-const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition: transform 150ms ease-out;')) || '';
-const scaleLine = head.split('\n').find(l => l.includes('.tabItem:active, .dockBtn:active, .runBtn:active,') && l.includes('transform: scale(.97);')) || '';
+const ruleText = (startFrag) => { const ls = head.split('\n'); const i = ls.findIndex(l => l.includes(startFrag)); if (i < 0) return '';
+  let out = ''; for (let k = i; k < ls.length; k++) { out += (out ? ' ' : '') + ls[k].trim(); if (ls[k].includes('}')) break; } return out; };
+const transLine = ruleText('.tabItem, .dockBtn, .runBtn,');
+const scaleLine = ruleText('.tabItem:active, .dockBtn:active, .runBtn:active,');
 
 // ---------- Piece 1: the press shrink ----------
 check('1a: the press transition group exists and carries the core families (tab bar, dock, run button, road panel, blue menus, create)', !!transLine && transLine.includes('#selPop button') && transLine.includes('.rmBtn') && transLine.includes('button.m-card') && transLine.includes('#routeMenu .routeRow') && transLine.includes('.crPrimary') && transLine.includes('.routeDrop .dropLoad') && transLine.includes('.routeDrop .dropDel') && !transLine.includes('.banner button') && transLine.includes('.modal .row button'));
@@ -34,7 +36,12 @@ check('1d: the switch transition merges its background fade with the shrink (the
 check('1e: the menu flash value is gone from the page (rgba(255,255,255,.28) survives nowhere)', !head.includes('rgba(255,255,255,.28)'));
 check('1f: the primary flash is gone (the old #dbe4fd :active rule no longer exists)', !head.includes('.rmBtn.primary:active { background: #dbe4fd; }') && head.includes('.rmBtn.primary:active { background: #fff; }'));
 check('1g: the delete flash is gone (rgba(230,57,46,.34) survives nowhere) and the retired .routeDel hold is replaced by the dropdown Delete wearing the shared solid (Beta 1.271)', !head.includes('rgba(230,57,46,.34)') && !head.includes('.routeDel:active') && head.includes('.routeDrop .dropDel, #pvStartOverBtn { background: #e63a2e; color: #fff; }'));
-check('1h: the :active holds wear the rest fills (menu pills, cards, rows, create results; Beta 1.243: the quiet door hold retires with the door)', head.includes('.rmBtn:active { background: rgba(255,255,255,.18); }') && !head.includes('.rmBtn.quiet:active') && head.includes('button.m-card:active { background: rgba(255,255,255,.18); }') && head.includes('#routeMenu .routeRow:active, #routeMenu .crOnlineRow:active { background: rgba(255,255,255,.18); }') && head.includes('.crResult:active { background: transparent; }'));
+check('1h: the :active holds wear the rest fills (menu pills, cards, rows, create results; Beta 1.243: the quiet door hold retires with the door)',
+   head.includes('.rmBtn:active { background: rgba(255,255,255,.18); }')
+  && !head.includes('.rmBtn.quiet:active')
+  && head.includes('button.m-card:active { background: rgba(255,255,255,.18); }')
+  && head.includes('#routeMenu .routeRow:active { background: rgba(255,255,255,.18); }')
+  && head.includes('.crResult:active { background: transparent; }'));
 // The exclusions: display-only readouts are named in neither 1.226 group rule.
 check('1i: the display-only readouts are excluded from the press rules (no #spdPill, #count, #stats, .statgrid, .gb- in either group)', !transLine.includes('#spdPill') && !transLine.includes('#count') && !transLine.includes('#stats') && !transLine.includes('.statgrid') && !transLine.includes('.gb-') && !scaleLine.includes('#spdPill') && !scaleLine.includes('#count') && !scaleLine.includes('#stats') && !scaleLine.includes('.statgrid') && !scaleLine.includes('.gb-'));
 check('1j: the readout rules themselves gained no transform (the speed circle rule is byte-identical in shape to 1.225)', !rule('#spdPill {').includes('transform') && !rule('#count {').includes('transform') && !rule('#stats {').includes('transform'));

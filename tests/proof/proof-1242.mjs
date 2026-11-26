@@ -67,18 +67,18 @@ check('7: the fences stand - night Start keeps the float token, the speed readou
 // ---------- (2) the pop-up cuts ----------
 check('8: the sector pill is never painted (no part assigns its text to the hint)',
   !allParts.includes("hint.textContent = 'Tap sectors to add or remove them'") && !allParts.includes('hint.textContent = "Tap sectors to add or remove them"'));
-check('9: while trimming, the hint renders silence and offers no button (the early return stands)',
-  pick.includes("if (crSectorSession.street) { hint.textContent = ''; hint.classList.remove('on'); btn.style.display = 'none'; return; }"));
+check('9: while trimming, the renderer offers no button (the early return stands)',
+  pick.includes("if (crSectorSession.street) { btn.style.display = 'none'; return; }"));
 check('10: the mechanism that made the pill redundant stays - the sector bar still says it',
   pick.includes("'Entire road picked · ' + fmtLenM(rec.total) + '. Tap sectors to trim it'"));
 check('11: \'Clean in progress\' stays cut (no part paints it; its recording line stands nowhere in code)',
   !allParts.includes("toast('Clean in progress") && !allPartsNoWn.includes('Clean in progress — recording your route') && !allPartsNoWn.includes('recording your route'));
 check('12: the plain \'Start cancelled\' stays cut (no bare call stands)',
   !app3.includes("toast('Start cancelled - clean erased',") && !app3.includes('toast("Start cancelled - clean erased",'));
-check('13: the cancel chain\'s adjudicated warning keeps stand verbatim',
-  app3.includes("toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200)") && app3.includes('Start cancelled - clean erased (the saved snapshot was damaged'));
-check('14: the GPS trio are named keeps and stand untouched',
-  app3.includes("toast('Location is off - allow location for this site in your browser settings', 4200)") && app3.includes("toast('GPS signal weak - still trying', 2600)") && app3.includes("toast('This device has no GPS access here', 3000)"));
+check('13: the cancel chain\'s warnings are cut (audit v2 rows 11-13): the cancel runs silent',
+  !app3.includes('Start cancelled - warning') && !app3.includes('Start cancelled - clean erased (the saved snapshot was damaged'));
+check('14: the GPS trio are named keeps, reworded onto the banner',
+  app3.includes("showBanner('Location is off', 'Allow location for this site in your browser settings')") && app3.includes("showBanner('GPS signal weak'") && app3.includes("showBanner('GPS not available'"));
 
 // ---------- (3) the hint wording ----------
 check('15: the hint carries Andrew\'s exact words and the old assignment stands nowhere',

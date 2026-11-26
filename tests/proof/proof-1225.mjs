@@ -31,20 +31,21 @@ check('1b: the routes payloads decode to the Journey WebPs (and not the turn sig
 const allHashes = [...app4.split('const WHATSNEW')[0].matchAll(/data:image\/webp;base64,([A-Za-z0-9+/=]+)/g)].map(m => createHash('sha256').update(Buffer.from(m[1], 'base64')).digest('hex'));
 check('1c: the turn-sign payloads (day 6a672ad0…, night e0946936…) appear nowhere in the shipped artwork', !allHashes.includes('6a672ad0bfdf258fe9a8316abaf6f788050fd0a50906f2b4b725f1214e4a0b57') && !allHashes.includes('e09469369f185b3363ba0e069b69b3dedcbccd6d91377cca4084047cbcd76b78'));
 
-// ---------- Piece 2: the pill dash joins ----------
-check('2a: the road message wears the dash join', pick.includes("'No road there - tap on a road line'") && !pick.includes('No road there. Tap on a road line'));
-check('2b: the GPS pill wears the dash join', app3.includes("'GPS signal weak - still trying'") && !allParts.includes('GPS signal weak. Still trying'));
-check('2c: the not-saved toast wears the dash join', allParts.includes("toast('Not saved - storage problem'"));
-check('2d: the restore results end with the dash join', app4.includes("' - nothing was changed'") && !app4.includes('. Nothing was changed'));
-check('2e: the restore-stopped family wears the dash join', app4.includes("'Restore stopped - your created-routes") && app4.includes("'Restore stopped - your current data") && !app4.includes('Restore stopped. Your'));
-check('2f: the update pill wears the dash join', app4.includes("'New version found - reloading…'") && !app4.includes('New version found. Reloading'));
-check('2g: the restored pill wears the dash join', app4.includes("'Backup added data to '") && app4.includes("' - reloading'") && !app4.includes('Backup restored. Reloading'));
-check('2h: the storage family wears the dash join', app3.includes("'Storage problem - the note could not be saved'") && save.includes("'Storage problem - the route could not be saved'") && !allParts.includes('Storage problem. The'));
-check('2i: the clean-started warnings wear the dash join', app3.includes("'Clean started - warning: the ") && !app3.includes('Clean started. Warning'));
-check('2j: the cancel-erased pill wears the dash join whole (base + rebuilt suffix)', app3.includes("'Start cancelled - erased here, but the trail cleanup could not be saved yet; it will keep retrying'") && app3.includes("' - the board was rebuilt from the marks made during the clean ('"));
-check('2k: the create-hint failure texts wear the dash join', cache.includes("' - tap Retry'") && pick.includes("'Loading stopped - '") && pick.includes("' - streets there may be missing'"));
-check('2l: the pack note that rides the hint wears the dash join', citydata.includes("'The app’s street library didn’t load - loading from the street service instead'") && !citydata.includes('didn’t load. Loading'));
-check('2m: the location pill wears the dash join', app3.includes("'Location is off - allow location for this site in your browser settings'"));
+// ---------- Piece 2: the pill dash joins (superseded Beta 1.296: the pill family is
+// retired - the messages are cut or reworded onto the banner as headline + line) ----------
+check('2a: the road message is cut', !pick.includes('No road there'));
+check('2b: the GPS weak message is the banner pair now', app3.includes("showBanner('GPS signal weak', 'Still trying") && !allParts.includes('GPS signal weak - still trying'));
+check('2c: the not-saved toast is the banner headline now', allParts.includes("showBanner('Not saved')") && !allParts.includes('Not saved - storage problem'));
+check('2d: the restore result endings are cut', !app4.includes('Backup added') && !app4.includes('nothing was changed'));
+check('2e: the restore-stopped family is cut', !app4.includes('Restore stopped'));
+check('2f: the update pill is cut', !app4.includes('New version found'));
+check('2g: the restored pill is cut', !app4.includes('Backup added data to'));
+check('2h: the storage family is reworded onto the banner', app3.includes("showBanner('Note not saved')") && save.includes("showBanner('Route not saved'") && !allParts.includes('Storage problem - the'));
+check('2i: the clean-started warnings are cut', !app3.includes('Clean started - warning'));
+check('2j: the cancel pills are cut', !app3.includes('Start cancelled'));
+check('2k: the create-hint failure texts are cut', !cache.includes("' - tap Retry'") && !pick.includes('Loading stopped') && !pick.includes('streets there may be missing'));
+check('2l: the pack note text is cut', !allParts.includes('street library didn'));
+check('2m: the location message is the banner pair now', app3.includes("showBanner('Location is off', 'Allow location for this site in your browser settings')"));
 // The fence: the placeholder dashes were NOT normalized by this round (Andrew's
 // clarification: they stay). app3 keeps its en-dash placeholders exactly as 1.224 had them.
 check('2n: the placeholder en dashes stand untouched (the cancelled piece stays cancelled)', app3.includes("return '–'") && (app3.match(/'–'/g) || []).length >= 8 && app2.includes("'–'"));

@@ -2,7 +2,7 @@
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // both basemaps are Protomaps flavours embedded by pmstyles.js: a day/night switch is a local setStyle
 const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day'])); // MapLibre rewrites a handed style's fields: the styles are never handed over directly, every map gets a copy
-let glOk = false, mapNoteArmed = false, mapNoteOff = false, basemapDead = false, tilesOk = 0;
+let glOk = false, mapNoteArmed = false, basemapDead = false, tilesOk = 0;
 // bootMap() runs only after the intro: creation's chunks froze the animation mid-intro; registrations replay via onMapReady
 let map = null;
 const __onMap = [];
@@ -18,9 +18,8 @@ function bootMap() {
 } // tiles melt in (200 ms); ratio 2 = 4/9 the pixels, the fluidity win; full gestures stay on
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
 let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
-// the banner can land while a pill is up: a pill re-places itself when it lands (zero overlap)
-function noteMapState() { const dead = !mapNoteOff && ((mapNoteArmed && !glOk) || basemapDead); $('mapNote').classList.toggle('hidden', !dead); if (dead) { const t = $('toast'); if (t && t.classList.contains('show')) placeToast(t); } }
-$('mapNoteNo').addEventListener('click', ev => { if (!tapGuard('mapNoteNo', ev)) return; mapNoteOff = true; noteMapState(); });
+// the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears on recovery
+function noteMapState() { $('mapNote').classList.toggle('hidden', !((mapNoteArmed && !glOk) || basemapDead)); }
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 // proof the basemap is drawing: the moment a tile lands after an outage, the death notice clears itself
@@ -413,11 +412,13 @@ onMapReady(() => map.on('click', e => {
 // ===== MARKING (one finish path) =====
 let saveWarned = false; // the storage-warning episode state: one warning per failure episode; resets on the next fully successful save
 // the non-transactional path: saveAll plus the episode warning; the finish transaction calls saveAll with its own messaging
-function saveAllWarned() { const r = saveAll(); if (!r.ok) { if (!saveWarned) { saveWarned = true; toast('Storage is not saving (' + r.failedKey + ') - export a recovery backup now', 4200); } } else saveWarned = false; return r; }
+function saveAllWarned() { const r = saveAll();
+  if (!r.ok) { if (!saveWarned) { saveWarned = true; showBanner('Not saving', (r.failedKey || 'Changes') + ' could not be saved - export a recovery backup now'); } }
+  else saveWarned = false; return r; }
 // callers that announce an outcome branch on the save result - since the storage-outcome object, that is the object
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; }
-// on failure, no outcome toast replaces the storage warning; if it already fired, 'not saved' is owed
-function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) toast('Not saved - storage problem', 3200); return r; }
+// on failure, no outcome banner replaces the storage warning; if it already fired, 'not saved' is owed
+function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) showBanner('Not saved'); return r; }
 function applyPiece(name, idx, side, on) { // mutation is BOARD.setSide; this wrapper fires completion feedback on the false-to-true flip, returns the name
   const t = BOARD.setSide(name, idx, side, on);
   if (t.completed) onStreetComplete(t.completed);
@@ -500,7 +501,7 @@ const NOTEEDIT = { // the note session owner: the editor's state and acts live h
   raiseActive: false, // true while the sheet is at full because the editor raised it: a user's full sheet is never lowered
   capture(el) { const openEd = el.querySelector('.noteEd textarea'); return { draft: openEd ? openEd.value : null, draftFor: openEd ? this.edFor : null }; },
   // the flush's result is kept: fresh failures ride the warning; a suppressed one is owed 'not saved'
-  flushSwitch(draft, draftFor) { clearTimeout(this.saveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) toast('Not saved - storage problem', 3200); },
+  flushSwitch(draft, draftFor) { clearTimeout(this.saveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) showBanner('Not saved'); },
   flushRebuild(draft, draftFor) { clearTimeout(this.saveTimer); this.saveTimer = 0; return setNoteText(draftFor, draft).ok; }, // setNoteText returns an OBJECT: {ok:false} is truthy, so the flush returns .ok, never the object
   scheduleSave(n, ta, hint, paintNt) { hint.textContent = 'Saving…'; clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400); }, // Beta 1.63 (audit F04): the hint tells the truth about the write
   // blur finalizes like the debounced save (same result, same hint): a failed blur save must say so
