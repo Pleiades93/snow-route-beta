@@ -1134,8 +1134,7 @@ async function renderStatus(resetStat) {
   if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null) || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(p.id).pre), null)).find(r => r && r.saved > 0) || null; $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements). Beta 1.170 (C-04): the record read falls back to ANY route's download record - through 1.169 it read only the active route's slot, so right after a route switch this line could say 'not downloaded yet' directly under a 'Downloaded' maps line for the pack another route had fetched
   // HEALTH - each row from a real signal at this moment:
   let storageOk = false;
-  try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1';
-  lsDel('snowroute.v2.healthprobe');
+  try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe');
   } catch (e) { storageOk = false;
   } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
   if (!storageOk) setHealth('stIcoStorage', 'stValStorage', 'warn', 'storage problem. Export a backup');

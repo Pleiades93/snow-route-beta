@@ -16429,6 +16429,19 @@
    "red": "gate --changed scripts/scan-parts.cjs exits 0: no receipt demanded, the scanner is invisible to the receipts gate",
    "green": "shipped JUDGE_PATHS restored byte-identical: the same gate refuses, exit 1, naming scripts/scan-parts.cjs as having no current mutation receipt",
    "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-repin-1254-r3",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "6648584380e8a8e331aaeaab3c10f3993c34ca20e0138fb5f58a978d30a160de",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802"
+   },
+   "mutation": "packTileEnum's zoom loop bound changed (z <= maxz -> z < maxz) in the wrapped loop header in app4.js, proof run, file restored byte-identical | re-issue: pins refreshed after the premise-lint adjudication rejoined the healthprobe lines in app4.js (whitespace only, AST-identical); no claim or needle value changed",
+   "red": "proof fails: check 10 convicts the changed enumeration bound (12 passed, 1 failed)",
+   "green": "proof-1254: 13 passed, 0 failed on the rejoined tree; full proof suite 95/95 re-observed at this re-issue",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }
