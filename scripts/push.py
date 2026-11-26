@@ -147,6 +147,7 @@ can be overridden with SNOW_GITHUB_HELPER. plan never touches the
 network and is what the gate fixtures exercise.
 """
 import argparse
+import difflib
 import glob as globmod
 import hashlib
 import importlib.util
@@ -422,6 +423,122 @@ def census_gate(prospective_root, instrument_root, remote, local, resolved):
     return mod.gate(prospective_root, changed)
 
 
+def _limits_module(instrument_root):
+    script = instrument_root / "scripts" / "check-pr-limits.py"
+    if not script.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("snow_check_limits", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _limits_added_lines(old_text, new_text):
+    old = [] if old_text is None else old_text.splitlines()
+    new = [] if new_text is None else new_text.splitlines()
+    out = []
+    for ln in difflib.unified_diff(old, new, lineterm="", n=0):
+        if ln.startswith("+") and not ln.startswith("+++"):
+            out.append(ln[1:])
+    return out
+
+
+def _limits_verdict(mod, changed, labels):
+    """changed: [(path, old_text, new_text)]. The rules and their
+    limits are check-pr-limits.py's own - this gate only feeds it
+    the push's diff (one push is one commit, so the size rule is
+    judged per push). CI stays the authority on the real labels;
+    --labels declares them for this local pre-check only."""
+    errors = []
+    product = 0
+    for path, old_text, new_text in changed:
+        if new_text is not None and mod.is_product_path(path):
+            product += len(_limits_added_lines(old_text, new_text))
+        if old_text is None and new_text is not None \
+                and "/" not in path and path not in mod.ROOT_ALLOWLIST:
+            errors.append(f"{path}: new file at the repo root outside "
+                          "the allowlist (ROOT_ALLOWLIST)")
+        if path in mod.GENERATED_EXEMPT or new_text is None:
+            continue
+        for text in _limits_added_lines(old_text, new_text):
+            if len(text) > mod.LINE_CHAR_LIMIT:
+                errors.append(f"{path}: added line of {len(text)} chars "
+                              f"(limit {mod.LINE_CHAR_LIMIT})")
+            words = mod.comment_words(path, text)
+            if words is not None and words > mod.COMMENT_WORD_LIMIT:
+                errors.append(f"{path}: added comment line of {words} "
+                              f"words (limit {mod.COMMENT_WORD_LIMIT})")
+    if product > mod.SIZE_LIMIT and mod.LARGE_LABEL not in labels:
+        errors.append(f"this push adds {product} product lines (limit "
+                      f"{mod.SIZE_LIMIT}) without the {mod.LARGE_LABEL} "
+                      "label - the label is applied by Andrew or the "
+                      "lead, never by the change's author")
+    return errors, product
+
+
+def limits_gate_plan(root, resolved, labels):
+    """Plan mode judges the working tree against the local git
+    HEAD - never the network. No git HEAD: say so, never silent."""
+    mod = _limits_module(root)
+    if mod is None:
+        print("LIMITS GATE SKIPPED: scripts/check-pr-limits.py is not "
+              "in this tree (it predates the gate)")
+        return None
+    probe = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                           capture_output=True, text=True)
+    if probe.returncode != 0:
+        print("LIMITS GATE SKIPPED (plan): no local git HEAD to "
+              "diff against")
+        return None
+    changed = []
+    for p in resolved:
+        new_text = (root / p).read_text(errors="replace") \
+            if (root / p).is_file() else None
+        got = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{p}"],
+                             capture_output=True, text=True)
+        old_text = got.stdout if got.returncode == 0 else None
+        if old_text != new_text:
+            changed.append((p, old_text, new_text))
+    errors, product = _limits_verdict(mod, changed, labels)
+    if errors:
+        return "the PR limits fail locally: " + "; ".join(errors)
+    print(f"LIMITS GATE: {len(changed)} changed file(s) within the PR "
+          f"limits ({product} product line(s) of {mod.SIZE_LIMIT})")
+    return None
+
+
+def limits_gate_push(root, gh, branch, resolved, labels):
+    """Push mode judges against the branch's own blobs - the
+    exact diff this push will create."""
+    import base64
+    mod = _limits_module(root)
+    if mod is None:
+        print("LIMITS GATE SKIPPED: scripts/check-pr-limits.py is not "
+              "in this tree (it predates the gate)")
+        return None
+    _, remote = remote_blobs(gh, branch)
+    local = local_blob_map(root)
+    changed = []
+    base = f"/repos/Pleiades93/{REPO_SLUG}"
+    for p in resolved:
+        if remote.get(p) == local.get(p):
+            continue
+        new_text = (root / p).read_text(errors="replace") \
+            if (root / p).is_file() else None
+        old_text = None
+        if p in remote:
+            blob = gh.api("GET", f"{base}/git/blobs/{remote[p]}")
+            old_text = base64.b64decode(blob["content"]).decode(
+                "utf-8", "replace")
+        changed.append((p, old_text, new_text))
+    errors, product = _limits_verdict(mod, changed, labels)
+    if errors:
+        return "the PR limits fail locally: " + "; ".join(errors)
+    print(f"LIMITS GATE: {len(changed)} changed file(s) within the PR "
+          f"limits ({product} product line(s) of {mod.SIZE_LIMIT})")
+    return None
+
+
 def mirrors_gate(prospective_root, instrument_root):
     """The push tree's hand-maintained mirrors must agree with
     their sources (class C4 generalized; scripts/check-mirrors.py
@@ -547,7 +664,7 @@ def registry_sync_gate(prospective_root, instrument_root):
     return mod.check_gate(prospective_root)
 
 
-def do_push(root, branch, message, resolved):
+def do_push(root, branch, message, resolved, labels=()):
     err = registry_gate(root)
     if err:
         return fail(err)
@@ -556,6 +673,9 @@ def do_push(root, branch, message, resolved):
         return fail(err)
     gh, helper = helper_module()
     err = preflight_prospective(root, gh, branch, resolved)
+    if err:
+        return fail(err)
+    err = limits_gate_push(root, gh, branch, resolved, labels)
     if err:
         return fail(err)
     pairs = [f"{p}={p}" for p in resolved]
@@ -587,6 +707,9 @@ def main():
     ap.add_argument("root", type=Path)
     ap.add_argument("--branch", required=True)
     ap.add_argument("--message", required=True)
+    ap.add_argument("--labels", default="",
+                    help="comma-separated PR labels declared for the "
+                         "local limits pre-check (CI is the authority)")
     ap.add_argument("files", nargs="+")
     args = ap.parse_args()
     root = args.root.resolve()
@@ -597,9 +720,13 @@ def main():
     if err:
         return fail(err)
     print("PUSH PLAN OK: " + ", ".join(resolved))
+    labels = {x.strip() for x in args.labels.split(",") if x.strip()}
     if args.mode == "plan":
+        err = limits_gate_plan(root, resolved, labels)
+        if err:
+            return fail(err)
         return 0
-    return do_push(root, args.branch, args.message, resolved)
+    return do_push(root, args.branch, args.message, resolved, labels)
 
 
 if __name__ == "__main__":

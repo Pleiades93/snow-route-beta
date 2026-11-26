@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "6afefdda8ff3e8df3ad3e636436e675e2e5a84d33bb6460a24de3f3d9f81ba7a",
+  "canonical_registry_sha256": "c469113b9ef8fb273b65782274ff292a3f120a448cf17e42c8e5f0e3883c65f6",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1569,
-   "included": 1539,
+   "canonical": 1570,
+   "included": 1540,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13707,6 +13707,15 @@
    "id": "te-premise-blocking",
    "pattern": "continue-on-error: true",
    "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "scripts/push.py",
+   "fix": "Test-efficiency stage 3: push.py runs the PR-limits rules locally (plan vs local git HEAD, push vs the branch blobs) reusing check-pr-limits.py - an over-limit push is refused before it reaches CI; CI stays the authority on labels.",
+   "fix_id": "te-push-limits",
+   "id": "te-push-limits",
+   "pattern": "LIMITS GATE",
+   "type": "grep_present"
   }
  ]
 }

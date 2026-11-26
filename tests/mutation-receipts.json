@@ -14799,6 +14799,32 @@
    "red": "advisory era: premise-lint findings printed without failing the job (the step carried continue-on-error: true from its introduction through PR #218's runs) - a false premise in a touched drive could merge on a green-looking gate",
    "green": "this PR's own checks runs are the first blocking runs: the step passes on a parts-free diff, and the round RECORD carries the false-positive watch - the first blocking runs get reviewed before the change is called settled",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-push-limits",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "e6d9e7827c6a8c277c91a0b5e0d7b2b48cd547edee649ed622c5bfb6f43aa806",
+    "scripts/gate-fixtures/run-fixtures.py": "c5f5003aeb9d9a69f117438a77c3f545a2a16ad5332160bde4b9f3fd695fcbf8"
+   },
+   "mutation": "the limits gate disconnected from push.py's plan path (limits_gate_plan call removed)",
+   "red": "gate fixtures: the 3 planted-violation cases fail (97 pass, 3 fail) - a >240-char line, a >20-word comment and a new root file all pass plan with the gate disconnected; on the real tree, plan accepted the planted files",
+   "green": "gate fixtures 100 pass 0 fail with the gate connected; on the real tree plan refused all three plants with the checker's own phrasing and passed clean sets (LIMITS GATE line printed)",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "gate-fixtures-push-limits",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "c5f5003aeb9d9a69f117438a77c3f545a2a16ad5332160bde4b9f3fd695fcbf8",
+    "scripts/push.py": "e6d9e7827c6a8c277c91a0b5e0d7b2b48cd547edee649ed622c5bfb6f43aa806"
+   },
+   "mutation": "the limits gate disconnected from push.py's plan path - the fixtures' planted-violation cases are the check",
+   "red": "gate fixtures 97 pass 3 fail under the mutation: exactly the three refusal cases (long line, long comment, new root file) flip to exit 0",
+   "green": "gate fixtures 100 pass 0 fail on the shipped tree (the printed total was also corrected 93 -> 100: the literal had drifted 3 behind the real case count before this round)",
+   "issued": "2026-11-25"
   }
  ]
 }
