@@ -15064,6 +15064,20 @@
    "red": "no red observation applies: no assertion changed. Locally the drive's sheet-drag family (N25-N31) fails in varying subsets on BOTH the round tree and pristine base 5866b2cb the same night - rig-environmental; the cloud gate adjudicates",
    "green": "N22/N23 (the checks this file's edit touches) pass on the round tree; the drag family's local failures reproduce identically on base - see red",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive218",
+   "check": "tests/browser/drive218.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive218.mjs": "6a1b80f3c2668f08d85ff4a64fcb424c8b06fa1981be1b2fea9e0e9d3157ea91",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "Beta 1.297's title cap: the drive's 15.7 framing sat above the new 15.2 switch, where the titles no longer exist (the clones name route streets there instead)",
+   "red": "on PR #220 head 1 in CI (shard 2): drive218 12/14 - FAIL A3 and D3, title features 0 at the 15.7 frame, all other checks passing",
+   "green": "framing moved to 14.8, below the switch, claims unchanged: drive218 14/14 PASS locally on the round tree",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }
