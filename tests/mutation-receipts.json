@@ -17258,6 +17258,34 @@
    "red": "drive228 collapses to 5/21 (observed twice): every route sub-pane stop in boot and tab mode fails on the away leg - W3, W5, W9 shown, the rest of the sub-pane stops with them",
    "green": "drive228 21/21 PASS on the shipped tree; re-issued after three fixture lines were wrapped for the line-length judge (behaviour unchanged, re-run green)",
    "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive228-walk-r3",
+   "check": "tests/browser/drive228.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive228.mjs": "c7591d3c05e11f3abe5a52acbf0f45c80828cdd985aebd4ce0862548d6966b20",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb",
+    "tests/browser/create-fixture.mjs": "8fc8867722a101affddc5c69f0c0a4df379482d928b6388809017c5cd8b419cb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so the canvas carries .away on every route sub-pane again",
+   "red": "on the final form (Codex round applied): drive228 collapses to 4/21 - every route sub-pane stop fails on the away leg and the W20 coverage comparison fails with them; the pre-refactor form scored 5/21 twice",
+   "green": "drive228 21/21 PASS on the shipped tree after the Codex round; W20 separately proven to observe: removing #setAboutPane from the live DOM fails W20 alone (20/21)",
+   "issued": "2026-11-26 snow-everywhere codex round"
+  },
+  {
+   "id": "snow1301-drive228-walk-r4",
+   "check": "tests/browser/drive228.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive228.mjs": "c7591d3c05e11f3abe5a52acbf0f45c80828cdd985aebd4ce0862548d6966b20",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb",
+    "tests/browser/create-fixture.mjs": "c4de65887c38ab80ff33471adc25e0058b6011616d231e398c2464154fb390a3"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so the canvas carries .away on every route sub-pane again",
+   "red": "on the final form (Codex round applied): drive228 collapses to 4/21 - every route sub-pane stop fails on the away leg and the W20 coverage comparison fails with them; the pre-refactor form scored 5/21 twice",
+   "green": "drive228 21/21 PASS on the shipped tree after the Codex round; W20 separately proven to observe: removing #setAboutPane from the live DOM fails W20 alone (20/21). Re-issued after a comment-only compression in create-fixture.mjs drifted a pinned hash; the drive file is byte-identical to the -r3 runs",
+   "issued": "2026-11-26 snow-everywhere codex round"
   }
  ]
 }

@@ -1,4 +1,5 @@
 import { launchDrive, finish, tapById } from './harness.mjs';
+import { createFetchStub, featureStub } from './create-fixture.mjs';
 import fs from 'node:fs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 
@@ -29,11 +30,14 @@ const sample = async (menuId) => {
 };
 const trio = (s, needBg) => s.running === true && s.f2 > s.frames && s.vis === 'visible' && s.op >= 0.99 && s.away === false && (!needBg || s.menuBg === 'none');
 const paneOn = id => poll(`document.getElementById('${id}').classList.contains('on')`, 10000).then(() => true).catch(() => false);
+const judged = {};
 const stop = async (label, paneId, menuId) => {
   const on = paneId ? await paneOn(paneId) : true;
   const s = await sample(menuId);
-  ok(label + ' | ' + JSON.stringify(s), on === true && trio(s, !!menuId));
-  return on === true && trio(s, !!menuId);
+  const pass = on === true && trio(s, !!menuId);
+  if (paneId) judged[paneId] = judged[paneId] === true || pass;
+  ok(label + ' | ' + JSON.stringify(s), pass);
+  return pass;
 };
 
 // ---------- create-flow fixtures (the drive150 seam, Bordeaux only) ----------
@@ -44,33 +48,8 @@ const FIXTURE = {
     address: { city: 'Vaughan', state: 'Ontario', country: 'Canada' } }],
   overpass: { 'Bordeaux Drive': FIXDATA.overpass['Bordeaux Drive'], 'Alderson Avenue': FIXDATA.overpass['Alderson Avenue'] }
 };
-const installStub = `(() => {
-  const FIX = ${JSON.stringify(FIXTURE)};
-  const orig = window.fetch.bind(window);
-  window.fetch = (url, opts) => {
-    const u = String(url);
-    if (u.indexOf('nominatim.openstreetmap.org') >= 0) {
-      if (u.indexOf('featuretype=city') >= 0) return Promise.resolve(new Response(JSON.stringify(FIX.nominatimCity), { status: 200, headers: { 'Content-Type': 'application/json' } }));
-      return Promise.resolve(new Response(JSON.stringify(FIX.nominatim), { status: 200, headers: { 'Content-Type': 'application/json' } }));
-    }
-    if (u.indexOf('overpass-api.de') >= 0 || u.indexOf('overpass.kumi.systems') >= 0) {
-      const raw = decodeURIComponent((opts && opts.body) || '');
-      if (raw.indexOf('["highway"]') >= 0) { const els = []; for (const k of Object.keys(FIX.overpass)) els.push(...FIX.overpass[k]);
-        return Promise.resolve(new Response(JSON.stringify({ elements: els }), { status: 200, headers: { 'Content-Type': 'application/json' } })); }
-      const m = /"name"="([^"]+)"/.exec(raw);
-      const els = (m && FIX.overpass[m[1]]) || [];
-      return Promise.resolve(new Response(JSON.stringify({ elements: els }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
-    }
-    return orig(url, opts);
-  };
-  return true;
-})()`;
-const installFeatureStub = `(() => {
-  if (!map.__qrfOrig) map.__qrfOrig = map.queryRenderedFeatures.bind(map);
-  window.__fixtureRoads = [];
-  map.queryRenderedFeatures = () => window.__fixtureRoads.map(n => ({ type: 'Feature', sourceLayer: 'roads', properties: { name: n }, geometry: { type: 'LineString', coordinates: [] } }));
-  return true;
-})()`;
+const installStub = createFetchStub(FIXTURE);
+const installFeatureStub = featureStub;
 const pickCityVaughan = async () => {
   await ev(`(() => { const i = document.getElementById('crCityInput'); i.value = 'Vaughan'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
   const rows = await poll(`document.querySelectorAll('#crCityResults .routeRow').length === 1`, 10000).then(() => true).catch(() => false);
@@ -103,8 +82,9 @@ const exitCreate = async () => {
 const splashSeen = await poll(`!!document.getElementById('splash')`, 15000).then(() => true).catch(() => false);
 await poll(`!!window.__snow && window.__snow.running()`, 15000).catch(() => false);
 const sSplash = await sample(null);
-ok('W1 boot splash: the snow stands at the cold start | splash ' + splashSeen + ' ' + JSON.stringify(sSplash),
-  splashSeen === true && trio(sSplash, false));
+const splashPass = splashSeen === true && trio(sSplash, false);
+judged['splash'] = splashPass;
+ok('W1 boot splash: the snow stands at the cold start | splash ' + splashSeen + ' ' + JSON.stringify(sSplash), splashPass);
 await poll(`document.getElementById('routeMenu').classList.contains('show')`, 30000).catch(() => false);
 await stop('W2 boot rmMain (the boot picker)', 'rmMain', 'routeMenu');
 await ev(installStub);
@@ -183,8 +163,12 @@ await tapById(ev, 'aboutBack');
 await paneOn('setMainPane');
 await tapById(ev, 'setClose');
 
-ok('W20 the walk named every surface in the inventory: ' + ROUTE_PANES.length + ' route panes + ' + SET_PANES.length + ' settings panes + the splash = 13',
-  ROUTE_PANES.length === 6 && SET_PANES.length === 6);
+const livePanes = await J(`({ rm: [...document.querySelectorAll('#routeMenu .rmPane')].map(e => e.id),
+  st: [...document.querySelectorAll('#setMenu .rmPane')].map(e => e.id) })`);
+const sameSet = (a, b) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
+const covered = Object.keys(judged).filter(k => judged[k]);
+ok('W20 the walk judged every live pane: route ' + JSON.stringify(livePanes.rm) + ' settings ' + JSON.stringify(livePanes.st) + ' judged ' + JSON.stringify(covered.sort()),
+  sameSet(livePanes.rm || [], ROUTE_PANES) && sameSet(livePanes.st || [], SET_PANES) && sameSet(covered, [...ROUTE_PANES, ...SET_PANES, 'splash']));
 
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));
 finish(R, proc);
