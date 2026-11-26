@@ -748,12 +748,12 @@ const list = preloadUrlList();
     for (const u of list) { try { if (packCache ? await packCache.match(u) : await caches.match(u)) { saved++; confirmed.push(u); } } catch (e) {} }
     // pass-through copies leave the browsing cache, confirmed URLs only: an unconfirmed file must keep its copy
     if (packCache) { try { const tc = await caches.open('snowroute-tiles-v1'); for (const u of confirmed) await tc.delete(u); } catch (e) {} }
-    if (packCache && saved === list.length) lsSet(PACKMIG_KEY, packMigFingerprint(list)); // a complete download earns the completion fingerprint, so the next boot takes the fast path
+    if (packCache && saved === list.length) lsSet(PACKMIG_KEY, packMigFingerprint(list)) /* write-safe: a missing fingerprint only sends the next boot through verification */;
     fill.style.width = (list.length ? saved / list.length * 100 : 0) + '%'; // the bar settles on the CONFIRMED fraction, matching the line below
     // the record carries both counts: union saved/total and this route's own subset, so completion accounts per route
     let routeSaved = saved, routeTotal = list.length;
     if (activeRoute) { const sub = packTileUrls(activeRoute); const confSet = new Set(confirmed); routeTotal = sub.size; routeSaved = 0; for (const u of sub) if (confSet.has(u)) routeSaved++; }
-    lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length, routeSaved, routeTotal }));
+    lsSet(LS.pre, JSON.stringify({ at: Date.now(), saved, total: list.length, routeSaved, routeTotal })) /* write-safe: Status counts from the cache census; this record is only its fallback */;
     st.textContent = capHit ? 'Offline maps: saved ' + saved + ' of ' + list.length + ' files. Stopped at the ' + fmtStoreSize(OFFLINE_PACK_CAP_BYTES) + ' storage limit' : 'Offline maps: saved ' + saved + ' of ' + list.length + ' files (tiles are kept by the offline cache)'; // Beta 1.183 (storage audit §3 item 4): a cap stop is reported in the completion line's own idiom - the confirmed saved-so-far count plus the reason; what is already stored stays stored (a partial pack is a supported, disclosed state - Status renders it 'Partial')
   // when a download ends with Status on screen, its lines re-read the pack state it just wrote
   } catch (e) { st.textContent = 'Preload failed. Check connection and retry.'; } finally { preloadRunning = false; syncWake(); releasePack(); if ($('setStatusPane').classList.contains('on')) renderStatus(false); }
@@ -916,7 +916,9 @@ $('setClose').addEventListener('click', () => $('setMenu').classList.remove('ope
 $('setBack').addEventListener('click', () => { const onBackup = $('setBackupPane').classList.contains('on'); if (onBackup && xMode === 'text') showX('restore'); else if (onBackup && xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane. Beta 1.170 (Carbon fix round Phase 2, C-06): the xMode walk belongs to the BACKUP pane alone - through 1.169 it ran wherever Back was pressed, so with xMode left at 'text'/'restore' by an earlier Backup visit, Back on any other Settings pane reset the hidden Backup view instead of returning to the main pane.
 $('exportBtn').addEventListener('click', ev => { if (!tapGuard('exportBtn', ev)) return; openExport(); });
 function noteExported() { // the 'Last backup' stamp rides the export record as one added field, stamped only at a successful hand-off
-  try { const st = parseJ(lsGet(LS.exp), {}); st.exportedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st)); } catch (e) { /* the line is a courtesy - a failed stamp never breaks an export */ }
+  try { const st = parseJ(lsGet(LS.exp), {}); st.exportedAt = Date.now(); lsSet(LS.exp, JSON.stringify(st))
+    /* write-safe: the backup already succeeded; only its timestamp can go stale */;
+  } catch (e) { /* the line is a courtesy - a failed stamp never breaks an export */ }
 }
 async function shareBackup() { // one tap backs up and asks where to save (file share, text share, download); cancelling is a shrug
   const b = buildBackup();

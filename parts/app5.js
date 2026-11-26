@@ -174,7 +174,8 @@ async function migratePack() { let migRelease = () => {}; // the move, honestly:
       try {
         const fk = await oc.keys();
         if (fk.length >= list.length) lsDel(PACKMIG_CENSUS_KEY);
-        else if (!unweighed) lsSet(PACKMIG_CENSUS_KEY, JSON.stringify({ fp, set: packCensusFingerprint(fk.map(r => r.url)), n: fk.length, bytes: migBytes }));
+        else if (!unweighed) lsSet(PACKMIG_CENSUS_KEY, JSON.stringify({ fp, set: packCensusFingerprint(fk.map(r => r.url)), n: fk.length, bytes: migBytes }))
+          /* write-safe: a missing census skips the recognition shortcut; the full check still runs */;
       } catch (e) {}
     }
     return { ok: flagOk, flag: flagOk ? fp : null, pruneOk };
@@ -400,7 +401,7 @@ async function deleteRoute(id) { // order is the safety: definition first, verif
     if (legacy[id]) {
       const shadow = { ...legacy }; delete shadow[id];
       const okShadow = Object.keys(shadow).length ? (lsSet(USERPACKS_KEY, JSON.stringify(shadow)) && !(readUserPacks() || {})[id]) : (lsDel(USERPACKS_KEY) && localStorage.getItem(USERPACKS_KEY) === null);
-      if (!okShadow) { await upPut(id, pack); showBanner('Route not deleted', 'It stays in your list'); return; }
+      if (!okShadow) { await upPut(id, pack) /* write-safe: the legacy record still holds the route and re-drains on boot */; showBanner('Route not deleted', 'It stays in your list'); return; }
     }
   }
   delete userPackCache[id]; // the backup picture joins the commit

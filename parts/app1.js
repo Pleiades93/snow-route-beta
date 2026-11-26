@@ -60,7 +60,7 @@ const PACK_TILES_MAX = 20000; // the tile-URL iteration budget: a worldwide-box 
   // parity before committing: every legacy field must be present in the slot; an unreadable field blocks it
   for (const f of ROUTE_FIELDS) { const lg = migGet(LEGACY_KEYS[f]); if (lg === undefined) return false; if (lg !== null) { const sl = migGet(rk[f]); if (sl === undefined || sl === null) return false; } }
   if (!saveProg()) return false;
-  lsSet(rk.mig, '1'); // commit: if this write fails, next boot re-runs the pass and retries the marker - safe either way
+  lsSet(rk.mig, '1') /* write-safe: if this write fails, next boot re-runs the pass and retries the marker */;
   lsDel(rk.migfill); // the marker governs: a failed delete leaves the fill record inert (the marker short-circuits before it is read)
   return true;
 }
@@ -760,14 +760,14 @@ const PERSIST = {
     const saveFixLogFn = lateFn('saveFixLog');
     // the fix log flushes on the trail's cadence (re-stringifying it per fix is out); forced flushes always write
     if (this.flags.fixlog && saveFixLogFn && (force || Date.now() - this.windows.fixlog > TRAIL_FLUSH_MS) && saveFixLogFn().ok) { this.flags.fixlog = false; this.windows.fixlog = Date.now(); }
-    if (this.flags.start) saveStart(); // saveStart re-arms the flag itself on failure
+    if (this.flags.start) saveStart() /* write-safe: saveStart re-arms its own PERSIST flag on failure */;
     const saveSnapFn = lateFn('saveSnap');
-    if (this.flags.snap && saveSnapFn) saveSnapFn(); // the cancel snapshot retries on the same heartbeat (saveSnap, app3, manages its own flag via the doorway)
+    if (this.flags.snap && saveSnapFn) saveSnapFn() /* write-safe: saveSnap manages its own flag and retries on the heartbeat */;
     const persistRunDistFn = lateFn('persistRunDist');
     if (force && runStart && persistRunDistFn) persistRunDistFn(true); // a forced flush is the page's last word: the counter banks with it, gated on a live run
     const bankMirrorFn = lateFn('bankRunDistMirror');
     if (runStart && bankMirrorFn) bankMirrorFn(); // the second copy writes only from this flush path (a different writer/cadence), so the records fail independently
-    if (this.flags.primary) saveAll(); // a failed primary save retries here: saveAll clears the flag itself when a save lands whole
+    if (this.flags.primary) saveAll() /* write-safe: saveAll clears its own flag only when a save lands whole */;
   },
 };
 // dirty-flag access: app3/app4 touch the flags only through these three functions, the retry machinery's one doorway

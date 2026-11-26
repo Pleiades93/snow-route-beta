@@ -607,8 +607,8 @@ function renderStreets() { // tap a street's name area to open its note editor (
       // a failed flush says so, never 'Saved': the editor tells the truth about the finalized save
       const hint = ed.querySelector('.nhint'); if (noteFlushFailed && n === draftFor) hint.textContent = 'Not saved - Storage problem'; else if (noteFlushed && n === draftFor) hint.textContent = 'Saved \u2713';
       ta.addEventListener('input', () => { NOTEEDIT.scheduleSave(n, ta, hint, paintNt); });
-      ta.addEventListener('blur', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt); });
-      ed.querySelector('.nedSave').addEventListener('click', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt); });
+      ta.addEventListener('blur', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt) /* write-safe: saveNow checks its write and paints the outcome in the hint */; });
+      ed.querySelector('.nedSave').addEventListener('click', () => { NOTEEDIT.saveNow(n, ta, hint, paintNt) /* write-safe: saveNow checks its write and paints the outcome in the hint */; });
       ed.querySelector('.nedDone').addEventListener('click', () => { NOTEEDIT.close(); renderStreets(); });
       el.appendChild(ed);
     }

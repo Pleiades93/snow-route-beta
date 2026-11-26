@@ -366,7 +366,7 @@ const RUN = {
 // Start is a hard exit: the shown point is back on the true position before the first fix
 function startClean() { snapReset();
   RUN.begin(); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail');
-  saveSnap(); noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake();
+  saveSnap() /* write-safe: the writer arms its own retry flag on failure */; noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake();
   if (!okStart.ok) showBanner('This clean is not saving', 'Storage problem - keep a backup of your marks'); checkStale(); } // the clean still starts; the marker and snapshot saves ride silently
 // Cancel start erases everything the run recorded and stores nothing: only Finish keeps history
 function cancelStart() {
@@ -390,7 +390,7 @@ function cancelStart() {
     RUN.end();
     markDirty('trail'); markDirty('sess');
   }
-  saveAllWarned(); PERSIST.flush(true);
+  saveAllWarned() /* write-safe: the wrapper warns on failure itself */; PERSIST.flush(true);
   if (wasRunGps) stopGps();
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
   updateCount(); syncWake();
@@ -579,7 +579,7 @@ function finishRun() {
   // no line to force-draw any more; the window itself was cleared with the counter records above
   stopGps(); deselect();
   // the sides write already landed; this pass carries the metadata - its details retry silently on the next save
-  saveAll();
+  saveAll() /* write-safe: its details retry on the next save through the primary flag */;
   finishChange();
   // only on the committed path: failures leave the run intact; the chime and vibration play here
   onFinishFeedback();

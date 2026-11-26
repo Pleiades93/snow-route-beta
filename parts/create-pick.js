@@ -337,7 +337,7 @@ function crPickCity(it) {
     crCity = { name, lat, lon, bbox };
     crAreaGuess = name;
     if (draft && !draft.area) draft.area = name;
-    try { lsSet(LS_GLOBAL.lastArea, name); } catch (e) {}
+    try { lsSet(LS_GLOBAL.lastArea, name) /* write-safe: only the next area suggestion can be stale */; } catch (e) {}
     crEnterPickFromCity();
   };
   if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // the reset is guarded: crPickCity is the one landing both doors share; a first pick keeps its draft

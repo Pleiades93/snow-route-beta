@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "d42603f30ae656df427b5a24f06ae320ca869012436b4f0b0039775f13d86d4d",
+  "canonical_registry_sha256": "3ca305feb1d64ceb12a16806d13f75ac5f147e1044da8b44bc2ab1906d547f09",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -1009,7 +1009,7 @@
    "file": "parts/app1.js",
    "fix": "A failed start-key DELETE retries through the flush (startDirty \u2014 Beta 1.92, F05): a delete that silently failed resurrected a finished run's start on the next load.",
    "id": "beta-start-delete-retry",
-   "pattern": "if (this.flags.start) saveStart(); // saveStart re-arms the flag itself on failure",
+   "pattern": "if (this.flags.start) saveStart() /* write-safe: saveStart re-arms its own PERSIST flag on failure */;",
    "type": "grep_present"
   },
   {
@@ -1113,7 +1113,7 @@
    "file": "parts/app1.js",
    "fix": "The migration COMMITS with its marker only after the copy lands \u2014 an unmarked migration re-runs and (no-wipe notwithstanding) re-judges data it already moved.",
    "id": "beta-migration-marker-commit",
-   "pattern": "lsSet(rk.mig, '1'); // commit: if this write fails",
+   "pattern": "lsSet(rk.mig, '1') /* write-safe: if this write fails",
    "type": "grep_present"
   },
   {
@@ -1277,7 +1277,7 @@
    "file": "parts/app4.js",
    "fix": "The pack completion state is a FINGERPRINT of the manifest (packMigFingerprint) \u2014 a bare boolean flag cannot tell 'complete for THIS manifest' from 'complete for a stale one'.",
    "id": "beta-packmig-fingerprint",
-   "pattern": "lsSet(PACKMIG_KEY, packMigFingerprint(list));",
+   "pattern": "lsSet(PACKMIG_KEY, packMigFingerprint(list)) /* write-safe:",
    "type": "grep_present"
   },
   {
@@ -8451,7 +8451,7 @@
    "fix": "Beta 1.221 GATE FIX (Codex P2, PR #98): cutting the 'Clean started' success pill left startClean's warning chain with an UNGUARDED final branch - every healthy Start showed the false 'cancel safety snapshot could not be saved' warning. The branch is gated on !okSnap.ok again; the healthy path is silent, the warning fires only on a real snapshot-save failure. Regressions: drive146 S1 (healthy Start silent) + S2 (snap write forced to fail, warning fires). Re-pinned in the popup-round2 round (Beta 1.296): the snapshot warning chain is CUT by the notification audit (rows 9/10 ride silently); the start still saves the snapshot and session marker silently, and the one start survivor is the saveAllWarned banner.",
    "fix_id": "startclean-snap-guard",
    "id": "gts-snap-guard",
-   "pattern": "saveSnap(); noteSessionStart();",
+   "pattern": "saveSnap() /* write-safe: the writer arms its own retry flag on failure */; noteSessionStart();",
    "type": "grep_present"
   },
   {

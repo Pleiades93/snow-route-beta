@@ -39,8 +39,9 @@ async function saveDraftRoute() {
   userPackCache[pack.id] = pack; // the backup picture joins the commit (create-packs.js: the cache moves only at verified commit points)
   ROUTE_PACKS.push(pack); // live in the runtime list at once - listed and switchable without a reload
   // a new route's preload record is honest: nothing downloaded yet; Status offers the (grown) union download
-  try { lsSet(routeKeys(pack.id).pre, JSON.stringify({ at: 0, saved: 0, total: preloadUrlList().length, routeSaved: 0, routeTotal: packTileUrls(pack).size })); } catch (e) {}
-  if (area) lsSet(LS_GLOBAL.lastArea, area);
+  try { lsSet(routeKeys(pack.id).pre, JSON.stringify({ at: 0, saved: 0, total: preloadUrlList().length, routeSaved: 0, routeTotal: packTileUrls(pack).size }))
+    /* write-safe: every reader treats a missing record as this same zero state */; } catch (e) {}
+  if (area) lsSet(LS_GLOBAL.lastArea, area) /* write-safe: only the next area suggestion can be stale */;
   const wasBoot = !routeLoaded, newId = pack.id;
   exitCreate();
 
