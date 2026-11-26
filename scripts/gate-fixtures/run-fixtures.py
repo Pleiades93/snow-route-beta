@@ -375,6 +375,15 @@ with tempfile.TemporaryDirectory() as td:
     w(limroot / "plant.txt", "hello\n")
     check("push plan: a new file at the repo root is refused (limits gate)",
           run_push(limroot, ["docs/x.md", "plant.txt"]), 1)
+    rep_base = "head();\n" + "route();\n" * 400
+    rep_one = "head2();\n" + "route();\n" * 400
+    check("push plan: one changed line in a 400-line repetitive file counts as one (limits gate)",
+          run_push(limits_tree("limrep", "flags.js", rep_base, rep_one),
+                   ["flags.js"]), 0)
+    rep_many = "head();\n" + "".join(f"route{i}();\n" for i in range(400))
+    check("push plan: 400 genuinely changed product lines are refused (limits gate)",
+          run_push(limits_tree("limrep2", "flags.js", rep_base, rep_many),
+                   ["flags.js"]), 1)
     omit = push_tree2(t / "omit", parts={"a.js": "A2", "b.js": "B2"}, changelog="## Beta 1.0\n",
                       tracker="A2B2", index="shell Beta 1.0 A2B2",
                       branch_parts={"a.js": "A", "b.js": "B"})
@@ -1301,6 +1310,6 @@ with tempfile.TemporaryDirectory() as td:
     check("pr-limits: the labelled control passes in the same "
           "shallow checkout", run_limits(clone, b, "large-change"), 0)
 
-total = 100
+total = 102
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

@@ -437,9 +437,13 @@ def _limits_added_lines(old_text, new_text):
     old = [] if old_text is None else old_text.splitlines()
     new = [] if new_text is None else new_text.splitlines()
     out = []
-    for ln in difflib.unified_diff(old, new, lineterm="", n=0):
-        if ln.startswith("+") and not ln.startswith("+++"):
-            out.append(ln[1:])
+    # autojunk=False: the default heuristic calls popular lines
+    # junk in big repetitive files and counts unchanged lines as
+    # added (400 identical lines, one replaced: 401 vs git's 1).
+    sm = difflib.SequenceMatcher(None, old, new, autojunk=False)
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag in ("insert", "replace"):
+            out.extend(new[j1:j2])
     return out
 
 

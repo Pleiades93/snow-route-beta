@@ -14901,6 +14901,33 @@
    "red": "gate fixtures 97 pass 3 fail under the mutation: exactly the three planted-violation refusal cases flip to exit 0",
    "green": "gate fixtures 100 pass 0 fail on the shipped tree",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-push-limits-r3",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "91f84ab1ced9c0b60bb453ae7b8c7c237d7ad298b3fd138ec5e9d1514dd59c25",
+    "scripts/gate-fixtures/run-fixtures.py": "7cd2e504d251f002cf28fe293326e61bcd955a5ec1b3ca52eac6b999da3614fa",
+    "scripts/check-pr-limits.py": "b91c75ffe61969ec7d60982c839618011da4a170e767964af415a8f83833380c"
+   },
+   "mutation": "two mutations: (1) the limits gate disconnected from the plan path; (2) _limits_added_lines with difflib's default autojunk heuristic restored",
+   "red": "(1) gate fixtures 97 pass 3 fail - the planted violations pass plan; (2) the repetitive-file case fails: 400 identical lines with one replaced count as 401 added (git counts 1) and the size rule refuses a one-line change - both observed 2026-11-25",
+   "green": "gate fixtures 102 pass 0 fail (the two repetitive-file cases added this round pin the autojunk shape); unit plants pass: one changed line counts as one, matching git",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "gate-fixtures-push-limits-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "7cd2e504d251f002cf28fe293326e61bcd955a5ec1b3ca52eac6b999da3614fa",
+    "scripts/push.py": "91f84ab1ced9c0b60bb453ae7b8c7c237d7ad298b3fd138ec5e9d1514dd59c25"
+   },
+   "mutation": "the limits gate disconnected from push.py's plan path, and separately the autojunk heuristic restored in _limits_added_lines; re-issue of -r2 after the autojunk fix and two new cases",
+   "red": "under (1): 97 pass 3 fail (the planted violations); under (2): the one-changed-line repetitive case fails (401 counted, size refusal)",
+   "green": "gate fixtures 102 pass 0 fail on the shipped tree",
+   "issued": "2026-11-25"
   }
  ]
 }
