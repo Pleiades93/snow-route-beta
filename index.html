@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-LJEs3+CXBGgF3vJcvj7HhO6DiGVnP3sD2Me8Y+JBzTr2UdnBtFAXfL6ZMsNBRHN+' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-xMOZWHBhMNJRu5ZtP0NitHQR+UOSLn0bwdLrKk/j0ILVe76a/+ViMbRfWRproEag' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-LJEs3+CXBGgF3vJcvj7HhO6DiGVnP3sD2Me8Y+JBzTr2UdnBtFAXfL6ZMsNBRHN+' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-xnAxXMdMB+96jRLl9V7TX2S+qm/N5DJXK9AbWEMF/4jREHXsIMCLn/Io/1As/H6E' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -344,6 +344,7 @@
   #selPop:not(.hidden) { animation: menuRiseC var(--anim-dur) var(--ease-open); } /* centred: its rise keyframes must carry the -50% X shift or the pop-up jumps sideways mid-animation */
   #selPop.leaving { animation: menuRiseCOut 180ms var(--ease-close) forwards; }
   #mapNote.leaving { animation: menuRiseOut 180ms var(--ease-close) forwards; }
+  .modal.leaving, #confirmPill.leaving, #selPop.leaving, #mapNote.leaving { pointer-events: none; } /* a leaving surface takes no taps: its controls die with the dismissal, not 180ms later */
   @keyframes menuRiseCOut { to { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuRiseC { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.97); } }
   @keyframes menuFade { from { opacity: 0; } }

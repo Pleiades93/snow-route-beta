@@ -15465,6 +15465,30 @@
    "red": "the .sheet segment removed from the block: check 1 fails alone, 14/15",
    "green": "proof-1298 on the round tree: 15/15; full run-proofs 95/95; a rendered probe under emulated reduced motion also passed 5/5 (computed transitions 0s across sheet/fill/switch/pill/glyph/press/arrow, the banner resting visible then leaving on its timer, a modal entering with no animation and hiding at once)",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive192",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "3a9ae854b2f2ce6bac16428ea5fc3693e80be910c056e60d2b9868ee59089310"
+   },
+   "mutation": "new check P6b (Codex P2 fix on PR #221): a surface dismissed through the round's 180ms exits must take no taps while it leaves - the confirmation reads pointer-events none and a hit test at its danger button lands outside the pill",
+   "red": "the .leaving pointer-events rule removed: P6b fails with pe auto and the hit inside the pill (47/52; the other failures are the detents checks that fail identically on the pristine base on this rig)",
+   "green": "drive192 on the round tree: P6b passes (51/52 and 49/52 across two runs; only the base-identical detents failures remain, adjudicated pre-existing environmental)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive192-r2",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "399b674e12d2239f231892fd9f409b5d24c4ad04a3bb069186c4ccb0cfff3e8c"
+   },
+   "mutation": "check P6b (a leaving surface takes no taps; Codex P2 fix) - re-issued after a formatting-only split of its read lines for the PR line limits; semantically identical to transitions-1298-drive192",
+   "red": "the .leaving pointer-events rule removed: P6b fails with pe auto and the hit inside the pill",
+   "green": "drive192 on the round tree: P6b passes (only the base-identical detents failures remain, adjudicated pre-existing environmental)",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }
