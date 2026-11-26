@@ -15025,6 +15025,45 @@
    "red": "on base parts: 36/38 - FAIL N4 (clone min 15, ramp 15,0,16,1) and V2 (13 mid-band samples on each group across the journey)",
    "green": "on the 1.297 tree: drive219 38/38 PASS (V2: zero mid-band samples, window crossed)",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219-r2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "a70c0d17fc0dc2cca272c75269326013243344cfb3b4d016ae4f97930072d36a",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "the 800 ms dwell tree (fix 3) with drive219's pre-round staging: phase F panned on the loaded/not-moving poll plus a fixed sleep, phase H staged its unload 900 ms after the pick",
+   "red": "on the 800 ms tree with the old staging: F1 failed twice (marginal titles Boddy/Bayside/Julian and two more read as pan losses - the flight now launches 700 ms earlier, before the prefetch warms the fit view, so placement is still churning when the pan starts); the 1500 ms tree passed the same staging the same night",
+   "green": "with the completion poll (same title set across samples 500 ms apart) before the pan and the phase H sleep inside the 800 ms dwell: drive219 38/38 PASS on the 800 ms tree",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive130-r2",
+   "check": "tests/browser/drive130.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive130.mjs": "64b3e937f2305a7228d31de8c2001d8ac31859a1604c617b5a2d8c63fe3370e9",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "comment-only re-point: the intro-gate header now names the 800 ms timer (1500 before 1.297); the gate's 6000 ms elapsed bound is unchanged and still fires late, never early (800 + 3000 + margin); no check logic changed",
+   "red": "no red observation applies: no assertion changed - the L2/L3 red on the base tree is receipt round3-1297-drive130's record",
+   "green": "on the final 1.297 tree: drive130 11/11 PASS",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive145",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive145.mjs": "0d856652fc7cc8a2e9c97fd1ec8e5351691aa322dd4e92ecd62b88b905f62334",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230"
+   },
+   "mutation": "comment-only re-point: the N23 staging comment now names the flight start at +800 ms (1500 before 1.297); the 2200 ms sleep still lands mid-flight (flight ends at +3800 ms); no check logic changed",
+   "red": "no red observation applies: no assertion changed. Locally the drive's sheet-drag family (N25-N31) fails in varying subsets on BOTH the round tree and pristine base 5866b2cb the same night - rig-environmental; the cloud gate adjudicates",
+   "green": "N22/N23 (the checks this file's edit touches) pass on the round tree; the drag family's local failures reproduce identically on base - see red",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }

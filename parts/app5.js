@@ -327,8 +327,8 @@ function introToRoute() { // a pick opens wide and flies in slowly as the splash
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above
   prefetchIntroTiles(b, fit.zoom); // after the wide jump lands, before the dwell: the destination's tiles stream while the wide view sits
-  // 1500 ms: exit finished, the wide view has sat; the flight in tilts to the 45-degree default
-  setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 1500);
+  // Let destination tiles prefetch during the splash fade so the flight starts as it clears.
+  setTimeout(() => { if (!map || liGen !== loadInGen) return; try { map.flyTo({ center: fit.center, zoom: fit.zoom, pitch: 45, duration: 3000, curve: 1.2, essential: false }); } catch (e) {} }, 800);
 }
 let loadInGen = 0;
 

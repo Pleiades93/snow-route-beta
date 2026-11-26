@@ -222,6 +222,17 @@ ok('A6 THE SYNC AT THE SETTLED FRAME: titles and basemap road names complete in 
 // ================= Phase F: movement after the load-in (same page) =================
 const fTears0 = A.tears.length;
 const fToken = srcTokens(A.samples)[0];
+// The pan waits for the placement to COMPLETE, not just cross 30 titles:
+// with the 800 ms dwell (Beta 1.297) the flight launches before the
+// prefetch has warmed the fit view on a slow rig, and the marginal
+// titles are still churning when the pan used to start - F1 read their
+// churn as pan losses twice in the round-3 investigation, while the
+// 1500 ms tree passed. Stable = the same title set across samples at
+// least 500 ms apart, the phase-U completion rule applied here.
+await poll(`(() => { try { const s = window.__li.samples; if (s.length < 2) return false; const a = s[s.length - 1];
+  for (let i = s.length - 2; i >= 0; i--) { if (a.t - s[i].t >= 500) { const b = s[i];
+    return a.titles.length >= 30 && b.titles.length === a.titles.length && a.titles.every((n) => b.titles.includes(n)); } }
+  return false; } catch (e) { return false; } })()`, 30000);
 await ev(`(() => { map.panBy([140, 60], { duration: 800 }); return true; })()`);
 await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 30000);
 await sleep(2200);
@@ -412,7 +423,7 @@ await bootToPicker();
 await forceRouteTitlesOn(ev, poll);
 await ev(INSTRUMENT);
 await pickRoute();
-await sleep(900); // inside the dwell - the window is wide open
+await sleep(500); // inside the dwell (800 ms since Beta 1.297) - the window is wide open
 await ev(`(() => { unloadRouteToBoot(); return true; })()`); // the delete path's own unload: nothing stands over the boot view - there is no hold to strand and no cure to release
 await sleep(800);
 await pickRoute();

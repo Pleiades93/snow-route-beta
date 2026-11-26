@@ -46,7 +46,7 @@ const jread = async (expr) => {
 };
 // 2026-11-09 (L7 root hardening, part 1 - the camera thief; tests-only): picking the
 // route started introToRoute's choreography (app4): a jumpTo to the wide view, then -
-// on a 1500 ms timer - a 3000 ms flyTo to the fitted view. bootThrough's readiness
+// on an 800 ms timer (1500 before Beta 1.297) - a 3000 ms flyTo to the fitted view. bootThrough's readiness
 // poll reads !map.isMoving(), which holds BEFORE the timer fires: the flight is
 // still PENDING and invisible to every readiness signal, so a drive that jumps the
 // camera inside that window has its view stolen back mid-check (diag4 trace, run
@@ -56,8 +56,8 @@ const jread = async (expr) => {
 // straddled the timer - the family's bimodality across identical code. The gate
 // below waits for the choreography's own terminal state before ANY check reads
 // the map: the flight's moveend, or - when the flight already ended before this
-// listener armed, or never ran - the choreography's own constants (1500 ms timer
-// + 3000 ms flight + margin) elapsed since bootThrough returned (which is after
+// listener armed, or never ran - the choreography's own constants (800 ms timer
+// + 3000 ms flight + margin, inside the same 6000 ms bound) elapsed since bootThrough returned (which is after
 // the pick, so the elapsed test can only fire late, never early) with the map at
 // rest. An expired gate fails the drive here, like bootThrough's own readiness.
 await ev(`(() => { window.__introMoved = false; map.once('moveend', () => { window.__introMoved = true; }); return true; })()`);

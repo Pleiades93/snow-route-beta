@@ -18641,6 +18641,76 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-final",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "addStack",
+     "glUnifyLabels",
+     "introToRoute"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/app5.js",
+    "parts/engine.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:addStack:parts/engine.js:init",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - addStack() is called from init in parts/engine.js",
+     "status": "covered",
+     "note": "init is addStack's caller inside the engine; the 1.297 spec change (cap 15.2, fade stops deleted) lives inside addStack's layer construction, so every stack build carries it; proof-1263 check 2, proof-anchors 4a, drive130 L2, drive219 N2 grade it"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the app1 top-level hookup installs glUnifyLabels as the basemap pass; the clone floor (routeLabelMinZoom 15.2), the deleted fade ramp, the zoom-range guard and the spacing 250 write live here; proof-anchors 4b, proof-1263 checks 5/6, drive130 L3, drive214 M4, drive219 N4 grade it"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "crSetBackdrop re-runs the pass as creation opens and closes: entering create mode removes the clones (no handover while creating) and exiting rebuilds them at the 15.2 floor; drive219 phase I grades create mode; the create-state gate itself is unchanged"
+    },
+    {
+     "id": "caller:introToRoute:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - introToRoute() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "loadRoute is introToRoute's only caller; the dwell inside introToRoute is 800 ms (was 1500) and the flight it launches is byte-identical - same flyTo, curve, pitch, duration, prefetch; proofs 1266/1270 pin the branch, drive130's intro gate and drive145 N22/N23 grade the choreography, drive219 phases A/F/H grade the load-in window"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "9de3c33c7c5831a7d0b66a9afcba3bf8d171a77beb3e1069eab2ae7a6fc08d28",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af",
+    "parts/app3.js": "d50467b5994bdeb52c145de352224dfe389770e3aaf089415a66a0eb166737f4",
+    "parts/app4.js": "76aa7948ea241a42c382a5c25a7cc030e40a3272455cd4994714e9e27f8a0135",
+    "parts/app5.js": "f1e22dc00674f45dfda113e45a624a9fe3133c7c69c78a4ac4f07380d344b230",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "3e9893c5977bb015dce5dd91df123085da5fa9e15dac6abee09e130dafb57dbc",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "22f718209cdb163dd732094758e372b124e2b68ccf6357adfa92d6e234671ebe",
+    "parts/head.html": "38787dd9f21d404645ead44a1168c871767fce20593d7a77971f1e39cb62fa93",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }

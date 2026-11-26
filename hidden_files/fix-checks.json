@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "a1ce9e3a0930df7551f9f8ba06983fc8996830d4b5619f9881630f5945c16a51",
+  "canonical_registry_sha256": "3adaaf4158f0aff6194656264f7f794fdfe9b5f2931e467126410221b37b4349",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1573,
-   "included": 1543,
+   "canonical": 1574,
+   "included": 1544,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13743,6 +13743,15 @@
    "id": "labelswitch1297-title-no-ramp",
    "pattern": ", 15, 1, 16, 0]",
    "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "parts/app5.js",
+   "fix": "Beta 1.297 (load-transition-1297): the intro dwell is 800 ms, so the unchanged 3000 ms flyTo starts as the menu and splash finish closing - the 1500 ms dead-air gap is gone (Andrew's decision, 2026-11-25). If this pattern disappears the dwell has moved; re-decide, never drift silently.",
+   "fix_id": "load-transition-1297",
+   "id": "loadtransition1297-dwell-800",
+   "pattern": "essential: false }); } catch (e) {} }, 800);",
+   "type": "grep_present"
   }
  ]
 }
