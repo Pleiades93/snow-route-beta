@@ -14888,6 +14888,19 @@
    "red": "PR #213 (2026-11-25): the large-change label added mid-round did not take effect on a re-run - the payload labels were replayed until a new head was pushed",
    "green": "the live read ran in PR #219's own build-and-test (its first exercise) and the limits step judged the real labels; gate fixtures pass with the step text",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "gate-fixtures-push-limits-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "798c32406ab6602d04d22e3717370371743303d5694421590baa8a05fd407d17",
+    "scripts/push.py": "68db552c945937b2e19b68da66a9c3e6b2fd71907d3945697de2574b360b1074"
+   },
+   "mutation": "the limits gate disconnected from push.py's plan path; re-issue of gate-fixtures-push-limits after a comment trim in run-fixtures.py",
+   "red": "gate fixtures 97 pass 3 fail under the mutation: exactly the three planted-violation refusal cases flip to exit 0",
+   "green": "gate fixtures 100 pass 0 fail on the shipped tree",
+   "issued": "2026-11-25"
   }
  ]
 }

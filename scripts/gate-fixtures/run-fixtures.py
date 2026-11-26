@@ -344,9 +344,8 @@ with tempfile.TemporaryDirectory() as td:
                        tracker="A2B", index="shell Beta 1.0 A2B")
     check("push plan: a parts push with fresh derived artifacts passes",
           run_push(t / "fresh", ["parts/a.js", "index.html"]), 0)
-    # The limits gate (test-efficiency stage 3): plan mode judges
-    # the working tree against the local git HEAD, so these trees
-    # are real git repos with the base committed.
+    # Plan mode compares working files against local HEAD, so
+    # these trees are real git repos with the base committed.
     def limits_tree(name, rel, base_text, new_text):
         base = t / name
         (base / Path(rel)).parent.mkdir(parents=True, exist_ok=True)
