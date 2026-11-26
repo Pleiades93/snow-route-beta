@@ -15078,6 +15078,31 @@
    "red": "on PR #220 head 1 in CI (shard 2): drive218 12/14 - FAIL A3 and D3, title features 0 at the 15.7 frame, all other checks passing",
    "green": "framing moved to 14.8, below the switch, claims unchanged: drive218 14/14 PASS locally on the round tree",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive219-r3",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive219.mjs": "4b4362a153f10e411c9a9f0a425e602f1ebed536dc545179a385ec5fe05a9cae",
+    "parts/app2.js": "d29d6ac10b054ad07fd4e24ebc191f595954c146c9be369e67fe5000cdac41af"
+   },
+   "mutation": "routeLabelMinZoom 15.2 -> 16.2 in parts/app2.js (a real 1-zoom nameless band: titles end at 15.2, clones start at 16.2), assembled and driven",
+   "red": "on the mutated tree: V2 FAILS on the new held-stop half (held-stop read: false - at 15.5 neither system names a route street) while the pre-fix predicate's halves read titles 0, clones 0 mid-band with the window crossed (best titles 32, best clone 6) - the old V2 would have PASSED the gapped tree (Codex P1 on PR #220, sustained and proven). An earlier sample-run form of the continuity half was discarded: it fired on the correct tree under tile starvation (15-sample both-empty run)",
+   "green": "on the correct tree: drive219 38/38 PASS (V2: mid-band 0/0, held-stop read true). The anti-vacuity window-max titles threshold moved 30 -> 25 in the same fix: the sampler's window max read 29 on correct trees three times in the round while V1's polled baseline read (>=30 on the last sample) carries the placement proof",
+   "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "round3-1297-drive214-r2",
+   "check": "tests/browser/drive214.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive214.mjs": "25c05849790e8d01515df0030ce3f9e61b8c4f0ded984359ff0bd1a814def92e"
+   },
+   "mutation": "comment-only: the added Beta 1.297 REWORK header line removed (Codex P1 on PR #220, sustained - revision history belongs in the CHANGELOG, not a code comment); no check logic changed",
+   "red": "no red observation applies: no assertion changed - the M3/M4 red on the base tree is receipt round3-1297-drive214's record",
+   "green": "on the final 1.297 tree: drive214 26/26 PASS",
+   "issued": "2026-11-25 round3-1297"
   }
  ]
 }

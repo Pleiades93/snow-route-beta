@@ -309,7 +309,6 @@ ok('E3 rendered: 6 m PAST the join (the old overshoot stub) there is no gold lef
 // F5/F6/F7
 // (the lane's angle law) are retired where they stood, below.
 // Beta 1.294 REWORK: M3/M4 read the handover shape (title cap 16); F3/F4 pin spacing 250.
-// Beta 1.297 REWORK: M3/M4 read the instant switch at 15.2 (no fade band).
 const routeFullNames = await J(`(() => {
   const pack = ROUTE_PACKS.find(p => p.id === '5w');
   const ORD = { First: '1st', Second: '2nd', Third: '3rd', Fourth: '4th', Fifth: '5th', Sixth: '6th', Seventh: '7th', Eighth: '8th', Ninth: '9th', Tenth: '10th' };

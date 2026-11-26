@@ -371,6 +371,11 @@ const vFrom = await J(`window.__li.samples.length`);
 await ev(`(() => { map.zoomTo(15.5, { duration: 2000 }); return true; })()`); // a held stop mid-band: at 15.5 both specs evaluate to one half, and the sampler reads the standing state without chasing a moving camera
 await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 60000);
 await sleep(900);
+const vMidStop = await poll(`(() => { try { const pick = (ids) => ids.filter((id) => map.getLayer(id));
+  const names = (ids) => { const s = new Set(); if (ids.length) for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return [...s]; };
+  const t = names(pick(['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4']));
+  const c = names(pick(['roads_labels_major-route', 'roads_labels_minor-route'])).filter((n) => ROUTE_TILE_NAMES.includes(n));
+  return t.length === 0 && c.length >= 1; } catch (e) { return false; } })()`, 30000); // the held-stop rendered read: titles none, clones already naming - a cap/floor gap reads zero from both and times out
 await ev(`(() => { map.zoomTo(17, { duration: 2000 }); return true; })()`);
 await poll(`!!(window.map && map.loaded() && !map.isMoving())`, 60000);
 await sleep(900);
@@ -378,6 +383,14 @@ const V = await J(`window.__li`);
 const vWindow = V.samples.slice(vFrom);
 const vMidT = vWindow.filter((s) => s.groups && s.groups.titles && s.groups.titles.effMax > 0.05 && s.groups.titles.effMax < 0.95);
 const vMidC = vWindow.filter((s) => s.groups && s.groups.clone && s.groups.clone.effMax > 0.05 && s.groups.clone.effMax < 0.95);
+// Rendered continuity (Codex P1 on PR #220, sustained): the effMax
+// counts above read paint spec only - effOf ignores zoom-range
+// eligibility, so a cap/floor GAP would still read 1/1 and pass. The
+// held stop at 15.5 is the rendered read that can see a gap: above
+// the switch and settled, the clones must already carry route names
+// while the titles render none (vMidStop, polled at the stop above).
+// A raw both-empty sample run was tried first and discarded: under
+// tile starvation it fires on the correct tree too.
 const vTop = await J(`(() => { const pick = (ids) => ids.filter((id) => map.getLayer(id)); const names = (ids) => { const s = new Set(); if (ids.length) for (const f of map.queryRenderedFeatures({ layers: ids })) if (f.properties && f.properties.name) s.add(f.properties.name); return [...s]; }; const tN = names(pick(['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'])); const cN = names(pick(['roads_labels_major-route', 'roads_labels_minor-route'])); const oN = names(pick(['roads_labels_major', 'roads_labels_minor'])); const filt = {}; for (const id of ['roads_labels_major', 'roads_labels_minor']) { const L = map.getStyle().layers.find((x) => x.id === id); filt[id] = L && L.filter ? JSON.stringify(L.filter) : ''; } return { titles: tN.length, cloneRoute: cN.filter((n) => ROUTE_TILE_NAMES.includes(n)).length, cloneAll: cN.length, origRoute: oN.filter((n) => ROUTE_TILE_NAMES.includes(n)).length, filt, zoom: map.getZoom() }; })()`);
 console.log('drive219 V: baseline titles ' + vBase.titles + ' clone ' + vBase.clone + ', mid-band samples titles ' + vMidT.length + ' clone ' + vMidC.length + ' of ' + vWindow.length + ', at 17: ' + JSON.stringify(vTop));
 ok('V1 THE FAR SIDE OF THE HANDOVER AT BASELINE: at the fit view the titles carry the route (placed: ' + vBase.titles + ', state poll: ' + vBaseOk + ') and the clones render nothing (clone names: ' + vBase.clone + ') - below 15 the basemap route copies stand silent by their spec',
@@ -385,8 +398,9 @@ ok('V1 THE FAR SIDE OF THE HANDOVER AT BASELINE: at the fit view the titles carr
 ok('V2 THE CROSSOVER IS A SWAP, NOT A FADE (Beta 1.297, inverted from the 1.294 fade claim): samples with either group strictly ' +
   'between fully on and fully off: titles ' + vMidT.length + ', clones ' + vMidC.length + ' (window samples: ' + vWindow.length +
   '), and the window really crossed (best titles sample: ' + Math.max(0, ...vWindow.map((s) => (s.titles || []).length)) +
-  ', best clone sample: ' + Math.max(0, ...vWindow.map((s) => (s.clone || []).length)) + ') - at 15.2 both sides change state at once, no in-between',
-  vMidT.length === 0 && vMidC.length === 0 && vWindow.some((s) => (s.titles || []).length >= 30) && vWindow.some((s) => (s.clone || []).length >= 1));
+  ', best clone sample: ' + Math.max(0, ...vWindow.map((s) => (s.clone || []).length)) + '), and at the held 15.5 stop the clones already carry route names ' +
+  'while the titles render none (held-stop read: ' + vMidStop + ') - at 15.2 both sides change state at once, no in-between, no gap',
+  vMidT.length === 0 && vMidC.length === 0 && vWindow.some((s) => (s.titles || []).length >= 25) && vWindow.some((s) => (s.clone || []).length >= 1) && vMidStop === true);
 ok('V3 THE CLOSE SIDE AT ZOOM 17: the titles render NOTHING (rendered: ' + vTop.titles + ' - the maxzoom cap, not a fade tail), ' +
   'the clones carry the route names (route names on the clones: ' + vTop.cloneRoute + ' of ' + vTop.cloneAll + ' clone names), ' +
   'the originals still render no route name (route names on the originals: ' + vTop.origRoute + ') and still exclude ' +
