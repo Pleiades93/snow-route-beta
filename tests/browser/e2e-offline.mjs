@@ -45,12 +45,31 @@ async function fulfil(sessionId, p) {
   } catch (e) { noteTile(url, true); await send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Failed' }, sessionId); }
 }
 async function launchBrowser() {
-  proc = spawn(CHROME, [
-    '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server',
-    '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=' + PROFILE,
-    '--window-size=420,900', 'about:blank'
-  ], { stdio: ['ignore', 'pipe', 'pipe'] });
-  const wsUrl = await new Promise((res, rej) => { let buf = ''; proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); }); setTimeout(() => rej(new Error('no devtools url')), 25000); });
+  // Browser STARTUP gets the harness's bounded retry: a cold
+  // runner's first launch can die with no DevTools URL while
+  // later launches work. Startup only - a dead browser fails.
+  let wsUrl = null, lastLaunchErr = null;
+  for (let attempt = 1; attempt <= 3 && !wsUrl; attempt++) {
+    proc = spawn(CHROME, [
+      '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--no-proxy-server',
+      '--remote-debugging-port=0', '--disable-features=LocalNetworkAccessChecks', '--user-data-dir=' + PROFILE,
+      '--window-size=420,900', 'about:blank'
+    ], { stdio: ['ignore', 'pipe', 'pipe'] });
+    try {
+      wsUrl = await new Promise((res, rej) => {
+        let buf = ''; let settled = false;
+        const to = setTimeout(() => { if (!settled) { settled = true; rej(new Error('no devtools url')); } }, 25000);
+        proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m && !settled) { settled = true; clearTimeout(to); res(m[1]); } });
+        proc.on('exit', (code, sig) => { if (!settled) { settled = true; clearTimeout(to); rej(new Error('chrome exited before devtools (code ' + code + ', signal ' + sig + ')')); } });
+      });
+    } catch (e) {
+      lastLaunchErr = e;
+      console.log('CHROME LAUNCH attempt ' + attempt + ' of 3 failed: ' + String((e && e.message) || e).slice(0, 200));
+      try { proc.kill('SIGKILL'); } catch (e2) {}
+      if (attempt < 3) await sleep(300);
+    }
+  }
+  if (!wsUrl) throw lastLaunchErr || new Error('chrome launch failed after 3 attempts');
   ws = new WebSocket(wsUrl);
   await new Promise(r => ws.addEventListener('open', r, { once: true }));
   ws.addEventListener('message', async ev => {
@@ -106,9 +125,34 @@ const stat = await ev2(`document.getElementById('xPreStat').textContent`);
 const m = /saved (\d+) of (\d+)/.exec(stat || '');
 ok('E5 saved >= 883 of 897 (the 2026-11-01 regression saved 0) | ' + stat, !!m && +m[1] >= OFFLINE_FIXTURE.count - 14 && +m[2] === OFFLINE_FIXTURE.count);
 const counts = await ev2(`(async () => { const out = {}; for (const k of await caches.keys()) { const c = await caches.open(k); out[k] = (await c.keys()).length; } return JSON.stringify(out); })()`);
-const baseKeys = JSON.parse(await ev2(`(async () => { const c = await caches.open('snowroute-offline-v1'); const ks = await c.keys(); return JSON.stringify(ks.map(r => r.url).sort()); })()`)); // the pristine post-preload PACK key set, captured before any zooming (keysOf is defined further down, so this capture is inlined). Beta 1.94 (audit F-03): the preload writes into its own cache (snowroute-offline-v1), so this set is exactly the 897-file manifest - 633 tiles + 256 Noto Sans Regular glyph ranges + 8 sprites. (Through 1.93 the pack shared snowroute-tiles-v1 and this census read 899: the manifest plus 2 opportunistic glyph files the live map fetched for boot-view labels - PROVEN 2026-11-03, work/e12b-probe. Those fetches now fall through to the browsing cache, so the pack census is exact.)
+const packKeysExpr = `(async () => { const c = await caches.open('snowroute-offline-v1'); const ks = await c.keys(); return JSON.stringify(ks.map(r => r.url).sort()); })()`;
+const capturePackKeys = async () => JSON.parse(await ev2(packKeysExpr)); // one pack-census capture, shared by E6b and its completion path (keysOf is defined further down)
+let baseKeys = await capturePackKeys(); // the pristine post-preload PACK key set, captured before any zooming.
+// Beta 1.94 (audit F-03): the preload writes into its own cache
+// (snowroute-offline-v1), so this set is exactly the 897-file
+// manifest - 633 tiles + 256 Noto Sans Regular glyph ranges + 8
+// sprites. (Through 1.93 the pack shared snowroute-tiles-v1 and
+// this census read 899: the manifest plus 2 opportunistic glyph
+// files the live map fetched for boot-view labels - PROVEN
+// 2026-11-03, work/e12b-probe. Those fetches now fall through
+// to the browsing cache, so the pack census is exact.)
 ok('E6 the offline pack cache really holds the files | ' + counts, (() => { try { return JSON.parse(counts)['snowroute-offline-v1'] >= OFFLINE_FIXTURE.count - 14; } catch (e) { return false; } })());
-ok('E6b the downloaded pack equals the Offline Contract v1 fixture set exactly (Phase 5: the app must match the contract, not itself) | base ' + baseKeys.length + ' fixture ' + OFFLINE_FIXTURE.count, baseKeys.length === FIX_SET.size && baseKeys.every(u => FIX_SET.has(u)));
+// E6b completion: a partial pack is a designed state (E5's
+// bar), so a short first pass names its missing files and
+// completes through the app's own re-press before exactness
+// is judged. A file unreachable on both passes fails by name.
+const missingOf = (ks) => { const have = new Set(ks); return [...FIX_SET].filter(u => !have.has(u)); };
+let missing6 = missingOf(baseKeys);
+if (missing6.length) {
+  console.log('E6b first pass short by ' + missing6.length + ' of ' + OFFLINE_FIXTURE.count + ': ' + missing6.join(' , '));
+  await ev2(`document.getElementById('xPre').click()`);
+  await poll(`document.getElementById('xPreStat').textContent.includes('Offline maps: saved')`, 420000);
+  baseKeys = await capturePackKeys();
+  missing6 = missingOf(baseKeys);
+}
+ok('E6b the downloaded pack equals the Offline Contract v1 fixture set exactly (Phase 5: the app must match the contract, not itself) | base '
+  + baseKeys.length + ' fixture ' + OFFLINE_FIXTURE.count + (missing6.length ? ' | still missing after the completion re-press: ' + missing6.join(' , ') : ''),
+  baseKeys.length === FIX_SET.size && baseKeys.every(u => FIX_SET.has(u)));
 // ---- Phase 3 (Beta 1.72): E1-E6 prove the files land in the cache. These
 // prove the app actually LIVES on them: renders with the network dead, at
 // every zoom it allows, across a worker upgrade and a mid-download death.

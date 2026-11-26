@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "1191da9d0bca5e13afc01bc7ff5655bea60cc5565f28d72b02daee3683586b01",
+  "canonical_registry_sha256": "3ade0eaafd5ca9b32cad06fcc93848e60e1ebe31ef1eea97b2d994b3eb4c6f28",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1559,
-   "included": 1529,
+   "canonical": 1565,
+   "included": 1535,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13616,6 +13616,60 @@
    "fix_id": "popup-fix4-1296",
    "id": "popupfix4-pick-resets",
    "pattern": "crResetCitySearch(); // a pick cancels any held search",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/harness.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): harness poll reads a throwing expression as not-yet instead of crashing the drive (window.map truthy while the map binding is null between teardown and rebuild; drive219 Nov 23 crash).",
+   "fix_id": "te-poll-notyet",
+   "id": "te-poll-notyet",
+   "pattern": "catch (e) { v = false; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/lane-judge.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): laneViolations convicts only on 3+ consecutive missing/dim samples - the proven queryRenderedFeatures blind-spot bound (title-drop DROP_RUN evidence); single-sample absence acquits.",
+   "fix_id": "te-lane-run-bound",
+   "id": "te-lane-run-bound",
+   "pattern": "export const LANE_DROP_RUN = 3;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/lane-judge.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): drive219 A6 judged as a wave - completion gap vs the groups own streaming span, 3000 ms floor - instead of a flat wall bracket that measured tile-fetch latency under load.",
+   "fix_id": "te-a6-sync-wave",
+   "id": "te-a6-sync-wave",
+   "pattern": "export function syncVerdict",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/e2e-offline.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): E6b judges the exact pack set on the completed pack - a short first pass names its missing files and completes through the apps own re-press; a systematically unreachable file fails by name.",
+   "fix_id": "te-e6b-completion",
+   "id": "te-e6b-completion",
+   "pattern": "still missing after the completion re-press",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/e2e-offline.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): e2e-offline launch gets the harness bounded startup retry (3 attempts, spawn-to-DevTools window only); a dead browser still fails the run.",
+   "fix_id": "te-e2e-launch-retry",
+   "id": "te-e2e-launch-retry",
+   "pattern": "chrome launch failed after 3 attempts",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "tests/browser/selftest-runner.mjs",
+   "fix": "Test-efficiency stage 2 (flake census 2): the runner self-test prints fixture-startups captured output on failure - six evidence-free burns made the fixture undiagnosable.",
+   "fix_id": "te-fixture-startup-diag",
+   "id": "te-fixture-startup-diag",
+   "pattern": "fixture-startup r1 status",
    "type": "grep_present"
   }
  ]
