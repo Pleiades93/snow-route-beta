@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3ca305feb1d64ceb12a16806d13f75ac5f147e1044da8b44bc2ab1906d547f09",
+  "canonical_registry_sha256": "140d203dbae1fe7522da2d6a4f548bb793f7bce200cec6ba5d56138ba5098b15",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1592,
-   "included": 1562,
+   "canonical": 1596,
+   "included": 1566,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13913,6 +13913,42 @@
    "fix_id": "snow-boot-scene",
    "id": "snow-boot-scene-1300-drive",
    "pattern": "drive227: Beta 1.300 - THE BOOT SCENE",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "Phase 1 detectors (audit Classes 3+4): the write-outcome scan fails any outcome-returning write in parts/ whose result is not tested, returned or assigned and carries no write-safe exemption.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-write-rule",
+   "pattern": "write outcome ignored. Test the result, return it, or assign it.",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "Phase 1 detectors (audit Classes 3+4): the clone detector fails a NEW pair of identical or renamed-identical function bodies, or identical CSS blocks, against the recorded baseline.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-clone-rule",
+   "pattern": "Possible clone at",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "Phase 1 detectors: the clone baseline regenerates only by the scanner's own --write-baseline command (refused while the write rule fails), never by hand-editing.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-baseline-mode",
+   "pattern": "--write-baseline",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/check-receipts.py",
+   "fix": "Phase 1 detectors: scan-parts.cjs sits in JUDGE_PATHS, so a change to the scanner demands a current mutation receipt like any other judge.",
+   "fix_id": "phase1-detectors",
+   "id": "phase1-scan-judge-path",
+   "pattern": "\"scripts/scan-parts.cjs\",",
    "type": "grep_present"
   }
  ]

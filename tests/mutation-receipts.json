@@ -15885,6 +15885,34 @@
    "red": "drive227 B2a FAIL (observed twice): callbacks dropped 0, painted frames 0 -> 0, running reads false - the stuck-state premise cannot form because the engine never ran; B1 stayed green, proving a parked engine is revived at arm and only the flag-true stuck chain strands the scene",
    "green": "drive227 3/3 PASS on the final tree (re-issued at the Codex header fix on the drive: history block replaced by a two-line why, checks unchanged)",
    "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "phase1-scan-parts",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "70c759148a6b77597b7f33b5a787b8e24cb6170c934fcac3910b421702552cb6",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "05eef94e8318b78186164d8b2f63628fcde83f344c43863599f04c41b7f3c0cf",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "three plants on a scratch copy of the shipped tree: (1) a bare ignored lsSet call appended to parts/app1.js; (2) two identical >=32-token function bodies (plantCloneA/plantCloneB) appended to parts/app1.js; (3) a duplicate of the .sideChip declaration block under a new .plantChip selector in parts/head.html",
+   "red": "(1) exit 1: parts/app1.js:795: lsSet write outcome ignored. Test the result, return it, or assign it. (2) exit 1: Possible clone at parts/app1.js:794 and parts/app1.js:795 (plantCloneA/plantCloneB). (3) exit 1: Possible clone at parts/head.html:93 and parts/head.html:94 (.plantChip/.sideChip)",
+   "green": "plants removed, scratch files byte-identical to the shipped tree: parts scan PASS (593 clone pairs checked), exit 0; the shipped tree itself passes with all 17 write-safe exemptions in place",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-receipts-judge-scan",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "70c759148a6b77597b7f33b5a787b8e24cb6170c934fcac3910b421702552cb6"
+   },
+   "mutation": "the scripts/scan-parts.cjs line removed from JUDGE_PATHS in a scratch copy of check-receipts.py, trigger_paths probed on the changed path scripts/scan-parts.cjs",
+   "red": "neutered: trigger_paths(['scripts/scan-parts.cjs']) returns [] - a change to the new judge would demand no receipt",
+   "green": "shipped file: trigger_paths(['scripts/scan-parts.cjs']) returns ['scripts/scan-parts.cjs']",
+   "issued": "2026-11-26 phase1-detectors"
   }
  ]
 }
