@@ -15573,6 +15573,45 @@
    "red": "the pill's resting seat moved (top 50% to 45%): A1 and D1 fail, dy -45 after the poll expires (15/17)",
    "green": "drive210 on the final tree: 17/17",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "snow1299-drive125-t3",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "5f8418206b81d69e63a27fdbe9b909a26abd6306d737b71f9f3ffad09ff63973",
+    "parts/head.html": "5ddfadc5ebf968e61443ce2393da99a067728fb72756308d1ba0d6e184508da5"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field",
+   "red": "drive125 28/29: T3 fails on menuBgi - the menu's own gradient stands and the shared field is covered",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive125-t3-r2",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "9492868e0e5556e559e73f9b03cc474e4e0cbd476085a3f1bd417487f362abcd",
+    "parts/head.html": "5ddfadc5ebf968e61443ce2393da99a067728fb72756308d1ba0d6e184508da5"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field (re-issued after formatting-only splits for the PR line limits; semantically identical to snow1299-drive125-t3)",
+   "red": "drive125 28/29: T3 fails on menuBgi - the menu's own gradient stands and the shared field is covered",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26)",
+   "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive125-t3-r3",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "95079affbdf17b444ddb63b46b1ec463b385f3ecfc9014400e862d8b5a601b3e",
+    "parts/head.html": "5ddfadc5ebf968e61443ce2393da99a067728fb72756308d1ba0d6e184508da5"
+   },
+   "mutation": "parts/head.html: drop #setMenu from the body.snow-scene step-aside rule, so the Settings menu keeps its own gradient over the snow field (re-issued after formatting-only splits for the PR line limits; semantically identical to snow1299-drive125-t3)",
+   "red": "drive125 28/29: T3 fails on menuBgi - the menu's own gradient stands and the shared field is covered",
+   "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26)",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }

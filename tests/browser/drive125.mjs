@@ -60,11 +60,15 @@ ok('T2 tab order: Locate, Routes, Home dead centre, Clear, Settings (Beta 1.88: 
   JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'routesBtn', 'homeBtn', 'clearBtn', 'setBtn']));
 ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
 await tapById(ev, 'setBtn'); await sleep(600);
-const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'), bg: getComputedStyle($('setMenu')).backgroundColor, bgi: getComputedStyle($('setMenu')).backgroundImage,
+const T3b = JSON.parse(await ev(`(() => JSON.stringify({ open: $('setMenu').classList.contains('open'), bg: getComputedStyle($('setMenu')).backgroundColor,
+  bgi: getComputedStyle($('snowCv')).backgroundImage, menuBgi: getComputedStyle($('setMenu')).backgroundImage, snow: document.body.classList.contains('snow-scene'),
   rows: [...document.querySelectorAll('#setMainPane .rmBtn')].map(b => b.id), ver: $('setVer').textContent, titleVer: $('ver').textContent,
   chipOut: !$('setMenu').contains($('nightBtn')), chipW: $('nightBtn').offsetWidth, paceW: $('paceBtn').offsetWidth }))()`));
-ok('T3 Settings rises as the blue takeover (Beta 1.174: the icon\'s shaded-blue gradient): Status / On the job / Backup / About-What\'s new on the main pane (Beta 1.111 redesign - Update moved into About, offline maps into Status), the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
-  T3b.open === true && T3b.bgi.includes('linear-gradient') && T3b.bgi.includes('rgb(61, 101, 239)') && T3b.bgi.includes('rgb(27, 47, 182)') && JSON.stringify(T3b.rows) === JSON.stringify(['stBtn', 'jobBtn', 'exportBtn', 'aboutBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
+ok('T3 Settings rises as the blue takeover (Beta 1.174: the icon\'s shaded-blue gradient; Beta 1.299: the ground is the shared snow layer wearing that identical gradient - the menu\'s own background steps aside while snow is live): '
+  + 'Status / On the job / Backup / About-What\'s new on the main pane (Beta 1.111 redesign - Update moved into About, offline maps into Status), '
+  + 'the version riding bottom-right synced from the title, Day/Night out of the menu - its own button now, exactly Pace-sized (Beta 1.88) | ' + JSON.stringify(T3b),
+  T3b.open === true && T3b.snow === true && T3b.menuBgi === 'none' && T3b.bgi.includes('linear-gradient') && T3b.bgi.includes('rgb(61, 101, 239)') && T3b.bgi.includes('rgb(27, 47, 182)')
+  && JSON.stringify(T3b.rows) === JSON.stringify(['stBtn', 'jobBtn', 'exportBtn', 'aboutBtn']) && T3b.ver === T3b.titleVer && T3b.ver.length > 0 && T3b.chipOut && T3b.chipW === 56 && T3b.chipW === T3b.paceW);
 await tapById(ev, 'setClose'); await sleep(600);
 ok('T3 the bare X closes the Settings takeover', await expectStrict(ev, `$('setMenu').classList.contains('open')`) === false);
 await tapById(ev, 'setBtn'); await sleep(500);
