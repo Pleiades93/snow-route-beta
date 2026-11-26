@@ -2,21 +2,7 @@ import { launchDrive, finish } from './harness.mjs';
 const { proc, ev, consoleLog, sleep, poll } = await launchDrive();
 
 // drive227: Beta 1.300 - THE BOOT SCENE, the cold start's own snow.
-// Andrew's live find on 1.299: the splash snows, the boot route
-// picker after it does not, and every menu opened after a pick
-// does. The boot menu is the one scene the engine reaches by
-// continuity from init - no open call asserts it - and resume()
-// trusted the running flag, so a frame chain that stopped in
-// the boot window (a callback never delivered, a throw before
-// the reschedule) left the scene flagged live and dead. B1
-// judges the genuine cold start: fresh profile, splash at
-// load, the boot menu as the FIRST scene, snow frames painting
-// while it stands. B2 judges the recovery seat: the drive
-// drops the page's animation-frame callbacks for a bounded
-// window during the splash (the device failure shape, through
-// the platform seam), proves the chain is stuck with the flag
-// still true, and the boot menu must still snow once arm()'s
-// own flips land. Neither leg picks a route or opens a menu.
+// B1 judges the genuine cold start; B2 drops frame callbacks during the splash and judges the recovery.
 
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
