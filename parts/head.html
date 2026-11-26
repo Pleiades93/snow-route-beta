@@ -39,7 +39,7 @@
   body.night { background: #14171d; } /* Safari paints its strips with the frame colour, which follows the mode, so the app reads as one full screen */
   html.boot, html.boot body { background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* while the splash is up the root frame is splash blue, so an early first frame can never flash light */
   html.boot #map { background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* even the map's own frame is splash blue while booting, so its light day colour can never wash through */
-  html.boot body > *:not(#splash):not(#routeMenu):not(#brandLayer):not(#map):not(#crModal):not(#banner) { display: none !important; } /* boot is a state: app chrome does not exist in the paint; the flip happens under the opaque splash */
+  html.boot body > *:not(#splash):not(#snowCv):not(#routeMenu):not(#brandLayer):not(#map):not(#crModal):not(#banner) { display: none !important; } /* boot is a state: app chrome does not exist in the paint until the splash lifts */
   /* MENU ANIMATION BASELINE: every menu uses --anim-dur, openings --ease-open, closings its time-flip --ease-close; the pace is deliberately slow */
   :root { --anim-dur: 420ms; --ease-open: cubic-bezier(.22,.9,.28,1); --ease-close: cubic-bezier(.72,0,.1,.78); }
   :root { --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
@@ -378,7 +378,8 @@
     transition: transform var(--anim-dur) var(--ease-close), opacity .3s var(--ease-close), visibility 0s linear var(--anim-dur); } /* a blue takeover like Routes; the opacity leg rides the close curve */
   #setMenu.open { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: transform var(--anim-dur) var(--ease-open), opacity .3s var(--ease-open), visibility 0s; }
   /* fixed, not absolute: an absolute box inside the scrolling menu scrolls with the content; fixed anchors it to the screen */
-  #setVer { position: fixed; right: 24px; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+  #setVer { position: fixed; right: 24px; bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; letter-spacing: .04em; } /* the 58px seat clears the snow mound's 51px crest at every width */
   /* the settings card, switch and check language: values verbatim from the approved mockups, class names kept from them */
   #setMenu { overflow-y: auto; }
   #setMenu .rmPane { flex-shrink: 0; margin-top: auto; margin-bottom: auto; } /* tall panes (Status, Chime) scroll instead of clipping on short screens */
@@ -491,10 +492,11 @@
 #routeMenu.boot { transform: translateX(-26px); transition: opacity .5s var(--ease-open) .15s, transform .5s var(--ease-open) .15s, visibility 0s linear .15s; }
 /* the title lives here across both scenes, never reparented; the layer never transforms or fades during travel */
 /* the poses land the whole brand block, not the title alone; the icon occupies the layer itself, no spacer */
-/* one snow canvas in the splash layer: two traded places at the handoff. The engine lives in brand-snow.js. */
-#snowCv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity .3s ease; }
+/* one snow canvas at body level: above the splash's blue, below the menus. The engine lives in brand-snow.js. */
+#snowCv { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; visibility: hidden; transition: opacity .3s ease; }
 #snowCv.away { opacity: 0; } /* the snow hides in the menu's sub-panes alongside the title and returns at the main pane */
-body.snow-scene #routeMenu.boot { background: transparent; } /* while the scene is live the menu background clears (the blue is a gradient), so the snow field shows through */
+body.snow-scene #snowCv { visibility: visible; background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* while snow is live the canvas wears the menu blue, so the field is the menus' ground */
+body.snow-scene #routeMenu, body.snow-scene #setMenu { background: transparent; } /* while snow is live both menus step aside for the one field behind them */
 #brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s var(--ease-open); }
 #brandBlock { display: flex; flex-direction: column; align-items: center; } /* no entrance of its own: entrances live on the children. One rigid unit, never reparented, and it no longer travels */
 #brandBlock > * { flex: none; }
@@ -731,7 +733,8 @@ html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::aft
 </style>
 </head>
 <body>
-<div id="splash"><div id="splashBg"></div><canvas id="snowCv" aria-hidden="true"></canvas></div>
+<div id="splash"><div id="splashBg"></div></div>
+<canvas id="snowCv" aria-hidden="true"></canvas>
 <div id="brandLayer"><div id="brandBlock"><img id="splashIcon" src="data:image/png;base64,@@SPLASH_ARTWORK_512_B64@@" alt=""></div></div>
 <div id="routeMenu" class="boot"><button id="rmClose">✕</button><div class="rmPane on" id="rmMain"><button class="rmBtn primary" id="rmChoose">Choose a route</button><button class="rmBtn" id="rmCreate">Create new route</button></div><div class="rmPane" id="rmListPane"><div class="rmTitle">Choose a route</div><div class="routeList" id="rmRoutes"></div><button class="rmBack" id="rmBack">&#8592; Back</button></div><div class="rmPane" id="rmCreatePane"><div class="rmTitle">Create new route</div><button class="rmBtn primary" id="crDoorList">Select from list</button><button class="rmBtn" id="crDoorManual">Manual search</button><button class="rmBack" id="rmBack2">&#8592; Back</button></div><div class="rmPane" id="rmCityListPane"><div class="rmTitle">Select City</div><div id="crCityList"></div><div id="crCityArrow" class="gone" aria-hidden="true"><span>&#8250;</span></div><button class="rmBack" id="rmCityListBack">&#8592; Back</button></div><div class="rmPane" id="rmCityPane"><div class="rmTitle">What city are you cleaning in?</div><input class="rmInput" id="crCityInput" type="text" maxlength="60" autocomplete="off" placeholder="Start typing a city"><div id="crCityResults"></div><button class="rmBack" id="crCityBack">&#8592; Back</button></div>
 <div class="rmPane" id="rmNamePane"><div class="rmTitle">Name your route</div><div class="rmLbl">Route name</div><input class="rmInput" id="crNameInput" type="text" maxlength="60" autocomplete="off"><div class="rmLbl">Area</div>

@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "76d98c754174f5bb54c6cf0942b44f404e94eb35b56f199cc2d6e27379709a41",
+  "canonical_registry_sha256": "40a797e552b82735d47f1d3745e413c57b56930fee6a9ccd2764514dbe092097",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -855,9 +855,9 @@
   {
    "added": "2026-11-03",
    "file": "parts/head.html",
-   "fix": "During boot the app chrome DOES NOT EXIST in the paint (Beta 1.86): html.boot hides every body child except splash/route menu/map \u2014 the splash is not a lid over a finished app; boot is a STATE, so no unsettled frame can contain chrome. Re-pinned 2026-11-16 (Monday prune): the 1.211 sweep re-run (E-01) added the #crModal/#toast exceptions to the boot hide rule; literal followed. Re-pinned in the popup-round2 round (Beta 1.296): the boot exemption passes from the deleted #toast to the shared #banner.",
+   "fix": "During boot the app chrome DOES NOT EXIST in the paint (Beta 1.86): html.boot hides every body child except splash/route menu/map \u2014 the splash is not a lid over a finished app; boot is a STATE, so no unsettled frame can contain chrome. Re-pinned 2026-11-16 (Monday prune): the 1.211 sweep re-run (E-01) added the #crModal/#toast exceptions to the boot hide rule; literal followed. Re-pinned in the popup-round2 round (Beta 1.296): the boot exemption passes from the deleted #toast to the shared #banner. Re-pinned in the snow-menus round (Beta 1.299): the snow canvas left #splash for body level, so the exemption list gains #snowCv.",
    "id": "beta-boot-chrome-absent",
-   "pattern": "html.boot body > *:not(#splash):not(#routeMenu):not(#brandLayer):not(#map):not(#crModal):not(#banner) { display: none !important; }",
+   "pattern": "html.boot body > *:not(#splash):not(#snowCv):not(#routeMenu):not(#brandLayer):not(#map):not(#crModal):not(#banner) { display: none !important; }",
    "type": "grep_present"
   },
   {
