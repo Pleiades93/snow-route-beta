@@ -284,17 +284,39 @@ def changed_line_errors(path, old_text, new_text, added, deletions):
                 if first < end <= last:
                     touched.add(boundary)
     if old_text:
-        # A replace/delete that removed comment lines judges the
-        # comment surviving at its boundaries (Codex P2, PR #225).
-        old_comment = set()
-        for f0, l0, _b in comment_spans(path, old_text):
-            old_comment.update(range(f0, l0 + 1))
+        # A comment losing lines to a replace/delete is judged
+        # whole in its surviving form (Codex P2, PR #225).
         sm = difflib.SequenceMatcher(None, old_text.split("\n"),
                                      new_text.split("\n"), autojunk=False)
-        for tag, i1, i2, j1, j2 in sm.get_opcodes():
-            if tag in ("replace", "delete") and \
-                    any(i in old_comment for i in range(i1, i2)):
-                touched.update((j1 - 1, j2))
+        opcodes = sm.get_opcodes()
+        home = {}
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == "equal":
+                for k in range(i2 - i1):
+                    home[i1 + k] = j1 + k
+        span_of = {}
+        for f0, l0, _b in comment_spans(path, old_text):
+            for i in range(f0, l0 + 1):
+                span_of[i] = f0
+        lost_at = {}
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag in ("replace", "delete"):
+                for i in range(i1, i2):
+                    if i in span_of:
+                        lost_at.setdefault(span_of[i], []).append(j1)
+        if lost_at:
+            new_spans = list(comment_spans(path, new_text))
+            for f0, l0, _b in comment_spans(path, old_text):
+                if f0 not in lost_at:
+                    continue
+                survivors = {home[i] for i in range(f0, l0 + 1)
+                             if i in home}
+                for nf, nl, _nb in new_spans:
+                    inside = any(nf <= s <= nl for s in survivors)
+                    near = any(nf - 1 <= p <= nl + 1
+                               for p in lost_at[f0])
+                    if inside and near:
+                        touched.update(range(nf, nl + 1))
     for first, last, body in comment_spans(path, new_text):
         if not any(i in touched for i in range(first, last + 1)):
             continue

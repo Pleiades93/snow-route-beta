@@ -16639,6 +16639,45 @@
    "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (115 pass, 1 fail)",
    "green": "shipped scanner restored byte-identical: gate fixtures 116 pass, 0 fail",
    "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-limits-touched-comments-r6",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "7c2981998523f6a82aec2dfdf33f997bec42f42d705992a3ec724668088597ba",
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the span-anchored boundary rule: only a comment that itself lost lines is judged whole)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge restored byte-identical: gate fixtures 116 pass, 0 fail; a whole-PR judge sweep over the 38 changed files convicts nothing (the first boundary form over-touched five neighbour comments in app4.js, create-pick.js and head.html)",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-fixtures-touched-comments-r6",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "8f232f7ea5ea532bcc62bd9ea606332e85736408b6d613cf9bae4c2f9b8e1c54",
+    "scripts/check-pr-limits.py": "7c2981998523f6a82aec2dfdf33f997bec42f42d705992a3ec724668088597ba"
+   },
+   "mutation": "changed_line_errors' touched-comment section disabled (early return), fixture suite run (re-issued for the span-anchored boundary rule in the judge)",
+   "red": "exactly the four conviction fixtures flip: rewritten long, deletion-partial, regex-adjacent long, replacement-tail long (112 pass, 4 fail)",
+   "green": "shipped judge: gate fixtures 116 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-touched-comments-r4",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/check-pr-limits.py": "7c2981998523f6a82aec2dfdf33f997bec42f42d705992a3ec724668088597ba"
+   },
+   "mutation": "module probe on the shipped push.py _limits_verdict vs the per-line stand-in (re-issued for the span-anchored boundary rule in the shared judge)",
+   "red": "the per-line stand-in (line_errors on the changed lines alone) returns no error for either pair: without the shared touched-comment verdict the push gate accepts both a rewritten 32-word comment and a 22-word comment whose last line was replaced by code",
+   "green": "shipped verdict names both: 'touched comment of 32 words' for the rewritten pair and 'touched comment of 22 words' for the replacement pair, from push.py's own _limits_verdict",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }
