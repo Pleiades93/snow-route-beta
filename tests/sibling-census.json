@@ -18568,6 +18568,12 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "test-efficiency-stage2",
+   "kind": "machinery-exempt",
+   "reason": "Machinery only: test-efficiency programme stage 2 (flake census 2 root fixes) changes tests/browser judge, harness and e2e code (lane-judge run bound, drive219 A6 sync wave, harness poll throw handling, e2e-offline E6b completion path and launch retry, selftest-runner diagnosability) and changes no parts/ surface, so there are no anchors to enumerate.",
+   "issued": "2026-11-25 test-efficiency stage 2"
   }
  ]
 }

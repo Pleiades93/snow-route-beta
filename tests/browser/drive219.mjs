@@ -1,5 +1,5 @@
 import { launchDrive, finish, pinDayTheme, forceRouteTitlesOn, forceRouteTitlesOff } from './harness.mjs';
-import { laneViolations } from './lane-judge.mjs';
+import { laneViolations, syncVerdict } from './lane-judge.mjs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 1, mobile: true }, S); // this lane grades presence and paint, not pixels: at the harness's retina factor the software-rendered headless map eats the main thread and the 50 ms sampler starves to a few ticks a second (measured), which would stretch the very timings under grade. At factor 1 the sampler holds its 50 ms median (measured).
 
@@ -29,7 +29,10 @@ const bootToPicker = async () => {
   if (!await poll(`!!window.__bootAt`, 30000)) throw new Error('drive219: the app never booted (__bootAt)');
   await pinDayTheme(ev);
   await ev(`document.getElementById('rmChoose') && document.getElementById('rmChoose').click()`);
-  if (!await poll(`!!(window.map && map.getStyle && map.getStyle().layers && map.getStyle().layers.length > 10)`, 45000)) throw new Error('drive219: the basemap style never landed - the sampler would measure an empty map and pass vacuously');
+  const styleLanded = `!!(typeof map !== 'undefined' && map && map.getStyle && map.getStyle().layers && map.getStyle().layers.length > 10)`;
+  // the bare binding only: window.map is a stale handle that stays
+  // truthy while the binding sits at null between maps (census 2)
+  if (!await poll(styleLanded, 45000)) throw new Error('drive219: the basemap style never landed - the sampler would measure an empty map and pass vacuously');
 };
 
 const INSTRUMENT = `(() => {
@@ -190,7 +193,10 @@ const aSettled = A.samples.filter((x) => x.t >= A.moveEndAt);
 const aLaneT = laneViolations(aSettled, 'titles');
 const aCT = completeAt(A.samples, 'titles');
 const aRoadDim = A.samples.filter((x) => x.t >= aCT && x.groups && x.groups.road && (x.groups.road.effMin < 1 || x.groups.road.effMax < 1));
-ok('A4 THE LANE, titles: no title, once visibly appeared, ever returns to zero inside the settled frame (samples from the flight\'s moveend on, per the settled-frame rule; violations: ' + JSON.stringify(aLaneT) + '; sampling: ' + A.samples.length + ' samples, median gap ' + Math.round(medianGap(A.samples)) + ' ms - the blink this lane exists to catch lasted ~1-2 s, ~4.9 s throttled, and it landed after moveend by construction)',
+ok('A4 THE LANE, titles: no title, once visibly appeared, returns to zero for 3 or more consecutive samples inside the settled frame '
+  + '(the run bound is the sampler\'s proven blind spot - the drive216 investigation showed the placement read misses a rendered name for a sample or two; '
+  + 'samples from the flight\'s moveend on, per the settled-frame rule; violations: ' + JSON.stringify(aLaneT) + '; sampling: ' + A.samples.length
+  + ' samples, median gap ' + Math.round(medianGap(A.samples)) + ' ms - the blink this lane exists to catch lasted ~1-2 s, ~4.9 s throttled, and it landed after moveend by construction)',
   aLaneT.length === 0);
 ok('A5 THE LANE, basemap road names: the app never dims or hides a basemap layer - across every sample from the titles\' completion on, the road layers\' effective text-opacity never leaves 1 (dimmed samples: ' + aRoadDim.length + ' of ' + A.samples.filter((x) => x.t >= aCT).length + '). Basemap label PERSISTENCE is not asserted: those labels are the renderer\'s own collision placement over a still-streaming basemap, and a marginal one (Chancellor Drive, in both CI attempts on this PR, while every title lane held) can lose its seat after completion - the deleted name hold\'s sin was writing basemap opacity, and that is what this check grades',
   aRoadDim.length === 0);
@@ -199,9 +205,16 @@ const aLastTitles = A.samples.length ? A.samples[A.samples.length - 1].titles : 
 ok('A7 ONE NAME SET at the end of the window: the observed route street\'s basemap copy is gone once the scene completes (the exclusion has landed - road names in the final sample contain Valeria Boulevard: ' + aLastRoad.includes('Valeria Boulevard') + ') and its name is carried by the route title instead (titles contain Valeria: ' + aLastTitles.includes('Valeria') + ') - never doubled, never nameless',
   !aLastRoad.includes('Valeria Boulevard') && aLastTitles.includes('Valeria'));
 const aSettledSlice = A.samples.filter((x) => x.t >= A.moveEndAt); // A6 judges the SETTLED frame only: over the whole window the road group reaches its max during the wide flight view whenever the warm pick left its tiles cached (measured: road completion at +359 ms against titles at +5400 ms on a warm local run - a completion-bracket artifact, not a desync), while the defect this check exists for is names missing AFTER landing
-const aCT6 = completeAt(aSettledSlice, 'titles'), aCR6 = completeAt(aSettledSlice, 'road');
-ok('A6 THE SYNC AT THE SETTLED FRAME: titles and basemap road names COMPLETE inside the same bracket once the flight lands - each group\'s placed-name count reaches its settled-frame total within 3000 ms of the other\'s (titles complete at +' + Math.round(aCT6 - A.moveEndAt) + ' ms, road names at +' + Math.round(aCR6 - A.moveEndAt) + ' ms, from moveend; the 3000 ms bracket is the sampler\'s own resolution under this VM\'s load - the investigation\'s event-level spans put the two tile pipelines 23 ms apart - set against the shipped 1.266 wait of 3.1-6.7 s of nameless map AFTER landing, which this bracket excludes by a wide margin)',
-  aCT6 > 0 && aCR6 > 0 && Math.abs(aCT6 - aCR6) <= 3000);
+const countSeries = (samples, group) => samples.map((x) => ({ t: x.t, n: Object.keys((x.groups && x.groups[group] && x.groups[group].names) || {}).length }));
+const aSync = syncVerdict(countSeries(aSettledSlice, 'titles'), countSeries(aSettledSlice, 'road'));
+ok('A6 THE SYNC AT THE SETTLED FRAME: titles and basemap road names complete in the same WAVE once the flight lands - '
+  + 'the gap between their completion times no larger than the longer group\'s own streaming span, floored at 3000 ms (titles complete at +'
+  + Math.round((aSync.completeAtA ?? A.moveEndAt) - A.moveEndAt) + ' ms, road names at +' + Math.round((aSync.completeAtB ?? A.moveEndAt) - A.moveEndAt)
+  + ' ms from moveend; gap ' + Math.round(aSync.gap ?? -1) + ' ms, span ' + Math.round(aSync.span) + ' ms. '
+  + 'A group held back then released in a burst - the shipped 1.266 wait of 3.1-6.7 s of nameless map AFTER landing - has a short span and a long gap and fails; '
+  + 'slow continuous streaming under load stretches the span with the gap, which the old flat 3000 ms bracket misread as desync: flake census 2, 2026-11-25, '
+  + 'road names completing at +3155/+3247 ms against titles at +0, the two tile pipelines 23 ms apart at event level)',
+  aSync.pass);
 
 // ================= Phase F: movement after the load-in (same page) =================
 const fTears0 = A.tears.length;

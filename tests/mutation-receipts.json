@@ -14615,6 +14615,100 @@
    "red": "CI run 45734211500 shard 1 on 53d7f885: drive86 16/18 - T1 and T2 failed on a standing ambient banner (bare shown assertions)",
    "green": "the re-scoped file (unchanged logic in this rewrap) ran locally: drive86 18/18 PASS",
    "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "test-efficiency-lane-run-bound",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "532523e4deb4be99d5930381580bc4a45c5ef6aac60bf45abb58b30ef5a09b80",
+    "tests/browser/lane-judge.mjs": "b70d9b82ce50e36cf6ef77059670557e3c8d32c217bd9c744b148e8efed8a8d4",
+    "tests/browser/drive219.mjs": "b079c4a0059265192289f839af8c581cd7327ace292d02ab40b35983afc177dd"
+   },
+   "mutation": "laneViolations restored to the pre-fix strict form (any single missing/dim sample after a visible appearance convicts)",
+   "red": "selftest-lane219 15 passed 3 failed - exactly F1b/F1c/F2b (the blind-spot acquittals) fail; observed twice 2026-11-25",
+   "green": "selftest-lane219 18 passed 0 failed on the shipped judge; observed twice 2026-11-25; drive219 local run 38/38 PASS",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-a6-sync-wave",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "532523e4deb4be99d5930381580bc4a45c5ef6aac60bf45abb58b30ef5a09b80",
+    "tests/browser/lane-judge.mjs": "b70d9b82ce50e36cf6ef77059670557e3c8d32c217bd9c744b148e8efed8a8d4",
+    "tests/browser/drive219.mjs": "b079c4a0059265192289f839af8c581cd7327ace292d02ab40b35983afc177dd"
+   },
+   "mutation": "syncVerdict span rule removed - the pass rule reverts to the flat gap <= 3000 ms bracket",
+   "red": "selftest-lane219 17 passed 1 failed - exactly S1 (the flake census 2 shape: road names completing at +3155 ms against titles at +0) fails; observed twice 2026-11-25",
+   "green": "selftest-lane219 18 passed 0 failed on the shipped judge; observed twice 2026-11-25; drive219 local run 38/38 PASS with the wave A6",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-poll-notyet",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "b079c4a0059265192289f839af8c581cd7327ace292d02ab40b35983afc177dd",
+    "tests/browser/harness.mjs": "8ae943c74e8fe705ef04b98ddf5b55a64bad5428bfab53dcd46498ddd65d6eca"
+   },
+   "mutation": "pre-fix harness poll: a throwing poll expression crashes the drive (no mutation - the historical harness, driven on the local rig 2026-11-25)",
+   "red": "drive219 crashed at bootToPicker, no result block: page evaluation threw TypeError: Cannot read properties of null (reading 'getStyle') - window.map truthy while the map binding sat at null; mechanism proven by probe",
+   "green": "drive219 local run 38/38 checks, 0 exceptions - PASS after the poll fix (a throw reads as not-yet; a permanent throw still times out to the caller's named failure)",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-fixture-startup-diag",
+   "check": "tests/browser/selftest-runner.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/selftest-runner.mjs": "15210b931ed9ab003da07225b6a88841a9558cc47127fc35a91fe376db5d4d79"
+   },
+   "mutation": "none - diagnosability change only: on a fixture-startup failure the self-test now prints the captured stdout/stderr it used to discard",
+   "red": "fixture-startup burned 6 gate runs (flake census 2: 2026-11-18 x1, 11-20 x4, PR #215 build-and-test 2026-11-25 x1), each with the captured output discarded and no diagnosable evidence",
+   "green": "selftest-runner full suite PASS in 2 local rounds under 4x CPU load 2026-11-25, fixture-startup green in both; the new print fires only on failure",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-lane-run-bound-r2",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "532523e4deb4be99d5930381580bc4a45c5ef6aac60bf45abb58b30ef5a09b80",
+    "tests/browser/lane-judge.mjs": "b70d9b82ce50e36cf6ef77059670557e3c8d32c217bd9c744b148e8efed8a8d4",
+    "tests/browser/drive219.mjs": "117be3cc687ac144e9a4cd4547f76afb3f5682a45c2418b7b888e5b3c86b3315"
+   },
+   "mutation": "laneViolations restored to the pre-fix strict form (any single missing/dim sample after a visible appearance convicts); re-issue of test-efficiency-lane-run-bound after drive219 line wraps",
+   "red": "selftest-lane219 15 passed 3 failed - exactly F1b/F1c/F2b (the blind-spot acquittals) fail; observed twice 2026-11-25",
+   "green": "selftest-lane219 18 passed 0 failed on the shipped judge; observed twice 2026-11-25; drive219 local run 38/38 PASS",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-a6-sync-wave-r2",
+   "check": "tests/browser/selftest-lane219.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/selftest-lane219.mjs": "532523e4deb4be99d5930381580bc4a45c5ef6aac60bf45abb58b30ef5a09b80",
+    "tests/browser/lane-judge.mjs": "b70d9b82ce50e36cf6ef77059670557e3c8d32c217bd9c744b148e8efed8a8d4",
+    "tests/browser/drive219.mjs": "117be3cc687ac144e9a4cd4547f76afb3f5682a45c2418b7b888e5b3c86b3315"
+   },
+   "mutation": "syncVerdict span rule removed - the pass rule reverts to the flat gap <= 3000 ms bracket; re-issue of test-efficiency-a6-sync-wave after drive219 line wraps",
+   "red": "selftest-lane219 17 passed 1 failed - exactly S1 (the flake census 2 shape: road names completing at +3155 ms against titles at +0) fails; observed twice 2026-11-25",
+   "green": "selftest-lane219 18 passed 0 failed on the shipped judge; observed twice 2026-11-25; drive219 local run 38/38 PASS with the wave A6",
+   "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-poll-notyet-r2",
+   "check": "tests/browser/drive219.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive219.mjs": "117be3cc687ac144e9a4cd4547f76afb3f5682a45c2418b7b888e5b3c86b3315",
+    "tests/browser/harness.mjs": "8ae943c74e8fe705ef04b98ddf5b55a64bad5428bfab53dcd46498ddd65d6eca"
+   },
+   "mutation": "pre-fix harness poll: a throwing poll expression crashes the drive (no mutation - the historical harness, driven on the local rig 2026-11-25); re-issue of test-efficiency-poll-notyet after drive219 line wraps",
+   "red": "drive219 crashed at bootToPicker, no result block: page evaluation threw TypeError: Cannot read properties of null (reading 'getStyle') - window.map truthy while the map binding sat at null; mechanism proven by probe",
+   "green": "drive219 local run 38/38 checks, 0 exceptions - PASS after the poll fix (a throw reads as not-yet; a permanent throw still times out to the caller's named failure)",
+   "issued": "2026-11-25"
   }
  ]
 }
