@@ -1328,6 +1328,14 @@ with tempfile.TemporaryDirectory() as td:
                                            ("c2", {"parts/a.js": l1 + l2 + "const x = 1;\nconst a = 1;\n"})])
     check("pr-limits: a comment whose last line is replaced by code still fails",
           run_limits(repo, head1(repo)), 1)
+    # Joined blocks: deleting the separator between two valid //
+    # blocks forms one comment, judged whole.
+    jb1 = "// alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima\n"
+    jb2 = "// mike november oscar papa quebec romeo sierra tango uniform victor\n"
+    repo, _ = git_repo(t / "joinedblocks", [("c1", {"parts/a.js": jb1 + "\n" + jb2 + "const a = 1;\n"}),
+                                            ("c2", {"parts/a.js": jb1 + jb2 + "const a = 1;\n"})])
+    check("pr-limits: two blocks joined by a deletion fail as one comment",
+          run_limits(repo, head1(repo)), 1)
     # Fetch shallow ancestry so the size rule sees the product commit.
     src, b = git_repo(t / "mergesrc", [])
     genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
@@ -1440,6 +1448,6 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: an unrelated callback insertion keeps baselined identities",
           run_scan(cb_tree), 0)
 
-total = 118
+total = 119
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

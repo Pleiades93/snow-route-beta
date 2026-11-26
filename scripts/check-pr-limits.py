@@ -289,14 +289,23 @@ def changed_line_errors(path, old_text, new_text, added, deletions):
                                      new_text.split("\n"), autojunk=False)
         opcodes = sm.get_opcodes()
         home = {}
+        origin = {}
         for tag, i1, i2, j1, j2 in opcodes:
             if tag == "equal":
                 for k in range(i2 - i1):
                     home[i1 + k] = j1 + k
+                    origin[j1 + k] = i1 + k
         span_of = {}
         for f0, l0, _b in comment_spans(path, old_text):
             for i in range(f0, l0 + 1):
                 span_of[i] = f0
+        # A span whose lines come from two old spans was joined
+        # by a deletion: judge it whole.
+        for nf, nl, _nb in comment_spans(path, new_text):
+            joined = {span_of[origin[j]] for j in range(nf, nl + 1)
+                      if j in origin and origin[j] in span_of}
+            if len(joined) >= 2:
+                touched.update(range(nf, nl + 1))
         lost_at = {}
         for tag, i1, i2, j1, j2 in opcodes:
             if tag in ("replace", "delete"):
