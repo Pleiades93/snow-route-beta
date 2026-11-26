@@ -31,7 +31,7 @@ const changelog = read('CHANGELOG.md');
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
-const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i) + 1); };
+const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i) + 1).replace(/\s+/g, ' '); };
 const sha = (uri) => createHash('sha256').update(Buffer.from(uri.split(',')[1], 'base64')).digest('hex');
 const payload = (map, key, side) => {
   const i = app4.indexOf('const ' + map + ' = {'); if (i < 0) return '';

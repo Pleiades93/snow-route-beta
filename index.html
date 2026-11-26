@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-shvDu1jMuWlVIiTvArvMfAx2gPU2LzJZ++e2A9P9D28vqPMUVI2zQ3yK4JSw+dvd' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-PI2wpEpgvFdPmf9hUqk05GtfSKIla7/ILXZeoErKWw3qn1TGo4llc4cFV9ALxjz/' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-+N5yBFJGlGObyJ6lbrTJvSuL6Y8Aiy48yMrhUYUBZqj4E/BivpY6O8KSTV0OnuC0' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-eGuv8/VercyrdqJVtxrtxvPceRcQCKXqHMTtPialNL+MTkyKDEaZu7wovZZHHnBu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -56,12 +56,36 @@
   #hud .titleStack { display: flex; flex-direction: column; }
   #hud .ver { font-size: 9px; font-weight: 600; color: #46536a; line-height: 1; margin-top: 2px; letter-spacing: .04em; text-shadow: 0 0 6px rgba(255,255,255,.95); }
   body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
-  #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
+  #count { position: relative;
+    overflow: hidden;
+    margin-top: 9px;
+    background: var(--glass-day);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: #1d2530;
+    border: 1px solid rgba(20,22,28,.09);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    box-shadow: var(--shadow-float);
+    } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
   #hud .spacer { margin-left: auto; }
   #hud button { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
   #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
-  #stats { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
+  #stats { font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #33404e;
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9);
+    }
   body.night #stats { color: #9fb4c8; text-shadow: 0 0 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
   #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 5px 4px; border-radius: 9px; margin-bottom: 6px; }
   body.storage-bad #warn { display: block; }
@@ -87,16 +111,57 @@
   #selNote svg { width: 16px; height: 16px; display: block; margin: auto; }
   #selNote img { width: 16px; height: 16px; display: block; margin: auto; } /* the img form fills the svg form's 16px box; a separate rule so the pinned svg rule never moves */
   /* the stale-clean question lives on the shared confirmation pill; the suggestion offer is gone */
-  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #mapNote { position: fixed;
+    left: calc(10px + var(--sal));
+    right: calc(10px + var(--sar));
+    bottom: calc(var(--vvb, 0px) + 240px + var(--sab));
+    z-index: 1003;
+    background: var(--card);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: var(--ink);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
   #chips { position: absolute; inset: 0; z-index: 950; pointer-events: none; }
   .sideChip { position: absolute; width: 40px; height: 40px; pointer-events: auto; }
-  .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
+  .sideChip .chipBtn { width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: var(--glass-day);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: #22262e;
+    border: 1px solid rgba(20,22,28,.09);
+    box-shadow: var(--shadow-float);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    touch-action: manipulation;
+    }
   body.night .sideChip .chipBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   .sideChip .chipBtn svg { width: 22px; height: 22px; flex: none; }
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
-  #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
+  #attrChip { position: fixed;
+    right: calc(8px + var(--sar));
+    bottom: calc(var(--vvb, 0px) + 61px + var(--sab));
+    z-index: 900;
+    font-size: 9px;
+    color: #5b6672;
+    background: rgba(255,255,255,.7);
+    padding: 2px 5px;
+    border-radius: 4px;
+    pointer-events: none;
+    } /* 68 -> 61, riding the tab bar's -7: the rendered gap above the bar is unchanged */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
   #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top was #nightBtn's own top expression (78px) through Beta 1.227 - the circle's top edge level with the moon button's, a level the drives measured in the rendered page. Beta 1.228 (Andrew) raised the moon button to the title's line; the circle keeps this 78px seat under the title, so it now stands 53px below the title's top edge - drive199 measures the new geometry (the moon level with the title, the circle at its seat). The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
   #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; display: inline-flex; align-items: baseline; --subtle-dir: 1; }
@@ -107,7 +172,13 @@
   #spdNum.animating .subtleOld { animation: subtleOut 455ms cubic-bezier(.22,1,.36,1) both; }
   @keyframes subtleIn { from { transform: translateY(calc(.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
   @keyframes subtleOut { to { transform: translateY(calc(-.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
-  #spdUnit { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-align: center; color: #5a5f6a; margin-top: 3px; } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
+  #spdUnit { font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: .4px;
+    text-align: center;
+    color: #5a5f6a;
+    margin-top: 3px;
+    } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
   body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   body.night #spdUnit { color: #ACBBF5; }
   #spdPill.hidden { display: none; }
@@ -134,13 +205,42 @@
   /* List | round run button | Pace, one level, symmetrical */
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 67px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; }
   /* the pair settles together: a dialed soft lift by day; by night an elevation recipe, since shadows barely show */
-  .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: linear-gradient(145deg, #ffffff, #eceef2); color: #22262e; border: none; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); /* Beta 1.226 (Andrew): the day lift at HALF the 1.224 strength - his pick from the lift sample; the night recipe below is untouched */ font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .dockBtn { width: 56px;
+    height: 56px;
+    margin-top: 24px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #eceef2);
+    color: #22262e;
+    border: none;
+    box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);
+    /* the day lift at HALF strength (Andrew's pick from the lift sample);
+    the night recipe below is untouched */ font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
   .dockBtn svg { width: 27px; height: 27px; }
   .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* the dock icon wrapper keeps the shipped 27px layout box: no button changes size */
   .dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }
   body.night .dockBtn, body.night #crExit, body.night #crSearchWrap { background: linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 55%, rgba(255,255,255,.02)) border-box; color: #f2f4f8; border: 1px solid transparent; box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 12px 28px -6px rgba(0,0,0,.55); } /* Beta 1.242 (Andrew, from the night-buttons-v2 research sample, row 4 'Bar black, rim light' - his pick 2026-11-18): the night dock surface is the tab bar's own black, the --card token itself (never a copied colour), with NO inset highlight line; the depth is a gradient rim that fades down the border (white 16% at the top, 5% at 55%, 2% at the bottom), drawn circle-safe as a border-box layer over a transparent border, over a two-layer shadow. The padding-box layer wears the token, so the button face and the bar can never drift apart. The 1.224 elevation recipe (grey gradient, 55% top border, 45% inset line) is superseded for .dockBtn only - the create search bar and the back pill keep their own rounds' recipes. Day .dockBtn, .runBtn (both themes) and the glass readouts are untouched. Beta 1.244 (Andrew's one-black ruling, 2026-11-19): this rule is now the ONE shared night-black definition - #crExit and #crSearchWrap wear it from this same rule, so the dock buttons, the back pill and the search bar hold the one token black by construction, never by copies agreeing. The back pill's private 1.224 glass retires, and so does the search bar's white night pill (Beta 1.243, a scope error: his pill order covered the create MENU text boxes, not the bar over the map). */
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
-  .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: 4px 6px 12px rgba(20,30,80,.15), -3px -3px 8px rgba(255,255,255,.22), inset 0 1px 2px rgba(255,255,255,.18), inset 0 -3px 6px rgba(8,12,50,.12); /* Beta 1.226: half the 1.224 strength, matching .dockBtn; the night fence below stands */ line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
+  .runBtn { position: relative;
+    width: 104px;
+    height: 104px;
+    flex: none;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 4px 6px 12px rgba(20,30,80,.15), -3px -3px 8px rgba(255,255,255,.22), inset 0 1px 2px rgba(255,255,255,.18), inset 0 -3px 6px rgba(8,12,50,.12);
+    /* Beta 1.226: half the 1.224 strength, matching .dockBtn;
+    the night fence below stands */ line-height: 1.1;
+    cursor: pointer;
+    padding: 0 8px;
+    font-style: italic;
+    font-weight: 900;
+    letter-spacing: .01em;
+    }
   body.night .runBtn { box-shadow: var(--shadow-float); } /* the lift is day-only: night Start keeps the float token exactly (the approved night sample left Start untouched) */
   #startBtn, #resetBtn { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 21px; } /* Start and Finish share one rule: the swap changes only the word, so the two can never drift apart */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
@@ -148,7 +248,20 @@
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transform: scaleX(0); transform-origin: left center;
     transition: transform .7s var(--ease-open); }
   #countTxt { position: relative; z-index: 1; }
-  body.night { --card: rgba(32,33,37,.94); --card-solid: #202125; --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(44,74,210,.10); --field: #3c4043; --sec: #9fb4c8; --link: #2c4ad2; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.75 night card: neutral charcoal (32,33,37) at 94% - Andrew's pick, sampled from a Google Maps dark reference (#202125) - replacing the 1.29 blue-black; fields take the reference's raised tone #3c4043 */
+  body.night { --card: rgba(32,33,37,.94);
+    --card-solid: #202125;
+    --ink: #edf2f9;
+    --ink-dim: rgba(214,226,242,.62);
+    --ink-faint: rgba(214,226,242,.32);
+    --hair: rgba(160,190,235,.14);
+    --chip: rgba(44,74,210,.10);
+    --field: #3c4043;
+    --sec: #9fb4c8;
+    --link: #2c4ad2;
+    --done-nm: #9fd3ae;
+    --tm-c: #8fae99;
+    --nt-c: #c9a86a;
+    } /* night card: neutral charcoal (32,33,37) at 94%, sampled from a Google Maps dark reference (#202125); fields take #3c4043 */
   #selPop { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); padding: 13px 14px; border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); flex-direction: column; align-items: stretch; gap: 7px; width: min(262px, 92vw); } /* Beta 1.209 (Andrew): the card wears LOOK 2, the sample he approved - a solid card (white by day), a hairline border, 16px radius, 13/14 padding and a soft drop shadow; the 1.30 glass + blur and the 1.32 street-colour left edge are retired (the edge's --accent feed in renderPanel goes with it). Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes. Beta 1.215 (Andrew): the ONE fixed width narrows 342px -> 262px - his pick "C" from the width samples - so the centred card leaves the top-right corner (the Day/Night toggle, the re-centre button) clear beside it; the centring (left 50% + translateX(-50%)), the top (144) and the height (112.2) are unchanged, so the one-size invariant restates as 262 x 112.2 and the 1.214 re-centre drop (267 = 144 + 112.2 + 10.8) stands exactly as derived */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions */ /* Beta 1.168 (Andrew): the top drops 54px -> 144px (+90) - the pop-up started above the Day/Night button (top 78 + 56 tall = bottom 134) and covered its left half (44px at 390 wide, 24px at 430); 144 lands the pop-up's top 10px below the button's bottom edge, measured in every selection state at 390x844 and 430x932 (the box is one fixed size, so one shift clears them all) */
   body.night #selPop { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); } /* night: near-solid charcoal, hairline white border, black shadow */
   #selPop.hidden { display: none; }
@@ -165,7 +278,18 @@
   #confirmPill .cfSub { font-size: 12px; color: #6f757f; line-height: 1.35; } /* the pill sub-line's own type and grey (#selStatus) */
   body.night #confirmPill .cfSub { color: #9aa0aa; }
   #confirmPill .cfRow { display: flex; gap: 5px; margin-top: 2px; }
-  #confirmPill .cfRow button { flex: 1; border: none; border-radius: 11px; height: 42px; min-height: 42px; padding: 0 10px; font-size: 14.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; } /* the pill action buttons' geometry (42px / 11px / 14.5px-700) */
+  #confirmPill .cfRow button { flex: 1;
+    border: none;
+    border-radius: 11px;
+    height: 42px;
+    min-height: 42px;
+    padding: 0 10px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    white-space: nowrap;
+    } /* the pill action buttons' geometry (42px / 11px / 14.5px-700) */
   #confirmPill #cfKeep { background: rgba(20,22,26,.05); color: #14161a; } /* the ghost: the note button's day tint (#selNote) */
   body.night #confirmPill #cfKeep { background: rgba(255,255,255,.06); color: #f2f3f5; }
   /* #cfDanger wears the one shared danger solid (defined at .routeDel below); no colour rule of its own */
@@ -176,7 +300,20 @@
   body.night #selPop #selAllBtn { background: rgba(6,214,160,.15); color: #2fe0ae; }
   /* Clear stays a ghost at 42px; its ink is the app's red, like every destructive action */
   #selPop #selClearBtn { background: transparent; color: #e63a2e; height: 42px; min-height: 42px; border-radius: 11px; font-size: 14.5px; padding: 0 10px; }
-  #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
+  #cancelStartBtn { position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: var(--shadow-float);
+    } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); color: var(--ink);
     -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card);
     /* sheets open at HALF height: the three stops are closed / half / full */
@@ -223,7 +360,17 @@
   .srow .sbtn { position: relative; margin-left: 0; flex-shrink: 0; border: none; border-radius: 999px; background: rgba(44,74,210,.12); color: var(--link); font-size: 11px; font-weight: 700; padding: 3px 9px; cursor: pointer; }
   .srow .sbtn::after { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -27px; } /* its touch area covers the row's height over the pill's column only: the next row's taps never land on it */
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
-  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
+  .noteEd textarea { width: 100%;
+    min-height: 64px;
+    box-sizing: border-box;
+    background: var(--field);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: var(--rad-btn);
+    padding: 9px;
+    font-size: 16px;
+    /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit;
+    }
   .noteEd .nhint { font-size: 12px; color: var(--tm-c); margin-top: 5px; }
   #cleanView { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 14px 14px; } /* the clean detail lives in the Pace sheet now: while shown it takes the #pacePad seat and its scroll treatment */
   .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
@@ -353,14 +500,34 @@
   .modal.leaving .card { animation: menuRiseOut 180ms var(--ease-close) forwards; }
   @keyframes menuFadeOut { to { opacity: 0; } }
   @keyframes menuRiseOut { to { opacity: 0; transform: translateY(10px) scale(.97); } } /* the exits mirror the entrances: same end pose, the close curve, 180ms */
-  .modal .card { position: relative; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
+  .modal .card { position: relative;
+    background: var(--card);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: var(--ink);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    padding: 18px;
+    width: 100%;
+    max-width: 340px;
+    }
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; }
   .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
   /* #finYes wears the shared danger solid (menu block below); its own rule retired */
   #noteYes { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
-  #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
+  #noteText { width: 100%;
+    min-height: 74px;
+    border-radius: var(--rad-btn);
+    border: 1px solid var(--hair);
+    background: var(--field);
+    color: var(--ink);
+    font-size: 16px;
+    /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px;
+    margin-bottom: 12px;
+    font-family: inherit;
+    }
   /* the backup box for the blue pane: white box, dark text; its font joins the app's one stack */
   #xText { width: 100%; min-height: 150px; border-radius: 14px; border: 1px solid rgba(255,255,255,.45); background: #fff; color: #14161c; font-size: 11.5px; padding: 10px; font-family: inherit; resize: vertical; }
   .bkBtn { font-size: 16px; height: 58px; padding: 0 16px; text-align: center; width: 100%; } /* the Settings sub-pane buttons join the one pill height: exactly 58px */
@@ -529,7 +696,18 @@ body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.aw
 /* the insides ride the slide: parked above the clip at rest, seated at translateY(0) open, on the clip's per-direction timing */
 .routeDropIn { display: flex; flex-direction: column; gap: var(--drop-gap); padding: var(--drop-pad); transform: translateY(-100%); transition: transform 335ms var(--ease-close); }
 .routeDrop.open .routeDropIn { transform: translateY(0); transition: transform var(--anim-dur) var(--ease-open); }
-.routeDrop button { appearance: none; -webkit-appearance: none; border: none; height: var(--drop-pill); min-height: var(--drop-pill); border-radius: var(--drop-rad); font-size: var(--drop-fs); font-weight: 700; padding: 0 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(10,16,60,.25); } /* the standard pill shadow (.rmBtn's) */
+.routeDrop button { appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  height: var(--drop-pill);
+  min-height: var(--drop-pill);
+  border-radius: var(--drop-rad);
+  font-size: var(--drop-fs);
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(10,16,60,.25);
+  } /* the standard pill shadow (.rmBtn's) */
 .routeDrop .dropLoad { background: #fff; color: #173a8a; } /* the menu's solid primary face (.rmBtn.primary) at the dropdown's size */
 .routeDrop .dropLoad:active { background: #fff; } /* holds the solid on press, like .rmBtn.primary:active */
 .routeDrop .dropLoaded { background: #fff; color: #173a8a; opacity: .55; cursor: default; } /* the loaded route's inert pill: same white face, dimmed, so the live Delete under it always reads stronger */
@@ -538,7 +716,20 @@ body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.aw
 #crModalNo.cancelRed { color: #e63a2e; } /* the confirm's No wears red text while it reads 'Cancel'; the plain close form keeps the card ink */
 .rmTitle { color: #fff; font-size: 22px; font-weight: 700; text-align: center; } /* pane titles centred here in the base rule, covering every .rmTitle wearer in both blue menus */
 .rmNote { color: rgba(255,255,255,.88); font-size: 16px; line-height: 1.45; }
-.rmBack { appearance: none; -webkit-appearance: none; background: none; border: none; color: rgba(255,255,255,.85); font-size: 16px; text-align: left; padding: 6px 2px; cursor: pointer; align-self: flex-start; display: flex; align-items: center; gap: 8px; } /* Beta 1.233: the flex row carries the Back To disc beside the word (renderIcons stamps the glyph in) */
+.rmBack { appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.85);
+  font-size: 16px;
+  text-align: left;
+  padding: 6px 2px;
+  cursor: pointer;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  } /* Beta 1.233: the flex row carries the Back To disc beside the word (renderIcons stamps the glyph in) */
 .rmBackIco { width: 20px; height: 20px; display: block; flex: none; } /* flex columns stretched every Back button full width; align-self:flex-start shrinks the hit area to the visible words */
 .routeRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; appearance: none; -webkit-appearance: none; cursor: pointer; }
 .routeMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
@@ -566,7 +757,19 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 /* the create sheet surfaces wear the app's theme tokens, not hardcoded whites that stayed bright at night */
 /* one search bar with a round back pill; glyphs are Glyph Neue via renderIcons; the results card hangs below it */
 /* at night, bar and back pill wear the token black (the rim rule at .dockBtn); glyphs flip with the theme */
-#crExit { width: 50px; height: 50px; flex: none; border: 1px solid rgba(20,25,40,.08); border-radius: 50%; background: #fff; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+#crExit { width: 50px;
+  height: 50px;
+  flex: none;
+  border: 1px solid rgba(20,25,40,.08);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  }
 .crBackIco { width: 22px; height: 22px; display: block; }
 /* the day face: the create text boxes' white pill; at night, the shared token black (the rim rule at .dockBtn) */
 #crSearchWrap { flex: 1; display: flex; align-items: center; gap: 10px; height: 50px; background: #fff; border: none; border-radius: 25px; box-shadow: 0 6px 18px rgba(0,0,0,.18); padding: 0 12px 0 16px; }
@@ -608,7 +811,20 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crCityGo { color: var(--link); font-weight: 700; } /* the word 'change' in the app's own link blue - the one link token, both themes */
 .crChip.pend { background: #a35b00; color: #fff; }
 .crRow.pending { opacity: .8; }
-.csheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; background: var(--card-solid); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 30px rgba(8,12,40,.30); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: none; max-height: 54vh; flex-direction: column; }
+.csheet { position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5000;
+  background: var(--card-solid);
+  color: var(--ink);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -6px 30px rgba(8,12,40,.30);
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  display: none;
+  max-height: 54vh;
+  flex-direction: column;
+  }
 .csheet.on { display: flex; }
 .csheetTitle { font-size: 20px; font-weight: 750; color: var(--ink); }
 .csheetSub { font-size: 14px; color: var(--ink-dim); margin-top: 2px; }
@@ -625,7 +841,18 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crChip.primary { background: #ffc233; color: #000000; }
 .crChip.sec { background: #ef476f; color: #000000; } /* both pills wear the same ink: true black #000000, all caps (Andrew's picks from shown variants) */
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
-.crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
+.crPrimary { appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: linear-gradient(135deg, #3d65ef, #1b2fb6);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  padding: 15px 18px;
+  border-radius: 14px;
+  width: 100%;
+  cursor: pointer;
+  }
 .crPrimary:disabled { opacity: .45; }
 .crGhost { appearance: none; -webkit-appearance: none; border: 1px solid var(--hair); background: transparent; color: var(--ink); font-size: 16px; font-weight: 650; padding: 13px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crDanger { appearance: none; -webkit-appearance: none; border: none; background: none; color: #e63a2e; font-size: 15px; font-weight: 650; padding: 8px; cursor: pointer; width: 100%; }
@@ -664,7 +891,18 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crStripTxt { flex: 1; min-width: 0; }
 .crStripTitle { font-size: 16px; font-weight: 700; color: var(--ink); }
 .crStripSub { font-size: 13px; color: var(--ink-dim); }
-#crReviewBtn { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-weight: 700; font-size: 14.5px; padding: 9px 14px; border-radius: 10px; cursor: pointer; flex: none; }
+#crReviewBtn { appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: linear-gradient(135deg, #3d65ef, #1b2fb6);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex: none;
+  }
 #crSectorBar { padding: 14px 16px; }
 .crSbTitle { font-size: 17px; font-weight: 700; color: var(--ink); }
 .crSbSub { font-size: 13.5px; color: var(--ink-dim); margin-top: 2px; }
@@ -674,7 +912,18 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 #crSbDone { background: #2ecc71; color: #fff; border: none; }
 #crSbDeselect { background: transparent; color: #e63a2e; border: 1.5px solid var(--hair); } /* the sector bar's destructive slot wears the app's red, colour only; its button is Deselect now (it removes the road) */
 body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* night only: --link read 2.44:1 on the dark card; --sec flips at night, keeping the blue identity readable */
-.rmInput { appearance: none; -webkit-appearance: none; width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); color: #fff; font-size: 18px; padding: 14px 16px; border-radius: 14px; outline: none; }
+.rmInput { appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.45);
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  font-size: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  outline: none;
+  }
 .rmInput::placeholder { color: rgba(255,255,255,.55); }
 /* every create-flow text box wears this pill, defined once here; non-create inputs keep the .rmInput glass base */
 #crCityInput, #crNameInput, #crAreaInput { background: #fff; border: none; color: #14161c; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
@@ -967,7 +1216,12 @@ const PACK_TILES_MAX = 20000; // the tile-URL iteration budget: a worldwide-box 
     if (raw === undefined) return false; // A-02: an unreadable legacy field blocks the pass - it is not an absent one
     if (raw === null) { if (f in prog) { delete prog[f]; progDirty = true; } continue; } // legacy no longer holds the field: its fill record is moot
     const slot = migGet(rk[f]); if (slot === undefined) return false;
-    if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; continue; } // fill the gap, verified, and record the fill as migration-owned before moving on
+    if (slot === null) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false;
+    prog[f] = raw;
+    progDirty = true;
+    if (!saveProg()) return false;
+    continue;
+    } // fill the gap, verified, and record the fill as migration-owned before moving on
     // migration's own fill, but the legacy value moved on: re-copy, so the stale fill never becomes permanent
     if (f in prog && slot === prog[f]) { if (raw !== prog[f]) { if (!lsSet(rk[f], raw) || lsGet(rk[f]) !== raw) return false; prog[f] = raw; progDirty = true; if (!saveProg()) return false; } continue; }
     if (f in prog) { delete prog[f]; progDirty = true; } // the slot value is NOT what migration wrote - someone else (a restore) owns it now; it wins, untouched
@@ -986,7 +1240,14 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
 /** @param {TrailPoint[]} trail @param {number[]} [trailSessions] @returns {TrailPoint[][]} */ function trailSegments(trail, trailSessions) {
   trailSessions = trailSessions || [];
   const segs = []; let seg = []; let sessAt = 0;
-  for (let i = 0; i < trail.length; i++) { const p = trail[i]; if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt; while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo; } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) { segs.push(seg); seg = []; } seg.push(p); }
+  for (let i = 0;
+  i < trail.length;
+  i++) { const p = trail[i];
+  if (i > 0) { if (sessAt > 0 && trailSessions[sessAt - 1] > trail[i - 1][2]) { let lo = 0, hi = sessAt;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (trailSessions[mid] <= trail[i - 1][2]) lo = mid + 1; else hi = mid; } sessAt = lo;
+  } while (sessAt < trailSessions.length && trailSessions[sessAt] <= trail[i - 1][2]) sessAt++
+    ; } if (i > 0 && (p[2] - trail[i - 1][2] > 300 || distM(trail[i - 1], p) > 1000 || (sessAt < trailSessions.length && trailSessions[sessAt] <= p[2]))) { segs.push(seg); seg = []; } seg.push(p);
+  }
   if (seg.length) segs.push(seg);
   return segs;
 }
@@ -1043,10 +1304,29 @@ function hideSurface(el) {
 /** @param {string} k @param {string} v @returns {boolean} */ function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { flagStorage(); return false; } }
 /** @param {string} k @returns {boolean} */ function lsDel(k) { try { localStorage.removeItem(k); return true; } catch (e) { flagStorage(); return false; } }
 // ===== DEVICE PROFILE ===== Android only, graded by measured speed; on iPhone this machinery never runs at all
-const DP_PLATFORM = (() => { try { const ua = (window.navigator && navigator.userAgent) || ''; if (/Android/i.test(ua)) return 'android'; if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'; if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return 'ios'; return 'other'; } catch (e) { return 'other'; } })(); // iPadOS asks for the desktop UA - a 'Macintosh' agent with a multi-touch screen is an iPad, never an Android
+const DP_PLATFORM = (() => { try { const ua = (window.navigator &&
+  navigator.userAgent) || ''; if (/Android/i.test(ua)) return 'android'; if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'; if (/Macintosh/i.test(ua) &&
+  (navigator.maxTouchPoints || 0) > 1) return 'ios'; return 'other'; } catch (e) { return 'other'; } })();
+// iPadOS asks for the desktop UA - a 'Macintosh' agent with a multi-touch screen is an iPad, never an Android
 const DP_ANDROID = DP_PLATFORM === 'android';
 const DP_TIERS = [{ pr: 2 }, { pr: 1.5 }, { pr: 1.25 }]; // the closed knob list: canvas pixel ratio per tier (0 full / 1 mid / 2 low)
-const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1, bootGrade: -1, booted: false, bootApplyUntil: 0, pending: -1, lastEvalTier: -1, agree: 0, lastApplyAt: 0, lastInteractAt: 0, pointerDown: false, renderSeen: false, hooked: false, samples: [] };
+const DP = { platform: DP_PLATFORM,
+  entered: false,
+  tier: 0,
+  hint: 0,
+  stored: -1,
+  bootGrade: -1,
+  booted: false,
+  bootApplyUntil: 0,
+  pending: -1,
+  lastEvalTier: -1,
+  agree: 0,
+  lastApplyAt: 0,
+  lastInteractAt: 0,
+  pointerDown: false,
+  renderSeen: false,
+  hooked: false,
+  samples: [] };
 // the constructor's ratio: on Android the applied tier's, everywhere else the literal 2
 /** @returns {number} */ function dpPixelRatio() { return DP_ANDROID ? DP_TIERS[DP.tier].pr : 2; }
 /** @param {number[]} a @returns {number} */ function dpMedian(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
@@ -1089,7 +1369,8 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
   try { idle = typeof map !== 'undefined' && !!map && !map.isMoving() && !DP.pointerDown && (now - DP.lastInteractAt > 600) && !(document.body && document.body.classList.contains('kb')); } catch (e) { idle = false; }
   if (!idle) return;
   DP.tier = DP.pending; DP.pending = -1; DP.lastApplyAt = now;
-  try { if (typeof map !== 'undefined' && map && typeof map.setPixelRatio === 'function') map.setPixelRatio(DP_TIERS[DP.tier].pr); } catch (e) { /* a map without the setter keeps the constructor's ratio; the tier still governs the next map built */ }
+  try { if (typeof map !== 'undefined' && map && typeof map.setPixelRatio === 'function') map.setPixelRatio(DP_TIERS[DP.tier].pr);
+  } catch (e) { /* a map without the setter keeps the constructor's ratio; the tier still governs the next map built */ }
 }
 // real work only: a frame counts when the map rendered or is moving; idle screens earn no samples
 /** @returns {void} */ function dpSamplerStart() {
@@ -1099,7 +1380,8 @@ const DP = { platform: DP_PLATFORM, entered: false, tier: 0, hint: 0, stored: -1
     const dt = now - last; last = now;
     if (document.hidden) return;
     let work = DP.renderSeen; DP.renderSeen = false;
-    try { if (typeof map !== 'undefined' && map) { if (!DP.hooked) { DP.hooked = true; map.on('render', () => { DP.renderSeen = true; }); } if (map.isMoving()) work = true; } } catch (e) { /* the map is not up yet - frames before it exists are not work samples */ }
+    try { if (typeof map !== 'undefined' && map) { if (!DP.hooked) { DP.hooked = true; map.on('render', () => { DP.renderSeen = true; }); } if (map.isMoving()) work = true;
+    } } catch (e) { /* the map is not up yet - frames before it exists are not work samples */ }
     if (!work || !(dt > 0) || dt > 1000) return; // a >1 s frame is a stall or tab switch, not a sample: it never convicts a device alone
     DP.samples.push(dt); if (DP.samples.length > 240) DP.samples.splice(0, DP.samples.length - 240);
     sinceEval++;
@@ -1424,7 +1706,11 @@ const BOARD = {
   },
   // the fallback: revert only sides stamped at/after the run's start, re-derive, drop coverage (it re-earns)
   /** @param {number} startMs @returns {void} */ revertRunMarks(startMs) {
-    for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {}; for (let i = 0; i < P.length; i++) { const st = T[i] || [null, null]; if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= startMs) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= startMs) { P[i] &= ~2; st[1] = null; } } }
+    for (const n of STREETNAMES) { const P = pieces[n], T = pieceTimes[n] || {};
+    for (let i = 0;
+    i < P.length;
+    i++) { const st = T[i] || [null, null];
+    if ((P[i] & 1) && st[0] && Date.parse(st[0]) >= startMs) { P[i] &= ~1; st[0] = null; } if ((P[i] & 2) && st[1] && Date.parse(st[1]) >= startMs) { P[i] &= ~2; st[1] = null; } } }
     BOARD.rederive();
     coveredIdx = {};
   },
@@ -1537,7 +1823,15 @@ trailSessions = parseJ(lsGet(LS.sess), []); // each clean's epoch-second start (
 trailSessions = Array.isArray(trailSessions) ? [...new Set(trailSessions.filter(t => Number.isFinite(t) && t >= 946684800 && t <= 4102444800))].sort((a, b) => a - b) : [];
 if (trailSessions.length > TRAIL_MAX) trailSessions = trailSessions.slice(trailSessions.length - TRAIL_MAX); // no cap for session markers (one per clean start): load bounds them at the trail's cap, newest kept
 // Trail (production): [lat, lng, epochSeconds] triples; out-of-range or impossible points are dropped at load (SEC-9a bounds).
-trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) && p.length === 3 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) && p[2] >= 946684800 && p[2] <= 4102444800 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180) : [];
+trail = Array.isArray(trail) ? trail.filter(p => Array.isArray(p) &&
+  p.length === 3 &&
+  Number.isFinite(p[0]) &&
+  Number.isFinite(p[1]) &&
+  Number.isFinite(p[2]) &&
+  p[2] >= 946684800 &&
+  p[2] <= 4102444800 &&
+  Math.abs(p[0]) <= 90 &&
+  Math.abs(p[1]) <= 180) : [];
 if (trail.length > TRAIL_MAX) trail = trail.slice(trail.length - TRAIL_MAX);
 const trailBeforeWindow = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailBeforeWindow) markDirty('trail'); if (trailBeforeWindow > 0 && !trail.length && !runStart && trailSessions.length) { trailSessions = []; markDirty('sess'); } // Beta 1.193 (trail redesign): the window binds at load like everywhere else - a 1.190-era resident trail (every clean, up to the old point cap) is cut to the live run's last 60 minutes on the first 1.191 boot, and with no live run it empties: the fallback has no run to protect. runStart was parsed above (line order is load-bearing: the start record is read before the trail for exactly this). The binding is STORED, not just in memory: a shortened trail is marked dirty so the next flush writes the windowed value (a backup reads storage raw - it must never carry points the window forbids), and when the window empties a trail that EXISTED with no live run, its session markers go with it - markers never outlive their trail (the C-01 pair rule, applied at load; a live run keeps its markers, its own start among them). The clear is scoped to the window's own act (trailBeforeWindow > 0): markers stored with NO trail at all are not the window's business - the migration and restore layers govern those (C-01/C06), and clearing them here would eat records those layers legitimately carry (the slot migration's copied sess field - drive145 N12d caught exactly that in this round's first gate). // Beta 1.152 (NV round, NV4): the writer caps the trail at TRAIL_MAX by dropping the OLDEST points (recordFix, app3) - the load keeps the same end of the same cap, so a planted slot cannot resurrect an unbounded trail.
 BOARD.loadCoverage();
@@ -1556,7 +1850,10 @@ BOARD.loadSides();
   const lastMs = sig && sig.runId ? (+sig.runId || 0) : 0; // the entry's identity (none yields 0); in the no-run branch it must equal the finclean marker's at
   const boardEmpty = STREETNAMES.every(n => pieces[n].every(v => v === 0));
   if (runStart) { const act = finishReconcileAction(runStart, lastMs, boardEmpty); if (act === 'rollback') { HIST.dropPhantom(sig, rawLast, last, lastMs); } else if (act === 'complete') { if (txDel(LS.start).ok) runStart = 0; } return; }
-  const marker = parseJ(lsGet(LS.finclean), null); const markerRun = marker && typeof marker === 'object' && !Array.isArray(marker) ? marker.run : null; const markerAt = marker && typeof marker === 'object' ? (+marker.at || 0) : 0; const boardMatch = !boardEmpty && finishBoardMatch(sig, pieces, pieceTimes, STREETNAMES);
+  const marker = parseJ(lsGet(LS.finclean), null);
+  const markerRun = marker && typeof marker === 'object' && !Array.isArray(marker) ? marker.run : null;
+  const markerAt = marker && typeof marker === 'object' ? (+marker.at || 0) : 0;
+  const boardMatch = !boardEmpty && finishBoardMatch(sig, pieces, pieceTimes, STREETNAMES);
   if (finishReconcileNoRunAction(markerRun, markerAt, lastMs, boardEmpty, boardMatch) === 'rollback') { if (HIST.dropPhantom(sig, rawLast, last, lastMs)) txDel(LS.finclean); }
 }
 // a committed finish with failed metadata writes leaves a durable obligation: completed here at load, guarded and idempotent
@@ -1614,7 +1911,9 @@ let themeOverride = null, themeOverrideUntil = 0; // null = automatic
   if (!okNight || !okExp) showBanner('Not saved'); } // a failed write is surfaced; the override still applies for this session
 /** @returns {void} */ function themeTick() { // the boundary hand-back, and the automatic cycle itself: if the effective theme no longer matches the screen, repaint
   if (themeOverride !== null && Date.now() >= themeOverrideUntil) clearThemeOverride();
-  if (typeof document !== 'undefined' && document.body && typeof applyNight === 'function' && isNight() !== document.body.classList.contains('night')) { applyNight(); if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap(); }
+  if (typeof document !== 'undefined' && document.body && typeof applyNight === 'function' && isNight() !== document.body.classList.contains('night')) { applyNight();
+  if (typeof map !== 'undefined' && map && typeof setBasemap === 'function') setBasemap();
+  }
 }
 (function initTheme() { // boot resolution (script eval; the boot tail's applyNight makes it visible)
   let continuing = false; try { continuing = !!sessionStorage.getItem('snowroute.session'); sessionStorage.setItem('snowroute.session', '1'); } catch (e) {}
@@ -1630,7 +1929,9 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // the run's work only (stamped at/after Start): pre-Start marks would otherwise inflate the live rate
 /** @returns {number} */ function liveWorkM() {
   if (!runStart) return 0; let s = 0;
-  for (const n of STREETNAMES) { const p = pieces[n], T = pieceTimes[n] || {}; STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((p[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) s += L; if ((p[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) s += L; }); }
+  for (const n of STREETNAMES) { const p = pieces[n], T = pieceTimes[n] || {};
+  STRETCH[n].parts.forEach((part, i) => { const L = segLenM(part); const st = T[i] || [null, null]; if ((p[i] & 1) && st[0] && Date.parse(st[0]) >= runStart) s += L; if ((p[i] & 2) && st[1] && Date.parse(st[1]) >= runStart) s += L; });
+  }
   return s; }
 /** @returns {number} */ function totalWorkM() { let s = 0; for (const n of STREETNAMES) s += STRETCH[n].total * 2; return s; }
 // the sides record is the authority for completion, so it writes first: on failure the earlier coherent state survives
@@ -2135,7 +2436,9 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
     const segs = [];
     for (let i = 0; i + 1 < off.length; i++) { if (!TOPO.segReal(n, i)) continue; segs.push({ seg: [off[i], off[i + 1]], ext: false }); } // between-runs ground is not street: a corner found on it pairs sides at a nonexistent junction
     if (vi === 0 && off.length > 1) { const d = [off[0][0] - off[1][0], off[0][1] - off[1][1]], L = H.jDistM(off[0], off[1]) || 1; segs.push({ seg: [[off[0][0] + d[0] * 8 / L, off[0][1] + d[1] * 8 / L], off[0]], ext: true }); }
-    if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = H.jDistM(q, e) || 1; segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true }); }
+    if (vi === off.length - 1 && off.length > 1) { const e = off[off.length - 1], q = off[off.length - 2], d = [e[0] - q[0], e[1] - q[1]], L = H.jDistM(q, e) || 1;
+    segs.push({ seg: [e, [e[0] + d[0] * 8 / L, e[1] + d[1] * 8 / L]], ext: true });
+    }
     return segs;
   };
   // an extension corner is valid only if its leg stays on its own side of the other centreline
@@ -2640,7 +2943,10 @@ function cornerTouchSlices(slices, pairs) {
         if (!pr.corner || tried.has(coordKey(pr.corner))) continue;
         tried.add(coordKey(pr.corner));
         // the partner shows if a slice ends here or runs through with the corner on it
-        const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p, pi) => pi + 1 < o.pts.length && H.ptSegM(pr.corner, p, o.pts[pi + 1]) < 1.0));
+        const partnerShown = endKeys.has(pr.n2 + '|' + pr.vi2 + '|' + pr.side2) || slices.some(o => o !== sl && o.mem.some(m => m.n === pr.n2 && m.side === pr.side2) && o.pts.some((p,
+          pi) => pi + 1 < o.pts.length && H.ptSegM(pr.corner,
+          p,
+          o.pts[pi + 1]) < 1.0));
         if (!partnerShown) continue; // skip, not stop: rejections must not abandon remaining candidates; the only stop follows a landed hop
         const endPt = atEnd ? sl.pts[sl.pts.length - 1] : sl.pts[0];
         const d = H.jDistM(endPt, pr.corner);
@@ -2727,7 +3033,11 @@ function pullbackEnd(pts, atStart, d) {
   let acc = 0;
   for (let k = 1; k < work.length; k++) {
     const seg = H.jDistM(work[k], work[k - 1]);
-    if (acc + seg >= d) { const f = seg ? (d - acc) / seg : 0; const cut = [work[k - 1][0] + (work[k][0] - work[k - 1][0]) * f, work[k - 1][1] + (work[k][1] - work[k - 1][1]) * f]; const out = [cut].concat(work.slice(k)); return atStart ? out : out.reverse(); }
+    if (acc + seg >= d) { const f = seg ? (d - acc) / seg : 0;
+    const cut = [work[k - 1][0] + (work[k][0] - work[k - 1][0]) * f, work[k - 1][1] + (work[k][1] - work[k - 1][1]) * f];
+    const out = [cut].concat(work.slice(k));
+    return atStart ? out : out.reverse();
+    }
     acc += seg;
   }
   return pts;
@@ -2993,7 +3303,9 @@ function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cu
   if (dJ === null) return { solid: pts, fade: null };
   const sub = (d0, d1) => { // the points between two along-distances, cut points interpolated (sliceLine's way)
     if (d1 - d0 < 0.05) return null;
-    const at = d => { for (let i = 1; i < pts.length; i++) { if (d <= cum[i] || i === pts.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; } } return pts[pts.length - 1]; };
+    const at = d => { for (let i = 1; i < pts.length; i++) { if (d <= cum[i] || i === pts.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0,
+      Math.min(1, (d - cum[i - 1]) / span)); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t,
+      pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; } } return pts[pts.length - 1]; };
     const out = [at(d0)];
     for (let i = 0; i < pts.length; i++) if (cum[i] > d0 && cum[i] < d1) out.push(pts[i]);
     out.push(at(d1));
@@ -3086,7 +3398,12 @@ function buildFamilies() {
   const centres = mergeStrands(centreSlices, null);
   const bands = mergeStrands(bandSlices, null);
   clipStrandEnds(centres, SURF_HALF);
-  clipStrandEnds(bands, SURF_HALF, null, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n], ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (TOPO.runStart(m.n, g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
+  clipStrandEnds(bands,
+    SURF_HALF,
+    null,
+    (sl,
+      atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; if (!m) return false; const g = GEO[m.n],
+      ni = atStart ? m.idx - 1 : m.idx + 1; if (ni < 0 || ni >= g.cuts.length) return false; if (TOPO.runStart(m.n, g.cuts[atStart ? m.idx : ni][0])) return false; return H.pieces[m.n][ni] !== 0; });
   const fills = mergeStrands(fillSlices, null);   // exact joins only: consecutive pieces share the half-line vertex, so a fill is one strand through junctions
   // fill strand ends clip ON their half-offset line (clipOnLine), never dragged toward the centreline
   clipStrandEnds(fills, HALF_HALF, (sl, atStart) => { const m = atStart ? sl.mem[0] : sl.mem[sl.mem.length - 1]; return m && m.side !== undefined ? (m.side ? GEO[m.n].offH1 : GEO[m.n].offH0) : null; });
@@ -3099,7 +3416,12 @@ function buildFamilies() {
   lastResortConnect(edges, bands);
   PAINT.strands = { centres, bands, edges, fills };   // the merged strands publish into the model: buildSelFill reads the fills from it, not a module global
   const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
-  return { centres: fc(centres, sl => sl.key), bands: fc(bands, () => MUGREEN), edges: fc(edges, () => MUGREEN), fills: fc(fills, () => MUGREEN), fades: { type: 'FeatureCollection', features: fadeSlices.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } }; // Beta 1.259: the fade features bypass mergeStrands by design - each is its own short line in the lineMetrics source, so the gradient's progress spans exactly the fade zone
+  return { centres: fc(centres, sl => sl.key),
+    bands: fc(bands, () => MUGREEN),
+    edges: fc(edges, () => MUGREEN),
+    fills: fc(fills, () => MUGREEN),
+    fades: { type: 'FeatureCollection', features: fadeSlices.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } };
+  // the fade features bypass mergeStrands by design: each is its own short line, so progress spans exactly the fade zone
 }
 function currentSelList() { // every selected stretch: the app's selSet when multi-selecting, else the single anchor - read live at build time
   return (typeof H.selSet !== 'undefined' && Array.isArray(H.selSet) && H.selSet.length) ? H.selSet : (sel ? [sel] : []);
@@ -3110,7 +3432,17 @@ function buildSelFill() {   // selected fills build by fillSlicePts, the board's
   const fades = [];
   for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
-    if (bits !== 3) [0, 1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(it.name, GEO[it.name].cuts[it.idx], fillSlicePts(it.name, it.idx, side), 'f', GREEN, false); for (const f of fSp.fades) fades.push(f); if (fSp.solid) { feats.push({ type: 'Feature', properties: { col: GREEN, colG: mute(GREEN) }, geometry: { type: 'LineString', coordinates: GJ(fSp.solid) } }); selSides.push({ n: it.name, idx: it.idx, side }); } } });
+    if (bits !== 3) [0,
+      1].forEach(side => { if (bits & (1 << side)) { const fSp = boundarySplit(it.name,
+        GEO[it.name].cuts[it.idx],
+        fillSlicePts(it.name, it.idx, side),
+        'f',
+        GREEN,
+        false); for (const f of fSp.fades) fades.push(f); if (fSp.solid) { feats.push({ type: 'Feature',
+          properties: { col: GREEN, colG: mute(GREEN) },
+          geometry: { type: 'LineString', coordinates: GJ(fSp.solid) } }); selSides.push({ n: it.name,
+          idx: it.idx,
+          side }); } } });
   }
   // board connectors touching a selected side redraw here too (vibrant), identified by the explicit flag, not mem count
   if (selSides.length && PAINT.strands && PAINT.strands.fills) {
@@ -3227,7 +3559,26 @@ function tunePlaceLabels() {
 }
 // ---- the layer catalogue: groups written once, in stack order; the text/stack lists derive from them
 const LAYERS = {
-  paint: ['t1-casing', 't1-casingb', 't1-surface', 't1-band', 't1-fill', 'fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 't1-sel', 't1-selband', 't1-selfill', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill', 'sel-core-s', 'sel-core-b', 'hit'],
+  paint: ['t1-casing',
+    't1-casingb',
+    't1-surface',
+    't1-band',
+    't1-fill',
+    'fade-casing',
+    'fade-surf-y',
+    'fade-surf-r',
+    'fade-band-g',
+    'fade-fill-g',
+    't1-sel',
+    't1-selband',
+    't1-selfill',
+    'selfade-y',
+    'selfade-r',
+    'selfade-g',
+    'selfade-fill',
+    'sel-core-s',
+    'sel-core-b',
+    'hit'],
   poi: ['routepoi-ring', 'routepoi-dot', 'routepoi-txt'],
   titles: [1, 2, 3, 4].map(t => 'streetnamespt' + t),
   glow: [1, 2, 3, 4, 5].flatMap(i => ['sel-glow' + i + '-s', 'sel-glow' + i + '-b']),
@@ -3256,9 +3607,13 @@ function addStack() {
   }
   const before = firstSymbolId();
   const add = (layer) => { if (!GLM.getLayer(layer.id)) GLM.addLayer(layer, before); };
-  const line = (id, source, paint, layout, filter) => { const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };   // NOTE: a present-but-undefined `filter` key makes MapLibre silently drop the layer (found by the QA tour, 2026-10-28)
-  // --- T1: integrated - the surface itself carries the state; red sorts before yellow, green bands above centres
-  add(line('t1-casing', 'centres', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
+  const line = (id, source, paint, layout, filter) => { const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };
+  // NOTE: a present-but-undefined `filter` key makes MapLibre silently drop the layer
+  /* --- T1: the surface carries the state; red sorts before yellow, green bands above centres */
+  add(line('t1-casing',
+    'centres',
+    { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' }));
   add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   add(line('t1-surface', 'centres', { 'line-color': ['get', 'col'], 'line-width': surfW, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   // the completed band draws at surfW - the same width as the not-done surface, per Andrew's order
@@ -3267,9 +3622,21 @@ function addStack() {
   add(line('t1-fill', 'fills', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   // --- feathers: one literal-gradient layer per colour (line-gradient cannot read properties); features carry k and col
   const fadeOp = ['step', ['zoom'], 0, 12.6, 1];
-  add(line('fade-casing', 'fades', { 'line-gradient': fadeGrad(H.isNight() ? '#000000' : '#5a5f6a'), 'line-width': surfCASE, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'x']));
-  add(line('fade-surf-y', 'fades', { 'line-gradient': fadeGrad(mute(YELLOW)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(YELLOW)]]));
-  add(line('fade-surf-r', 'fades', { 'line-gradient': fadeGrad(mute(RED)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(RED)]]));
+  add(line('fade-casing',
+    'fades',
+    { 'line-gradient': fadeGrad(H.isNight() ? '#000000' : '#5a5f6a'), 'line-width': surfCASE, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' },
+    ['==', ['get', 'k'], 'x']));
+  add(line('fade-surf-y',
+    'fades',
+    { 'line-gradient': fadeGrad(mute(YELLOW)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' },
+    ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(YELLOW)]]));
+  add(line('fade-surf-r',
+    'fades',
+    { 'line-gradient': fadeGrad(mute(RED)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
+    { 'line-cap': 'butt' },
+    ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(RED)]]));
   add(line('fade-band-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'b']));
   add(line('fade-fill-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
   // --- selection glow: three nested widths in the street's own colour; these layers use round joins, not miter
@@ -3310,9 +3677,26 @@ function addStack() {
     }
   }
   // at 12.6 the paint and names pop out, the POI in: no fading (Andrew), never one alone
-  add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3, paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3, layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0], 'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
+  add({ id: 'routepoi-ring',
+    type: 'circle',
+    source: 'routepoi',
+    maxzoom: 13.3,
+    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-dot',
+    type: 'circle',
+    source: 'routepoi',
+    maxzoom: 13.3,
+    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-txt',
+    type: 'symbol',
+    source: 'routepoi',
+    maxzoom: 13.3,
+    layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false },
+    paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333',
+      'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)',
+      'text-opacity': ['step', ['zoom'], 1, 12.6, 0],
+      'text-opacity-transition': { duration: 0, delay: 0 },
+      'text-halo-width': 1.6 } });
   LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // the paint and glow groups are the catalogue's
   H.glUnifyLabels(GLM);
   pushSources();
@@ -3568,7 +3952,13 @@ function addReferenceLayers() {
     const segs = REFERENCE[name]; for (const seg of segs) feats.push({ type: 'Feature', properties: { refName: name }, geometry: { type: 'LineString', coordinates: seg.map(p => [p[1], p[0]]) } }); }
   if (map.getSource('ref')) { map.getSource('ref').setData({ type: 'FeatureCollection', features: feats }); return; } // a switch re-points the source at the new pack's reference features (never the old route's)
   map.addSource('ref', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
-  map.addLayer({ id: 'ref-line', type: 'line', source: 'ref', filter: ['has', 'refName'], layout: { 'line-cap': 'round' }, paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } }, map.getLayer('t1-casing') ? 't1-casing' : undefined);
+  map.addLayer({ id: 'ref-line',
+    type: 'line',
+    source: 'ref',
+    filter: ['has', 'refName'],
+    layout: { 'line-cap': 'round' },
+    paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } },
+    map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }
 function makeBeamImage() { // the beam is a fan (strong at the dot, fading, soft-skirted); two passes fake the missing blur
   const S = 512, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
@@ -3590,13 +3980,26 @@ function addGpsLayers() {
   map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   // raw ImageData: handing over the canvas element throws 'mismatched image size' and killed this layer batch silently
   if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); }
-  map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'], layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }); // Beta 1.49: gradient fan symbol, painted under the accuracy ring and the dot - replaces the flat cone polygon (Beta 1.28), which read as cheap
+  map.addLayer({ id: 'gps-beam',
+    type: 'symbol',
+    source: 'gps',
+    filter: ['==', ['get', 'k'], 'beam'],
+    layout: { 'icon-image': 'beam-img',
+      'icon-size': 0.62,
+      'icon-rotate': ['get', 'rot'],
+      'icon-rotation-alignment': 'map',
+      'icon-pitch-alignment': 'map',
+      'icon-anchor': 'center',
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true } });
+  // gradient fan symbol, painted under the accuracy ring and the dot
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
   map.addLayer({
     id: 'gps-puck-shader', type: 'custom', _prog: null, _buf: null, _aPos: -1, _u: {},
     onAdd(m, gl) {
-      const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log('PUCKSHADER compile failed: ' + gl.getShaderInfoLog(s)); return s; };
+      const sh = (type,
+        src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log('PUCKSHADER compile failed: ' + gl.getShaderInfoLog(s)); return s; };
       const prog = gl.createProgram();
       gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
         'attribute vec2 a_pos;',
@@ -3748,9 +4151,18 @@ let selStretch = null; // {name, idx} — the paint engine reads this global in 
 let swallowClickUntil = 0;
 function spendTap(ms) { swallowClickUntil = Date.now() + ms; } // app2 is the sole writer of its tap-swallow variable: others spend a tap through this setter only
 function projLL(p) { return map.project([p[1], p[0]]); }
-function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy; let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t)); }
-function nearestStreet(pt) { let best = null, bd = Infinity; for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd }; }
-function nearestStretch(name, pt) { let bi = 0, bd = Infinity; STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } }); return { idx: bi, d: bd }; }
+function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy;
+let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0;
+t = Math.max(0, Math.min(1, t));
+return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t));
+}
+function nearestStreet(pt) { let best = null, bd = Infinity;
+for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd };
+}
+function nearestStretch(name, pt) { let bi = 0, bd = Infinity;
+STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } });
+return { idx: bi, d: bd };
+}
 function geoSideFrame(name, idx, anchorLL) {
   // side 0 = geographic left, side 1 = right (the engine's convention); returns the projection + left vector
   const part = STRETCH[name].parts[idx];
@@ -3958,7 +4370,10 @@ const NOTEEDIT = { // the note session owner: the editor's state and acts live h
   // the flush's result is kept: fresh failures ride the warning; a suppressed one is owed 'not saved'
   flushSwitch(draft, draftFor) { clearTimeout(this.saveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) showBanner('Not saved'); },
   flushRebuild(draft, draftFor) { clearTimeout(this.saveTimer); this.saveTimer = 0; return setNoteText(draftFor, draft).ok; }, // setNoteText returns an OBJECT: {ok:false} is truthy, so the flush returns .ok, never the object
-  scheduleSave(n, ta, hint, paintNt) { hint.textContent = 'Saving…'; clearTimeout(this.saveTimer); this.saveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400); }, // Beta 1.63 (audit F04): the hint tells the truth about the write
+  scheduleSave(n, ta, hint, paintNt) { hint.textContent = 'Saving…';
+  clearTimeout(this.saveTimer);
+  this.saveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400);
+  }, // Beta 1.63 (audit F04): the hint tells the truth about the write
   // blur finalizes like the debounced save (same result, same hint): a failed blur save must say so
   saveNow(n, ta, hint, paintNt) { clearTimeout(this.saveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; },
   toggle(n) { this.openFor = this.openFor === n ? null : n; },
@@ -4000,7 +4415,19 @@ function renderStreets() { // tap a street's name area to open its note editor (
   const stR = $('stRouteN'), stS = $('stRouteS');
   if (stR && stS) { stR.textContent = activeRoute ? activeRoute.name : ''; stS.textContent = (activeRoute && activeRoute.area ? ' · ' + activeRoute.area : '') + (runStart ? ' · clean in progress' : ' · not started'); }
   const stH = $('stHero');
-  if (stH) { const tw = totalWorkM(); stH.innerHTML = '<div class="stHeroN">' + STREETNAMES.filter(streetComplete).length + ' <span class="stHeroU">/ ' + STREETNAMES.length + ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' + (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%"></div></div><div class="stCaps"><span>' + (workDoneM() / 2000).toFixed(1) + ' km of road cleared</span><span>' + (tw / 2000).toFixed(1) + ' km total</span></div>'; }
+  if (stH) { const tw = totalWorkM();
+  stH.innerHTML = '<div class="stHeroN">' +
+    STREETNAMES.filter(streetComplete).length +
+    ' <span class="stHeroU">/ ' +
+    STREETNAMES.length +
+    ' streets</span></div><div class="stHeroL">streets completed so far</div><div class="stBar"><div class="stBarF" style="width:' +
+    (tw > 0 ? (workDoneM() / tw * 100) : 0) +
+    '%"></div></div><div class="stCaps"><span>' +
+    (workDoneM() / 2000).toFixed(1) +
+    ' km of road cleared</span><span>' +
+    (tw / 2000).toFixed(1) +
+    ' km total</span></div>';
+  }
   const stGN = $('stGroupN'), stGC = $('stGroupC');
   // the list leads with the primaries (gold, cleaned first), then the secondaries (raspberry), alphabetical inside each colour
   if (stGN && stGC) { stGN.textContent = listFilter === 'primaries' ? 'PRIMARIES' : 'SECONDARIES'; stGC.textContent = ' · ' + arr.length + ' streets'; }
@@ -4158,7 +4585,13 @@ function makeSheetDraggable(sheet) {
     if (!moved && Math.abs(total) < 3) return; // near-zero dead zone: the old 9 px threshold was the first hitch of the drag hesitation
     if (!moved) {
       moved = true;
-      if (sheet._spring) { cancelSheetSpring(sheet); sheet.style.transform = ''; startY = e.clientY; lastY = e.clientY; startH = sheet.offsetHeight; samples = [{ t: performance.now(), y: e.clientY }]; } // a catch mid-settle restarts the drag from the sheet's live height
+      if (sheet._spring) { cancelSheetSpring(sheet);
+      sheet.style.transform = '';
+      startY = e.clientY;
+      lastY = e.clientY;
+      startH = sheet.offsetHeight;
+      samples = [{ t: performance.now(), y: e.clientY }];
+      } // a catch mid-settle restarts the drag from the sheet's live height
       sheet.classList.add('dragging'); sheet.classList.remove('snapping');
       try { sheet.setPointerCapture(pid); } catch (err) {}
     }
@@ -4182,7 +4615,8 @@ function makeSheetDraggable(sheet) {
     setTimeout(() => document.removeEventListener('click', swallow, true), 350);
     const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
     // the default stop targets the natural height, not defH: short sheets sprang to half, then snapped back
-    const naturalH = (() => { const ph = sheet.style.height, pm = sheet.style.maxHeight; sheet.style.height = ''; sheet.style.maxHeight = ''; const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
+    const naturalH = (() => { const ph = sheet.style.height,
+      pm = sheet.style.maxHeight; sheet.style.height = ''; sheet.style.maxHeight = ''; const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
     // velocity from the last ~130 ms of movement (px/ms, up positive): the spring starts at it
     let v = 0;
     if (panelMoved && samples.length > 1) {
@@ -4256,7 +4690,11 @@ function routeDropEl(p) { // dropdown (the row's sibling): Load over Delete, or 
 // each row renders with its dropdown card as its sibling
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); }
 function menuListFade(el) { // edges feather only while hiding content (30 px covered, none at rest); the arrow lives here too
-  if (!el) return; const max = el.scrollHeight - el.clientHeight; el.classList.toggle('fadeT', el.scrollTop > 1); el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1); if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
+  if (!el) return;
+  const max = el.scrollHeight - el.clientHeight;
+  el.classList.toggle('fadeT', el.scrollTop > 1);
+  el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1);
+  if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { // delegation sorts taps by target: Delete asks, Load chooses, Loaded spends it, anywhere else toggles the dropdown
   const del = e.target.closest('.dropDel'); if (del) { askDeleteRoute(del.closest('.routeDrop').dataset.route); return; }
   const load = e.target.closest('.dropLoad'); if (load) { choose(load.closest('.routeDrop').dataset.route); return; }
@@ -4271,7 +4709,11 @@ function ddOpen(drop) { // show, reflow (growth from height 0), then .open; a pe
   const row = drop.previousElementSibling;
   clearTimeout(drop._ddT);
   const pane = drop.closest('.rmPane'); // an open pins the pane's top margin at its seat: growth runs purely downward, nothing above moves
-  if (pane && !pane._ddPin) { pane._ddPin = true; let mt = parseFloat(getComputedStyle(pane).marginTop); if (!isFinite(mt)) mt = pane.getBoundingClientRect().top - pane.parentElement.getBoundingClientRect().top - 24; pane.style.marginTop = mt + 'px'; }
+  if (pane && !pane._ddPin) { pane._ddPin = true;
+  let mt = parseFloat(getComputedStyle(pane).marginTop);
+  if (!isFinite(mt)) mt = pane.getBoundingClientRect().top - pane.parentElement.getBoundingClientRect().top - 24;
+  pane.style.marginTop = mt + 'px';
+  }
   drop.style.display = 'block';
   void drop.offsetHeight;
   drop.classList.add('open'); if (row && row.classList.contains('routeRow')) row.classList.add('ddOpen');
@@ -4364,7 +4806,10 @@ const CLEAN = {
       if (!isNaN(t)) prev = t;
       streets.push({ name: n, at: items[n], tMs: t, gapMs, stamps, spanMs, via: (h.via || {})[n], noteLines: this.noteLines((h.notes || {})[n]) });
     }
-    const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (Array.isArray(h.notes[n]) ? h.notes[n] : []).length).map(n => ({ name: n, primary: PRIMARIES.has(n), noteLines: this.noteLines(h.notes[n]) })); // issue #180: the Array.isArray guard - an inherited member ('constructor') is not a notes array
+    const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (Array.isArray(h.notes[n]) ? h.notes[n] : []).length).map(n => ({ name: n,
+      primary: PRIMARIES.has(n),
+      noteLines: this.noteLines(h.notes[n]) }));
+    // issue #180: the Array.isArray guard - an inherited member ('constructor') is not a notes array
     return { count: this.count(h), dur, workM, paceKm: this.paceKm(h), elapsedMs, paceRate, streets, notedOnly };
   },
   /** @param {Array} entries @returns {string[]} */ noteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); },
@@ -4403,7 +4848,15 @@ const PACE_ICONS = {
 function statCell(ic, v, l) { return '<div class="cell"><span class="ic" data-ic="' + ic + '">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
 function groupBar(name, g) {
   const pct = g.cnt ? (g.sum / g.cnt * 100) : 0;
-  return '<div class="gbar"><div class="gb-top"><span class="gb-n">' + name + '</span><span class="gb-c">' + fmtCnt(g.sum) + ' of ' + g.cnt + ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' + pct + '%"></div><div class="gb-half"></div></div></div>';
+  return '<div class="gbar"><div class="gb-top"><span class="gb-n">' +
+    name +
+    '</span><span class="gb-c">' +
+    fmtCnt(g.sum) +
+    ' of ' +
+    g.cnt +
+    ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' +
+    pct +
+    '%"></div><div class="gb-half"></div></div></div>';
 }
 // pace is a work rate (side-metres/hour, cumulative off the stamps): interleaving cannot distort a cumulative rate
 function paceInfo() {
@@ -4414,7 +4867,8 @@ function paceInfo() {
   if (runStart) { const r = workRateMh(liveWorkM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } }
   if (!rateMh) rateMh = refRateMh;
   let etaTxt = '', etaClock = '';
-  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaClock = fmtClock(new Date(Date.now() + leftH * 3600000)); etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + etaClock; } }
+  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM();
+  if (leftM > 0) { const leftH = leftM / rateMh; etaClock = fmtClock(new Date(Date.now() + leftH * 3600000)); etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + etaClock; } }
   // etaClock is additive - the redesign ETA cell reads the done-at clock alone; etaTxt and statsLine are untouched
   return { rateMh, refRateMh, live, etaTxt, etaClock, ref };
 }
@@ -4427,7 +4881,12 @@ function statsLine() {
   return bits.join(' · ');
 }
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-function fmtWhen(iso) { const d = new Date(iso); if (isNaN(d)) return ''; const n = new Date(); const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate(); return same ? fmtClock(d) : MON3[d.getMonth()] + ' ' + d.getDate() + ', ' + fmtClock(d); }
+function fmtWhen(iso) { const d = new Date(iso);
+if (isNaN(d)) return '';
+const n = new Date();
+const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+return same ? fmtClock(d) : MON3[d.getMonth()] + ' ' + d.getDate() + ', ' + fmtClock(d);
+}
 function fmtAgo(iso) { const t = Date.parse(iso); if (isNaN(t)) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + (m % 60) + ' m ago'; }
 function histDur(h) { return CLEAN.dur(h); }
 let histOpen = false;
@@ -4533,7 +4992,14 @@ function openClean(i) {
   const elapsedMs = pd.elapsedMs; // the total-elapsed interval is the detail projection's measure now (CLEAN.detail carries the RP-08 two-interval history)
   // pace divides work by the total elapsed window (workRateMh's reference window too), and the meta line says so
   const paceRate = pd.paceRate;
-  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + pd.count + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
+  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') +
+    pd.count +
+    ' streets' +
+    (h.km ? (' · ' + h.km + ' km of GPS trail') : '') +
+    (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') +
+    (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') +
+    (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') +
+    '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
   const secH = document.createElement('div'); secH.className = 'psec2'; secH.textContent = 'Streets'; cv.appendChild(secH);
   pd.streets.forEach(s => {
@@ -4557,7 +5023,9 @@ function openClean(i) {
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
     parts.push('Marked: ' + (s.at ? fmtWhen(s.at) : 'no time recorded'));
-    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment'); else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the clean start)');
+    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)');
+    else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment');
+    else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the clean start)');
     if (s.via) parts.push('How: ' + (s.via === 'gps' ? 'GPS suggestion' : 'marked by tap'));
     lines.forEach(L => parts.push(L));
     det.textContent = parts.join('\n');
@@ -4716,7 +5184,11 @@ $('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) r
 // the Clear ask: the shared confirmation, bound to its route; the wipe is clearAllMarks, unchanged
 function askClearAll() {
   const forRoute = activeRoute ? activeRoute.id : null;
-  showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
+  showConfirm({ title: 'Clear all marks?',
+    sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.',
+    keep: 'Keep marks',
+    danger: 'Clear all',
+    onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
 }
 // the dock's Cancel asks through the same confirmation: it once discarded in one tap, bypassing the question
 $('cancelStartBtn').addEventListener('click', ev => { if (!tapGuard('cancelStartBtn', ev)) return; askCancelStart(); });
@@ -4726,7 +5198,15 @@ $('resetBtn').addEventListener('click', ev => {
   if (!tapGuard('resetBtn', ev)) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
-    ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 && nDone < STREETNAMES.length ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // issue #180: the warning matches finishRun's rule - a FULL clean of a short route (every street done) IS saved, so it is never warned as unsaved
+    ? (nDone +
+      ' of ' +
+      STREETNAMES.length +
+      ' streets cleaned' +
+      (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') +
+      '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' +
+      (nDone < 3 &&
+        nDone < STREETNAMES.length ?
+          ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // the warning matches finishRun's rule: a full clean of a short route is saved, never warned as unsaved
     : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
   showSurface($('finModal'));
 });
@@ -4838,7 +5318,13 @@ function buildSnap() {
   const startMs = (runStart && ts.length && runStart <= ts[0]) ? runStart : (ts.length ? ts[0] : (runStart || null));
   // the counter is the distance source: RUNDIST.distance adopts before reading, null for an unseen run
   const rdM = RUNDIST.distance();
-  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: BOARD.sidesCopy(), km: startMs ? +(((rdM != null) ? rdM / 1000 : trailKm(startMs))).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
+  const snap = { at: new Date().toISOString(),
+    items: {},
+    via: { ...doneVia },
+    notes: JSON.parse(JSON.stringify(notes)),
+    sides: BOARD.sidesCopy(),
+    km: startMs ? +(((rdM != null) ? rdM / 1000 : trailKm(startMs))).toFixed(1) : 0,
+    startedAt: startMs ? new Date(startMs).toISOString() : null };
   doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
   // the run's figures bake into the entry (cleanWorkM prefers them): workM sums stamps inside [Start, Finish] only
 
@@ -4953,7 +5439,12 @@ function pushGps() {
   if (dispPos) {
     // the puck is no feature: the shader layer draws it in screen space off dispPos each frame
 
-    if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispShownPos()[1] + (R * Math.sin(th)) / MLNG, dispShownPos()[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
+    if (gpsAccM > 0) { const ring = [];
+    const R = gpsAccM;
+    for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispShownPos()[1] + (R * Math.sin(th)) / MLNG, dispShownPos()[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature',
+      properties: { k: 'ring' },
+      geometry: { type: 'Polygon', coordinates: [ring] } });
+    }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
@@ -5072,13 +5563,24 @@ let snapGeoBusy = false; // an async pack build is in flight
 let snapGeoFailSlug = '', snapGeoFailAt = 0;
 // a 3x3 lookup covers >= 60 m, past every decision distance: one ring is a complete search
 const SNAP_CELL_M = 60;
-function snapRoutePolys() { const out = []; for (const n of Object.keys(STRETCH)) { const st = STRETCH[n]; if (!st || !st.runs) continue; for (const r of st.runs) if (r.line && r.line.length > 1) out.push({ name: n, pts: r.line }); } return out; }
+function snapRoutePolys() { const out = [];
+for (const n of Object.keys(STRETCH)) { const st = STRETCH[n]; if (!st || !st.runs) continue; for (const r of st.runs) if (r.line && r.line.length > 1) out.push({ name: n, pts: r.line }); } return out;
+}
 function snapBuildIndex(polys, key) {
   const grid = new Map();
-  for (let pi = 0; pi < polys.length; pi++) { const pts = polys[pi].pts; for (let i = 0; i < pts.length - 1; i++) { const ax = pts[i][1] * MLNG, ay = pts[i][0] * MLAT, bx = pts[i + 1][1] * MLNG, by = pts[i + 1][0] * MLAT; const x0 = Math.floor(Math.min(ax, bx) / SNAP_CELL_M), x1 = Math.floor(Math.max(ax, bx) / SNAP_CELL_M), y0 = Math.floor(Math.min(ay, by) / SNAP_CELL_M), y1 = Math.floor(Math.max(ay, by) / SNAP_CELL_M); for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) { const k = gx + ':' + gy; let arr = grid.get(k); if (!arr) { arr = []; grid.set(k, arr); } arr.push(pi, i); } } }
+  for (let pi = 0;
+  pi < polys.length;
+  pi++) { const pts = polys[pi].pts;
+  for (let i = 0;
+  i < pts.length - 1;
+  i++) { const ax = pts[i][1] * MLNG, ay = pts[i][0] * MLAT, bx = pts[i + 1][1] * MLNG, by = pts[i + 1][0] * MLAT;
+  const x0 = Math.floor(Math.min(ax, bx) / SNAP_CELL_M), x1 = Math.floor(Math.max(ax, bx) / SNAP_CELL_M), y0 = Math.floor(Math.min(ay, by) / SNAP_CELL_M), y1 = Math.floor(Math.max(ay, by) / SNAP_CELL_M);
+  for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) { const k = gx + ':' + gy; let arr = grid.get(k); if (!arr) { arr = []; grid.set(k, arr); } arr.push(pi, i); } } }
   return { key, polys, grid };
 }
-function snapSlugFor(ll) { if (!snapCat) return null; for (const c of snapCat) { if (c && Array.isArray(c.bbox) && c.bbox.length === 4 && ll[0] >= c.bbox[0] && ll[0] <= c.bbox[2] && ll[1] >= c.bbox[1] && ll[1] <= c.bbox[3]) return c.slug; } return ''; }
+function snapSlugFor(ll) { if (!snapCat) return null;
+for (const c of snapCat) { if (c && Array.isArray(c.bbox) && c.bbox.length === 4 && ll[0] >= c.bbox[0] && ll[0] <= c.bbox[2] && ll[1] >= c.bbox[1] && ll[1] <= c.bbox[3]) return c.slug; } return '';
+}
 // make the index match ll's area (async, never blocking): in flight the route-only index serves; installs drop holds
 function snapGeoEnsure(ll) {
   if (!snapCat && !snapCatKicked) { snapCatKicked = true; crPackIndexLoad().then(cs => { snapCat = cs || []; }, () => { snapCat = []; }); }
@@ -5105,7 +5607,19 @@ function snapNearest(ll) {
   if (!snapGeo) return null;
   const cx = Math.floor(ll[1] * MLNG / SNAP_CELL_M), cy = Math.floor(ll[0] * MLAT / SNAP_CELL_M);
   const best = new Map();
-  for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gy = cy - 1; gy <= cy + 1; gy++) { const arr = snapGeo.grid.get(gx + ':' + gy); if (!arr) continue; for (let j = 0; j < arr.length; j += 2) { const poly = snapGeo.polys[arr[j]]; const d = ptSegM(ll, poly.pts[arr[j + 1]], poly.pts[arr[j + 1] + 1]); const cur = best.get(arr[j]); if (!cur || d < cur.d) best.set(arr[j], { d, seg: arr[j + 1] }); } }
+  for (let gx = cx - 1;
+  gx <= cx + 1;
+  gx++) for (let gy = cy - 1;
+  gy <= cy + 1;
+  gy++) { const arr = snapGeo.grid.get(gx + ':' + gy);
+  if (!arr) continue;
+  for (let j = 0;
+  j < arr.length;
+  j += 2) { const poly = snapGeo.polys[arr[j]];
+  const d = ptSegM(ll, poly.pts[arr[j + 1]], poly.pts[arr[j + 1] + 1]);
+  const cur = best.get(arr[j]);
+  if (!cur || d < cur.d) best.set(arr[j], { d, seg: arr[j + 1] });
+  } }
   let bp = null, bd = Infinity, bs = 0; for (const [pi, b] of best) if (b.d < bd) { bd = b.d; bp = snapGeo.polys[pi]; bs = b.seg; }
   return bp ? { poly: bp, d: bd, seg: bs } : null;
 }
@@ -5143,13 +5657,19 @@ function renderTick(now) {
   if (pred) {
     const pNow = performance.now();
     const dtF = lastDispAt ? Math.min(0.25, Math.max(0, (pNow - lastDispAt) / 1000)) : 0; lastDispAt = pNow;
-    if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3); dispOff = [dispOff[0] * k, dispOff[1] * k]; if (dispSettled()) dispOff = [0, 0]; } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
+    if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3);
+    dispOff = [dispOff[0] * k, dispOff[1] * k];
+    if (dispSettled()) dispOff = [0, 0];
+    } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
     dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
     { const tgt = snapHeld ? 1 : 0; if (dtF > 0 && snapW !== tgt) { snapW = tgt + (snapW - tgt) * Math.pow(0.1, dtF / SNAP_BLEND_S); if (Math.abs(snapW - tgt) < 0.002) snapW = tgt; if (snapW === 0) snapOutPt = null; else if (snapW === 1) snapAnchor = null; } } // Beta 1.204: the snap blend advances per frame toward the held state (in on engage, out on release - the same ease both ways, so the shown point never teleports), on this same frame clock and step (dtF) as the correction decay above
   }
   // the camera state joins the push key, bucketed: every projection input is in it, so any change re-pushes
   let camKey = '';
-  if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } } // Beta 1.194: the puck's projected position is the RENDERED point (dispShownPos) - keyed on what is actually drawn, so a held puck does not re-push frames for display-track motion nobody sees
+  if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight;
+  if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]);
+  camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16);
+  } } // the puck's projected position is the RENDERED point (dispShownPos), so a held puck never re-pushes unseen frames
   // the key carries the painted beam rot: the spring repaints through this gate, stopping when it rests
   const key = dispPos ? dispShownPos()[0] + ',' + dispShownPos()[1] + ',' + (beamDeg != null ? Math.round(beamDeg * 10) / 10 : facingDeg) + ',' + gpsAccM + ',' + camKey : '';
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
@@ -5381,12 +5901,24 @@ function _fxDelta(a, b) { // the signed difference of two doubles' bit patterns,
   return (d <= _FX_LIM && d >= -_FX_LIM) ? d : null;
 }
 function _FxWriter() { return { b: [], u8(v) { this.b.push(v & 255); }, uv(v) { while (v > 127n) { this.b.push(Number(v & 127n) | 128); v >>= 7n; } this.b.push(Number(v)); }, sv(n) { this.uv(n >= 0n ? n * 2n : -n * 2n - 1n); } }; }
-function _FxReader(bytes) { return { b: bytes, i: 0, u8() { if (this.i >= this.b.length) throw new Error('fx eof'); return this.b[this.i++]; }, uv() { let v = 0n, s = 0n; for (;;) { const c = this.u8(); v |= BigInt(c & 127) << s; if (!(c & 128)) return v; s += 7n; if (s > 70n) throw new Error('fx varint'); } }, sv() { const u = this.uv(); return (u & 1n) === 0n ? u / 2n : -(u + 1n) / 2n; } }; }
+function _FxReader(bytes) { return { b: bytes,
+  i: 0,
+  u8() { if (this.i >= this.b.length) throw new Error('fx eof'); return this.b[this.i++]; },
+  uv() { let v = 0n, s = 0n; for (;;) { const c = this.u8(); v |= BigInt(c & 127) << s; if (!(c & 128)) return v; s += 7n; if (s > 70n) throw new Error('fx varint'); } },
+  sv() { const u = this.uv(); return (u & 1n) === 0n ? u / 2n : -(u + 1n) / 2n; } };
+}
 function _fxPack7(bytes) { let out = '', acc = 0, nb = 0; for (let i = 0; i < bytes.length; i++) { acc = (acc << 8) | bytes[i]; nb += 8; while (nb >= 7) { nb -= 7; out += String.fromCharCode(0x100 + ((acc >> nb) & 127)); } acc &= (1 << nb) - 1; } if (nb > 0) out += String.fromCharCode(0x100 + ((acc << (7 - nb)) & 127)); return out; }
 function _fxUnpack7(f, nbytes) { const bytes = []; let acc = 0, nb = 0; for (let i = 0; i < f.length; i++) { const v = f.charCodeAt(i) - 0x100; if (v < 0 || v > 127) throw new Error('fx pack char'); acc = (acc << 7) | v; nb += 7; while (nb >= 8) { nb -= 8; bytes.push((acc >> nb) & 255); } acc &= (1 << nb) - 1; if (bytes.length > nbytes) throw new Error('fx pack overflow'); } if (bytes.length !== nbytes) throw new Error('fx pack length'); return bytes; }
 // the delta state an entry leaves for the next entry's encoding (nulls where a field cannot anchor)
 function _fxState(e) {
-  return { ts: _fxFin(e[0]) ? e[0] : null, latB: _fxFin(e[1]) ? _fxUBits(e[1]) : null, lngB: _fxFin(e[2]) ? _fxUBits(e[2]) : null, accB: _fxFin(e[3]) ? _fxUBits(e[3]) : null, spdB: _fxFin(e[4]) ? _fxUBits(e[4]) : null, hdgB: _fxFin(e[5]) ? _fxUBits(e[5]) : null, out: Array.isArray(e[6]) ? e[6] : null, run: _fxFin(e[7]) ? e[7] : 0 };
+  return { ts: _fxFin(e[0]) ? e[0] : null,
+    latB: _fxFin(e[1]) ? _fxUBits(e[1]) : null,
+    lngB: _fxFin(e[2]) ? _fxUBits(e[2]) : null,
+    accB: _fxFin(e[3]) ? _fxUBits(e[3]) : null,
+    spdB: _fxFin(e[4]) ? _fxUBits(e[4]) : null,
+    hdgB: _fxFin(e[5]) ? _fxUBits(e[5]) : null,
+    out: Array.isArray(e[6]) ? e[6] : null,
+    run: _fxFin(e[7]) ? e[7] : 0 };
 }
 function _fxScalarW(w, v, prevB) { // one raw leaf (acc/spd/hdg): null tag, bit-pattern delta, or absolute pattern
   if (!_fxFin(v)) { w.u8(0); return; }
@@ -5488,7 +6020,8 @@ function _fxEncodeEntry(e, prev) {
   if (!prev) return key;
   const dTs = (typeof e[0] === 'number' && typeof prev[0] === 'number') ? e[0] - prev[0] : NaN;
   if (!Number.isInteger(dTs)) return key; // an unanchored or fractional timestamp cannot delta — the entry keyframes
-  if (typeof e[1] !== 'number' || typeof prev[1] !== 'number' || !isFinite(e[1]) || !isFinite(prev[1]) || typeof e[2] !== 'number' || typeof prev[2] !== 'number' || !isFinite(e[2]) || !isFinite(prev[2])) return key; // a refused (null / non-finite) coordinate on either side keyframes
+  if (typeof e[1] !== 'number' || typeof prev[1] !== 'number' || !isFinite(e[1]) || !isFinite(prev[1]) || typeof e[2] !== 'number' || typeof prev[2] !== 'number' || !isFinite(e[2]) || !isFinite(prev[2])) return key;
+  // a refused (null / non-finite) coordinate on either side keyframes
   const dLat = _fxBits(e[1]) - _fxBits(prev[1]), dLng = _fxBits(e[2]) - _fxBits(prev[2]), LIM = 9007199254740991n;
   if (dLat > LIM || dLat < -LIM || dLng > LIM || dLng < -LIM) return key;
   let outSlot = null;
@@ -5503,7 +6036,9 @@ function _fxEncodeEntry(e, prev) {
   }
   return [dTs, Number(dLat), Number(dLng), _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), outSlot, e[7] === prev[7] ? null : (Number.isFinite(e[7]) ? e[7] : 0)];
 }
-function fixLogEncodeSessions(sessions) { return { e: 3, s: sessions.map(s => { const w = _FxWriter(); let st = null; for (const e of s.f) st = _fxEncEntry(w, e, st); return { v: s.v, t0: s.t0, n: s.f.length, b: w.b.length, f: _fxPack7(w.b) }; }) }; }
+function fixLogEncodeSessions(sessions) { return { e: 3,
+  s: sessions.map(s => { const w = _FxWriter(); let st = null; for (const e of s.f) st = _fxEncEntry(w, e, st); return { v: s.v, t0: s.t0, n: s.f.length, b: w.b.length, f: _fxPack7(w.b) }; }) };
+}
 // any stored or backup value -> the absolute sessions, through the one lens; a non-log decodes to []
 function fixLogDecodeSessions(parsed) {
   const numOrNull = x => (typeof x === 'number' && isFinite(x)) ? x : null;
@@ -5552,7 +6087,10 @@ function fixLogEstChars() {
   for (const s of fixLog) { const a = _fxAcct.get(s); t += 80 + Math.ceil((a ? a.b : 0) * 8 / 7); }
   return t;
 }
-try { fixLog = fixLogDecodeSessions(parseJ(lsGet(LS.fixlog), [])); for (const s of fixLog) { fixLogCount += s.f.length; _fxMeasure(s); } } catch (e) { fixLog = []; fixLogCount = 0; } // a damaged log record costs the debug history, never the boot
+try { fixLog = fixLogDecodeSessions(parseJ(lsGet(LS.fixlog), []));
+for (const s of fixLog) { fixLogCount += s.f.length; _fxMeasure(s); } } catch (e) { fixLog = [];
+fixLogCount = 0;
+} // a damaged log record costs the debug history, never the boot
 // the caps (at open and every append): oldest sessions evict whole; a lone over-cap session head-trims, newest surviving
 function fixLogTrim() {
   // a session that arrived without its byte account is measured before any cap is judged on it
@@ -5573,14 +6111,25 @@ function fixLogTrim() {
       const share = () => Math.ceil(a.b * 8 / 7) - Math.ceil(Math.max(0, a.b - rs) * 8 / 7);
       while (drop < s.f.length && share() < excess) { rs += (a.bl[drop] || 0); drop++; }
       if (!drop) break;
-      s.f.splice(0, drop); a.bl.splice(0, drop); a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop;
+      s.f.splice(0, drop);
+      a.bl.splice(0, drop);
+      a.b = Math.max(0, a.b - rs);
+      if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0;
+      fixLogCount -= drop;
       break;
     }
     fixLogCount -= s.f.length; fixLog.shift();
   }
 }
 fixLogTrim(); // a log written under a larger cap (or planted) is bounded at load too
-function fixLogOpen() { if (!fixLogEnabled) return; try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; _fxAcct.set(fixLogSession, { b: 0, bl: [] }); fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
+function fixLogOpen() { if (!fixLogEnabled) return;
+try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] };
+_fxAcct.set(fixLogSession, { b: 0, bl: [] });
+fixLog.push(fixLogSession);
+fixLogTrim();
+markDirty('fixlog');
+} catch (e) { fixLogSession = null;
+} }
 // the fix, before any gate: returns the live entry for fixLogOut or null, faults silent to GPS
 function fixLogRaw(pos) {
   try {
@@ -5700,7 +6249,13 @@ function acceptFix(pos) {
 let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
   if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
-  if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = COV_RADIUS_M / MLAT, pLng = COV_RADIUS_M / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
+  if (covBoxesFor !== covSamplesGen) { covBoxes = {};
+  const pLat = COV_RADIUS_M / MLAT, pLng = COV_RADIUS_M / MLNG;
+  for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9,
+    b = -1e9,
+    c = 1e9,
+    e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen;
+  }
   let changed = false;
   for (const n of STREETNAMES) {
     if (streetComplete(n)) continue;
@@ -5793,7 +6348,8 @@ function buildReport() {
 }
 function buildGpx() { // segmentation (gap rule, session-start splits, the marker walk) lives in trailSegments (app1); this consumer only renders GPX tracks
   const pt = p => '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail, trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail,
+    trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
 }
 let xMode = 'menu';
 function showX(mode) { // the backup pane is a menu tree, not a form; Backup (JSON)'s save prompt IS the share
@@ -5895,12 +6451,17 @@ const ENVELOPE = {
     let upsCarry = null; const excluded = new Set();
     if (upStoreComplete) upsCarry = { ...userPackCache };
     else { upsCarry = {}; const badNames = [];
-      for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue; if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {}); if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
+      for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue;
+      if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {});
+      if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
       if (badNames.length) recoveryDisclosure = badNames;
     }
     if (excluded.has(activeRoute.id)) return null; // the open route's definition cannot be carried: no honest recovery file exists, so the unavailable message is the truth
     const routes = {}; routes[activeRoute.id] = data;
-    for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
+    for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue;
+    const rk = routeKeys(pk.id);
+    const d = {};
+    for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
       // a non-active running route's snapshot rides too, validated on its geometry; a failed read leaves it out
       if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } }
       if (Object.keys(d).length) routes[pk.id] = d; } // an untouched pack in a recovery file asserts idle like any complete backup
@@ -5941,14 +6502,18 @@ function countUnknownNames(parsed, packs = ROUTE_PACKS) { // unknown-name count:
     const hist = parseJ(data.hist, null); if (Array.isArray(hist)) for (const h of hist) { if (h && typeof h === 'object') { if (Array.isArray(h.items)) { for (const n of h.items) noteName(n); } else fromObj(h.items); } }
   };
   if (parsed.v === 2 && parsed.routes && typeof parsed.routes === 'object') { for (const id of Object.keys(parsed.routes)) scanData(parsed.routes[id], setFor(id)); }
-  else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = {}; for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[LEGACY_KEYS[f]] != null) lf[f] = parsed.data[LEGACY_KEYS[f]]; } scanData(lf, setFor('5w')); }
+  else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = {};
+  for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[LEGACY_KEYS[f]] != null) lf[f] = parsed.data[LEGACY_KEYS[f]]; } scanData(lf, setFor('5w'));
+  }
   return bad.size;
 }
 function canonicalSettings(raw) { // the one settings validator: the loader's rules applied and re-serialized canonically; unknown values fall back, never refuse
   if (typeof raw !== 'string') return null;
   let p; try { p = JSON.parse(raw); } catch (e) { return null; }
   if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
-  return JSON.stringify({ vib: typeof p.vib === 'boolean' ? p.vib : SETTINGS_DEF.vib, chime: typeof p.chime === 'boolean' ? p.chime : SETTINGS_DEF.chime, chimeSound: CHIME_KEYS.includes(p.chimeSound) ? p.chimeSound : SETTINGS_DEF.chimeSound });
+  return JSON.stringify({ vib: typeof p.vib === 'boolean' ? p.vib : SETTINGS_DEF.vib,
+    chime: typeof p.chime === 'boolean' ? p.chime : SETTINGS_DEF.chime,
+    chimeSound: CHIME_KEYS.includes(p.chimeSound) ? p.chimeSound : SETTINGS_DEF.chimeSound });
 }
 function canonicalFixLog(raw) { // the fixlog validator: loader rules, canonical e3 re-encode, both caps; refusal data is retained, never silently lost
   if (typeof raw !== 'string') return null;
@@ -5959,7 +6524,12 @@ function canonicalFixLog(raw) { // the fixlog validator: loader rules, canonical
   while (total > FIXLOG_MAX && sessions.length) { if (sessions.length === 1) { const drop = sessions[0].f.length - FIXLOG_MAX; sessions[0].f.splice(0, drop); total -= drop; break; } total -= sessions[0].f.length; sessions.shift(); }
   let out = JSON.stringify(fixLogEncodeSessions(sessions));
   while (out.length > FIXLOG_MAX_CHARS && sessions.length) { // the character cap on the real encoded record (restores are rare, so the re-encode loop costs nothing)
-    if (sessions.length === 1) { const s = sessions[0]; let drop = Math.max(1, Math.ceil(s.f.length * (1 - FIXLOG_MAX_CHARS / out.length))); if (drop >= s.f.length) drop = s.f.length; s.f.splice(0, drop); if (!s.f.length) sessions.shift(); }
+    if (sessions.length === 1) { const s = sessions[0];
+    let drop = Math.max(1, Math.ceil(s.f.length * (1 - FIXLOG_MAX_CHARS / out.length)));
+    if (drop >= s.f.length) drop = s.f.length;
+    s.f.splice(0, drop);
+    if (!s.f.length) sessions.shift();
+    }
     else sessions.shift();
     out = JSON.stringify(fixLogEncodeSessions(sessions));
   }
@@ -6267,7 +6837,9 @@ const RESTORE = {
           } else if (data.snap !== undefined) { // validate against the carried start and destination geometry, even when a resident run later wins
             const startEnt = entries.find(e => e[0] === rk.start);
             let restoredSnap = null;
-            if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg); if (valid) restoredSnap = BOARD.serialiseSnap(valid, +startEnt[1]); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
+            if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg);
+            if (valid) restoredSnap = BOARD.serialiseSnap(valid, +startEnt[1]);
+            } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
             if (restoredSnap) entries.push([rk.snap, restoredSnap]); else snapDropped = true;
           }
         }
@@ -6420,9 +6992,22 @@ function packTileEnum(src, pk, budget) { // the one tile enumeration per (source
   const maxz = Math.min(14, src.maxzoom || 14);
   const ex = pk.box || computeRouteBox(pk.roads || {});
   // y grows southward: looping y0..y1 downloaded zero tiles; wide zooms join at z8, the map's minimum
-  if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+  if (ex) for (let z = 8;
+  z <= maxz;
+  z++) { const [x0, y1] = tileNums(ex.w, ex.n, z);
+  const [x1, y0] = tileNums(ex.e, ex.s, z);
+  const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length;
+  if (!(span <= budget)) continue;
+  budget -= Math.max(0, span);
+  for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', z).replace('{x}', x).replace('{y}', y));
+  }
   // zooms 15-19 render from z15: cached over the core only (the whole box would be ~1,400 files)
-  if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+  if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {});
+  if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 };
+  const [cx0, cy1] = tileNums(cb.w, cb.n, 15);
+  const [cx1, cy0] = tileNums(cb.e, cb.s, 15);
+  const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length;
+  if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
   return { urls, budget };
 }
 function packTileUrls(pk) { // one pack's tiles (its area z8-14 plus its z15 core); sprites and glyphs belong to no route
@@ -6475,22 +7060,33 @@ $('xPre').addEventListener('click', async ev => {
         new Promise(res => setTimeout(res, 3000))]);
       swOk = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
     }
-    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; syncWake(); return; } // Beta 1.57: wording stands on its own (second audit, item 5)
+    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.';
+    preloadRunning = false;
+    syncWake();
+    return;
+    } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
     releasePack = await takePackWriteTurn(); // the writers' turn is taken first: a pre-turn snapshot can be overtaken by a preceding writer's download
     await initUserPacks(); // refresh registrations: another tab's route is persisted but unregistered here; a stale manifest would orphan its tiles
 const list = preloadUrlList();
     let pruneProven = false; // the prune runs only on a proven manifest: fresh store read succeeds, every route's tiles inside it
-    try { const storedNow = await upGetAll(); if (storedNow) { const wantP = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); pruneProven = Object.keys(storedNow).every(id => { const nv = normalizePack(storedNow[id], {}); if (!nv.ok) return false; nv.pack.id = id; for (const u of packTileUrls(nv.pack)) { let h = u; try { h = new URL(u).href; } catch (e) {} if (!wantP.has(h)) return false; } return true; }); } } catch (e) { pruneProven = false; }
+    try { const storedNow = await upGetAll();
+    if (storedNow) { const wantP = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); pruneProven = Object.keys(storedNow).every(id => { const nv = normalizePack(storedNow[id],
+      {}); if (!nv.ok) return false; nv.pack.id = id; for (const u of packTileUrls(nv.pack)) { let h = u; try { h = new URL(u).href; } catch (e) {} if (!wantP.has(h)) return false; } return true; }); } } catch (e) { pruneProven = false;
+    }
     // the pack lives in its own cache ('snowroute-offline-v1'): served first, safe from browsing eviction
     let packCache = null; try { packCache = await caches.open('snowroute-offline-v1'); } catch (e) { packCache = null; }
     let done = 0, nextU = 0;
     // budgeted at its only write path: weigh stored files per URL first, so re-downloads replace weight, never double-count
     let capHit = false, packBytes = 0; const packSizes = new Map();
-    if (packCache) { try { for (const req of await packCache.keys()) { try { const r0 = await packCache.match(req); if (r0) { const sz0 = (await r0.blob()).size; packSizes.set(req.url, sz0); packBytes += sz0; } } catch (e) {} } } catch (e) {} }
+    if (packCache) { try { for (const req of await packCache.keys()) { try { const r0 = await packCache.match(req);
+    if (r0) { const sz0 = (await r0.blob()).size; packSizes.set(req.url, sz0); packBytes += sz0; } } catch (e) {} } } catch (e) {} }
     // prune what the manifest no longer names: orphans' weighed bytes otherwise block later downloads
-    if (packCache && pruneProven) { const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); try { for (const req of await packCache.keys()) { if (!want.has(req.url)) { try { if (await packCache.delete(req.url)) { packBytes -= packSizes.get(req.url) || 0; packSizes.delete(req.url); } } catch (e) {} } } } catch (e) {} } // the prune runs only under the pruneProven gate computed above the manifest: an unproven registration read preserves the cache whole
+    if (packCache && pruneProven) { const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } }));
+    try { for (const req of await packCache.keys()) { if (!want.has(req.url)) { try { if (await packCache.delete(req.url)) { packBytes -= packSizes.get(req.url) || 0;
+    packSizes.delete(req.url);
+    } } catch (e) {} } } } catch (e) {} } // the prune runs only under the pruneProven gate computed above the manifest: an unproven registration read preserves the cache whole
     // a retry fetches only census-missing entries; a complete pack's press stays the full refresh
     const hrefOf = u => { try { return new URL(u).href; } catch (e) { return u; } };
     const missing = list.filter(u => !packSizes.has(hrefOf(u)));
@@ -6506,7 +7102,15 @@ const list = preloadUrlList();
     // cache 'reload': a download must not be answered from the pack being refreshed (the worker honours it)
     const preFetch = async (u) => { if (capHit) return; const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal, cache: 'reload' }); if (res && res.ok && packCache) { let sz = -1; try { sz = (await res.clone().blob()).size; } catch (e) { sz = -1; } // Beta 1.183 (storage audit §3 item 4): the write is WEIGHED before it lands - a file that would carry the pack over OFFLINE_PACK_CAP_BYTES is refused and stops the download (capHit ends the workers below), so the pack can never grow past the cap through this, its only, write path; a GROWING file's extra bytes are RESERVED in packBytes synchronously before the write is awaited, so the five workers cannot all pass the check against the same stale total (Codex P2, PR #21), a failed write releases its reservation, and a SHRINKING replacement reserves nothing and frees its bytes only after its write succeeds - freeing them earlier would let another worker spend headroom that a failed shrink silently takes back; a file whose size cannot be read is stored unweighed rather than lost
         let href = u; try { href = new URL(u).href; } catch (e) {}
-        if (sz >= 0) { const prevSz = packSizes.get(href) || 0; const dSz = sz - prevSz; if (dSz > 0 && packBytes + dSz > OFFLINE_PACK_CAP_BYTES) capHit = true; else { if (dSz > 0) packBytes += dSz; try { await packCache.put(u, res.clone()); packSizes.set(href, sz); if (dSz < 0) packBytes += dSz; } catch (e) { if (dSz > 0) packBytes -= dSz; /* a failed pack write releases the reservation it took (growth only - a shrink reserves nothing and frees its bytes only on success, above) and simply never confirms in the count below */ } } }
+        if (sz >= 0) { const prevSz = packSizes.get(href) || 0;
+        const dSz = sz - prevSz;
+        if (dSz > 0 && packBytes + dSz > OFFLINE_PACK_CAP_BYTES) capHit = true;
+        else { if (dSz > 0) packBytes += dSz;
+        try { await packCache.put(u, res.clone());
+        packSizes.set(href, sz);
+        if (dSz < 0) packBytes += dSz;
+        } catch (e) { if (dSz > 0) packBytes -= dSz;
+        /* a failed pack write releases its reservation (growth only) and never confirms in the count below */ } } }
         else { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
     const preWorker = async () => { while (nextU < targets.length && !capHit) { const u = targets[nextU++]; await preFetch(u); done++; } }; // five at a time: one at a time was the slowest wait; a cap stop ends workers too
     await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
@@ -6666,8 +7270,11 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
   document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // the result rows' pins re-stamp with the extras, like the note hosts above
   document.querySelectorAll('.statgrid .ic[data-ic]').forEach(el => { el.innerHTML = PACE_ICONS[el.getAttribute('data-ic')]; });
   for (const id of ['sheetClose', 'paceClose', 'xClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.corner}">`; } // the corner closes wear the pack artwork
-  for (const id of ['rmClose', 'setClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.bottom}">`; } // the bottom-centre pair on the blue full-screen menus: the white job (Glyph's white fill - the knocked-out ✕ shows the blue through it)
-  document.querySelectorAll('.rmBack').forEach(el => { el.innerHTML = `<img class="rmBackIco" alt="" src="${GLYPH_MENU.back}"> Back`; }); // Beta 1.233: every blue-menu Back wears the Back To disc beside its word (the sample's treatment); the static arrow in the markup is the no-JS fallback only
+  for (const id of ['rmClose', 'setClose']) { const el = $(id);
+  if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.bottom}">`;
+  } // the bottom-centre pair on blue menus: the white job (the knocked-out ✕ shows the blue through it)
+  document.querySelectorAll('.rmBack').forEach(el => { el.innerHTML = `<img class="rmBackIco" alt="" src="${GLYPH_MENU.back}"> Back`; });
+  // every blue-menu Back wears the Back To disc; the markup's static arrow is the no-JS fallback only
 }
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre; // the re-centre button wears the standard crosshair glyph; the Locate tab keeps its navigation arrow, untouched
 // Backup and Update carry no tab icons anymore - they are text rows on the blue settings panes
@@ -6842,13 +7449,18 @@ async function renderStatus(resetStat) {
   if (ps.complete) { $('stMapsLine').innerHTML = 'Offline maps: Downloaded <span class="m-tick">&#10003;</span>'; $('stMapsSub').textContent = ps.total + ' files' + sizeTxt + ' · ' + area; }
   else if (ps.cached > 0) { $('stMapsLine').textContent = 'Offline maps: Partial'; $('stMapsSub').textContent = ps.cached + ' of ' + ps.total + ' files' + sizeTxt + ' · ' + area; }
   else { $('stMapsLine').textContent = 'Offline maps: Not downloaded'; $('stMapsSub').textContent = ps.total + ' files' + sizeTxt + ' · ' + area; }
-  if (multiRoute) { const act = ps.countsByRoute.find(r => activeRoute && r.id === activeRoute.id); if (act) $('stMapsSub').textContent += ' · this route: ' + act.cached + ' of ' + act.total; } // the active route's own share, named as its own - never the union wearing its name
+  if (multiRoute) { const act = ps.countsByRoute.find(r => activeRoute && r.id === activeRoute.id);
+  if (act) $('stMapsSub').textContent += ' · this route: ' + act.cached + ' of ' + act.total;
+  } // the active route's own share, named as its own - never the union wearing its name
   $('xPre').textContent = ps.complete ? 'Re-download' : 'Download';
   $('stDel').style.display = ps.cached > 0 ? '' : 'none';
   if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null) || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(p.id).pre), null)).find(r => r && r.saved > 0) || null; $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements). Beta 1.170 (C-04): the record read falls back to ANY route's download record - through 1.169 it read only the active route's slot, so right after a route switch this line could say 'not downloaded yet' directly under a 'Downloaded' maps line for the pack another route had fetched
   // HEALTH - each row from a real signal at this moment:
   let storageOk = false;
-  try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe'); } catch (e) { storageOk = false; } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
+  try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1';
+  lsDel('snowroute.v2.healthprobe');
+  } catch (e) { storageOk = false;
+  } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
   if (!storageOk) setHealth('stIcoStorage', 'stValStorage', 'warn', 'storage problem. Export a backup');
   else { // the row reports the recorded persist() answer and an estimate(): protected ok, refusal warn, unreported idle, never green
     let est = null; try { if (navigator.storage && navigator.storage.estimate) est = await navigator.storage.estimate(); } catch (e) { est = null; }
@@ -6896,7 +7508,17 @@ function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the live version from the title's element: never a second hard-coded copy to go stale
   const list = $('wnList'); list.innerHTML = '';
-  for (const item of WHATSNEW.items) { const d = document.createElement('div'); d.className = 'm-wnItem'; const dot = document.createElement('span'); dot.className = 'm-wnDot'; dot.innerHTML = '&middot;'; const tx = document.createElement('span'); tx.textContent = item; d.appendChild(dot); d.appendChild(tx); list.appendChild(d); } // exactly one version block: the current release's items directly under the header, no older-version subheads (1.114)
+  for (const item of WHATSNEW.items) { const d = document.createElement('div');
+  d.className = 'm-wnItem';
+  const dot = document.createElement('span');
+  dot.className = 'm-wnDot';
+  dot.innerHTML = '&middot;';
+  const tx = document.createElement('span');
+  tx.textContent = item;
+  d.appendChild(dot);
+  d.appendChild(tx);
+  list.appendChild(d);
+  } // exactly one version block: the current release's items directly under the header, no older-version subheads (1.114)
 }
 $('aboutBtn').addEventListener('click', () => { renderAbout(); showSetPane('setAboutPane'); });
 $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
@@ -7007,7 +7629,9 @@ if ('serviceWorker' in navigator) {
       // both styles are embedded in the page (pmstyles.js): a first install is offline-ready by construction
       window.__warm = 'embedded';
       // pre-warm the other theme's sprites: a flip's only network fetch, so the first flip never waits
-      try { const otherKey = isNight() ? 'day' : 'night'; const oSpr = GL_STYLES[otherKey] && (Array.isArray(GL_STYLES[otherKey].sprite) ? GL_STYLES[otherKey].sprite[0].url : GL_STYLES[otherKey].sprite); if (oSpr) { window.__spriteWarm = otherKey; for (const suf of ['.json', '.png', '@2x.json', '@2x.png']) fetch(oSpr + suf).catch(() => {}); } } catch (e) {}
+      try { const otherKey = isNight() ? 'day' : 'night';
+      const oSpr = GL_STYLES[otherKey] && (Array.isArray(GL_STYLES[otherKey].sprite) ? GL_STYLES[otherKey].sprite[0].url : GL_STYLES[otherKey].sprite);
+      if (oSpr) { window.__spriteWarm = otherKey; for (const suf of ['.json', '.png', '@2x.json', '@2x.png']) fetch(oSpr + suf).catch(() => {}); } } catch (e) {}
     } catch (e) { window.__warm = 'error:' + (e && e.message || e); }
   }).catch(() => { window.__warm = 'no-worker'; });
 }
@@ -7059,7 +7683,9 @@ async function migratePack() { let migRelease = () => {}; // the move, honestly:
       if (await oc.match(u)) continue;
       const hit = await tc.match(u);
       if (!hit) continue; // exists in neither cache - nothing to migrate (a re-download rebuilds the pack directly)
-      let hSz = -1; try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++; else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; else unweighed = true; } catch (e) { failed++; } }
+      let hSz = -1;
+      try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++;
+      else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; else unweighed = true; } catch (e) { failed++; } }
     }
     if (failed > 0) return { ok: false, failed };
     for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
@@ -7094,7 +7720,12 @@ function syncViewport() {
     if (DP_ANDROID && !kb && inStandalone() && fullH > h && window.innerHeight >= fullH - 2) { de.style.setProperty('--vvh', fullH + 'px'); de.style.setProperty('--vvb', Math.max(0, window.innerHeight - t - fullH) + 'px'); }
     const ae = document.activeElement;
     if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
-    if (typeof map !== 'undefined' && map) { const mc = map.getContainer(); const mw = mc.clientWidth, mh = mc.clientHeight; if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw; syncViewport._h = mh; map.resize(); } } // Beta 1.50 (audit P10): this fires on every visual-viewport scroll tick - only pay for a map resize when the container actually changed size
+    if (typeof map !== 'undefined' && map) { const mc = map.getContainer();
+    const mw = mc.clientWidth, mh = mc.clientHeight;
+    if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw;
+    syncViewport._h = mh;
+    map.resize();
+    } } // fires on every visual-viewport scroll tick: only pay for a map resize when the container actually changed size
   } catch (e) { /* map/viewport not up yet */ }
 }
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
@@ -7134,7 +7765,15 @@ function ensureFieldVisible() { // a covered field surfaces locally (list scroll
       return;
     }
     const host = ae.closest('#selPop, .modal .card');
-    if (host) { const rawBottom = r.bottom + (host === kbShiftHost ? kbShiftPx : 0); if (rawBottom > floor) { const over = Math.ceil(rawBottom - floor) + 12; host.style.transform = 'translateY(' + (-over) + 'px)'; kbShiftHost = host; kbShiftPx = over; } else if (host === kbShiftHost) { host.style.transform = ''; kbShiftHost = null; kbShiftPx = 0; } } // Beta 1.70 (audit A02): measure from the UNSHIFTED rect (the tracked shift added back) - the old code measured the already-shifted card and replaced its shift with a smaller one, dropping the field back under a grown keyboard
+    if (host) { const rawBottom = r.bottom + (host === kbShiftHost ? kbShiftPx : 0);
+    if (rawBottom > floor) { const over = Math.ceil(rawBottom - floor) + 12;
+    host.style.transform = 'translateY(' + (-over) + 'px)';
+    kbShiftHost = host;
+    kbShiftPx = over;
+    } else if (host === kbShiftHost) { host.style.transform = '';
+    kbShiftHost = null;
+    kbShiftPx = 0;
+    } } // measure from the UNSHIFTED rect (the tracked shift added back), or the field drops under a grown keyboard
   } catch (e) { /* visibility is best-effort; the layout never depends on it */ }
 }
 // while open, a material resize re-runs the visibility check (layout frozen; only the local scroll/shift re-evaluates)
@@ -7278,7 +7917,13 @@ function unloadRouteToBoot() { // route deleted while active: return to the boot
   LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute
   activeRoute = null; routeLoaded = false;
   document.documentElement.classList.remove('boot'); // do NOT add html.boot here: while it stands, the chrome-absence rule force-hides every other body child
-  const rm = $('routeMenu'); rm.classList.remove('tab', 'open'); rm.classList.add('boot', 'show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('off', 'bye'); /* Beta 1.155: the picker return revives the landed title in its layer (finish() parked it at the pick) */ showRmPane('rmMain'); renderRouteLists();
+  const rm = $('routeMenu');
+  rm.classList.remove('tab', 'open');
+  rm.classList.add('boot', 'show');
+  const bl = $('brandLayer');
+  if (bl) bl.classList.remove('off', 'bye');
+  /* Beta 1.155: the picker return revives the landed title in its layer (finish() parked it at the pick) */ showRmPane('rmMain');
+  renderRouteLists();
   syncWake();
 }
 async function deleteRoute(id) { // order is the safety: definition first, verified (failure touches nothing); then unregister, wipe, picker, re-render
@@ -7329,14 +7974,31 @@ const UP_TX_FAILED = {}; // internal: a store transaction that errored, aborted,
 let userPackCache = {}; // the merged {id: pack} picture of both homes (the backup export's source); it reflects only verified writes
 let upStoreComplete = false; // true once the boot read succeeded: only then is the cache provably complete and the strict backup export allowed
 let upStatus = { state: 'boot' }; // the init outcome, exposed as window.__userPacksStatus for the battery (the migratePack status-object precedent)
-function upCanon(v) { if (v === null || typeof v !== 'object') return JSON.stringify(v); if (Array.isArray(v)) return '[' + v.map(upCanon).join(',') + ']'; return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + upCanon(v[k])).join(',') + '}'; } // key-order-insensitive canonical form for read-back equality: a structured-clone round-trip through IndexedDB is not a byte channel, so equality is judged on content, never on key order
-function upIdbOpen() { return new Promise(res => { let rq; try { rq = indexedDB.open(UP_IDB_NAME, 1); } catch (e) { res(null); return; } rq.onupgradeneeded = () => { const db = rq.result; if (!db.objectStoreNames.contains(UP_IDB_STORE)) db.createObjectStore(UP_IDB_STORE, { keyPath: 'id' }); }; rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); rq.onblocked = () => res(null); }); }
-function upTx(mode, fn) { return new Promise(res => { upIdbOpen().then(db => { if (!db) { res(UP_TX_FAILED); return; } let req; try { const tx = db.transaction(UP_IDB_STORE, mode); tx.oncomplete = () => { db.close(); res(req ? req.result : true); }; tx.onerror = () => { db.close(); res(UP_TX_FAILED); }; tx.onabort = () => { db.close(); res(UP_TX_FAILED); }; req = fn(tx.objectStore(UP_IDB_STORE)); } catch (e) { try { db.close(); } catch (e2) {} res(UP_TX_FAILED); } }); }); } // one short transaction per operation, the crIdb* shape - and a write counts at transaction COMPLETE, never at request success alone
+function upCanon(v) { if (v === null || typeof v !== 'object') return JSON.stringify(v);
+if (Array.isArray(v)) return '[' + v.map(upCanon).join(',') + ']';
+return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + upCanon(v[k])).join(',') + '}';
+} // key-order-insensitive canonical form: IndexedDB round-trips are not byte channels, so equality judges content, never key order
+function upIdbOpen() { return new Promise(res => { let rq; try { rq = indexedDB.open(UP_IDB_NAME,
+  1); } catch (e) { res(null); return; } rq.onupgradeneeded = () => { const db = rq.result; if (!db.objectStoreNames.contains(UP_IDB_STORE)) db.createObjectStore(UP_IDB_STORE,
+  { keyPath: 'id' }); }; rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null); rq.onblocked = () => res(null); });
+}
+function upTx(mode, fn) { return new Promise(res => { upIdbOpen().then(db => { if (!db) { res(UP_TX_FAILED); return; } let req; try { const tx = db.transaction(UP_IDB_STORE, mode); tx.oncomplete = () => { db.close(); res(req ?
+  req.result :
+    true); }; tx.onerror = () => { db.close(); res(UP_TX_FAILED); }; tx.onabort = () => { db.close(); res(UP_TX_FAILED); }; req = fn(tx.objectStore(UP_IDB_STORE)); } catch (e) { try { db.close(); } catch (e2) {} res(UP_TX_FAILED); } }); });
+} // one short transaction per operation: a write counts at transaction COMPLETE, never at request success alone
 async function upGetAll() { const all = await upTx('readonly', st => st.getAll()); if (all === UP_TX_FAILED || !Array.isArray(all)) return null; const map = {}; for (const rec of all) if (rec && typeof rec === 'object' && typeof rec.id === 'string') map[rec.id] = rec; return map; } // {id: pack} for the whole store; null on any failure
 // one pack: the pack, null when absent, UP_READ_FAILED when the read itself failed - the distinction is the point
 async function upGet(id) { const rec = await upTx('readonly', st => st.get(id)); if (rec === UP_TX_FAILED) return UP_READ_FAILED; return rec === undefined ? null : rec; }
-async function upPut(id, pack) { const rec = { ...pack, id }; const w = await upTx('readwrite', st => st.put(rec)); if (w === UP_TX_FAILED) return false; const back = await upGet(id); return !!back && back !== UP_READ_FAILED && upCanon(back) === upCanon(rec); } // a created-route write counts only when the record reads back content-equal - the verified half of the house write discipline, and the gate every caller refuses on
-async function upDel(id) { const w = await upTx('readwrite', st => st.delete(id)); if (w === UP_TX_FAILED) return false; return (await upGet(id)) === null; } // deletion likewise: verified absent before the caller may treat the route as gone
+async function upPut(id, pack) { const rec = { ...pack, id };
+const w = await upTx('readwrite', st => st.put(rec));
+if (w === UP_TX_FAILED) return false;
+const back = await upGet(id);
+return !!back && back !== UP_READ_FAILED && upCanon(back) === upCanon(rec);
+} // a created-route write counts only when the record reads back content-equal - the gate every caller refuses on
+async function upDel(id) { const w = await upTx('readwrite', st => st.delete(id));
+if (w === UP_TX_FAILED) return false;
+return (await upGet(id)) === null;
+} // deletion likewise: verified absent before the caller may treat the route as gone
 async function initUserPacks() { // migration + boot registration; never blocks boot: on failure the app runs on legacy data and the drain retries
   const result = { state: 'done', fromStore: 0, fromLegacy: 0, drained: 0, migrated: false, legacyDeleted: false };
   try {
@@ -7395,7 +8057,12 @@ function computeBoundaryEnds(roads, allStreets) {
       const cum = [0]; for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + distM(line[i - 1], line[i]));
       const total = cum[cum.length - 1];
       const atD = d => { // the point at along-run distance d (sliceLine's interpolation)
-        for (let i = 1; i < line.length; i++) { if (d <= cum[i] || i === line.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span)); return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t]; } }
+        for (let i = 1;
+        i < line.length;
+        i++) { if (d <= cum[i] || i === line.length - 1) { const span = cum[i] - cum[i - 1] || 1;
+        const t = Math.max(0, Math.min(1, (d - cum[i - 1]) / span));
+        return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t];
+        } }
         return line[line.length - 1];
       };
       for (const atStart of [true, false]) {
@@ -7674,7 +8341,10 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
           return null;
         });
         if (read.stopped === 'dense') { try { if (ctl) ctl.abort(); } catch (e) {} clearTimers(); return { ok: false, kind: 'dense' }; }
-        if (read.stopped === 'stale') { clearTimers(); crAbortOp(op); return { ok: false, kind: 'stale' }; } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
+        if (read.stopped === 'stale') { clearTimers();
+        crAbortOp(op);
+        return { ok: false, kind: 'stale' };
+        } // superseded mid-stream: stop the download, don't just discard its result (CG-PF-10) - the reader was cancelled inside crReadBodyText
         text = read.text;
       } else { const cl = (r.headers && typeof r.headers.get === 'function') ? +(r.headers.get('content-length') || 0) : 0; if (cl > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } text = await r.text(); if (new TextEncoder().encode(text).length > CR_TIMING.capBytes) { clearTimers(); return { ok: false, kind: 'dense' }; } } // Beta 1.170 (Carbon fix round Phase 2, D-07): the no-stream fallback measures the cap the way the streaming branch does - a declared Content-Length over the cap refuses BEFORE the body is buffered, and the buffered text is measured in BYTES (TextEncoder), where through 1.169 the only check ran after the full buffer landed and compared UTF-16 code units against the byte cap (a multi-byte body passed at up to twice the cap). What a reader-less response still cannot do is abort MID-body - that residual is inherent to the fallback, and is why the streaming branch is the primary. Beta 1.246: the fallback likewise cannot SEE mid-body progress, so its silence timer runs from the answer landing - a text() that wedges is cut by the silence rule, where a trickling one cannot be told apart (the streaming branch remains the primary on every browser that has it)
       clearTimers();
@@ -8053,7 +8723,10 @@ function crGridCellsFor(bbox) { // the ~4x4 km grid over the box (row-major, sou
   const rows = Math.max(1, Math.ceil((bbox.n - bbox.s) / dLat - 1e-9)), cols = Math.max(1, Math.ceil((bbox.e - bbox.w) / dLng - 1e-9));
   const cells = [];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-    cells.push({ key: 'r' + r + 'c' + c, box: { s: +(bbox.s + r * dLat).toFixed(6), n: +Math.min(bbox.n, bbox.s + (r + 1) * dLat).toFixed(6), w: +(bbox.w + c * dLng).toFixed(6), e: +Math.min(bbox.e, bbox.w + (c + 1) * dLng).toFixed(6) }, state: 'pending', tries: 0 });
+    cells.push({ key: 'r' + r + 'c' + c,
+      box: { s: +(bbox.s + r * dLat).toFixed(6), n: +Math.min(bbox.n, bbox.s + (r + 1) * dLat).toFixed(6), w: +(bbox.w + c * dLng).toFixed(6), e: +Math.min(bbox.e, bbox.w + (c + 1) * dLng).toFixed(6) },
+      state: 'pending',
+      tries: 0 });
   }
   return cells;
 }
@@ -8222,7 +8895,11 @@ function crRenderHint() { // the one writer of the action button and the city ch
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
   btn.classList.toggle('danger', btnLabel === 'Cancel'); // anything Cancel is red: while the button reads Cancel it wears the destructive red
   const cc = $('crCityChange'); if (cc) { if (crCity) { // the city bar above Done, built from text nodes: the typed city name never becomes markup
-      cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
+      cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ',
+        b,
+        ' · ',
+        go); cc.style.display = ''; } else cc.style.display = 'none';
+      }
   crRefreshSearch(); // every coverage landing renders this hint as it lands, so the open street search refreshes with it (guards at crRunSearch)
 }
 // ---- the DRAFT owner ---- every draft mutation and its following render live here; sector state is the same owner's
@@ -8364,7 +9041,8 @@ function crSectorTap(lngLat) { // a tap toggles the sector under it (features fi
     try {
       const pt = map.project([lngLat.lng, lngLat.lat]);
       for (const half of CR_TAP_BOXES) {
-        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]], { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === name && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
+        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]],
+          { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === name && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
         if (!feats.length) continue;
         let bd = Infinity;
         for (const f of feats) { const d = crFeatDistM(lngLat, f.geometry); if (d < bd) { bd = d; idx = f.properties.sector; } }
@@ -8447,7 +9125,8 @@ function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers,
   return { h: sheet.offsetHeight, ml: parseFloat(cs.marginLeft) || 0, mr: parseFloat(cs.marginRight) || 0, mb: parseFloat(cs.marginBottom) || 0, r: R };
 }
 function crMorphCleanup() { // back to class-driven rest: every geometry the morph set clears, so the landing is exactly the CSS geometry
-  const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
+  const sheet = $('createSheet');
+  if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
   for (const f of Object.keys(CR_FACES)) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
   crMorph = null;
 }
@@ -8467,7 +9146,13 @@ function crMorphTo(to, opts) { // the face change: one surface springing between
   crFaceClasses(sheet, from);
   const mb0 = opts.dy ? -opts.dy : G0.mb; // the finger left the surface dy px below rest: morph bottom starts there, not at rest
   if (!G0.h || !G1.h || (Math.abs(G1.h - G0.h) < 2 && Math.abs(G1.ml - G0.ml) < 1 && Math.abs(G1.mb - mb0) < 1)) { syncCrPanel(); return; } // nothing to travel (or nothing measurable): land the rest state directly
-  for (const el of [fromEl, toEl]) { el.style.display = ''; el.style.position = 'absolute'; el.style.top = '0px'; el.style.left = '0px'; el.style.right = '0px'; el.style.bottom = '0px'; } // both contents live inside the one surface for the motion
+  for (const el of [fromEl, toEl]) { el.style.display = '';
+  el.style.position = 'absolute';
+  el.style.top = '0px';
+  el.style.left = '0px';
+  el.style.right = '0px';
+  el.style.bottom = '0px';
+  } // both contents live inside the one surface for the motion
   fromEl.style.opacity = '1'; toEl.style.opacity = '0';
   sheet.style.transform = '';
   sheet.style.overflow = 'hidden'; sheet.style.height = G0.h + 'px';
@@ -8552,7 +9237,12 @@ function crRenderCityChoices() {
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
-    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now. Go back and use Manual search.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
+    if (!entries || !entries.length) { const d = document.createElement('div');
+    d.className = 'rmNote';
+    d.textContent = 'The city library isn’t available right now. Go back and use Manual search.';
+    boxEl.appendChild(d);
+    return;
+    } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
     const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
     // the last-used city rides first when held (a convenience, never a requirement; the full list is always there)
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0));
@@ -8569,7 +9259,11 @@ function crRenderCityChoices() {
 }
 function crPackPickCity(e) { // a chooser tap is a city pick through the same crPickCity: every door behaves identically (guard, caching, draft)
   const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
-  crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
+  crPickCity({ lat: String((s + n) / 2),
+    lon: String((w + ee) / 2),
+    boundingbox: [String(s), String(n), String(w), String(ee)],
+    display_name: e.name + ', Ontario, Canada',
+    address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
 }
 function crOpenCityPane(ret) {
   crResetCitySearch(); // reopening supersedes a held city search too: its late answer must not repopulate the pane (close via crResetCitySearch)
@@ -9018,7 +9712,15 @@ function crCityLocalMatches(q) {
   }
   const byPop = (a, b) => (CR_CITY_GAZETTEER[b][7] - CR_CITY_GAZETTEER[a][7]) || (a - b);
   head.sort(byPop); word.sort(byPop);
-  return head.concat(word).slice(0, 6).map(i => { const e = CR_CITY_GAZETTEER[i]; return { display_name: e[0] + ', Ontario, Canada', category: 'boundary', type: 'administrative', lat: String(e[1]), lon: String(e[2]), boundingbox: [String(e[3]), String(e[4]), String(e[5]), String(e[6])], address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' } }; }); // the service's own item shape, so the row renderer and crPickCity consume a suggestion exactly like a service row
+  return head.concat(word).slice(0,
+    6).map(i => { const e = CR_CITY_GAZETTEER[i]; return { display_name: e[0] + ', Ontario, Canada',
+      category: 'boundary',
+      type: 'administrative',
+      lat: String(e[1]),
+      lon: String(e[2]),
+      boundingbox: [String(e[3]), String(e[4]), String(e[5]), String(e[6])],
+      address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' } }; });
+  // the service's own item shape, so the row renderer and crPickCity consume a suggestion exactly like a service row
 }
 function crCityResultRow(it, i) { // one city result row, shared by the type-ahead and the online search: the two renders must never drift apart
   const dn = it.display_name || '', cut = dn.indexOf(',');
@@ -9051,7 +9753,12 @@ async function crRunCitySearch() {
     if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
     if (!crCitySearchCurrent(seq, session) || input.value !== settledText) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
     crCityOnlineAt = Date.now();
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined }); // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w,
+      CR_ON_BOUNDS.n,
+      CR_ON_BOUNDS.e,
+      CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q),
+      { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
+    // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
     const list = await r.json();
     if (!crCitySearchCurrent(seq, session)) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
@@ -9093,7 +9800,9 @@ function ensureDraftLayers() {
     if (!map.getLayer('crDraftLineDim')) map.addLayer({ id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#b9c1cb', 'line-width': crZoomW(4.5) } }, before); // Beta 1.223 (Andrew's corrected model): a REMOVED sector is flat GREY - the #b9c1cb this layer wore through 1.220, restored. The 1.221 muted-category-colour paint is reverted: muted colour now belongs to the SELECTED-but-not-active road (crDraftLine below), never to a removed sector. Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two
     if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['!=', ['get', 'active'], 1]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#dbb457', '#d2647e'], 'line-width': crZoomW(6.75) } }, before); // Beta 1.223 (Andrew's corrected model): a chosen street that is NOT the one being trimmed paints GENTLE-MUTED - its category colour at saturation x0.65, lightness unchanged (gold #ffc233 -> #dbb457, red #ef476f -> #d2647e; the strength Andrew approved from the create-route-states sample: just enough to notice the step up when the road goes active). The ACTIVE street (the sector session's, features carry active=1) paints full colour on crDraftLineActive below, with the session glow - the muted->vibrant step is at ROAD level, on the click that opens the trim, not per sector tap (the 1.221 model tied the raise to sector picking; reverted). Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both widths x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156). Beta 1.210: both widths ride crZoomW like the casing - the literals are the z15-and-above anchors; below z15 the line thins with the zoom (crDraftHit still does NOT scale: it is a tap target, not paint, so picking keeps its generous reach at every zoom). The widths ride the curve in TWO layers (this one filtered to chosen, crDraftLineDim above it to unchosen) because MapLibre silently drops a layer whose line-width nests a zoom curve inside the chosen switch (['case', ..., interpolate, interpolate] never enters the style - measured in the 1.210 round's rendered QA: addLayer does not throw, getLayer stays false); a bare curve as the whole width is fine
     if (!map.getLayer('crDraftLineActive')) map.addLayer({ id: 'crDraftLineActive', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['==', ['get', 'active'], 1]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], 'line-width': crZoomW(6.75) } }, before); // Beta 1.223: the ACTIVE street's chosen sectors at FULL category colour - the vibrant half of the corrected model (its glow rides the crGlowShader, session-only since 1.209). A separate layer on the same two-layer pattern as crDraftLine/crDraftLineDim: the widths stay bare crZoomW curves (a case nested around the width curve is dropped by MapLibre - see the crDraftLine note)
-    if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }, before); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
+    if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } },
+      before);
+    // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
 // the glow is a shader (one WebGL layer): a metre-built ribbon mesh, per-pixel falloff, scaling like real paint
@@ -9130,7 +9839,10 @@ function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 fl
     const staN = [];
     for (let i = 0; i < N; i++) {
       if (i === 0) staN.push(segN[0]); else if (i === N - 1) staN.push(segN[N - 2]);
-      else { let nx = segN[i - 1][0] + segN[i][0], ny = segN[i - 1][1] + segN[i][1]; const nl = Math.hypot(nx, ny); if (nl < 1e-9) { nx = segN[i][0]; ny = segN[i][1]; } else { nx /= nl; ny /= nl; const cos = Math.max(0.45, nx * segN[i][0] + ny * segN[i][1]); nx /= cos; ny /= cos; } staN.push([nx, ny]); }
+      else { let nx = segN[i - 1][0] + segN[i][0], ny = segN[i - 1][1] + segN[i][1];
+      const nl = Math.hypot(nx, ny);
+      if (nl < 1e-9) { nx = segN[i][0]; ny = segN[i][1]; } else { nx /= nl; ny /= nl; const cos = Math.max(0.45, nx * segN[i][0] + ny * segN[i][1]); nx /= cos; ny /= cos; } staN.push([nx, ny]);
+      }
     }
     const ringPt = (i, off) => [P[i][0] + staN[i][0] * off * mm, P[i][1] + staN[i][1] * off * mm];
     const R = CR_GLOW_RINGS.length;
@@ -9146,7 +9858,12 @@ function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 fl
       const dl = Math.hypot(dirx, diry) || 1, dx = dirx / dl, dy = diry / dl;
       const nx = segN[i === 0 ? 0 : N - 2][0], ny = segN[i === 0 ? 0 : N - 2][1];
       let prev = null;
-      for (let j = 0; j <= 5; j++) { const th = (j / 5) * Math.PI, ox = nx * Math.cos(th) + dx * Math.sin(th), oy = ny * Math.cos(th) + dy * Math.sin(th); const rim = [P[i][0] + ox * 20 * mm, P[i][1] + oy * 20 * mm]; if (prev) { push(P[i][0], P[i][1], 0, rgb); push(prev[0], prev[1], 20, rgb); push(rim[0], rim[1], 20, rgb); } prev = rim; }
+      for (let j = 0;
+      j <= 5;
+      j++) { const th = (j / 5) * Math.PI, ox = nx * Math.cos(th) + dx * Math.sin(th), oy = ny * Math.cos(th) + dy * Math.sin(th);
+      const rim = [P[i][0] + ox * 20 * mm, P[i][1] + oy * 20 * mm];
+      if (prev) { push(P[i][0], P[i][1], 0, rgb); push(prev[0], prev[1], 20, rgb); push(rim[0], rim[1], 20, rgb); } prev = rim;
+      }
     }
   }
   return new Float32Array(verts);
@@ -9157,7 +9874,8 @@ function crGlowLayerObj() {
   crGlowShaderLayer = {
     id: 'crGlowShader', type: 'custom', _data: null, _dirty: false, _prog: null, _buf: null, _aPos: -1, _aDist: -1, _aCol: -1, _u: {},
     onAdd(m, gl) {
-      const sh = (type, src) => { const s2 = gl.createShader(type); gl.shaderSource(s2, src); gl.compileShader(s2); if (!gl.getShaderParameter(s2, gl.COMPILE_STATUS)) console.log('CRGLOWSHADER compile failed: ' + gl.getShaderInfoLog(s2)); return s2; };
+      const sh = (type,
+        src) => { const s2 = gl.createShader(type); gl.shaderSource(s2, src); gl.compileShader(s2); if (!gl.getShaderParameter(s2, gl.COMPILE_STATUS)) console.log('CRGLOWSHADER compile failed: ' + gl.getShaderInfoLog(s2)); return s2; };
       const prog = gl.createProgram();
       gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
         'attribute vec2 a_pos;',
@@ -9245,8 +9963,16 @@ function syncCrGlow() { // the glow's one writer: the session street's chosen se
   if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
     const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f';
     const rec = crStreetParts(name);
-    if (rec) { const set = crChosenSet(name, rec); for (let i = 0; i < rec.parts.length; i++) { if (!set.has(i)) continue; const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
-    else { const g = crDraftGeom(); const st = g && g[name]; if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
+    if (rec) { const set = crChosenSet(name, rec);
+    for (let i = 0;
+    i < rec.parts.length;
+    i++) { if (!set.has(i)) continue;
+    const L = rec.parts[i];
+    if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+    } }
+    else { const g = crDraftGeom();
+    const st = g && g[name];
+    if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
   }
   crGlowSetFeatures(feats);
 }
@@ -9263,9 +9989,18 @@ function renderDraft() { // the draft renders from its own roads through its own
       if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
-        for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: set.has(i) ? 1 : 0, active: crSectorSession.street === n ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.223: active=1 only on the sector session's street - it alone paints vibrant (crDraftLineActive); every other chosen street rests gentle-muted (crDraftLine)
+        for (let i = 0;
+        i < rec.parts.length;
+        i++) { const L = rec.parts[i];
+        if (L && L.length > 1) feats.push({ type: 'Feature',
+          properties: { name: n, primary, chosen: set.has(i) ? 1 : 0, active: crSectorSession.street === n ? 1 : 0, sector: i },
+          geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+        } // active=1 only on the sector session's street: it alone paints vibrant; other chosen streets rest gentle-muted
       } else {
-        const st = g[n]; if (st) for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: 1, active: 0, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
+        const st = g[n];
+        if (st) for (const run of st.runs) { const L = run.line;
+        if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: 1, active: 0, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+        } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
       }
     }
   }
@@ -9284,7 +10019,9 @@ const CR_ROUTE_LAYERS = GLP.layers.stack;   // the hide list is the engine's sta
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
 function crPoiFeatures() {
-  return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature', properties: { name: p.name || '' }, geometry: { type: 'Point', coordinates: [(bb.w + bb.e) / 2, (bb.s + bb.n) / 2] } }; }).filter(Boolean);
+  return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature',
+    properties: { name: p.name || '' },
+    geometry: { type: 'Point', coordinates: [(bb.w + bb.e) / 2, (bb.s + bb.n) / 2] } }; }).filter(Boolean);
 }
 function crPoiFont() { // the basemap's own Noto stack, read the way pickFontFromStyle reads it - a guessed stack renders no text
   try {
@@ -9303,7 +10040,11 @@ function ensureCrPoiLayers() {
     const night = isNight();
     if (!map.getLayer('crPoiRing')) map.addLayer({ id: 'crPoiRing', type: 'circle', source: CR_POI_SRC, paint: { 'circle-radius': 9, 'circle-color': '#ffffff', 'circle-stroke-color': 'rgba(10,14,34,.25)', 'circle-stroke-width': 1 } });
     if (!map.getLayer('crPoiDot')) map.addLayer({ id: 'crPoiDot', type: 'circle', source: CR_POI_SRC, paint: { 'circle-radius': 6, 'circle-color': '#ef476f' } });
-    if (!map.getLayer('crPoiTxt')) map.addLayer({ id: 'crPoiTxt', type: 'symbol', source: CR_POI_SRC, layout: { 'text-field': ['get', 'name'], 'text-font': crPoiFont(), 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': true }, paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
+    if (!map.getLayer('crPoiTxt')) map.addLayer({ id: 'crPoiTxt',
+      type: 'symbol',
+      source: CR_POI_SRC,
+      layout: { 'text-field': ['get', 'name'], 'text-font': crPoiFont(), 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': true },
+      paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
   } catch (e) { /* the style may still be loading - the styledata hook re-runs this while creating */ }
 }
 function crSetBackdrop(on) {
@@ -9403,8 +10144,20 @@ function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = tit
 function crConfirmDismiss() { hideSurface($('crModal')); crConfirmCb = null; }
 $('crModalYes').addEventListener('click', () => { hideSurface($('crModal')); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
-function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); const bl = $('brandLayer'); if (bl) bl.classList.add('parked'); /* Beta 1.155: the title lives in its own layer now, not inside the menu - the park hides it explicitly (through 1.154 it hid as the menu's child) */ crBootParked = true; }
-function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('parked'); /* Beta 1.155: revive the title layer with the picker */ }
+function parkBootChrome() { const sp = $('splash');
+if (sp) sp.style.visibility = 'hidden';
+$('routeMenu').classList.remove('show');
+const bl = $('brandLayer');
+if (bl) bl.classList.add('parked');
+/* the title lives in its own layer - the park hides it explicitly */ crBootParked = true; }
+function restoreBootChrome() { if (!crBootParked) return;
+crBootParked = false;
+const sp = $('splash');
+if (sp) sp.style.visibility = '';
+$('routeMenu').classList.add('show');
+const bl = $('brandLayer');
+if (bl) bl.classList.remove('parked');
+/* Beta 1.155: revive the title layer with the picker */ }
 function setCreateStage(stage) {
   if (stage !== 'pick') crSectorReset(); // sector mode is pick-stage only: the preview never inherits its bar (the Cancel snapshot dies with it)
   crStage = stage;
@@ -9490,7 +10243,8 @@ $('crHintBtn').addEventListener('click', () => { // the action is the same decis
   if (act === 'retry-anchor') { if (crPrepAnchor) crStartPrep(crPrepAnchor); return; } // a failed box's Retry: the same anchor again
   if (act === 'prepare-centre') { if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } return; } // Prepare this area: the anchor is the map centre he is looking at
 });
-onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); })); // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
+onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); }));
+// the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
 // search as you type (300 ms debounce, 3+ characters, one query per burst); Enter runs it immediately
 let crSearchTimer = null, crSearchSeq = 0;
@@ -9799,7 +10553,23 @@ function crClusterPts(pts, r) { // one junction can print as several points (a d
   }
   return out;
 }
-const CR_ABBR = { rd: 'road', st: 'street', ave: 'avenue', av: 'avenue', dr: 'drive', ct: 'court', crt: 'court', blvd: 'boulevard', ln: 'lane', cres: 'crescent', pl: 'place', ter: 'terrace', cir: 'circle', trl: 'trail', pkwy: 'parkway', sq: 'square', hwy: 'highway' };
+const CR_ABBR = { rd: 'road',
+  st: 'street',
+  ave: 'avenue',
+  av: 'avenue',
+  dr: 'drive',
+  ct: 'court',
+  crt: 'court',
+  blvd: 'boulevard',
+  ln: 'lane',
+  cres: 'crescent',
+  pl: 'place',
+  ter: 'terrace',
+  cir: 'circle',
+  trl: 'trail',
+  pkwy: 'parkway',
+  sq: 'square',
+  hwy: 'highway' };
 function crNameKey(s) { // a typed fragment and a pack name meet on one key: lower-case, dots off, a trailing abbreviation spelled out
   const parts = String(s || '').trim().toLowerCase().replace(/\./g, '').split(/\s+/).filter(Boolean);
   if (!parts.length) return '';
@@ -10031,7 +10801,9 @@ $('crClearAll').addEventListener('click', () => { // empty the picks at once, be
   // the wholesale reset lives on the DRAFT owner (its clearAll method)
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => { DRAFT.clearAll(); }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });
-$('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
+$('crSbWhole').addEventListener('click',
+  () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); });
+// Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel
 $('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Deselect: the street leaves entirely through crRemoveStreet (the snapshot restore lives on the tap-away, crCancelSectors)
 (() => { // the tuck-away gesture: drag/flick the handle down, or tap it, to collapse; header buttons keep their taps
@@ -10242,7 +11014,9 @@ async function saveDraftRoute() {
     W = window.innerWidth; H = window.innerHeight;
     cvS.width = Math.round(W * dpr); cvS.height = Math.round(H * dpr);
     ctxS.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (oW > 0 && oH > 0 && (W !== oW || H !== oH)) { var sx = W / oW, sy = H / oH; var all = specks.concat(mids, blobs); for (var i = 0; i < all.length; i++) { all[i].bx *= sx; all[i].y *= sy; } } // Beta 1.159: a resize scales the field proportionally - positions are preserved, never re-scattered (Beta 1.161: every layer scales)
+    if (oW > 0 && oH > 0 && (W !== oW || H !== oH)) { var sx = W / oW, sy = H / oH;
+    var all = specks.concat(mids, blobs);
+    for (var i = 0; i < all.length; i++) { all[i].bx *= sx; all[i].y *= sy; } } // Beta 1.159: a resize scales the field proportionally - positions are preserved, never re-scattered (Beta 1.161: every layer scales)
   }
   function makeSprite(size, stops) {
     var c = document.createElement('canvas'); c.width = size; c.height = size;
@@ -10257,13 +11031,39 @@ async function saveDraftRoute() {
   var midSprite = makeSprite(64, [[0, 1], [0.35, 0.8], [0.7, 0.28], [1, 0]]); // Beta 1.161: the mid layer's soft flake, rendered once
   var blobSprite = makeSprite(256, [[0, 0.55], [0.45, 0.34], [0.75, 0.13], [1, 0]]); // Beta 1.161: the near blobs' extra-soft disc, rendered once
   function newSpeck(scatter) {
-    return { bx: rand(0, W), y: scatter ? rand(-4, H) : -4, r: rand(SPECK.rMin, SPECK.rMax), v: rand(SPECK.vMin, SPECK.vMax), phase: rand(0, Math.PI * 2), swayFreq: SPECK.swaySpeed * rand(0.6, 1.4), amp: SPECK.swayAmp * rand(0.5, 1.3), o: rand(0.45, 1), tw: rand(1.2, 2.6), twPhase: rand(0, Math.PI * 2), age: scatter ? rand(0.6, 3) : 0 };
+    return { bx: rand(0, W),
+      y: scatter ? rand(-4, H) : -4,
+      r: rand(SPECK.rMin, SPECK.rMax),
+      v: rand(SPECK.vMin, SPECK.vMax),
+      phase: rand(0, Math.PI * 2),
+      swayFreq: SPECK.swaySpeed * rand(0.6, 1.4),
+      amp: SPECK.swayAmp * rand(0.5, 1.3),
+      o: rand(0.45, 1),
+      tw: rand(1.2, 2.6),
+      twPhase: rand(0, Math.PI * 2),
+      age: scatter ? rand(0.6, 3) : 0 };
   }
   function newMid(scatter) {
-    return { bx: rand(0, W), y: scatter ? rand(-6, H) : -6, r: rand(MID.rMin, MID.rMax), v: rand(MID.vMin, MID.vMax), phase: rand(0, Math.PI * 2), swayFreq: MID.swaySpeed * rand(0.7, 1.3), amp: MID.swayAmp * rand(0.6, 1.2), o: rand(0.6, 1), age: scatter ? rand(0.6, 3) : 0 };
+    return { bx: rand(0, W),
+      y: scatter ? rand(-6, H) : -6,
+      r: rand(MID.rMin, MID.rMax),
+      v: rand(MID.vMin, MID.vMax),
+      phase: rand(0, Math.PI * 2),
+      swayFreq: MID.swaySpeed * rand(0.7, 1.3),
+      amp: MID.swayAmp * rand(0.6, 1.2),
+      o: rand(0.6, 1),
+      age: scatter ? rand(0.6, 3) : 0 };
   }
   function newBlob(scatter) {
-    return { bx: rand(0, W), y: scatter ? rand(-60, H) : -60, r: rand(BLOB.rMin, BLOB.rMax), v: rand(BLOB.vMin, BLOB.vMax), phase: rand(0, Math.PI * 2), swayFreq: BLOB.swaySpeed * rand(0.7, 1.3), amp: BLOB.swayAmp * rand(0.7, 1.3), o: rand(0.7, 1), age: 0 };
+    return { bx: rand(0, W),
+      y: scatter ? rand(-60, H) : -60,
+      r: rand(BLOB.rMin, BLOB.rMax),
+      v: rand(BLOB.vMin, BLOB.vMax),
+      phase: rand(0, Math.PI * 2),
+      swayFreq: BLOB.swaySpeed * rand(0.7, 1.3),
+      amp: BLOB.swayAmp * rand(0.7, 1.3),
+      o: rand(0.7, 1),
+      age: 0 };
   }
   function settleAmount() {
     var t = clock % 16;
@@ -10384,7 +11184,8 @@ async function saveDraftRoute() {
   }
   resize();
   var area = W * H; // Beta 1.161: layer sizes follow the scene's area, so the approved sample's density is what any screen size sees
-  var nSpeck = Math.min(1000, Math.round(area / SPECK.per)), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per))); // Beta 1.254 (O-09): the speck count is CAPPED - the density (one per SPECK.per px) is unchanged on phone-size screens (under ~600,000 px of canvas), but an uncapped count billed very large screens thousands of specks per frame
+  var nSpeck = Math.min(1000, Math.round(area / SPECK.per)), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per)));
+  // the speck count is CAPPED: density unchanged on phone-size screens, but uncapped counts billed huge screens thousands per frame
   for (var i = 0; i < nSpeck; i++) specks.push(newSpeck(true));
   for (var j = 0; j < nMid; j++) mids.push(newMid(true));
   for (var k = 0; k < nBlob; k++) blobs.push(newBlob(true));
@@ -10396,7 +11197,8 @@ async function saveDraftRoute() {
   handle.frames = function () { return frames; }; // Beta 1.299: drive226's frame-timing proof reads the painted count
   handle.amount = settleAmount;
   handle.ground = function () { return groundHeightAt(W / 2, settleAmount()); };
-  handle.flakes = function () { var out = []; var push = function (f) { out.push({ x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }); }; specks.forEach(push); mids.forEach(push); blobs.forEach(push); return out; }; // Beta 1.159: x is the RENDERED position (base + sway offset) - the painted one (Beta 1.161: all three layers report)
+  handle.flakes = function () { var out = []; var push = function (f) { out.push({ x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }); }; specks.forEach(push); mids.forEach(push); blobs.forEach(push); return out; };
+  // x is the RENDERED position (base + sway offset) - the painted one
   raf = window.requestAnimationFrame(loop);
   if (window.MutationObserver) { // Beta 1.299: menu class flips drive park/resume - the observer lands before the next paint
     var watch = function (el, attrs) { if (el) snowObs.observe(el, attrs); };

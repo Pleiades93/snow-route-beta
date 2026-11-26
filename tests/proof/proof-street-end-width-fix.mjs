@@ -142,7 +142,7 @@ ok('3S: BANDW and BANDCASE declarations are gone', !src.includes('const BANDW') 
 ok('3S: t1-band and t1-selband draw with surfW',
   /'t1-band'[^;]*surfW/.test(src) && /'t1-selband'[^;]*surfW/.test(src));
 ok('3S: band end trims use SURF_HALF (clipStrandEnds(bands, SURF_HALF, ...) — 1.208R3: the call gained the gate-round-3 skip guard for ends whose green continues as a fill; the trim half is unchanged)',
-  src.includes('clipStrandEnds(bands, SURF_HALF, null, (sl, atStart)') && !/BAND_HALF\s*[,);]/.test(src));
+  src.includes('clipStrandEnds(bands,\n    SURF_HALF,\n    null,\n    (sl,\n      atStart)') && !/BAND_HALF\s*[,);]/.test(src));
 for (const z of [17, 18, 19]) {
   const half = drawnM(surfW, z) / 2;
   ok(`3S: band (== surface) half-width at z${z} meets its ${SURF_CUT_M.toFixed(2)} m end cut`, half >= SURF_CUT_M - 0.05, half.toFixed(2) + ' m');
@@ -158,7 +158,7 @@ for (const [z, rim] of Object.entries(SHIP_CASING_RIM)) {
 // surface's casing — t1-casingb references the same surfCASE const
 // as t1-casing, so the rim check 4 pins both layers at once.
 ok('5S: t1-casing and t1-casingb both draw with surfCASE',
-  /'t1-casing', 'centres'[^;]*surfCASE/.test(src) && /'t1-casingb', 'bands'[^;]*surfCASE/.test(src));
+  /'t1-casing',\s*'centres'[^;]*surfCASE/.test(src) && /'t1-casingb', 'bands'[^;]*surfCASE/.test(src));
 // Check 6S (supersedes 1.206 check 6): the surfCASE stops are exactly
 // the shipped surface-casing stops — the supersession shares the
 // curve, it does not retune it.

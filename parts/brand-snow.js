@@ -107,7 +107,9 @@
     W = window.innerWidth; H = window.innerHeight;
     cvS.width = Math.round(W * dpr); cvS.height = Math.round(H * dpr);
     ctxS.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (oW > 0 && oH > 0 && (W !== oW || H !== oH)) { var sx = W / oW, sy = H / oH; var all = specks.concat(mids, blobs); for (var i = 0; i < all.length; i++) { all[i].bx *= sx; all[i].y *= sy; } } // Beta 1.159: a resize scales the field proportionally - positions are preserved, never re-scattered (Beta 1.161: every layer scales)
+    if (oW > 0 && oH > 0 && (W !== oW || H !== oH)) { var sx = W / oW, sy = H / oH;
+    var all = specks.concat(mids, blobs);
+    for (var i = 0; i < all.length; i++) { all[i].bx *= sx; all[i].y *= sy; } } // Beta 1.159: a resize scales the field proportionally - positions are preserved, never re-scattered (Beta 1.161: every layer scales)
   }
   function makeSprite(size, stops) {
     var c = document.createElement('canvas'); c.width = size; c.height = size;
@@ -122,13 +124,39 @@
   var midSprite = makeSprite(64, [[0, 1], [0.35, 0.8], [0.7, 0.28], [1, 0]]); // Beta 1.161: the mid layer's soft flake, rendered once
   var blobSprite = makeSprite(256, [[0, 0.55], [0.45, 0.34], [0.75, 0.13], [1, 0]]); // Beta 1.161: the near blobs' extra-soft disc, rendered once
   function newSpeck(scatter) {
-    return { bx: rand(0, W), y: scatter ? rand(-4, H) : -4, r: rand(SPECK.rMin, SPECK.rMax), v: rand(SPECK.vMin, SPECK.vMax), phase: rand(0, Math.PI * 2), swayFreq: SPECK.swaySpeed * rand(0.6, 1.4), amp: SPECK.swayAmp * rand(0.5, 1.3), o: rand(0.45, 1), tw: rand(1.2, 2.6), twPhase: rand(0, Math.PI * 2), age: scatter ? rand(0.6, 3) : 0 };
+    return { bx: rand(0, W),
+      y: scatter ? rand(-4, H) : -4,
+      r: rand(SPECK.rMin, SPECK.rMax),
+      v: rand(SPECK.vMin, SPECK.vMax),
+      phase: rand(0, Math.PI * 2),
+      swayFreq: SPECK.swaySpeed * rand(0.6, 1.4),
+      amp: SPECK.swayAmp * rand(0.5, 1.3),
+      o: rand(0.45, 1),
+      tw: rand(1.2, 2.6),
+      twPhase: rand(0, Math.PI * 2),
+      age: scatter ? rand(0.6, 3) : 0 };
   }
   function newMid(scatter) {
-    return { bx: rand(0, W), y: scatter ? rand(-6, H) : -6, r: rand(MID.rMin, MID.rMax), v: rand(MID.vMin, MID.vMax), phase: rand(0, Math.PI * 2), swayFreq: MID.swaySpeed * rand(0.7, 1.3), amp: MID.swayAmp * rand(0.6, 1.2), o: rand(0.6, 1), age: scatter ? rand(0.6, 3) : 0 };
+    return { bx: rand(0, W),
+      y: scatter ? rand(-6, H) : -6,
+      r: rand(MID.rMin, MID.rMax),
+      v: rand(MID.vMin, MID.vMax),
+      phase: rand(0, Math.PI * 2),
+      swayFreq: MID.swaySpeed * rand(0.7, 1.3),
+      amp: MID.swayAmp * rand(0.6, 1.2),
+      o: rand(0.6, 1),
+      age: scatter ? rand(0.6, 3) : 0 };
   }
   function newBlob(scatter) {
-    return { bx: rand(0, W), y: scatter ? rand(-60, H) : -60, r: rand(BLOB.rMin, BLOB.rMax), v: rand(BLOB.vMin, BLOB.vMax), phase: rand(0, Math.PI * 2), swayFreq: BLOB.swaySpeed * rand(0.7, 1.3), amp: BLOB.swayAmp * rand(0.7, 1.3), o: rand(0.7, 1), age: 0 };
+    return { bx: rand(0, W),
+      y: scatter ? rand(-60, H) : -60,
+      r: rand(BLOB.rMin, BLOB.rMax),
+      v: rand(BLOB.vMin, BLOB.vMax),
+      phase: rand(0, Math.PI * 2),
+      swayFreq: BLOB.swaySpeed * rand(0.7, 1.3),
+      amp: BLOB.swayAmp * rand(0.7, 1.3),
+      o: rand(0.7, 1),
+      age: 0 };
   }
   function settleAmount() {
     var t = clock % 16;
@@ -249,7 +277,8 @@
   }
   resize();
   var area = W * H; // Beta 1.161: layer sizes follow the scene's area, so the approved sample's density is what any screen size sees
-  var nSpeck = Math.min(1000, Math.round(area / SPECK.per)), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per))); // Beta 1.254 (O-09): the speck count is CAPPED - the density (one per SPECK.per px) is unchanged on phone-size screens (under ~600,000 px of canvas), but an uncapped count billed very large screens thousands of specks per frame
+  var nSpeck = Math.min(1000, Math.round(area / SPECK.per)), nMid = Math.round(area / MID.per), nBlob = Math.max(4, Math.min(8, Math.round(area / BLOB.per)));
+  // the speck count is CAPPED: density unchanged on phone-size screens, but uncapped counts billed huge screens thousands per frame
   for (var i = 0; i < nSpeck; i++) specks.push(newSpeck(true));
   for (var j = 0; j < nMid; j++) mids.push(newMid(true));
   for (var k = 0; k < nBlob; k++) blobs.push(newBlob(true));
@@ -261,7 +290,8 @@
   handle.frames = function () { return frames; }; // Beta 1.299: drive226's frame-timing proof reads the painted count
   handle.amount = settleAmount;
   handle.ground = function () { return groundHeightAt(W / 2, settleAmount()); };
-  handle.flakes = function () { var out = []; var push = function (f) { out.push({ x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }); }; specks.forEach(push); mids.forEach(push); blobs.forEach(push); return out; }; // Beta 1.159: x is the RENDERED position (base + sway offset) - the painted one (Beta 1.161: all three layers report)
+  handle.flakes = function () { var out = []; var push = function (f) { out.push({ x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }); }; specks.forEach(push); mids.forEach(push); blobs.forEach(push); return out; };
+  // x is the RENDERED position (base + sway offset) - the painted one
   raf = window.requestAnimationFrame(loop);
   if (window.MutationObserver) { // Beta 1.299: menu class flips drive park/resume - the observer lands before the next paint
     var watch = function (el, attrs) { if (el) snowObs.observe(el, attrs); };

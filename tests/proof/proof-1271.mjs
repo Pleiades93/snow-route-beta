@@ -40,7 +40,7 @@ check('1d Start over is a full button: the create geometry rule stands (its fill
 // ---- the route dropdown ----------------------------------------------------
 check('2a the dropdown card: size defined ONCE in its custom properties (SMALL: 40px pills, 14px text)',
   head.includes('.routeDrop { --drop-pill: 40px; --drop-fs: 14px; --drop-pad: 6px; --drop-gap: 5px; --drop-rad: 10px;') &&
-  head.includes('.routeDrop button { appearance: none; -webkit-appearance: none; border: none; height: var(--drop-pill);'));
+  head.includes('.routeDrop button { appearance: none;\n  -webkit-appearance: none;\n  border: none;\n  height: var(--drop-pill);'));
 check('2b every row renders with its dropdown sibling; the builder and the delegation stand',
   app2.includes('function routeDropEl(p)') &&
   app2.includes('ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])') &&
@@ -72,7 +72,9 @@ check('2d the shipped-route Delete is WIRED, not just drawn (Codex P2, PR #167):
 // ---- Clear and stale on the shared confirmation ---------------------------
 check('3a the Clear ask stands, bound to its route, running clearAllMarks on the danger seat',
   app3.includes('function askClearAll()') &&
-  app3.includes("showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } })") &&
+  app3.includes("showConfirm({ title: 'Clear all marks?',\n    sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.',\n    keep: 'Keep marks',\n    danger: 'Clear all',\n    " +
+    "onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } })")
+  &&
   app3.includes("$('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) return; if (boardHasMarks()) askClearAll(); });"));
 check('3b the board predicate is shared: the handler asks only over a marked board, clearAllMarks keeps the same first check',
   app3.includes('function boardHasMarks() { return doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0; }') &&

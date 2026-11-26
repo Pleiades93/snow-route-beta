@@ -2,7 +2,17 @@ function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the live version from the title's element: never a second hard-coded copy to go stale
   const list = $('wnList'); list.innerHTML = '';
-  for (const item of WHATSNEW.items) { const d = document.createElement('div'); d.className = 'm-wnItem'; const dot = document.createElement('span'); dot.className = 'm-wnDot'; dot.innerHTML = '&middot;'; const tx = document.createElement('span'); tx.textContent = item; d.appendChild(dot); d.appendChild(tx); list.appendChild(d); } // exactly one version block: the current release's items directly under the header, no older-version subheads (1.114)
+  for (const item of WHATSNEW.items) { const d = document.createElement('div');
+  d.className = 'm-wnItem';
+  const dot = document.createElement('span');
+  dot.className = 'm-wnDot';
+  dot.innerHTML = '&middot;';
+  const tx = document.createElement('span');
+  tx.textContent = item;
+  d.appendChild(dot);
+  d.appendChild(tx);
+  list.appendChild(d);
+  } // exactly one version block: the current release's items directly under the header, no older-version subheads (1.114)
 }
 $('aboutBtn').addEventListener('click', () => { renderAbout(); showSetPane('setAboutPane'); });
 $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
@@ -113,7 +123,9 @@ if ('serviceWorker' in navigator) {
       // both styles are embedded in the page (pmstyles.js): a first install is offline-ready by construction
       window.__warm = 'embedded';
       // pre-warm the other theme's sprites: a flip's only network fetch, so the first flip never waits
-      try { const otherKey = isNight() ? 'day' : 'night'; const oSpr = GL_STYLES[otherKey] && (Array.isArray(GL_STYLES[otherKey].sprite) ? GL_STYLES[otherKey].sprite[0].url : GL_STYLES[otherKey].sprite); if (oSpr) { window.__spriteWarm = otherKey; for (const suf of ['.json', '.png', '@2x.json', '@2x.png']) fetch(oSpr + suf).catch(() => {}); } } catch (e) {}
+      try { const otherKey = isNight() ? 'day' : 'night';
+      const oSpr = GL_STYLES[otherKey] && (Array.isArray(GL_STYLES[otherKey].sprite) ? GL_STYLES[otherKey].sprite[0].url : GL_STYLES[otherKey].sprite);
+      if (oSpr) { window.__spriteWarm = otherKey; for (const suf of ['.json', '.png', '@2x.json', '@2x.png']) fetch(oSpr + suf).catch(() => {}); } } catch (e) {}
     } catch (e) { window.__warm = 'error:' + (e && e.message || e); }
   }).catch(() => { window.__warm = 'no-worker'; });
 }
@@ -165,7 +177,9 @@ async function migratePack() { let migRelease = () => {}; // the move, honestly:
       if (await oc.match(u)) continue;
       const hit = await tc.match(u);
       if (!hit) continue; // exists in neither cache - nothing to migrate (a re-download rebuilds the pack directly)
-      let hSz = -1; try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++; else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; else unweighed = true; } catch (e) { failed++; } }
+      let hSz = -1;
+      try { hSz = (await hit.clone().blob()).size; } catch (e) {} if (hSz >= 0 && migBytes + hSz > OFFLINE_PACK_CAP_BYTES) failed++;
+      else { try { await oc.put(u, hit); if (hSz >= 0) migBytes += hSz; else unweighed = true; } catch (e) { failed++; } }
     }
     if (failed > 0) return { ok: false, failed };
     for (const u of list) { if (!(await oc.match(u)) && (await tc.match(u))) return { ok: false, why: 'verify' }; } // verify BEFORE the flag: everything recoverable must be in the pack cache
@@ -200,7 +214,12 @@ function syncViewport() {
     if (DP_ANDROID && !kb && inStandalone() && fullH > h && window.innerHeight >= fullH - 2) { de.style.setProperty('--vvh', fullH + 'px'); de.style.setProperty('--vvb', Math.max(0, window.innerHeight - t - fullH) + 'px'); }
     const ae = document.activeElement;
     if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
-    if (typeof map !== 'undefined' && map) { const mc = map.getContainer(); const mw = mc.clientWidth, mh = mc.clientHeight; if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw; syncViewport._h = mh; map.resize(); } } // Beta 1.50 (audit P10): this fires on every visual-viewport scroll tick - only pay for a map resize when the container actually changed size
+    if (typeof map !== 'undefined' && map) { const mc = map.getContainer();
+    const mw = mc.clientWidth, mh = mc.clientHeight;
+    if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw;
+    syncViewport._h = mh;
+    map.resize();
+    } } // fires on every visual-viewport scroll tick: only pay for a map resize when the container actually changed size
   } catch (e) { /* map/viewport not up yet */ }
 }
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
@@ -240,7 +259,15 @@ function ensureFieldVisible() { // a covered field surfaces locally (list scroll
       return;
     }
     const host = ae.closest('#selPop, .modal .card');
-    if (host) { const rawBottom = r.bottom + (host === kbShiftHost ? kbShiftPx : 0); if (rawBottom > floor) { const over = Math.ceil(rawBottom - floor) + 12; host.style.transform = 'translateY(' + (-over) + 'px)'; kbShiftHost = host; kbShiftPx = over; } else if (host === kbShiftHost) { host.style.transform = ''; kbShiftHost = null; kbShiftPx = 0; } } // Beta 1.70 (audit A02): measure from the UNSHIFTED rect (the tracked shift added back) - the old code measured the already-shifted card and replaced its shift with a smaller one, dropping the field back under a grown keyboard
+    if (host) { const rawBottom = r.bottom + (host === kbShiftHost ? kbShiftPx : 0);
+    if (rawBottom > floor) { const over = Math.ceil(rawBottom - floor) + 12;
+    host.style.transform = 'translateY(' + (-over) + 'px)';
+    kbShiftHost = host;
+    kbShiftPx = over;
+    } else if (host === kbShiftHost) { host.style.transform = '';
+    kbShiftHost = null;
+    kbShiftPx = 0;
+    } } // measure from the UNSHIFTED rect (the tracked shift added back), or the field drops under a grown keyboard
   } catch (e) { /* visibility is best-effort; the layout never depends on it */ }
 }
 // while open, a material resize re-runs the visibility check (layout frozen; only the local scroll/shift re-evaluates)
@@ -384,7 +411,13 @@ function unloadRouteToBoot() { // route deleted while active: return to the boot
   LS = { ...routeKeys('5w'), ...LS_GLOBAL }; // the eval default - the next pick repoints it via loadRoute
   activeRoute = null; routeLoaded = false;
   document.documentElement.classList.remove('boot'); // do NOT add html.boot here: while it stands, the chrome-absence rule force-hides every other body child
-  const rm = $('routeMenu'); rm.classList.remove('tab', 'open'); rm.classList.add('boot', 'show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('off', 'bye'); /* Beta 1.155: the picker return revives the landed title in its layer (finish() parked it at the pick) */ showRmPane('rmMain'); renderRouteLists();
+  const rm = $('routeMenu');
+  rm.classList.remove('tab', 'open');
+  rm.classList.add('boot', 'show');
+  const bl = $('brandLayer');
+  if (bl) bl.classList.remove('off', 'bye');
+  /* Beta 1.155: the picker return revives the landed title in its layer (finish() parked it at the pick) */ showRmPane('rmMain');
+  renderRouteLists();
   syncWake();
 }
 async function deleteRoute(id) { // order is the safety: definition first, verified (failure touches nothing); then unregister, wipe, picker, re-render

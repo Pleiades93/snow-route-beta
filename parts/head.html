@@ -55,12 +55,36 @@
   #hud .titleStack { display: flex; flex-direction: column; }
   #hud .ver { font-size: 9px; font-weight: 600; color: #46536a; line-height: 1; margin-top: 2px; letter-spacing: .04em; text-shadow: 0 0 6px rgba(255,255,255,.95); }
   body.night #hud .ver { color: #8fa0b3; text-shadow: 0 0 6px rgba(0,0,0,.85); }
-  #count { position: relative; overflow: hidden; margin-top: 9px; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: var(--shadow-float); } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
+  #count { position: relative;
+    overflow: hidden;
+    margin-top: 9px;
+    background: var(--glass-day);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: #1d2530;
+    border: 1px solid rgba(20,22,28,.09);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    box-shadow: var(--shadow-float);
+    } /* Beta 1.23: the progress lives in its own pill under the circle, like the goal pill in Andrew's reference */
   #hud .spacer { margin-left: auto; }
   #hud button { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; border: none; border-radius: var(--rad-btn); padding: 9px 8px; font-size: 13.5px; font-weight: 600; min-height: 40px; white-space: nowrap; }
   #hud button.ghost { background: #444; }
   #resetBtn.armed { background: #8c1f16; color: #fff; font-style: normal; }
-  #stats { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: #33404e; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9); }
+  #stats { font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #33404e;
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 0 6px rgba(255,255,255,.95), 0 0 3px rgba(255,255,255,.9);
+    }
   body.night #stats { color: #9fb4c8; text-shadow: 0 0 6px rgba(0,0,0,.85), 0 0 3px rgba(0,0,0,.85); }
   #warn { display: none; background: #c22f24; color: #fff; font-size: 12px; font-weight: 700; text-align: center; padding: 5px 4px; border-radius: 9px; margin-bottom: 6px; }
   body.storage-bad #warn { display: block; }
@@ -86,16 +110,57 @@
   #selNote svg { width: 16px; height: 16px; display: block; margin: auto; }
   #selNote img { width: 16px; height: 16px; display: block; margin: auto; } /* the img form fills the svg form's 16px box; a separate rule so the pinned svg rule never moves */
   /* the stale-clean question lives on the shared confirmation pill; the suggestion offer is gone */
-  #mapNote { position: fixed; left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); bottom: calc(var(--vvb, 0px) + 240px + var(--sab)); z-index: 1003; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  #mapNote { position: fixed;
+    left: calc(10px + var(--sal));
+    right: calc(10px + var(--sar));
+    bottom: calc(var(--vvb, 0px) + 240px + var(--sab));
+    z-index: 1003;
+    background: var(--card);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: var(--ink);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    }
   #mapNote.hidden { display: none; }
   #mapNote span { flex: 1; line-height: 1.4; }
   #chips { position: absolute; inset: 0; z-index: 950; pointer-events: none; }
   .sideChip { position: absolute; width: 40px; height: 40px; pointer-events: auto; }
-  .sideChip .chipBtn { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #22262e; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: center; padding: 0; touch-action: manipulation; }
+  .sideChip .chipBtn { width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: var(--glass-day);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: #22262e;
+    border: 1px solid rgba(20,22,28,.09);
+    box-shadow: var(--shadow-float);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    touch-action: manipulation;
+    }
   body.night .sideChip .chipBtn { background: var(--glass-night); color: #f2f4f8; border-color: rgba(255,255,255,.16); }
   .sideChip .chipBtn svg { width: 22px; height: 22px; flex: none; }
   .sideChip.done .chipBtn { background: #2ecc71; color: #fff; }
-  #attrChip { position: fixed; right: calc(8px + var(--sar)); bottom: calc(var(--vvb, 0px) + 61px + var(--sab)); z-index: 900; font-size: 9px; color: #5b6672; background: rgba(255,255,255,.7); padding: 2px 5px; border-radius: 4px; pointer-events: none; } /* Beta 1.192: 68 -> 61, riding the tab bar's -7 (its rendered gap above the bar's top edge is unchanged: 10px measured in the assembled page) */
+  #attrChip { position: fixed;
+    right: calc(8px + var(--sar));
+    bottom: calc(var(--vvb, 0px) + 61px + var(--sab));
+    z-index: 900;
+    font-size: 9px;
+    color: #5b6672;
+    background: rgba(255,255,255,.7);
+    padding: 2px 5px;
+    border-radius: 4px;
+    pointer-events: none;
+    } /* 68 -> 61, riding the tab bar's -7: the rendered gap above the bar is unchanged */
   body.night #attrChip { background: rgba(20,23,29,.7); color: #9aa4b2; }
   #spdPill { position: fixed; top: calc(var(--vvt, 0px) + 78px + var(--sat)); left: calc(12px + var(--sal)); width: 64px; height: 64px; border-radius: 50%; z-index: 1000; background: var(--glass-day); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: #1d2530; border: 1px solid rgba(20,22,28,.09); box-shadow: var(--shadow-float); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; } /* Beta 1.220 (Andrew, approved sample): the speed readout is a CIRCLE at the top left, under the title - it replaces the Beta 1.203 top-centre pill whole. Its top was #nightBtn's own top expression (78px) through Beta 1.227 - the circle's top edge level with the moon button's, a level the drives measured in the rendered page. Beta 1.228 (Andrew) raised the moon button to the title's line; the circle keeps this 78px seat under the title, so it now stands 53px below the title's top edge - drive199 measures the new geometry (the moon level with the title, the circle at its seat). The glass tokens are the pill's own (glass, blur, border, shadow) - one family with the app's other pills */
   #spdNum { font-size: 27px; font-weight: 800; line-height: 1; text-align: center; display: inline-flex; align-items: baseline; --subtle-dir: 1; }
@@ -106,7 +171,13 @@
   #spdNum.animating .subtleOld { animation: subtleOut 455ms cubic-bezier(.22,1,.36,1) both; }
   @keyframes subtleIn { from { transform: translateY(calc(.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
   @keyframes subtleOut { to { transform: translateY(calc(-.14em * var(--subtle-dir, 1))); opacity: 0; filter: blur(.042em); } }
-  #spdUnit { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-align: center; color: #5a5f6a; margin-top: 3px; } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
+  #spdUnit { font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: .4px;
+    text-align: center;
+    color: #5a5f6a;
+    margin-top: 3px;
+    } /* Andrew's correction: KM/H sits directly below the number, perfectly centred - the number and unit are one centred stacked pair */
   body.night #spdPill { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
   body.night #spdUnit { color: #ACBBF5; }
   #spdPill.hidden { display: none; }
@@ -133,13 +204,42 @@
   /* List | round run button | Pace, one level, symmetrical */
   #dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--vvb, 0px) + 67px + var(--sab)); z-index: 1000; display: flex; align-items: flex-start; gap: 18px; }
   /* the pair settles together: a dialed soft lift by day; by night an elevation recipe, since shadows barely show */
-  .dockBtn { width: 56px; height: 56px; margin-top: 24px; border-radius: 50%; background: linear-gradient(145deg, #ffffff, #eceef2); color: #22262e; border: none; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); /* Beta 1.226 (Andrew): the day lift at HALF the 1.224 strength - his pick from the lift sample; the night recipe below is untouched */ font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .dockBtn { width: 56px;
+    height: 56px;
+    margin-top: 24px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffffff, #eceef2);
+    color: #22262e;
+    border: none;
+    box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);
+    /* the day lift at HALF strength (Andrew's pick from the lift sample);
+    the night recipe below is untouched */ font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
   .dockBtn svg { width: 27px; height: 27px; }
   .dockBtn .pwrapD { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; } /* the dock icon wrapper keeps the shipped 27px layout box: no button changes size */
   .dockBtn .pwrapD .pico { width: 34px; height: 34px; flex: none; display: block; }
   body.night .dockBtn, body.night #crExit, body.night #crSearchWrap { background: linear-gradient(var(--card), var(--card)) padding-box, linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.05) 55%, rgba(255,255,255,.02)) border-box; color: #f2f4f8; border: 1px solid transparent; box-shadow: 0 1px 2px rgba(0,0,0,.45), 0 12px 28px -6px rgba(0,0,0,.55); } /* Beta 1.242 (Andrew, from the night-buttons-v2 research sample, row 4 'Bar black, rim light' - his pick 2026-11-18): the night dock surface is the tab bar's own black, the --card token itself (never a copied colour), with NO inset highlight line; the depth is a gradient rim that fades down the border (white 16% at the top, 5% at 55%, 2% at the bottom), drawn circle-safe as a border-box layer over a transparent border, over a two-layer shadow. The padding-box layer wears the token, so the button face and the bar can never drift apart. The 1.224 elevation recipe (grey gradient, 55% top border, 45% inset line) is superseded for .dockBtn only - the create search bar and the back pill keep their own rounds' recipes. Day .dockBtn, .runBtn (both themes) and the glass readouts are untouched. Beta 1.244 (Andrew's one-black ruling, 2026-11-19): this rule is now the ONE shared night-black definition - #crExit and #crSearchWrap wear it from this same rule, so the dock buttons, the back pill and the search bar hold the one token black by construction, never by copies agreeing. The back pill's private 1.224 glass retires, and so does the search bar's white night pill (Beta 1.243, a scope error: his pill order covered the create MENU text boxes, not the bar over the map). */
   #runSlot { position: relative; width: 104px; flex: none; display: flex; flex-direction: column; align-items: center; }
-  .runBtn { position: relative; width: 104px; height: 104px; flex: none; border-radius: 50%; border: none; box-shadow: 4px 6px 12px rgba(20,30,80,.15), -3px -3px 8px rgba(255,255,255,.22), inset 0 1px 2px rgba(255,255,255,.18), inset 0 -3px 6px rgba(8,12,50,.12); /* Beta 1.226: half the 1.224 strength, matching .dockBtn; the night fence below stands */ line-height: 1.1; cursor: pointer; padding: 0 8px; font-style: italic; font-weight: 900; letter-spacing: .01em; }
+  .runBtn { position: relative;
+    width: 104px;
+    height: 104px;
+    flex: none;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 4px 6px 12px rgba(20,30,80,.15), -3px -3px 8px rgba(255,255,255,.22), inset 0 1px 2px rgba(255,255,255,.18), inset 0 -3px 6px rgba(8,12,50,.12);
+    /* Beta 1.226: half the 1.224 strength, matching .dockBtn;
+    the night fence below stands */ line-height: 1.1;
+    cursor: pointer;
+    padding: 0 8px;
+    font-style: italic;
+    font-weight: 900;
+    letter-spacing: .01em;
+    }
   body.night .runBtn { box-shadow: var(--shadow-float); } /* the lift is day-only: night Start keeps the float token exactly (the approved night sample left Start untouched) */
   #startBtn, #resetBtn { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 21px; } /* Start and Finish share one rule: the swap changes only the word, so the two can never drift apart */
   body.night #count { background: var(--glass-night); color: #eef4ee; border-color: rgba(255,255,255,.16); }
@@ -147,7 +247,20 @@
   #countFill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: rgba(52,199,89,.42); box-shadow: inset -2px 0 0 #34c759; transform: scaleX(0); transform-origin: left center;
     transition: transform .7s var(--ease-open); }
   #countTxt { position: relative; z-index: 1; }
-  body.night { --card: rgba(32,33,37,.94); --card-solid: #202125; --ink: #edf2f9; --ink-dim: rgba(214,226,242,.62); --ink-faint: rgba(214,226,242,.32); --hair: rgba(160,190,235,.14); --chip: rgba(44,74,210,.10); --field: #3c4043; --sec: #9fb4c8; --link: #2c4ad2; --done-nm: #9fd3ae; --tm-c: #8fae99; --nt-c: #c9a86a; } /* Beta 1.75 night card: neutral charcoal (32,33,37) at 94% - Andrew's pick, sampled from a Google Maps dark reference (#202125) - replacing the 1.29 blue-black; fields take the reference's raised tone #3c4043 */
+  body.night { --card: rgba(32,33,37,.94);
+    --card-solid: #202125;
+    --ink: #edf2f9;
+    --ink-dim: rgba(214,226,242,.62);
+    --ink-faint: rgba(214,226,242,.32);
+    --hair: rgba(160,190,235,.14);
+    --chip: rgba(44,74,210,.10);
+    --field: #3c4043;
+    --sec: #9fb4c8;
+    --link: #2c4ad2;
+    --done-nm: #9fd3ae;
+    --tm-c: #8fae99;
+    --nt-c: #c9a86a;
+    } /* night card: neutral charcoal (32,33,37) at 94%, sampled from a Google Maps dark reference (#202125); fields take #3c4043 */
   #selPop { position: fixed; top: calc(var(--vvt, 0px) + 144px + var(--sat)); left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; align-items: center; gap: 8px; background: #ffffff; color: #14161a; border: 1px solid rgba(20,22,26,.08); padding: 13px 14px; border-radius: 16px; box-shadow: 0 8px 22px rgba(20,22,26,.13); flex-direction: column; align-items: stretch; gap: 7px; width: min(262px, 92vw); } /* Beta 1.209 (Andrew): the card wears LOOK 2, the sample he approved - a solid card (white by day), a hairline border, 16px radius, 13/14 padding and a soft drop shadow; the 1.30 glass + blur and the 1.32 street-colour left edge are retired (the edge's --accent feed in renderPanel goes with it). Beta 1.34 (Andrew): ONE fixed width, so the pop-up is the same size for one section or many - no growing/shrinking as the selection changes. Beta 1.215 (Andrew): the ONE fixed width narrows 342px -> 262px - his pick "C" from the width samples - so the centred card leaves the top-right corner (the Day/Night toggle, the re-centre button) clear beside it; the centring (left 50% + translateX(-50%)), the top (144) and the height (112.2) are unchanged, so the one-size invariant restates as 262 x 112.2 and the 1.214 re-centre drop (267 = 144 + 112.2 + 10.8) stands exactly as derived */ /* Beta 1.30: ONE selection pop-up (Andrew) - the multi-select pill he liked, widened into a card that also carries the old header strip's name/status/notes/mark actions */ /* Beta 1.168 (Andrew): the top drops 54px -> 144px (+90) - the pop-up started above the Day/Night button (top 78 + 56 tall = bottom 134) and covered its left half (44px at 390 wide, 24px at 430); 144 lands the pop-up's top 10px below the button's bottom edge, measured in every selection state at 390x844 and 430x932 (the box is one fixed size, so one shift clears them all) */
   body.night #selPop { background: rgba(20,21,27,.97); color: #f2f3f5; border-color: rgba(255,255,255,.07); box-shadow: 0 8px 22px rgba(0,0,0,.4); } /* night: near-solid charcoal, hairline white border, black shadow */
   #selPop.hidden { display: none; }
@@ -164,7 +277,18 @@
   #confirmPill .cfSub { font-size: 12px; color: #6f757f; line-height: 1.35; } /* the pill sub-line's own type and grey (#selStatus) */
   body.night #confirmPill .cfSub { color: #9aa0aa; }
   #confirmPill .cfRow { display: flex; gap: 5px; margin-top: 2px; }
-  #confirmPill .cfRow button { flex: 1; border: none; border-radius: 11px; height: 42px; min-height: 42px; padding: 0 10px; font-size: 14.5px; font-weight: 700; cursor: pointer; touch-action: manipulation; white-space: nowrap; } /* the pill action buttons' geometry (42px / 11px / 14.5px-700) */
+  #confirmPill .cfRow button { flex: 1;
+    border: none;
+    border-radius: 11px;
+    height: 42px;
+    min-height: 42px;
+    padding: 0 10px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    white-space: nowrap;
+    } /* the pill action buttons' geometry (42px / 11px / 14.5px-700) */
   #confirmPill #cfKeep { background: rgba(20,22,26,.05); color: #14161a; } /* the ghost: the note button's day tint (#selNote) */
   body.night #confirmPill #cfKeep { background: rgba(255,255,255,.06); color: #f2f3f5; }
   /* #cfDanger wears the one shared danger solid (defined at .routeDel below); no colour rule of its own */
@@ -175,7 +299,20 @@
   body.night #selPop #selAllBtn { background: rgba(6,214,160,.15); color: #2fe0ae; }
   /* Clear stays a ghost at 42px; its ink is the app's red, like every destructive action */
   #selPop #selClearBtn { background: transparent; color: #e63a2e; height: 42px; min-height: 42px; border-radius: 11px; font-size: 14.5px; padding: 0 10px; }
-  #cancelStartBtn { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; cursor: pointer; box-shadow: var(--shadow-float); } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
+  #cancelStartBtn { position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: var(--shadow-float);
+    } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
   .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); color: var(--ink);
     -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card);
     /* sheets open at HALF height: the three stops are closed / half / full */
@@ -222,7 +359,17 @@
   .srow .sbtn { position: relative; margin-left: 0; flex-shrink: 0; border: none; border-radius: 999px; background: rgba(44,74,210,.12); color: var(--link); font-size: 11px; font-weight: 700; padding: 3px 9px; cursor: pointer; }
   .srow .sbtn::after { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -27px; } /* its touch area covers the row's height over the pill's column only: the next row's taps never land on it */
   .noteEd { padding: 8px 4px 12px 30px; border-bottom: 1px solid var(--hair); }
-  .noteEd textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--field); color: var(--ink); border: 1px solid var(--hair); border-radius: var(--rad-btn); padding: 9px; font-size: 16px; /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit; }
+  .noteEd textarea { width: 100%;
+    min-height: 64px;
+    box-sizing: border-box;
+    background: var(--field);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: var(--rad-btn);
+    padding: 9px;
+    font-size: 16px;
+    /* 16px minimum: below it iOS auto-zooms on focus, which shoves the whole layout around (Beta 1.18) */ font-family: inherit;
+    }
   .noteEd .nhint { font-size: 12px; color: var(--tm-c); margin-top: 5px; }
   #cleanView { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 14px 14px; } /* the clean detail lives in the Pace sheet now: while shown it takes the #pacePad seat and its scroll treatment */
   .cvHead { display: flex; align-items: center; gap: 8px; padding: 8px 2px; }
@@ -352,14 +499,34 @@
   .modal.leaving .card { animation: menuRiseOut 180ms var(--ease-close) forwards; }
   @keyframes menuFadeOut { to { opacity: 0; } }
   @keyframes menuRiseOut { to { opacity: 0; transform: translateY(10px) scale(.97); } } /* the exits mirror the entrances: same end pose, the close curve, 180ms */
-  .modal .card { position: relative; background: var(--card); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow-card); padding: 18px; width: 100%; max-width: 340px; }
+  .modal .card { position: relative;
+    background: var(--card);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    color: var(--ink);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    padding: 18px;
+    width: 100%;
+    max-width: 340px;
+    }
   .modal .card h3 { font-size: 16px; margin-bottom: 8px; }
   .modal .card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 14px; white-space: pre-wrap; }
   .modal .row { display: flex; gap: 8px; }
   .modal .row button { flex: 1; border: none; border-radius: var(--rad-btn); padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px; }
   /* #finYes wears the shared danger solid (menu block below); its own rule retired */
   #noteYes { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
-  #noteText { width: 100%; min-height: 74px; border-radius: var(--rad-btn); border: 1px solid var(--hair); background: var(--field); color: var(--ink); font-size: 16px; /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px; margin-bottom: 12px; font-family: inherit; }
+  #noteText { width: 100%;
+    min-height: 74px;
+    border-radius: var(--rad-btn);
+    border: 1px solid var(--hair);
+    background: var(--field);
+    color: var(--ink);
+    font-size: 16px;
+    /* 16px: no iOS focus auto-zoom (Beta 1.18) */ padding: 9px;
+    margin-bottom: 12px;
+    font-family: inherit;
+    }
   /* the backup box for the blue pane: white box, dark text; its font joins the app's one stack */
   #xText { width: 100%; min-height: 150px; border-radius: 14px; border: 1px solid rgba(255,255,255,.45); background: #fff; color: #14161c; font-size: 11.5px; padding: 10px; font-family: inherit; resize: vertical; }
   .bkBtn { font-size: 16px; height: 58px; padding: 0 16px; text-align: center; width: 100%; } /* the Settings sub-pane buttons join the one pill height: exactly 58px */
@@ -528,7 +695,18 @@ body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.aw
 /* the insides ride the slide: parked above the clip at rest, seated at translateY(0) open, on the clip's per-direction timing */
 .routeDropIn { display: flex; flex-direction: column; gap: var(--drop-gap); padding: var(--drop-pad); transform: translateY(-100%); transition: transform 335ms var(--ease-close); }
 .routeDrop.open .routeDropIn { transform: translateY(0); transition: transform var(--anim-dur) var(--ease-open); }
-.routeDrop button { appearance: none; -webkit-appearance: none; border: none; height: var(--drop-pill); min-height: var(--drop-pill); border-radius: var(--drop-rad); font-size: var(--drop-fs); font-weight: 700; padding: 0 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(10,16,60,.25); } /* the standard pill shadow (.rmBtn's) */
+.routeDrop button { appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  height: var(--drop-pill);
+  min-height: var(--drop-pill);
+  border-radius: var(--drop-rad);
+  font-size: var(--drop-fs);
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(10,16,60,.25);
+  } /* the standard pill shadow (.rmBtn's) */
 .routeDrop .dropLoad { background: #fff; color: #173a8a; } /* the menu's solid primary face (.rmBtn.primary) at the dropdown's size */
 .routeDrop .dropLoad:active { background: #fff; } /* holds the solid on press, like .rmBtn.primary:active */
 .routeDrop .dropLoaded { background: #fff; color: #173a8a; opacity: .55; cursor: default; } /* the loaded route's inert pill: same white face, dimmed, so the live Delete under it always reads stronger */
@@ -537,7 +715,20 @@ body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.aw
 #crModalNo.cancelRed { color: #e63a2e; } /* the confirm's No wears red text while it reads 'Cancel'; the plain close form keeps the card ink */
 .rmTitle { color: #fff; font-size: 22px; font-weight: 700; text-align: center; } /* pane titles centred here in the base rule, covering every .rmTitle wearer in both blue menus */
 .rmNote { color: rgba(255,255,255,.88); font-size: 16px; line-height: 1.45; }
-.rmBack { appearance: none; -webkit-appearance: none; background: none; border: none; color: rgba(255,255,255,.85); font-size: 16px; text-align: left; padding: 6px 2px; cursor: pointer; align-self: flex-start; display: flex; align-items: center; gap: 8px; } /* Beta 1.233: the flex row carries the Back To disc beside the word (renderIcons stamps the glyph in) */
+.rmBack { appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.85);
+  font-size: 16px;
+  text-align: left;
+  padding: 6px 2px;
+  cursor: pointer;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  } /* Beta 1.233: the flex row carries the Back To disc beside the word (renderIcons stamps the glyph in) */
 .rmBackIco { width: 20px; height: 20px; display: block; flex: none; } /* flex columns stretched every Back button full width; align-self:flex-start shrinks the hit area to the visible words */
 .routeRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; appearance: none; -webkit-appearance: none; cursor: pointer; }
 .routeMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
@@ -565,7 +756,19 @@ body.creating #dock, body.creating #tabBar, body.creating #hud, body.creating #n
 /* the create sheet surfaces wear the app's theme tokens, not hardcoded whites that stayed bright at night */
 /* one search bar with a round back pill; glyphs are Glyph Neue via renderIcons; the results card hangs below it */
 /* at night, bar and back pill wear the token black (the rim rule at .dockBtn); glyphs flip with the theme */
-#crExit { width: 50px; height: 50px; flex: none; border: 1px solid rgba(20,25,40,.08); border-radius: 50%; background: #fff; box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+#crExit { width: 50px;
+  height: 50px;
+  flex: none;
+  border: 1px solid rgba(20,25,40,.08);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 3px 4px 8px rgba(20,30,60,.10), -2px -2px 5px rgba(255,255,255,.35), inset 0 1px 1px rgba(255,255,255,.6), inset 0 -2px 4px rgba(90,100,120,.10);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  }
 .crBackIco { width: 22px; height: 22px; display: block; }
 /* the day face: the create text boxes' white pill; at night, the shared token black (the rim rule at .dockBtn) */
 #crSearchWrap { flex: 1; display: flex; align-items: center; gap: 10px; height: 50px; background: #fff; border: none; border-radius: 25px; box-shadow: 0 6px 18px rgba(0,0,0,.18); padding: 0 12px 0 16px; }
@@ -607,7 +810,20 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crCityGo { color: var(--link); font-weight: 700; } /* the word 'change' in the app's own link blue - the one link token, both themes */
 .crChip.pend { background: #a35b00; color: #fff; }
 .crRow.pending { opacity: .8; }
-.csheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; background: var(--card-solid); color: var(--ink); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 30px rgba(8,12,40,.30); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: none; max-height: 54vh; flex-direction: column; }
+.csheet { position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5000;
+  background: var(--card-solid);
+  color: var(--ink);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -6px 30px rgba(8,12,40,.30);
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  display: none;
+  max-height: 54vh;
+  flex-direction: column;
+  }
 .csheet.on { display: flex; }
 .csheetTitle { font-size: 20px; font-weight: 750; color: var(--ink); }
 .csheetSub { font-size: 14px; color: var(--ink-dim); margin-top: 2px; }
@@ -624,7 +840,18 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crChip.primary { background: #ffc233; color: #000000; }
 .crChip.sec { background: #ef476f; color: #000000; } /* both pills wear the same ink: true black #000000, all caps (Andrew's picks from shown variants) */
 .crDel { border: none; background: none; color: #e63a2e; font-size: 18px; font-weight: 800; width: 34px; height: 34px; cursor: pointer; flex: none; }
-.crPrimary { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 17px; font-weight: 700; padding: 15px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
+.crPrimary { appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: linear-gradient(135deg, #3d65ef, #1b2fb6);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  padding: 15px 18px;
+  border-radius: 14px;
+  width: 100%;
+  cursor: pointer;
+  }
 .crPrimary:disabled { opacity: .45; }
 .crGhost { appearance: none; -webkit-appearance: none; border: 1px solid var(--hair); background: transparent; color: var(--ink); font-size: 16px; font-weight: 650; padding: 13px 18px; border-radius: 14px; width: 100%; cursor: pointer; }
 .crDanger { appearance: none; -webkit-appearance: none; border: none; background: none; color: #e63a2e; font-size: 15px; font-weight: 650; padding: 8px; cursor: pointer; width: 100%; }
@@ -663,7 +890,18 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 .crStripTxt { flex: 1; min-width: 0; }
 .crStripTitle { font-size: 16px; font-weight: 700; color: var(--ink); }
 .crStripSub { font-size: 13px; color: var(--ink-dim); }
-#crReviewBtn { appearance: none; -webkit-appearance: none; border: none; background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-weight: 700; font-size: 14.5px; padding: 9px 14px; border-radius: 10px; cursor: pointer; flex: none; }
+#crReviewBtn { appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: linear-gradient(135deg, #3d65ef, #1b2fb6);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex: none;
+  }
 #crSectorBar { padding: 14px 16px; }
 .crSbTitle { font-size: 17px; font-weight: 700; color: var(--ink); }
 .crSbSub { font-size: 13.5px; color: var(--ink-dim); margin-top: 2px; }
@@ -673,7 +911,18 @@ body.night .crResult:first-child:active { background: rgba(255,255,255,.06); }
 #crSbDone { background: #2ecc71; color: #fff; border: none; }
 #crSbDeselect { background: transparent; color: #e63a2e; border: 1.5px solid var(--hair); } /* the sector bar's destructive slot wears the app's red, colour only; its button is Deselect now (it removes the road) */
 body.night #crSbWhole { color: var(--sec); border-color: var(--sec); } /* night only: --link read 2.44:1 on the dark card; --sec flips at night, keeping the blue identity readable */
-.rmInput { appearance: none; -webkit-appearance: none; width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); color: #fff; font-size: 18px; padding: 14px 16px; border-radius: 14px; outline: none; }
+.rmInput { appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.45);
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  font-size: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  outline: none;
+  }
 .rmInput::placeholder { color: rgba(255,255,255,.55); }
 /* every create-flow text box wears this pill, defined once here; non-create inputs keep the .rmInput glass base */
 #crCityInput, #crNameInput, #crAreaInput { background: #fff; border: none; color: #14161c; box-shadow: 0 6px 18px rgba(0,0,0,.18); }

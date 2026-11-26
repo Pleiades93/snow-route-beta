@@ -74,7 +74,7 @@ check('3c: the bar wears the sheet chip tint, full width, slim radius - no outli
 check('3d: the word change wears the app link token (var(--link)) - no new colour',
   rule('.crCityGo').includes('color: var(--link)'));
 check('3e: the bar text is built from text nodes (the typed city name never becomes markup)',
-  pick.includes("b.textContent = crCity.name") && pick.includes("cc.append('Working in ', b, ' · ', go)"));
+  pick.includes("b.textContent = crCity.name") && pick.includes("cc.append('Working in ',\n        b,\n        ' · ',\n        go)"));
 check('3f: the old chip text is gone from the app',
   !pick.includes("'City: ' + crCity.name"));
 

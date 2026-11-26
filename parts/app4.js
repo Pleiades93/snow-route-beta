@@ -25,7 +25,8 @@ function buildReport() {
 }
 function buildGpx() { // segmentation (gap rule, session-start splits, the marker walk) lives in trailSegments (app1); this consumer only renders GPX tracks
   const pt = p => '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail, trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail,
+    trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
 }
 let xMode = 'menu';
 function showX(mode) { // the backup pane is a menu tree, not a form; Backup (JSON)'s save prompt IS the share
@@ -127,12 +128,17 @@ const ENVELOPE = {
     let upsCarry = null; const excluded = new Set();
     if (upStoreComplete) upsCarry = { ...userPackCache };
     else { upsCarry = {}; const badNames = [];
-      for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue; if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {}); if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
+      for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue;
+      if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {});
+      if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
       if (badNames.length) recoveryDisclosure = badNames;
     }
     if (excluded.has(activeRoute.id)) return null; // the open route's definition cannot be carried: no honest recovery file exists, so the unavailable message is the truth
     const routes = {}; routes[activeRoute.id] = data;
-    for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue; const rk = routeKeys(pk.id); const d = {}; for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
+    for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue;
+    const rk = routeKeys(pk.id);
+    const d = {};
+    for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
       // a non-active running route's snapshot rides too, validated on its geometry; a failed read leaves it out
       if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } }
       if (Object.keys(d).length) routes[pk.id] = d; } // an untouched pack in a recovery file asserts idle like any complete backup
@@ -173,14 +179,18 @@ function countUnknownNames(parsed, packs = ROUTE_PACKS) { // unknown-name count:
     const hist = parseJ(data.hist, null); if (Array.isArray(hist)) for (const h of hist) { if (h && typeof h === 'object') { if (Array.isArray(h.items)) { for (const n of h.items) noteName(n); } else fromObj(h.items); } }
   };
   if (parsed.v === 2 && parsed.routes && typeof parsed.routes === 'object') { for (const id of Object.keys(parsed.routes)) scanData(parsed.routes[id], setFor(id)); }
-  else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = {}; for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[LEGACY_KEYS[f]] != null) lf[f] = parsed.data[LEGACY_KEYS[f]]; } scanData(lf, setFor('5w')); }
+  else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = {};
+  for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[LEGACY_KEYS[f]] != null) lf[f] = parsed.data[LEGACY_KEYS[f]]; } scanData(lf, setFor('5w'));
+  }
   return bad.size;
 }
 function canonicalSettings(raw) { // the one settings validator: the loader's rules applied and re-serialized canonically; unknown values fall back, never refuse
   if (typeof raw !== 'string') return null;
   let p; try { p = JSON.parse(raw); } catch (e) { return null; }
   if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
-  return JSON.stringify({ vib: typeof p.vib === 'boolean' ? p.vib : SETTINGS_DEF.vib, chime: typeof p.chime === 'boolean' ? p.chime : SETTINGS_DEF.chime, chimeSound: CHIME_KEYS.includes(p.chimeSound) ? p.chimeSound : SETTINGS_DEF.chimeSound });
+  return JSON.stringify({ vib: typeof p.vib === 'boolean' ? p.vib : SETTINGS_DEF.vib,
+    chime: typeof p.chime === 'boolean' ? p.chime : SETTINGS_DEF.chime,
+    chimeSound: CHIME_KEYS.includes(p.chimeSound) ? p.chimeSound : SETTINGS_DEF.chimeSound });
 }
 function canonicalFixLog(raw) { // the fixlog validator: loader rules, canonical e3 re-encode, both caps; refusal data is retained, never silently lost
   if (typeof raw !== 'string') return null;
@@ -191,7 +201,12 @@ function canonicalFixLog(raw) { // the fixlog validator: loader rules, canonical
   while (total > FIXLOG_MAX && sessions.length) { if (sessions.length === 1) { const drop = sessions[0].f.length - FIXLOG_MAX; sessions[0].f.splice(0, drop); total -= drop; break; } total -= sessions[0].f.length; sessions.shift(); }
   let out = JSON.stringify(fixLogEncodeSessions(sessions));
   while (out.length > FIXLOG_MAX_CHARS && sessions.length) { // the character cap on the real encoded record (restores are rare, so the re-encode loop costs nothing)
-    if (sessions.length === 1) { const s = sessions[0]; let drop = Math.max(1, Math.ceil(s.f.length * (1 - FIXLOG_MAX_CHARS / out.length))); if (drop >= s.f.length) drop = s.f.length; s.f.splice(0, drop); if (!s.f.length) sessions.shift(); }
+    if (sessions.length === 1) { const s = sessions[0];
+    let drop = Math.max(1, Math.ceil(s.f.length * (1 - FIXLOG_MAX_CHARS / out.length)));
+    if (drop >= s.f.length) drop = s.f.length;
+    s.f.splice(0, drop);
+    if (!s.f.length) sessions.shift();
+    }
     else sessions.shift();
     out = JSON.stringify(fixLogEncodeSessions(sessions));
   }
@@ -499,7 +514,9 @@ const RESTORE = {
           } else if (data.snap !== undefined) { // validate against the carried start and destination geometry, even when a resident run later wins
             const startEnt = entries.find(e => e[0] === rk.start);
             let restoredSnap = null;
-            if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg); if (valid) restoredSnap = BOARD.serialiseSnap(valid, +startEnt[1]); } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
+            if (startEnt && typeof data.snap === 'string') { try { const valid = validateSnap(JSON.parse(data.snap), +startEnt[1], pg);
+            if (valid) restoredSnap = BOARD.serialiseSnap(valid, +startEnt[1]);
+            } catch (e) { /* an unparseable snapshot is a dropped snapshot */ } } // Beta 1.117 (F6): validated against THIS route's geometry (pg), not the open route's
             if (restoredSnap) entries.push([rk.snap, restoredSnap]); else snapDropped = true;
           }
         }
@@ -652,9 +669,22 @@ function packTileEnum(src, pk, budget) { // the one tile enumeration per (source
   const maxz = Math.min(14, src.maxzoom || 14);
   const ex = pk.box || computeRouteBox(pk.roads || {});
   // y grows southward: looping y0..y1 downloaded zero tiles; wide zooms join at z8, the map's minimum
-  if (ex) for (let z = 8; z <= maxz; z++) { const [x0, y1] = tileNums(ex.w, ex.n, z); const [x1, y0] = tileNums(ex.e, ex.s, z); const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length; if (!(span <= budget)) continue; budget -= Math.max(0, span); for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', z).replace('{x}', x).replace('{y}', y)); }
+  if (ex) for (let z = 8;
+  z <= maxz;
+  z++) { const [x0, y1] = tileNums(ex.w, ex.n, z);
+  const [x1, y0] = tileNums(ex.e, ex.s, z);
+  const span = (x1 - x0 + 1) * (y0 - y1 + 1) * src.tiles.length;
+  if (!(span <= budget)) continue;
+  budget -= Math.max(0, span);
+  for (let x = x0; x <= x1; x++) for (let y = y1; y <= y0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', z).replace('{x}', x).replace('{y}', y));
+  }
   // zooms 15-19 render from z15: cached over the core only (the whole box would be ~1,400 files)
-  if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {}); if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 }; const [cx0, cy1] = tileNums(cb.w, cb.n, 15); const [cx1, cy0] = tileNums(cb.e, cb.s, 15); const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length; if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
+  if ((src.maxzoom || 14) >= 15) { const rb = computeRouteBox(pk.roads || {});
+  if (rb) { const cb = { w: rb.w - 0.005, s: rb.s - 0.004, e: rb.e + 0.005, n: rb.n + 0.004 };
+  const [cx0, cy1] = tileNums(cb.w, cb.n, 15);
+  const [cx1, cy0] = tileNums(cb.e, cb.s, 15);
+  const span15 = (cx1 - cx0 + 1) * (cy0 - cy1 + 1) * src.tiles.length;
+  if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
   return { urls, budget };
 }
 function packTileUrls(pk) { // one pack's tiles (its area z8-14 plus its z15 core); sprites and glyphs belong to no route
@@ -707,22 +737,33 @@ $('xPre').addEventListener('click', async ev => {
         new Promise(res => setTimeout(res, 3000))]);
       swOk = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
     }
-    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.'; preloadRunning = false; syncWake(); return; } // Beta 1.57: wording stands on its own (second audit, item 5)
+    if (!swOk) { st.textContent = 'Offline maps NOT saved: the part of the app that saves them is not running' + (window.__swErr ? ' (' + window.__swErr + ')' : '') + '. The live map is unaffected.';
+    preloadRunning = false;
+    syncWake();
+    return;
+    } // Beta 1.57: wording stands on its own (second audit, item 5)
   }
   try {
     releasePack = await takePackWriteTurn(); // the writers' turn is taken first: a pre-turn snapshot can be overtaken by a preceding writer's download
     await initUserPacks(); // refresh registrations: another tab's route is persisted but unregistered here; a stale manifest would orphan its tiles
 const list = preloadUrlList();
     let pruneProven = false; // the prune runs only on a proven manifest: fresh store read succeeds, every route's tiles inside it
-    try { const storedNow = await upGetAll(); if (storedNow) { const wantP = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); pruneProven = Object.keys(storedNow).every(id => { const nv = normalizePack(storedNow[id], {}); if (!nv.ok) return false; nv.pack.id = id; for (const u of packTileUrls(nv.pack)) { let h = u; try { h = new URL(u).href; } catch (e) {} if (!wantP.has(h)) return false; } return true; }); } } catch (e) { pruneProven = false; }
+    try { const storedNow = await upGetAll();
+    if (storedNow) { const wantP = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); pruneProven = Object.keys(storedNow).every(id => { const nv = normalizePack(storedNow[id],
+      {}); if (!nv.ok) return false; nv.pack.id = id; for (const u of packTileUrls(nv.pack)) { let h = u; try { h = new URL(u).href; } catch (e) {} if (!wantP.has(h)) return false; } return true; }); } } catch (e) { pruneProven = false;
+    }
     // the pack lives in its own cache ('snowroute-offline-v1'): served first, safe from browsing eviction
     let packCache = null; try { packCache = await caches.open('snowroute-offline-v1'); } catch (e) { packCache = null; }
     let done = 0, nextU = 0;
     // budgeted at its only write path: weigh stored files per URL first, so re-downloads replace weight, never double-count
     let capHit = false, packBytes = 0; const packSizes = new Map();
-    if (packCache) { try { for (const req of await packCache.keys()) { try { const r0 = await packCache.match(req); if (r0) { const sz0 = (await r0.blob()).size; packSizes.set(req.url, sz0); packBytes += sz0; } } catch (e) {} } } catch (e) {} }
+    if (packCache) { try { for (const req of await packCache.keys()) { try { const r0 = await packCache.match(req);
+    if (r0) { const sz0 = (await r0.blob()).size; packSizes.set(req.url, sz0); packBytes += sz0; } } catch (e) {} } } catch (e) {} }
     // prune what the manifest no longer names: orphans' weighed bytes otherwise block later downloads
-    if (packCache && pruneProven) { const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } })); try { for (const req of await packCache.keys()) { if (!want.has(req.url)) { try { if (await packCache.delete(req.url)) { packBytes -= packSizes.get(req.url) || 0; packSizes.delete(req.url); } } catch (e) {} } } } catch (e) {} } // the prune runs only under the pruneProven gate computed above the manifest: an unproven registration read preserves the cache whole
+    if (packCache && pruneProven) { const want = new Set(list.map(u => { try { return new URL(u).href; } catch (e) { return u; } }));
+    try { for (const req of await packCache.keys()) { if (!want.has(req.url)) { try { if (await packCache.delete(req.url)) { packBytes -= packSizes.get(req.url) || 0;
+    packSizes.delete(req.url);
+    } } catch (e) {} } } } catch (e) {} } // the prune runs only under the pruneProven gate computed above the manifest: an unproven registration read preserves the cache whole
     // a retry fetches only census-missing entries; a complete pack's press stays the full refresh
     const hrefOf = u => { try { return new URL(u).href; } catch (e) { return u; } };
     const missing = list.filter(u => !packSizes.has(hrefOf(u)));
@@ -738,7 +779,15 @@ const list = preloadUrlList();
     // cache 'reload': a download must not be answered from the pack being refreshed (the worker honours it)
     const preFetch = async (u) => { if (capHit) return; const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal, cache: 'reload' }); if (res && res.ok && packCache) { let sz = -1; try { sz = (await res.clone().blob()).size; } catch (e) { sz = -1; } // Beta 1.183 (storage audit §3 item 4): the write is WEIGHED before it lands - a file that would carry the pack over OFFLINE_PACK_CAP_BYTES is refused and stops the download (capHit ends the workers below), so the pack can never grow past the cap through this, its only, write path; a GROWING file's extra bytes are RESERVED in packBytes synchronously before the write is awaited, so the five workers cannot all pass the check against the same stale total (Codex P2, PR #21), a failed write releases its reservation, and a SHRINKING replacement reserves nothing and frees its bytes only after its write succeeds - freeing them earlier would let another worker spend headroom that a failed shrink silently takes back; a file whose size cannot be read is stored unweighed rather than lost
         let href = u; try { href = new URL(u).href; } catch (e) {}
-        if (sz >= 0) { const prevSz = packSizes.get(href) || 0; const dSz = sz - prevSz; if (dSz > 0 && packBytes + dSz > OFFLINE_PACK_CAP_BYTES) capHit = true; else { if (dSz > 0) packBytes += dSz; try { await packCache.put(u, res.clone()); packSizes.set(href, sz); if (dSz < 0) packBytes += dSz; } catch (e) { if (dSz > 0) packBytes -= dSz; /* a failed pack write releases the reservation it took (growth only - a shrink reserves nothing and frees its bytes only on success, above) and simply never confirms in the count below */ } } }
+        if (sz >= 0) { const prevSz = packSizes.get(href) || 0;
+        const dSz = sz - prevSz;
+        if (dSz > 0 && packBytes + dSz > OFFLINE_PACK_CAP_BYTES) capHit = true;
+        else { if (dSz > 0) packBytes += dSz;
+        try { await packCache.put(u, res.clone());
+        packSizes.set(href, sz);
+        if (dSz < 0) packBytes += dSz;
+        } catch (e) { if (dSz > 0) packBytes -= dSz;
+        /* a failed pack write releases its reservation (growth only) and never confirms in the count below */ } } }
         else { try { await packCache.put(u, res.clone()); } catch (e) { /* a failed pack write simply never confirms in the count below */ } } } } catch (e) { /* failures and timeouts simply never confirm below */ } clearTimeout(to); }; // Beta 1.92 (audit F07): one stalled file gives up at 30 s instead of holding the whole job open forever. Beta 1.94 (F-03): a good response is ALSO stored into the pack cache by the page itself - the worker's pass-through copy in the browsing cache is the duplicate that gets cleaned up below, never the guarantee
     const preWorker = async () => { while (nextU < targets.length && !capHit) { const u = targets[nextU++]; await preFetch(u); done++; } }; // five at a time: one at a time was the slowest wait; a cap stop ends workers too
     await Promise.all([preWorker(), preWorker(), preWorker(), preWorker(), preWorker()]);
@@ -898,8 +947,11 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
   document.querySelectorAll('.crPin').forEach(el => { el.innerHTML = ICONS.pin; }); // the result rows' pins re-stamp with the extras, like the note hosts above
   document.querySelectorAll('.statgrid .ic[data-ic]').forEach(el => { el.innerHTML = PACE_ICONS[el.getAttribute('data-ic')]; });
   for (const id of ['sheetClose', 'paceClose', 'xClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.corner}">`; } // the corner closes wear the pack artwork
-  for (const id of ['rmClose', 'setClose']) { const el = $(id); if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.bottom}">`; } // the bottom-centre pair on the blue full-screen menus: the white job (Glyph's white fill - the knocked-out ✕ shows the blue through it)
-  document.querySelectorAll('.rmBack').forEach(el => { el.innerHTML = `<img class="rmBackIco" alt="" src="${GLYPH_MENU.back}"> Back`; }); // Beta 1.233: every blue-menu Back wears the Back To disc beside its word (the sample's treatment); the static arrow in the markup is the no-JS fallback only
+  for (const id of ['rmClose', 'setClose']) { const el = $(id);
+  if (el) el.innerHTML = `<img class="xico" alt="Close" src="${MP.x.bottom}">`;
+  } // the bottom-centre pair on blue menus: the white job (the knocked-out ✕ shows the blue through it)
+  document.querySelectorAll('.rmBack').forEach(el => { el.innerHTML = `<img class="rmBackIco" alt="" src="${GLYPH_MENU.back}"> Back`; });
+  // every blue-menu Back wears the Back To disc; the markup's static arrow is the no-JS fallback only
 }
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre; // the re-centre button wears the standard crosshair glyph; the Locate tab keeps its navigation arrow, untouched
 // Backup and Update carry no tab icons anymore - they are text rows on the blue settings panes
@@ -1074,13 +1126,18 @@ async function renderStatus(resetStat) {
   if (ps.complete) { $('stMapsLine').innerHTML = 'Offline maps: Downloaded <span class="m-tick">&#10003;</span>'; $('stMapsSub').textContent = ps.total + ' files' + sizeTxt + ' · ' + area; }
   else if (ps.cached > 0) { $('stMapsLine').textContent = 'Offline maps: Partial'; $('stMapsSub').textContent = ps.cached + ' of ' + ps.total + ' files' + sizeTxt + ' · ' + area; }
   else { $('stMapsLine').textContent = 'Offline maps: Not downloaded'; $('stMapsSub').textContent = ps.total + ' files' + sizeTxt + ' · ' + area; }
-  if (multiRoute) { const act = ps.countsByRoute.find(r => activeRoute && r.id === activeRoute.id); if (act) $('stMapsSub').textContent += ' · this route: ' + act.cached + ' of ' + act.total; } // the active route's own share, named as its own - never the union wearing its name
+  if (multiRoute) { const act = ps.countsByRoute.find(r => activeRoute && r.id === activeRoute.id);
+  if (act) $('stMapsSub').textContent += ' · this route: ' + act.cached + ' of ' + act.total;
+  } // the active route's own share, named as its own - never the union wearing its name
   $('xPre').textContent = ps.complete ? 'Re-download' : 'Download';
   $('stDel').style.display = ps.cached > 0 ? '' : 'none';
   if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null) || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(p.id).pre), null)).find(r => r && r.saved > 0) || null; $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements). Beta 1.170 (C-04): the record read falls back to ANY route's download record - through 1.169 it read only the active route's slot, so right after a route switch this line could say 'not downloaded yet' directly under a 'Downloaded' maps line for the pack another route had fetched
   // HEALTH - each row from a real signal at this moment:
   let storageOk = false;
-  try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe'); } catch (e) { storageOk = false; } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
+  try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1';
+  lsDel('snowroute.v2.healthprobe');
+  } catch (e) { storageOk = false;
+  } // a scratch-key write + read-back + delete - the same guarded helpers every save uses
   if (!storageOk) setHealth('stIcoStorage', 'stValStorage', 'warn', 'storage problem. Export a backup');
   else { // the row reports the recorded persist() answer and an estimate(): protected ok, refusal warn, unreported idle, never green
     let est = null; try { if (navigator.storage && navigator.storage.estimate) est = await navigator.storage.estimate(); } catch (e) { est = null; }

@@ -27,7 +27,11 @@ function crRenderHint() { // the one writer of the action button and the city ch
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
   btn.classList.toggle('danger', btnLabel === 'Cancel'); // anything Cancel is red: while the button reads Cancel it wears the destructive red
   const cc = $('crCityChange'); if (cc) { if (crCity) { // the city bar above Done, built from text nodes: the typed city name never becomes markup
-      cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ', b, ' · ', go); cc.style.display = ''; } else cc.style.display = 'none'; }
+      cc.textContent = ''; const b = document.createElement('b'); b.textContent = crCity.name; const go = document.createElement('span'); go.className = 'crCityGo'; go.textContent = 'change'; cc.append('Working in ',
+        b,
+        ' · ',
+        go); cc.style.display = ''; } else cc.style.display = 'none';
+      }
   crRefreshSearch(); // every coverage landing renders this hint as it lands, so the open street search refreshes with it (guards at crRunSearch)
 }
 // ---- the DRAFT owner ---- every draft mutation and its following render live here; sector state is the same owner's
@@ -169,7 +173,8 @@ function crSectorTap(lngLat) { // a tap toggles the sector under it (features fi
     try {
       const pt = map.project([lngLat.lng, lngLat.lat]);
       for (const half of CR_TAP_BOXES) {
-        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]], { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === name && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
+        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]],
+          { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === name && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
         if (!feats.length) continue;
         let bd = Infinity;
         for (const f of feats) { const d = crFeatDistM(lngLat, f.geometry); if (d < bd) { bd = d; idx = f.properties.sector; } }
@@ -252,7 +257,8 @@ function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers,
   return { h: sheet.offsetHeight, ml: parseFloat(cs.marginLeft) || 0, mr: parseFloat(cs.marginRight) || 0, mb: parseFloat(cs.marginBottom) || 0, r: R };
 }
 function crMorphCleanup() { // back to class-driven rest: every geometry the morph set clears, so the landing is exactly the CSS geometry
-  const sheet = $('createSheet'); if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
+  const sheet = $('createSheet');
+  if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
   for (const f of Object.keys(CR_FACES)) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
   crMorph = null;
 }
@@ -272,7 +278,13 @@ function crMorphTo(to, opts) { // the face change: one surface springing between
   crFaceClasses(sheet, from);
   const mb0 = opts.dy ? -opts.dy : G0.mb; // the finger left the surface dy px below rest: morph bottom starts there, not at rest
   if (!G0.h || !G1.h || (Math.abs(G1.h - G0.h) < 2 && Math.abs(G1.ml - G0.ml) < 1 && Math.abs(G1.mb - mb0) < 1)) { syncCrPanel(); return; } // nothing to travel (or nothing measurable): land the rest state directly
-  for (const el of [fromEl, toEl]) { el.style.display = ''; el.style.position = 'absolute'; el.style.top = '0px'; el.style.left = '0px'; el.style.right = '0px'; el.style.bottom = '0px'; } // both contents live inside the one surface for the motion
+  for (const el of [fromEl, toEl]) { el.style.display = '';
+  el.style.position = 'absolute';
+  el.style.top = '0px';
+  el.style.left = '0px';
+  el.style.right = '0px';
+  el.style.bottom = '0px';
+  } // both contents live inside the one surface for the motion
   fromEl.style.opacity = '1'; toEl.style.opacity = '0';
   sheet.style.transform = '';
   sheet.style.overflow = 'hidden'; sheet.style.height = G0.h + 'px';
@@ -357,7 +369,12 @@ function crRenderCityChoices() {
   crPackIndexLoad().then(entries => {
     if (!boxEl.isConnected) return;
     boxEl.innerHTML = '';
-    if (!entries || !entries.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'The city library isn’t available right now. Go back and use Manual search.'; boxEl.appendChild(d); return; } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
+    if (!entries || !entries.length) { const d = document.createElement('div');
+    d.className = 'rmNote';
+    d.textContent = 'The city library isn’t available right now. Go back and use Manual search.';
+    boxEl.appendChild(d);
+    return;
+    } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
     const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
     // the last-used city rides first when held (a convenience, never a requirement; the full list is always there)
     const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0));
@@ -374,7 +391,11 @@ function crRenderCityChoices() {
 }
 function crPackPickCity(e) { // a chooser tap is a city pick through the same crPickCity: every door behaves identically (guard, caching, draft)
   const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
-  crPickCity({ lat: String((s + n) / 2), lon: String((w + ee) / 2), boundingbox: [String(s), String(n), String(w), String(ee)], display_name: e.name + ', Ontario, Canada', address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
+  crPickCity({ lat: String((s + n) / 2),
+    lon: String((w + ee) / 2),
+    boundingbox: [String(s), String(n), String(w), String(ee)],
+    display_name: e.name + ', Ontario, Canada',
+    address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
 }
 function crOpenCityPane(ret) {
   crResetCitySearch(); // reopening supersedes a held city search too: its late answer must not repopulate the pane (close via crResetCitySearch)
@@ -823,7 +844,15 @@ function crCityLocalMatches(q) {
   }
   const byPop = (a, b) => (CR_CITY_GAZETTEER[b][7] - CR_CITY_GAZETTEER[a][7]) || (a - b);
   head.sort(byPop); word.sort(byPop);
-  return head.concat(word).slice(0, 6).map(i => { const e = CR_CITY_GAZETTEER[i]; return { display_name: e[0] + ', Ontario, Canada', category: 'boundary', type: 'administrative', lat: String(e[1]), lon: String(e[2]), boundingbox: [String(e[3]), String(e[4]), String(e[5]), String(e[6])], address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' } }; }); // the service's own item shape, so the row renderer and crPickCity consume a suggestion exactly like a service row
+  return head.concat(word).slice(0,
+    6).map(i => { const e = CR_CITY_GAZETTEER[i]; return { display_name: e[0] + ', Ontario, Canada',
+      category: 'boundary',
+      type: 'administrative',
+      lat: String(e[1]),
+      lon: String(e[2]),
+      boundingbox: [String(e[3]), String(e[4]), String(e[5]), String(e[6])],
+      address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' } }; });
+  // the service's own item shape, so the row renderer and crPickCity consume a suggestion exactly like a service row
 }
 function crCityResultRow(it, i) { // one city result row, shared by the type-ahead and the online search: the two renders must never drift apart
   const dn = it.display_name || '', cut = dn.indexOf(',');
@@ -856,7 +885,12 @@ async function crRunCitySearch() {
     if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
     if (!crCitySearchCurrent(seq, session) || input.value !== settledText) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
     crCityOnlineAt = Date.now();
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined }); // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w,
+      CR_ON_BOUNDS.n,
+      CR_ON_BOUNDS.e,
+      CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q),
+      { headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined });
+    // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
     const list = await r.json();
     if (!crCitySearchCurrent(seq, session)) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
@@ -898,7 +932,9 @@ function ensureDraftLayers() {
     if (!map.getLayer('crDraftLineDim')) map.addLayer({ id: 'crDraftLineDim', type: 'line', source: DRAFT_SRC, filter: ['!=', ['get', 'chosen'], 1], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#b9c1cb', 'line-width': crZoomW(4.5) } }, before); // Beta 1.223 (Andrew's corrected model): a REMOVED sector is flat GREY - the #b9c1cb this layer wore through 1.220, restored. The 1.221 muted-category-colour paint is reverted: muted colour now belongs to the SELECTED-but-not-active road (crDraftLine below), never to a removed sector. Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two Beta 1.210: the unchosen line as its OWN layer under the chosen one - see the crDraftLine note below for why the 1.127 single layer became two
     if (!map.getLayer('crDraftLine')) map.addLayer({ id: 'crDraftLine', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['!=', ['get', 'active'], 1]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#dbb457', '#d2647e'], 'line-width': crZoomW(6.75) } }, before); // Beta 1.223 (Andrew's corrected model): a chosen street that is NOT the one being trimmed paints GENTLE-MUTED - its category colour at saturation x0.65, lightness unchanged (gold #ffc233 -> #dbb457, red #ef476f -> #d2647e; the strength Andrew approved from the create-route-states sample: just enough to notice the step up when the road goes active). The ACTIVE street (the sector session's, features carry active=1) paints full colour on crDraftLineActive below, with the session glow - the muted->vibrant step is at ROAD level, on the click that opens the trim, not per sector tap (the 1.221 model tied the raise to sector picking; reverted). Beta 1.127: chosen = category colour at full width; unchosen = thin grey. Beta 1.182: both widths x 1.5 with the casing above (6.75 chosen, 4.5 unchosen) - the chosen/unchosen ratio is the 1.127 design's, unchanged; crDraftHit below is the pick TARGET, not drawing, and is deliberately NOT scaled (the tap boxes are Andrew's device-tuned precision, 1.156). Beta 1.210: both widths ride crZoomW like the casing - the literals are the z15-and-above anchors; below z15 the line thins with the zoom (crDraftHit still does NOT scale: it is a tap target, not paint, so picking keeps its generous reach at every zoom). The widths ride the curve in TWO layers (this one filtered to chosen, crDraftLineDim above it to unchosen) because MapLibre silently drops a layer whose line-width nests a zoom curve inside the chosen switch (['case', ..., interpolate, interpolate] never enters the style - measured in the 1.210 round's rendered QA: addLayer does not throw, getLayer stays false); a bare curve as the whole width is fine
     if (!map.getLayer('crDraftLineActive')) map.addLayer({ id: 'crDraftLineActive', type: 'line', source: DRAFT_SRC, filter: ['all', ['==', ['get', 'chosen'], 1], ['==', ['get', 'active'], 1]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'primary'], 1], '#ffc233', '#ef476f'], 'line-width': crZoomW(6.75) } }, before); // Beta 1.223: the ACTIVE street's chosen sectors at FULL category colour - the vibrant half of the corrected model (its glow rides the crGlowShader, session-only since 1.209). A separate layer on the same two-layer pattern as crDraftLine/crDraftLineDim: the widths stay bare crZoomW curves (a case nested around the width curve is dropped by MapLibre - see the crDraftLine note)
-    if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } }, before); // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
+    if (!map.getLayer('crDraftHit')) map.addLayer({ id: 'crDraftHit', type: 'line', source: DRAFT_SRC, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-opacity': 0, 'line-width': 24 } },
+      before);
+    // Beta 1.127: the sector pick's fat-finger target - invisible, queryable (crSectorTap)
   } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
 // the glow is a shader (one WebGL layer): a metre-built ribbon mesh, per-pixel falloff, scaling like real paint
@@ -935,7 +971,10 @@ function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 fl
     const staN = [];
     for (let i = 0; i < N; i++) {
       if (i === 0) staN.push(segN[0]); else if (i === N - 1) staN.push(segN[N - 2]);
-      else { let nx = segN[i - 1][0] + segN[i][0], ny = segN[i - 1][1] + segN[i][1]; const nl = Math.hypot(nx, ny); if (nl < 1e-9) { nx = segN[i][0]; ny = segN[i][1]; } else { nx /= nl; ny /= nl; const cos = Math.max(0.45, nx * segN[i][0] + ny * segN[i][1]); nx /= cos; ny /= cos; } staN.push([nx, ny]); }
+      else { let nx = segN[i - 1][0] + segN[i][0], ny = segN[i - 1][1] + segN[i][1];
+      const nl = Math.hypot(nx, ny);
+      if (nl < 1e-9) { nx = segN[i][0]; ny = segN[i][1]; } else { nx /= nl; ny /= nl; const cos = Math.max(0.45, nx * segN[i][0] + ny * segN[i][1]); nx /= cos; ny /= cos; } staN.push([nx, ny]);
+      }
     }
     const ringPt = (i, off) => [P[i][0] + staN[i][0] * off * mm, P[i][1] + staN[i][1] * off * mm];
     const R = CR_GLOW_RINGS.length;
@@ -951,7 +990,12 @@ function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 fl
       const dl = Math.hypot(dirx, diry) || 1, dx = dirx / dl, dy = diry / dl;
       const nx = segN[i === 0 ? 0 : N - 2][0], ny = segN[i === 0 ? 0 : N - 2][1];
       let prev = null;
-      for (let j = 0; j <= 5; j++) { const th = (j / 5) * Math.PI, ox = nx * Math.cos(th) + dx * Math.sin(th), oy = ny * Math.cos(th) + dy * Math.sin(th); const rim = [P[i][0] + ox * 20 * mm, P[i][1] + oy * 20 * mm]; if (prev) { push(P[i][0], P[i][1], 0, rgb); push(prev[0], prev[1], 20, rgb); push(rim[0], rim[1], 20, rgb); } prev = rim; }
+      for (let j = 0;
+      j <= 5;
+      j++) { const th = (j / 5) * Math.PI, ox = nx * Math.cos(th) + dx * Math.sin(th), oy = ny * Math.cos(th) + dy * Math.sin(th);
+      const rim = [P[i][0] + ox * 20 * mm, P[i][1] + oy * 20 * mm];
+      if (prev) { push(P[i][0], P[i][1], 0, rgb); push(prev[0], prev[1], 20, rgb); push(rim[0], rim[1], 20, rgb); } prev = rim;
+      }
     }
   }
   return new Float32Array(verts);
@@ -962,7 +1006,8 @@ function crGlowLayerObj() {
   crGlowShaderLayer = {
     id: 'crGlowShader', type: 'custom', _data: null, _dirty: false, _prog: null, _buf: null, _aPos: -1, _aDist: -1, _aCol: -1, _u: {},
     onAdd(m, gl) {
-      const sh = (type, src) => { const s2 = gl.createShader(type); gl.shaderSource(s2, src); gl.compileShader(s2); if (!gl.getShaderParameter(s2, gl.COMPILE_STATUS)) console.log('CRGLOWSHADER compile failed: ' + gl.getShaderInfoLog(s2)); return s2; };
+      const sh = (type,
+        src) => { const s2 = gl.createShader(type); gl.shaderSource(s2, src); gl.compileShader(s2); if (!gl.getShaderParameter(s2, gl.COMPILE_STATUS)) console.log('CRGLOWSHADER compile failed: ' + gl.getShaderInfoLog(s2)); return s2; };
       const prog = gl.createProgram();
       gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
         'attribute vec2 a_pos;',
@@ -1050,8 +1095,16 @@ function syncCrGlow() { // the glow's one writer: the session street's chosen se
   if (name && draft && draft.roads && Object.prototype.hasOwnProperty.call(draft.roads, name)) {
     const col = draft.primaries.has(name) ? '#ffc233' : '#ef476f';
     const rec = crStreetParts(name);
-    if (rec) { const set = crChosenSet(name, rec); for (let i = 0; i < rec.parts.length; i++) { if (!set.has(i)) continue; const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } }
-    else { const g = crDraftGeom(); const st = g && g[name]; if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
+    if (rec) { const set = crChosenSet(name, rec);
+    for (let i = 0;
+    i < rec.parts.length;
+    i++) { if (!set.has(i)) continue;
+    const L = rec.parts[i];
+    if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+    } }
+    else { const g = crDraftGeom();
+    const st = g && g[name];
+    if (st) { for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { col }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } } }
   }
   crGlowSetFeatures(feats);
 }
@@ -1068,9 +1121,18 @@ function renderDraft() { // the draft renders from its own roads through its own
       if (sel || crSectorSession.street === n) {
         const rec = crStreetParts(n); if (!rec) continue;
         const set = crChosenSet(n, rec);
-        for (let i = 0; i < rec.parts.length; i++) { const L = rec.parts[i]; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: set.has(i) ? 1 : 0, active: crSectorSession.street === n ? 1 : 0, sector: i }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.223: active=1 only on the sector session's street - it alone paints vibrant (crDraftLineActive); every other chosen street rests gentle-muted (crDraftLine)
+        for (let i = 0;
+        i < rec.parts.length;
+        i++) { const L = rec.parts[i];
+        if (L && L.length > 1) feats.push({ type: 'Feature',
+          properties: { name: n, primary, chosen: set.has(i) ? 1 : 0, active: crSectorSession.street === n ? 1 : 0, sector: i },
+          geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+        } // active=1 only on the sector session's street: it alone paints vibrant; other chosen streets rest gentle-muted
       } else {
-        const st = g[n]; if (st) for (const run of st.runs) { const L = run.line; if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: 1, active: 0, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } }); } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
+        const st = g[n];
+        if (st) for (const run of st.runs) { const L = run.line;
+        if (L && L.length > 1) feats.push({ type: 'Feature', properties: { name: n, primary, chosen: 1, active: 0, sector: -1 }, geometry: { type: 'LineString', coordinates: L.map(p => [p[1], p[0]]) } });
+        } // Beta 1.144 (C1): an untrimmed street draws all its runs - one feature per run, never a line bridging them
       }
     }
   }
@@ -1089,7 +1151,9 @@ const CR_ROUTE_LAYERS = GLP.layers.stack;   // the hide list is the engine's sta
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
 function crPoiFeatures() {
-  return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature', properties: { name: p.name || '' }, geometry: { type: 'Point', coordinates: [(bb.w + bb.e) / 2, (bb.s + bb.n) / 2] } }; }).filter(Boolean);
+  return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature',
+    properties: { name: p.name || '' },
+    geometry: { type: 'Point', coordinates: [(bb.w + bb.e) / 2, (bb.s + bb.n) / 2] } }; }).filter(Boolean);
 }
 function crPoiFont() { // the basemap's own Noto stack, read the way pickFontFromStyle reads it - a guessed stack renders no text
   try {
@@ -1108,7 +1172,11 @@ function ensureCrPoiLayers() {
     const night = isNight();
     if (!map.getLayer('crPoiRing')) map.addLayer({ id: 'crPoiRing', type: 'circle', source: CR_POI_SRC, paint: { 'circle-radius': 9, 'circle-color': '#ffffff', 'circle-stroke-color': 'rgba(10,14,34,.25)', 'circle-stroke-width': 1 } });
     if (!map.getLayer('crPoiDot')) map.addLayer({ id: 'crPoiDot', type: 'circle', source: CR_POI_SRC, paint: { 'circle-radius': 6, 'circle-color': '#ef476f' } });
-    if (!map.getLayer('crPoiTxt')) map.addLayer({ id: 'crPoiTxt', type: 'symbol', source: CR_POI_SRC, layout: { 'text-field': ['get', 'name'], 'text-font': crPoiFont(), 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': true }, paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
+    if (!map.getLayer('crPoiTxt')) map.addLayer({ id: 'crPoiTxt',
+      type: 'symbol',
+      source: CR_POI_SRC,
+      layout: { 'text-field': ['get', 'name'], 'text-font': crPoiFont(), 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': true },
+      paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
   } catch (e) { /* the style may still be loading - the styledata hook re-runs this while creating */ }
 }
 function crSetBackdrop(on) {
@@ -1208,8 +1276,20 @@ function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = tit
 function crConfirmDismiss() { hideSurface($('crModal')); crConfirmCb = null; }
 $('crModalYes').addEventListener('click', () => { hideSurface($('crModal')); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
-function parkBootChrome() { const sp = $('splash'); if (sp) sp.style.visibility = 'hidden'; $('routeMenu').classList.remove('show'); const bl = $('brandLayer'); if (bl) bl.classList.add('parked'); /* Beta 1.155: the title lives in its own layer now, not inside the menu - the park hides it explicitly (through 1.154 it hid as the menu's child) */ crBootParked = true; }
-function restoreBootChrome() { if (!crBootParked) return; crBootParked = false; const sp = $('splash'); if (sp) sp.style.visibility = ''; $('routeMenu').classList.add('show'); const bl = $('brandLayer'); if (bl) bl.classList.remove('parked'); /* Beta 1.155: revive the title layer with the picker */ }
+function parkBootChrome() { const sp = $('splash');
+if (sp) sp.style.visibility = 'hidden';
+$('routeMenu').classList.remove('show');
+const bl = $('brandLayer');
+if (bl) bl.classList.add('parked');
+/* the title lives in its own layer - the park hides it explicitly */ crBootParked = true; }
+function restoreBootChrome() { if (!crBootParked) return;
+crBootParked = false;
+const sp = $('splash');
+if (sp) sp.style.visibility = '';
+$('routeMenu').classList.add('show');
+const bl = $('brandLayer');
+if (bl) bl.classList.remove('parked');
+/* Beta 1.155: revive the title layer with the picker */ }
 function setCreateStage(stage) {
   if (stage !== 'pick') crSectorReset(); // sector mode is pick-stage only: the preview never inherits its bar (the Cancel snapshot dies with it)
   crStage = stage;
@@ -1295,7 +1375,8 @@ $('crHintBtn').addEventListener('click', () => { // the action is the same decis
   if (act === 'retry-anchor') { if (crPrepAnchor) crStartPrep(crPrepAnchor); return; } // a failed box's Retry: the same anchor again
   if (act === 'prepare-centre') { if (map) { const c = map.getCenter(); crStartPrep({ lat: c.lat, lng: c.lng }); } return; } // Prepare this area: the anchor is the map centre he is looking at
 });
-onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); })); // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
+onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' && crPrepState === 'none') crRenderHint(); }));
+// the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
 // search as you type (300 ms debounce, 3+ characters, one query per burst); Enter runs it immediately
 let crSearchTimer = null, crSearchSeq = 0;
@@ -1604,7 +1685,23 @@ function crClusterPts(pts, r) { // one junction can print as several points (a d
   }
   return out;
 }
-const CR_ABBR = { rd: 'road', st: 'street', ave: 'avenue', av: 'avenue', dr: 'drive', ct: 'court', crt: 'court', blvd: 'boulevard', ln: 'lane', cres: 'crescent', pl: 'place', ter: 'terrace', cir: 'circle', trl: 'trail', pkwy: 'parkway', sq: 'square', hwy: 'highway' };
+const CR_ABBR = { rd: 'road',
+  st: 'street',
+  ave: 'avenue',
+  av: 'avenue',
+  dr: 'drive',
+  ct: 'court',
+  crt: 'court',
+  blvd: 'boulevard',
+  ln: 'lane',
+  cres: 'crescent',
+  pl: 'place',
+  ter: 'terrace',
+  cir: 'circle',
+  trl: 'trail',
+  pkwy: 'parkway',
+  sq: 'square',
+  hwy: 'highway' };
 function crNameKey(s) { // a typed fragment and a pack name meet on one key: lower-case, dots off, a trailing abbreviation spelled out
   const parts = String(s || '').trim().toLowerCase().replace(/\./g, '').split(/\s+/).filter(Boolean);
   if (!parts.length) return '';
@@ -1836,7 +1933,9 @@ $('crClearAll').addEventListener('click', () => { // empty the picks at once, be
   // the wholesale reset lives on the DRAFT owner (its clearAll method)
   crConfirm('Clear all ' + n + (n === 1 ? ' road?' : ' roads?'), 'Every road you picked will be taken off this route. The city stays loaded.', () => { DRAFT.clearAll(); }, { yes: 'Clear all', no: 'Cancel', danger: true });
 });
-$('crSbWhole').addEventListener('click', () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); }); // Entire road: every sector back on (the pick is stored as no entry again)
+$('crSbWhole').addEventListener('click',
+  () => { const s = crSectorSession.street; if (!s) return; const rec = crStreetParts(s); if (rec) crSetChosen(s, rec, new Set(rec.parts.map((_, i) => i))); renderDraft(); renderCrLists(); renderSectorBar(); });
+// Entire road: every sector back on (the pick is stored as no entry again)
 $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back to the panel
 $('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Deselect: the street leaves entirely through crRemoveStreet (the snapshot restore lives on the tap-away, crCancelSectors)
 (() => { // the tuck-away gesture: drag/flick the handle down, or tap it, to collapse; header buttons keep their taps

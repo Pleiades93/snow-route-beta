@@ -75,7 +75,7 @@ const syncSrc = extractFn(pick, 'syncCrGlow');
 check('G: syncCrGlow chosen-sectors computation untouched (the 1.209 feed contract)',
   // issue #179: all three pins scoped to syncCrGlow's own body - the street
   // record read also stands in four other functions and must not carry them.
-  !!syncSrc && syncSrc.includes('const rec = crStreetParts(name);') && syncSrc.includes('if (!set.has(i)) continue; const L = rec.parts[i];') && syncSrc.includes('crGlowSetFeatures(feats);'));
+  !!syncSrc && syncSrc.includes('const rec = crStreetParts(name);') && syncSrc.includes('if (!set.has(i)) continue;\n    const L = rec.parts[i];') && syncSrc.includes('crGlowSetFeatures(feats);'));
 
 const stitchSrc = extractFn(pick, 'crGlowStitchFeats');
 const rgbSrc = extractFn(pick, 'crGlowRgb');

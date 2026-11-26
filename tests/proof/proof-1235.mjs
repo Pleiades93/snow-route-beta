@@ -45,10 +45,14 @@ const namePane = head.slice(head.indexOf('<div class="rmPane" id="rmNamePane">')
 // ---------- A: the city step layout ----------
 check('A1: the title reads as approved (and the old wording is gone)', cityPane.includes('<div class="rmTitle">What city are you cleaning in?</div>') && !head.includes('What city will you be cleaning in?'));
 check('A2: the City label element is gone from the city pane', !cityPane.includes('rmLbl'));
-check('A3: the label rule and its other pane survive - the name pane still labels Route name and Area', head.includes('.rmLbl { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 650; margin-bottom: -6px; }') && namePane.includes('<div class="rmLbl">Route name</div>') && namePane.includes('<div class="rmLbl">Area</div>'));
+check('A3: the label rule and its other pane survive - the name pane still labels Route name and Area', head.includes('.rmLbl { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 650; margin-bottom: -6px; }') &&
+  namePane.includes('<div class="rmLbl">Route name</div>') && namePane.includes('<div class="rmLbl">Area</div>'));
 check('A4: the pill is solid white with dark ink and the soft shadow - Beta 1.243: ONE group rule for the three menu inputs (city, route name, area), the city box keeping its own margin-top rule', head.includes('#crCityInput, #crNameInput, #crAreaInput { background: #fff; border: none; color: #14161c; box-shadow: 0 6px 18px rgba(0,0,0,.18); }') && head.includes('#crCityInput { margin-top: 8px; }'));
 check('A5: the placeholder rests grey on the white pill, on the same three inputs (Beta 1.243)', head.includes('#crCityInput::placeholder, #crNameInput::placeholder, #crAreaInput::placeholder { color: #9aa0ab; }'));
-check('A6: the shared glass rule is untouched - the name and area inputs keep it', head.includes('.rmInput { appearance: none; -webkit-appearance: none; width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.14); color: #fff; font-size: 18px; padding: 14px 16px; border-radius: 14px; outline: none; }') && namePane.includes('class="rmInput" id="crNameInput"') && namePane.includes('class="rmInput" id="crAreaInput"'));
+check('A6: the shared glass rule is untouched - the name and area inputs keep it',
+  head.includes('.rmInput { appearance: none;\n  -webkit-appearance: none;\n  width: 100%;\n  box-sizing: border-box;\n  ' +
+  'border: 1px solid rgba(255,255,255,.45);\n  background: rgba(255,255,255,.14);\n  color: #fff;\n  font-size: 18px;\n  padding: 14px 16px;\n  border-radius: 14px;\n  outline: none;\n  }')
+  && namePane.includes('class="rmInput" id="crNameInput"') && namePane.includes('class="rmInput" id="crAreaInput"'));
 check('A7: the input keeps its shared class and placeholder (only its look is its own)', cityPane.includes('<input class="rmInput" id="crCityInput" type="text" maxlength="60" autocomplete="off" placeholder="Start typing a city"'));
 
 // ---------- B: the bundled gazetteer ----------
@@ -57,15 +61,24 @@ check('B1: the gazetteer table stands in create-pick', !!gazM);
 const gazRows = gazM ? (gazM[1].match(/\n  \[/g) || []).length : 0;
 check('B2: the table is the full Ontario set (over 300 municipalities)', gazRows > 300);
 check('B3: the app\'s working cities are in the table with Ontario coordinates', ['Vaughan', 'Toronto', 'Mississauga', 'Aurora', 'Innisfil', 'King', 'Georgina'].every(n => pick.includes('["' + n + '", 4')) );
-check('B4: no foreign rows and no district or region rows (the pure upper tiers stayed out); the only County rows are the five whose county IS the municipality or the only boundary the service offers', !pick.includes('["Aurora, Illinois"') && !pick.includes(' District",') && !pick.includes(' Region",') && JSON.stringify([...gazM[1].matchAll(/\["([^"]+ County)",/g)].map(m => m[1]).sort()) === JSON.stringify(['Brant County', 'Essex County', 'Haldimand County', 'Norfolk County', 'Prince Edward County']));
-check('B5: the matcher exists - name prefix or any word prefix, name matches first, population orders inside a group', pick.includes('function crCityLocalMatches(q)') && pick.includes('if (nk.startsWith(k)) head.push(i);') && pick.includes('else if (nk.split(\' \').some(w => w.startsWith(k))) word.push(i);') && pick.includes('head.sort(byPop); word.sort(byPop);') && pick.includes('return head.concat(word).slice(0, 6)'));
-check('B6: keys fold accents, apostrophes and dashes the same way on both sides, precomputed for the whole table', pick.includes('function crCityGazKey(s)') && pick.includes("normalize('NFD')") && pick.includes('const CR_CITY_GAZ_KEYS = CR_CITY_GAZETTEER.map(e => crCityGazKey(e[0]));'));
-check('B7: the live search still runs exactly as before - the same bounded Ontario request, the same place and Ontario filters', pick.includes("fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w, CR_ON_BOUNDS.n, CR_ON_BOUNDS.e, CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q)") && pick.includes('const places = (Array.isArray(list) ? list : []).filter(crIsPlace).filter(crInOntario);'));
+check('B4: no foreign rows and no district or region rows (the pure upper tiers stayed out); the only County rows are the five whose county IS the municipality or the only boundary the service offers',
+  !pick.includes('["Aurora, Illinois"') && !pick.includes(' District",') && !pick.includes(' Region",') &&
+    JSON.stringify([...gazM[1].matchAll(/\["([^"]+ County)",/g)].map(m => m[1]).sort()) === JSON.stringify(['Brant County', 'Essex County', 'Haldimand County', 'Norfolk County', 'Prince Edward County']));
+check('B5: the matcher exists - name prefix or any word prefix, name matches first, population orders inside a group',
+  pick.includes('function crCityLocalMatches(q)') && pick.includes('if (nk.startsWith(k)) head.push(i);') && pick.includes('else if (nk.split(\' \').some(w => w.startsWith(k))) word.push(i);') &&
+    pick.includes('head.sort(byPop); word.sort(byPop);') && pick.includes('return head.concat(word).slice(0,\n    6)'));
+check('B6: keys fold accents, apostrophes and dashes the same way on both sides, precomputed for the whole table', pick.includes('function crCityGazKey(s)') && pick.includes("normalize('NFD')") &&
+  pick.includes('const CR_CITY_GAZ_KEYS = CR_CITY_GAZETTEER.map(e => crCityGazKey(e[0]));'));
+check('B7: the live search still runs exactly as before - the same bounded Ontario request, the same place and Ontario filters',
+  pick.includes("fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + " +
+    "[CR_ON_BOUNDS.w,\n      CR_ON_BOUNDS.n,\n      CR_ON_BOUNDS.e,\n      CR_ON_BOUNDS.s].join(',') + '&bounded=1&q=' + encodeURIComponent(q)") &&
+      pick.includes('const places = (Array.isArray(list) ? list : []).filter(crIsPlace).filter(crInOntario);'));
 check('B8: the merge stands under the service rows, deduped by normalized name, under the same 6-row cap ' +
   '(fix 4 re-scope: the caller reaches the search only after a gazetteer miss, so the merge fills nothing in production - the net stays as specified)',
   pick.includes('const seen = new Set(places.map(it => crCityGazKey(crCityNameOf(it))));')
   && pick.includes('for (const loc of crCityLocalMatches(q)) { if (places.length >= 6) break; const lk = crCityGazKey(loc.address.city); if (!seen.has(lk)) { seen.add(lk); places.push(loc); } }'));
-check('B9: a local row carries the service\'s own shape, so the pick flow is unchanged', pick.includes("display_name: e[0] + ', Ontario, Canada', category: 'boundary', type: 'administrative'") && pick.includes("address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' }"));
+check('B9: a local row carries the service\'s own shape, so the pick flow is unchanged', pick.includes("display_name: e[0] + ', Ontario, Canada',\n      category: 'boundary',\n      type: 'administrative'") &&
+  pick.includes("address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' }"));
 // the render pin is scoped to crRunCitySearch's own body - a whole-file pin could pass on the type-ahead's identical call
 check('B10: the search answer renders through the one box swap (one render, rows built by the shared crCityResultRow)',
   pick.slice(pick.indexOf('async function crRunCitySearch()')).includes('places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));')

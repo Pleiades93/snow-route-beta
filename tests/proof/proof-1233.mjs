@@ -132,7 +132,8 @@ check('B5a: the Back payload is byte-pinned', sha(Buffer.from(payload('GLYPH_MEN
 check('B5b: renderIcons stamps every Back with the disc beside its word', app4.includes("document.querySelectorAll('.rmBack').forEach(el => { el.innerHTML = `<img class=\"rmBackIco\" alt=\"\" src=\"${GLYPH_MENU.back}\"> Back`; });"));
 // issue #179: B5c's flex-row pin is lengthened to the .rmBack rule's full unique
 // form - the bare fragment also matches the #hud.row rule.
-check('B5c: the Back button is a flex row and the glyph stands at 20px', head.includes('align-self: flex-start; display: flex; align-items: center; gap: 8px; }') && head.includes('.rmBackIco { width: 20px; height: 20px; display: block; flex: none; }'));
+check('B5c: the Back button is a flex row and the glyph stands at 20px',
+  head.includes('align-self: flex-start;\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  }') && head.includes('.rmBackIco { width: 20px; height: 20px; display: block; flex: none; }'));
 check('B5d: Settings keeps its gear - the gear payload is the 1.221 cog, byte-for-byte', (() => { const m = /gear: \{ d: 'data:image\/webp;base64,([A-Za-z0-9+/=]+)'/.exec(app4); return !!m && sha(Buffer.from(m[1], 'base64')) === '903ed9f57d1aa48fe28fc1f0d75a3723afe6d966dfd2f3ac56e7ff0a4172691e'; })());
 
 // ---------- B6: About ----------

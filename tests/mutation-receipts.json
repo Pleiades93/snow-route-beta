@@ -16019,6 +16019,388 @@
    "red": "under the changed_line_errors neuter the two conviction cases flip (got exit 0, want 1); controls stay green",
    "green": "gate fixtures 113/113 on the shipped tree",
    "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1223",
+   "check": "tests/proof/proof-1223.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1223.mjs": "d96865723203cfd9ef45f082c773ffd584c3a7df9938d23c8ac8b3b16c1c32f5",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "the cc.append city-bar call in create-pick.js reworded ('Working in ' -> 'Working at ') in place, proof run, file restored byte-identical (md5 verified)",
+   "red": "proof fails: check 3e (the bar text is built from text nodes) convicts the reworded call",
+   "green": "proof-1223: 27 passed, 0 failed on the shipped tree; the 3e needle now spans the wrapped append call exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1229",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "1f2f9ade7735fd1c662ebaeb9f1df20cac658722ae2c6ef4fe7a51b882d280d7",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "the Nominatim viewbox bounds order swapped (n and e exchanged) in the wrapped fetch call in create-pick.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 5c convicts the swapped bound order",
+   "green": "proof-1229: 33 passed, 0 failed; the 5c needle now spans the wrapped bounds array exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1230",
+   "check": "tests/proof/proof-1230.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1230.mjs": "1899a5a0240eea0aa9cf2b6e6cc82190ca25b03f20da9cd97a140e8450d0dd6e",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0"
+   },
+   "mutation": "dpGradeOf's first threshold raised (26 -> 30) in app1.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 3c convicts the moved threshold",
+   "green": "proof-1230: 25 passed, 0 failed; the 3c needle now spans the wrapped DP literal exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1232",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "b4b14dd34204782e9d2c186942fbda7e6fa92a15c9bbf29a3aeb5a65b0095d0d",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the day back pill's border alpha changed (.08 -> .09) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check 3b convicts the changed border",
+   "green": "proof-1232 green on the shipped tree; the pill/wrap extraction is now a line-anchored rule span with whitespace collapsed, so wrapped rules read whole",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1233",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "bbcce4ec4b8b3b9704f63349f6584a5907221d3f6ce51f02389eb75061ed5bbe",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": ".rmBackIco width changed (20px -> 21px) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check B5c convicts the glyph size",
+   "green": "proof-1233 green on the shipped tree; the B5c needle now spans the wrapped .rmBack rule exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1235",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "8275fcd4bf9755c1d10f609408582962584b928ca7407860edcd0e60c263b78f",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "two breaks replayed: the gazetteer slice count raised (6 -> 7) in create-pick.js, and the .rmInput glass background alpha changed (.14 -> .15) in head.html; each proof run red, each file restored byte-identical",
+   "red": "slice break: check B5 fails; glass break: check A6 fails",
+   "green": "proof-1235: 18 passed, 0 failed; needles B5/B7/B9/A6 now span the wrapped shapes exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1242",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "0b0b9873872edba099751d7ba89df81e3f62c062c294808ac5457fc84c49d342",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the day dock gradient's second stop changed (#eceef2 -> #eceef3) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check 6 convicts the changed face",
+   "green": "proof-1242 green on the shipped tree; its rule() extraction now collapses whitespace, so the face values are compared byte-exact across the wrap",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1254",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "6648584380e8a8e331aaeaab3c10f3993c34ca20e0138fb5f58a978d30a160de",
+    "parts/app4.js": "70415f060e13364c940830b84130efe63c7084defaffc3bcebabc7fe74772be1"
+   },
+   "mutation": "packTileEnum's zoom loop bound changed (z <= maxz -> z < maxz) in the wrapped loop header in app4.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 10 convicts the changed enumeration bound",
+   "green": "proof-1254: 13 passed, 0 failed; the loop-header regex now spans the wrapped header exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1267",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1267.mjs": "2ff38ab475f96e3a72fa4f2ce66979afc7448a793e85184b983712824e7e93e7",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "the crDraftHit addLayer call's beforeId argument removed in create-pick.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 2b convicts the missing beforeId (crDraftHit:false)",
+   "green": "proof-1267: 17 pass, 0 fail; the 2b regex now tolerates the wrapped call (whitespace between the layer object and before)",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1271",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "3e7432d0e927f98bd33b442ddf65d4911e2208f4743aa0a9de43f34d68650621",
+    "parts/app3.js": "313b044ff61dcef04b720081d38e47afd194188a5a2f5c11ae18d1e729c0cdc4",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "two breaks replayed: --drop-pill changed (40px -> 41px) in head.html, and the Clear sub text shortened in app3.js; each proof run red, each file restored byte-identical",
+   "red": "size break: check 2a fails; wording break: check 3a fails",
+   "green": "proof-1271: 15 pass, 0 fail; the 3a needle now spans the wrapped showConfirm call and the 2a needle the wrapped .routeDrop button rule",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1227",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "b7b50f5a45dd257d60d64fa85d20510bd04db8a7aec218f76db8de7cf9ac98b1",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the back pill width changed (50px -> 51px) in head.html, proof run, file restored byte-identical",
+   "red": "proof fails: check 2c convicts the changed pill size",
+   "green": "proof-1227 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-glow",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "b259d60e46bf688ee25c5d01f41683d2920d53300a536232af44db8fddac399f",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749"
+   },
+   "mutation": "syncCrGlow's sector read changed (rec.parts[i] -> rec.parts[0]) in create-pick.js, scoped to the pinned two-line shape, proof run, file restored byte-identical",
+   "red": "proof fails: check G convicts the changed feed",
+   "green": "proof-create-glow-casing-fix: 19 pass, 0 fail; the G needle now spans the wrapped statement pair exactly",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-street-end",
+   "check": "tests/proof/proof-street-end-width-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-street-end-width-fix.mjs": "979f701b67bc40f171b5023290ad4110a54d7a856e970bf754194329291e6686",
+    "parts/engine.js": "a3990cb193fba433161e842b7ad7ea423bbab03f7775b71b97781ce1bd097aaf"
+   },
+   "mutation": "the band trim call's half changed (SURF_HALF -> BAND_HALF) in engine.js, proof run, file restored byte-identical",
+   "red": "proof fails: check 3S convicts the retired constant at the call",
+   "green": "proof-street-end-width-fix: ALL CHECKS PASS; the 3S needle now spans the wrapped call and the 5S regex tolerates the wrapped layer arguments",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-soft-1222",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "d1cbf1d57152271446b2d6326f48cff274620fd9e7c0034d1b2a474f905c7edd",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64"
+   },
+   "mutation": "the shared day lift shadow alpha changed (.10 -> .11) in head.html (the stack text stands in two rules; both occurrences changed), proof run, file restored byte-identical",
+   "red": "proof fails: check C convicts the changed shadow",
+   "green": "proof-soft-1222 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1223-r2",
+   "check": "tests/proof/proof-1223.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1223.mjs": "d96865723203cfd9ef45f082c773ffd584c3a7df9938d23c8ac8b3b16c1c32f5",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "the cc.append city-bar call in create-pick.js reworded ('Working in ' -> 'Working at ') in place, proof run, file restored byte-identical (md5 verified) | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3e (the bar text is built from text nodes) convicts the reworded call",
+   "green": "proof-1223: 27 passed, 0 failed on the shipped tree; the 3e needle now spans the wrapped append call exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1229-r2",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "1f2f9ade7735fd1c662ebaeb9f1df20cac658722ae2c6ef4fe7a51b882d280d7",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "the Nominatim viewbox bounds order swapped (n and e exchanged) in the wrapped fetch call in create-pick.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 5c convicts the swapped bound order",
+   "green": "proof-1229: 33 passed, 0 failed; the 5c needle now spans the wrapped bounds array exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1230-r2",
+   "check": "tests/proof/proof-1230.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1230.mjs": "df88e4e93a46b83053fcd72e1a0e7b72d581ddbf26550726473eaaa890b177ce",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0"
+   },
+   "mutation": "dpGradeOf's first threshold raised (26 -> 30) in app1.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3c convicts the moved threshold",
+   "green": "proof-1230: 25 passed, 0 failed; the 3c needle now spans the wrapped DP literal exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1232-r2",
+   "check": "tests/proof/proof-1232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1232.mjs": "b4b14dd34204782e9d2c186942fbda7e6fa92a15c9bbf29a3aeb5a65b0095d0d",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the day back pill's border alpha changed (.08 -> .09) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3b convicts the changed border",
+   "green": "proof-1232 green on the shipped tree; the pill/wrap extraction is now a line-anchored rule span with whitespace collapsed, so wrapped rules read whole | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1233-r2",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "19abdc6c866212153901ccfc2c8494bd3ac3303ebf47a0a34d29569d3e63e337",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": ".rmBackIco width changed (20px -> 21px) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check B5c convicts the glyph size",
+   "green": "proof-1233 green on the shipped tree; the B5c needle now spans the wrapped .rmBack rule exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1235-r2",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "0ac29327df1ead4b3df70b63618f91faba7e2efc57a74bd41d8649e039d63019",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "two breaks replayed: the gazetteer slice count raised (6 -> 7) in create-pick.js, and the .rmInput glass background alpha changed (.14 -> .15) in head.html; each proof run red, each file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "slice break: check B5 fails; glass break: check A6 fails",
+   "green": "proof-1235: 18 passed, 0 failed; needles B5/B7/B9/A6 now span the wrapped shapes exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1242-r2",
+   "check": "tests/proof/proof-1242.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1242.mjs": "0b0b9873872edba099751d7ba89df81e3f62c062c294808ac5457fc84c49d342",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the day dock gradient's second stop changed (#eceef2 -> #eceef3) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 6 convicts the changed face",
+   "green": "proof-1242 green on the shipped tree; its rule() extraction now collapses whitespace, so the face values are compared byte-exact across the wrap | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1254-r2",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "6648584380e8a8e331aaeaab3c10f3993c34ca20e0138fb5f58a978d30a160de",
+    "parts/app4.js": "cce5fd597a9d6b6bc97d29cd30c80d1852d59556a79c0082a6be9bacece77058"
+   },
+   "mutation": "packTileEnum's zoom loop bound changed (z <= maxz -> z < maxz) in the wrapped loop header in app4.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 10 convicts the changed enumeration bound",
+   "green": "proof-1254: 13 passed, 0 failed; the loop-header regex now spans the wrapped header exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1267-r2",
+   "check": "tests/proof/proof-1267.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1267.mjs": "a2bee64d7f66ddd152ff4862136e6c963e1df0ef96a47029165033a1aec27f54",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "the crDraftHit addLayer call's beforeId argument removed in create-pick.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 2b convicts the missing beforeId (crDraftHit:false)",
+   "green": "proof-1267: 17 pass, 0 fail; the 2b regex now tolerates the wrapped call (whitespace between the layer object and before) | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1271-r2",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "d02d5adb64e26bbc7a1b68fc074a7dd9ff88df4e662d6e4a85a799f1987f0b00",
+    "parts/app3.js": "8a964f63c2a7a21006a2bdb65a0b37058fa09da805eea348efbf50c8d068ab45",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "two breaks replayed: --drop-pill changed (40px -> 41px) in head.html, and the Clear sub text shortened in app3.js; each proof run red, each file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "size break: check 2a fails; wording break: check 3a fails",
+   "green": "proof-1271: 15 pass, 0 fail; the 3a needle now spans the wrapped showConfirm call and the 2a needle the wrapped .routeDrop button rule | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1227-r2",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "b7b50f5a45dd257d60d64fa85d20510bd04db8a7aec218f76db8de7cf9ac98b1",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the back pill width changed (50px -> 51px) in head.html, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 2c convicts the changed pill size",
+   "green": "proof-1227 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-glow-r2",
+   "check": "tests/proof/proof-create-glow-casing-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-create-glow-casing-fix.mjs": "b259d60e46bf688ee25c5d01f41683d2920d53300a536232af44db8fddac399f",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b"
+   },
+   "mutation": "syncCrGlow's sector read changed (rec.parts[i] -> rec.parts[0]) in create-pick.js, scoped to the pinned two-line shape, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check G convicts the changed feed",
+   "green": "proof-create-glow-casing-fix: 19 pass, 0 fail; the G needle now spans the wrapped statement pair exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-street-end-r2",
+   "check": "tests/proof/proof-street-end-width-fix.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-street-end-width-fix.mjs": "979f701b67bc40f171b5023290ad4110a54d7a856e970bf754194329291e6686",
+    "parts/engine.js": "c8183d4e9fd5b2f8de15751e8c51cda513bb25c0b14ce708eb6415816a6c3986"
+   },
+   "mutation": "the band trim call's half changed (SURF_HALF -> BAND_HALF) in engine.js, proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check 3S convicts the retired constant at the call",
+   "green": "proof-street-end-width-fix: ALL CHECKS PASS; the 3S needle now spans the wrapped call and the 5S regex tolerates the wrapped layer arguments | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-soft-1222-r2",
+   "check": "tests/proof/proof-soft-1222.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-soft-1222.mjs": "d1cbf1d57152271446b2d6326f48cff274620fd9e7c0034d1b2a474f905c7edd",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "the shared day lift shadow alpha changed (.10 -> .11) in head.html (the stack text stands in two rules; both occurrences changed), proof run, file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed",
+   "red": "proof fails: check C convicts the changed shadow",
+   "green": "proof-soft-1222 green on the shipped tree; its rule() extraction now collapses whitespace across the wrap | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-repin-1235-r3",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "31e988857c636e2205c7df087d92753ebbd13a830ceeae03c8c1659ec77beb9b",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "two breaks replayed: the gazetteer slice count raised (6 -> 7) in create-pick.js, and the .rmInput glass background alpha changed (.14 -> .15) in head.html; each proof run red, each file restored byte-identical | re-issue: pins refreshed after the comment compressions the touched-comment judge required and wraps of the proofs' own over-long lines; no claim or needle value changed | re-issue r3: the proof's own A6 line wrapped after r2 (string split at a newline escape, value identical)",
+   "red": "slice break: check B5 fails; glass break: check A6 fails",
+   "green": "proof-1235: 18 passed, 0 failed; needles B5/B7/B9/A6 now span the wrapped shapes exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
+   "issued": "2026-11-26 phase1-detectors"
   }
  ]
 }

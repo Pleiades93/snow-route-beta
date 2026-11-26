@@ -43,7 +43,7 @@ const changelog = read('docs/archive/CHANGELOG-beta-history.md');
 const partsDir = new URL('parts/', root);
 const allParts = readdirSync(partsDir).filter(f => f.endsWith('.js')).map(f => read('parts/' + f)).join('\n');
 const allPartsNoWn = readdirSync(partsDir).filter(f => f.endsWith('.js') && f !== 'whatsnew.js').map(f => read('parts/' + f)).join('\n'); // the What's New editorial may NAME a cut pop-up; history comments may quote retired text - the pins below are on the painting calls, the codebase's own convention (app3's comments quote the cancel texts they adjudicate)
-const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i)); };
+const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i)).replace(/\s+/g, ' '); };
 
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };

@@ -27679,6 +27679,894 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26-phase1-detectors"
+  },
+  {
+   "id": "phase1-burndown-r1",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "lsSet",
+     "saveAll",
+     "saveStart",
+     "saveSnap",
+     "saveNow",
+     "upPut"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/brand-snow.js",
+    "parts/create-cache.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/data.js",
+    "parts/engine.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:lsSet:parts/app1.js:dpWriteStore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from dpWriteStore in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:migrateLegacyRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from migrateLegacyRoute in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: migration marker carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveProg",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveProg in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveSess",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSess in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveSettings",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSettings in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveStart in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveTrail",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveTrail in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:txSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from txSet in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:saveFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveFixLog in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:saveSnap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSnap in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from top-level in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:noteExported",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from noteExported in parts/app4.js",
+     "status": "covered",
+     "note": "annotated this push: the export stamp carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:renderStatus",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from renderStatus in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from xPre:click in parts/app4.js",
+     "status": "covered",
+     "note": "annotated this push: both preload writes (completion fingerprint, LS.pre record) carry write-safe exemptions; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app5.js:migratePack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from migratePack in parts/app5.js",
+     "status": "covered",
+     "note": "annotated this push: the pack census write carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/create-pick.js:apply",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from apply in parts/create-pick.js",
+     "status": "covered",
+     "note": "annotated this push: the lastArea write carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "annotated this push: the preload seed and lastArea writes carry write-safe exemptions; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: the PERSIST.flush saveAll call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "annotated this push: the finishRun saveAll call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveNow:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveNow() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "annotated this push: both saveNow call sites carry the write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveSnap:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveSnap() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "annotated this push: the startClean saveSnap call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: the PERSIST.flush saveStart call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:upPut:parts/app4.js:rollbackPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from rollbackPacks in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:upPut:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "annotated this push: the rollback restore upPut carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:upPut:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:upPut:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "4446efb57e786ae2e51e0d51116354f486f387c9671f111bcaee74bb0a00a34f",
+    "parts/app3.js": "313b044ff61dcef04b720081d38e47afd194188a5a2f5c11ae18d1e729c0cdc4",
+    "parts/app4.js": "70415f060e13364c940830b84130efe63c7084defaffc3bcebabc7fe74772be1",
+    "parts/app5.js": "b887158e26151bb60923587c856bf7f6d54d25cb8cb88313dd9c965a1408c2de",
+    "parts/brand-snow.js": "1a040db6ad869c6556204f6f286b78192803b8b25ccca2dee82adee813ed0175",
+    "parts/create-cache.js": "f268106b59d05180efdcc69d9e9e7666dfa495765696490469b7ed30b9e7f136",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "36773ba008f8001159bf638d66ead47c9acb9316d85d1de50f2fec975c8d4799",
+    "parts/create-pick.js": "4f1e1ccb380017cde2f36edf2b8e1c127c3989c57d68421a43292241b68bb749",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "49341e8238a3a6b6bdee248449c7a0da267be448d6b07b2447b4328ac4b8752c",
+    "parts/engine.js": "a3990cb193fba433161e842b7ad7ea423bbab03f7775b71b97781ce1bd097aaf",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "f8f3ae6fe8557fe1a5201e6fc399b2d0554ec8077eef15ba21fdeffb2452e70b",
+    "parts/head.html": "3df71c9be32a167eac3ad4189ebd27b4d22944d2e31988acda78f9543abddb64",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 phase1-detectors step5"
+  },
+  {
+   "id": "phase1-burndown-g1",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "lsSet",
+     "saveAll",
+     "saveStart",
+     "saveSnap",
+     "saveNow",
+     "upPut"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app3.js",
+    "parts/app5.js",
+    "parts/brand-snow.js",
+    "parts/create-cache.js",
+    "parts/create-fetch.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:lsSet:parts/app1.js:dpWriteStore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from dpWriteStore in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:migrateLegacyRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from migrateLegacyRoute in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: migration marker carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveProg",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveProg in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveSess",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSess in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveSettings",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSettings in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveStart in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveTrail",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveTrail in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:txSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from txSet in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:saveFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveFixLog in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:saveSnap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSnap in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from top-level in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:noteExported",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from noteExported in parts/app4.js",
+     "status": "covered",
+     "note": "annotated this push: the export stamp carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:renderStatus",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from renderStatus in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from xPre:click in parts/app4.js",
+     "status": "covered",
+     "note": "annotated this push: both preload writes (completion fingerprint, LS.pre record) carry write-safe exemptions; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app5.js:migratePack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from migratePack in parts/app5.js",
+     "status": "covered",
+     "note": "annotated this push: the pack census write carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/create-pick.js:apply",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from apply in parts/create-pick.js",
+     "status": "covered",
+     "note": "annotated this push: the lastArea write carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "annotated this push: the preload seed and lastArea writes carry write-safe exemptions; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: the PERSIST.flush saveAll call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "annotated this push: the finishRun saveAll call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveNow:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveNow() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "annotated this push: both saveNow call sites carry the write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveSnap:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveSnap() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "annotated this push: the startClean saveSnap call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: the PERSIST.flush saveStart call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:upPut:parts/app4.js:rollbackPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from rollbackPacks in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:upPut:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "annotated this push: the rollback restore upPut carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:upPut:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:upPut:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "61b2edfc5735e496f2260b89dabb91365db0edcf353c466a629b25a4e2cce180",
+    "parts/app3.js": "8a964f63c2a7a21006a2bdb65a0b37058fa09da805eea348efbf50c8d068ab45",
+    "parts/app4.js": "cce5fd597a9d6b6bc97d29cd30c80d1852d59556a79c0082a6be9bacece77058",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "01d73c59c6fca82d311e75fc5d6dd8e43b5bdfab20e0c85185d15305e903180d",
+    "parts/create-cache.js": "f268106b59d05180efdcc69d9e9e7666dfa495765696490469b7ed30b9e7f136",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "c8183d4e9fd5b2f8de15751e8c51cda513bb25c0b14ce708eb6415816a6c3986",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "f8f3ae6fe8557fe1a5201e6fc399b2d0554ec8077eef15ba21fdeffb2452e70b",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 phase1-detectors step5-g1"
+  },
+  {
+   "id": "phase1-burndown-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "lsSet",
+     "saveAll",
+     "saveStart",
+     "saveSnap",
+     "saveNow",
+     "upPut"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/brand-snow.js",
+    "parts/create-cache.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/engine.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:lsSet:parts/app1.js:dpWriteStore",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from dpWriteStore in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:migrateLegacyRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from migrateLegacyRoute in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: migration marker carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveProg",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveProg in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveSess",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSess in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveSettings",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSettings in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveStart in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:saveTrail",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveTrail in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:setThemeOverride",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from setThemeOverride in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app1.js:txSet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from txSet in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:saveFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveFixLog in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:saveSnap",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from saveSnap in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app3.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from top-level in parts/app3.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:noteExported",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from noteExported in parts/app4.js",
+     "status": "covered",
+     "note": "annotated this push: the export stamp carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:renderStatus",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from renderStatus in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from xPre:click in parts/app4.js",
+     "status": "covered",
+     "note": "annotated this push: both preload writes (completion fingerprint, LS.pre record) carry write-safe exemptions; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/app5.js:migratePack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from migratePack in parts/app5.js",
+     "status": "covered",
+     "note": "annotated this push: the pack census write carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:lsSet:parts/create-pick.js:apply",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from apply in parts/create-pick.js",
+     "status": "covered",
+     "note": "annotated this push: the lastArea write carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:lsSet:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lsSet() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "annotated this push: the preload seed and lastArea writes carry write-safe exemptions; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: the PERSIST.flush saveAll call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app2.js:saveAllWarned",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from saveAllWarned in parts/app2.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveAll:parts/app3.js:finishRun",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from finishRun in parts/app3.js",
+     "status": "covered",
+     "note": "annotated this push: the finishRun saveAll call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveAll:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveAll:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveAll() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveNow:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveNow() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "annotated this push: both saveNow call sites carry the write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveSnap:parts/app3.js:startClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveSnap() is called from startClean in parts/app3.js",
+     "status": "covered",
+     "note": "annotated this push: the startClean saveSnap call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:saveAll",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from saveAll in parts/app1.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:saveStart:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - saveStart() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "annotated this push: the PERSIST.flush saveStart call carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:upPut:parts/app4.js:rollbackPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from rollbackPacks in parts/app4.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:upPut:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from deleteRoute in parts/app5.js",
+     "status": "covered",
+     "note": "annotated this push: the rollback restore upPut carries its write-safe exemption; comments-only, AST-identical"
+    },
+    {
+     "id": "caller:upPut:parts/create-packs.js:initUserPacks",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from initUserPacks in parts/create-packs.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    },
+    {
+     "id": "caller:upPut:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - upPut() is called from crSaveBtn:click in parts/create-save.js",
+     "status": "covered",
+     "note": "call site untouched by this push - the parts diff is comments-only at 17 annotated write sites, AST-identical to HEAD; re-read"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "61b2edfc5735e496f2260b89dabb91365db0edcf353c466a629b25a4e2cce180",
+    "parts/app3.js": "8a964f63c2a7a21006a2bdb65a0b37058fa09da805eea348efbf50c8d068ab45",
+    "parts/app4.js": "cce5fd597a9d6b6bc97d29cd30c80d1852d59556a79c0082a6be9bacece77058",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "01d73c59c6fca82d311e75fc5d6dd8e43b5bdfab20e0c85185d15305e903180d",
+    "parts/create-cache.js": "f268106b59d05180efdcc69d9e9e7666dfa495765696490469b7ed30b9e7f136",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "c8183d4e9fd5b2f8de15751e8c51cda513bb25c0b14ce708eb6415816a6c3986",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "f8f3ae6fe8557fe1a5201e6fc399b2d0554ec8077eef15ba21fdeffb2452e70b",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 phase1-detectors step5"
   }
  ]
 }

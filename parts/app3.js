@@ -57,7 +57,10 @@ const CLEAN = {
       if (!isNaN(t)) prev = t;
       streets.push({ name: n, at: items[n], tMs: t, gapMs, stamps, spanMs, via: (h.via || {})[n], noteLines: this.noteLines((h.notes || {})[n]) });
     }
-    const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (Array.isArray(h.notes[n]) ? h.notes[n] : []).length).map(n => ({ name: n, primary: PRIMARIES.has(n), noteLines: this.noteLines(h.notes[n]) })); // issue #180: the Array.isArray guard - an inherited member ('constructor') is not a notes array
+    const notedOnly = Object.keys(h.notes || {}).filter(n => STREETSET.has(n) && !(n in items) && (Array.isArray(h.notes[n]) ? h.notes[n] : []).length).map(n => ({ name: n,
+      primary: PRIMARIES.has(n),
+      noteLines: this.noteLines(h.notes[n]) }));
+    // issue #180: the Array.isArray guard - an inherited member ('constructor') is not a notes array
     return { count: this.count(h), dur, workM, paceKm: this.paceKm(h), elapsedMs, paceRate, streets, notedOnly };
   },
   /** @param {Array} entries @returns {string[]} */ noteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); },
@@ -96,7 +99,15 @@ const PACE_ICONS = {
 function statCell(ic, v, l) { return '<div class="cell"><span class="ic" data-ic="' + ic + '">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
 function groupBar(name, g) {
   const pct = g.cnt ? (g.sum / g.cnt * 100) : 0;
-  return '<div class="gbar"><div class="gb-top"><span class="gb-n">' + name + '</span><span class="gb-c">' + fmtCnt(g.sum) + ' of ' + g.cnt + ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' + pct + '%"></div><div class="gb-half"></div></div></div>';
+  return '<div class="gbar"><div class="gb-top"><span class="gb-n">' +
+    name +
+    '</span><span class="gb-c">' +
+    fmtCnt(g.sum) +
+    ' of ' +
+    g.cnt +
+    ' streets</span></div><div class="gb-track"><div class="gb-fill" style="width:' +
+    pct +
+    '%"></div><div class="gb-half"></div></div></div>';
 }
 // pace is a work rate (side-metres/hour, cumulative off the stamps): interleaving cannot distort a cumulative rate
 function paceInfo() {
@@ -107,7 +118,8 @@ function paceInfo() {
   if (runStart) { const r = workRateMh(liveWorkM(), runStart, Date.now(), 0.02); if (r) { rateMh = r; live = true; } }
   if (!rateMh) rateMh = refRateMh;
   let etaTxt = '', etaClock = '';
-  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM(); if (leftM > 0) { const leftH = leftM / rateMh; etaClock = fmtClock(new Date(Date.now() + leftH * 3600000)); etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + etaClock; } }
+  if (runStart && rateMh) { const leftM = totalWorkM() - workDoneM();
+  if (leftM > 0) { const leftH = leftM / rateMh; etaClock = fmtClock(new Date(Date.now() + leftH * 3600000)); etaTxt = 'ETA ' + fmtDur(leftH * 3600000) + ' · done ~' + etaClock; } }
   // etaClock is additive - the redesign ETA cell reads the done-at clock alone; etaTxt and statsLine are untouched
   return { rateMh, refRateMh, live, etaTxt, etaClock, ref };
 }
@@ -120,7 +132,12 @@ function statsLine() {
   return bits.join(' · ');
 }
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-function fmtWhen(iso) { const d = new Date(iso); if (isNaN(d)) return ''; const n = new Date(); const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate(); return same ? fmtClock(d) : MON3[d.getMonth()] + ' ' + d.getDate() + ', ' + fmtClock(d); }
+function fmtWhen(iso) { const d = new Date(iso);
+if (isNaN(d)) return '';
+const n = new Date();
+const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+return same ? fmtClock(d) : MON3[d.getMonth()] + ' ' + d.getDate() + ', ' + fmtClock(d);
+}
 function fmtAgo(iso) { const t = Date.parse(iso); if (isNaN(t)) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + (m % 60) + ' m ago'; }
 function histDur(h) { return CLEAN.dur(h); }
 let histOpen = false;
@@ -226,7 +243,14 @@ function openClean(i) {
   const elapsedMs = pd.elapsedMs; // the total-elapsed interval is the detail projection's measure now (CLEAN.detail carries the RP-08 two-interval history)
   // pace divides work by the total elapsed window (workRateMh's reference window too), and the meta line says so
   const paceRate = pd.paceRate;
-  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') + pd.count + ' streets' + (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') + (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') + '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
+  meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') +
+    pd.count +
+    ' streets' +
+    (h.km ? (' · ' + h.km + ' km of GPS trail') : '') +
+    (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') +
+    (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') +
+    (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') +
+    '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
   const secH = document.createElement('div'); secH.className = 'psec2'; secH.textContent = 'Streets'; cv.appendChild(secH);
   pd.streets.forEach(s => {
@@ -250,7 +274,9 @@ function openClean(i) {
     const det = document.createElement('div'); det.className = 'cvDet'; det.style.display = 'none';
     const parts = [];
     parts.push('Marked: ' + (s.at ? fmtWhen(s.at) : 'no time recorded'));
-    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)'); else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment'); else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the clean start)');
+    if (span > 0) parts.push('Span: ' + fmtDur(span) + ' - first side marked ' + fmtClock(new Date(Math.min.apply(null, stArr))) + ', last side ' + fmtClock(new Date(Math.max.apply(null, stArr))) + ' (includes any other work in between)');
+    else if (stArr.length) parts.push('Marked in one go - every recorded side of this street carries the same moment');
+    else if (!isNaN(dur)) parts.push('Gap since previous street: ' + fmtDur(dur) + ' (no side times recorded for this street; measured from the previous completion, or the clean start)');
     if (s.via) parts.push('How: ' + (s.via === 'gps' ? 'GPS suggestion' : 'marked by tap'));
     lines.forEach(L => parts.push(L));
     det.textContent = parts.join('\n');
@@ -409,7 +435,11 @@ $('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) r
 // the Clear ask: the shared confirmation, bound to its route; the wipe is clearAllMarks, unchanged
 function askClearAll() {
   const forRoute = activeRoute ? activeRoute.id : null;
-  showConfirm({ title: 'Clear all marks?', sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.', keep: 'Keep marks', danger: 'Clear all', onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
+  showConfirm({ title: 'Clear all marks?',
+    sub: 'Every mark, time and coverage on this route will be wiped. The run itself keeps going.',
+    keep: 'Keep marks',
+    danger: 'Clear all',
+    onDanger: () => { if ((activeRoute ? activeRoute.id : null) === forRoute) clearAllMarks(); } });
 }
 // the dock's Cancel asks through the same confirmation: it once discarded in one tap, bypassing the question
 $('cancelStartBtn').addEventListener('click', ev => { if (!tapGuard('cancelStartBtn', ev)) return; askCancelStart(); });
@@ -419,7 +449,15 @@ $('resetBtn').addEventListener('click', ev => {
   if (!tapGuard('resetBtn', ev)) return;
   const nDone = doneSet.size, nNotes = Object.keys(notes).length;
   $('finMsg').textContent = (nDone || nNotes)
-    ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 && nDone < STREETNAMES.length ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // issue #180: the warning matches finishRun's rule - a FULL clean of a short route (every street done) IS saved, so it is never warned as unsaved
+    ? (nDone +
+      ' of ' +
+      STREETNAMES.length +
+      ' streets cleaned' +
+      (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') +
+      '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' +
+      (nDone < 3 &&
+        nDone < STREETNAMES.length ?
+          ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // the warning matches finishRun's rule: a full clean of a short route is saved, never warned as unsaved
     : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
   showSurface($('finModal'));
 });
@@ -531,7 +569,13 @@ function buildSnap() {
   const startMs = (runStart && ts.length && runStart <= ts[0]) ? runStart : (ts.length ? ts[0] : (runStart || null));
   // the counter is the distance source: RUNDIST.distance adopts before reading, null for an unseen run
   const rdM = RUNDIST.distance();
-  const snap = { at: new Date().toISOString(), items: {}, via: { ...doneVia }, notes: JSON.parse(JSON.stringify(notes)), sides: BOARD.sidesCopy(), km: startMs ? +(((rdM != null) ? rdM / 1000 : trailKm(startMs))).toFixed(1) : 0, startedAt: startMs ? new Date(startMs).toISOString() : null };
+  const snap = { at: new Date().toISOString(),
+    items: {},
+    via: { ...doneVia },
+    notes: JSON.parse(JSON.stringify(notes)),
+    sides: BOARD.sidesCopy(),
+    km: startMs ? +(((rdM != null) ? rdM / 1000 : trailKm(startMs))).toFixed(1) : 0,
+    startedAt: startMs ? new Date(startMs).toISOString() : null };
   doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
   // the run's figures bake into the entry (cleanWorkM prefers them): workM sums stamps inside [Start, Finish] only
 
@@ -646,7 +690,12 @@ function pushGps() {
   if (dispPos) {
     // the puck is no feature: the shader layer draws it in screen space off dispPos each frame
 
-    if (gpsAccM > 0) { const ring = []; const R = gpsAccM; for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispShownPos()[1] + (R * Math.sin(th)) / MLNG, dispShownPos()[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature', properties: { k: 'ring' }, geometry: { type: 'Polygon', coordinates: [ring] } }); }
+    if (gpsAccM > 0) { const ring = [];
+    const R = gpsAccM;
+    for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispShownPos()[1] + (R * Math.sin(th)) / MLNG, dispShownPos()[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature',
+      properties: { k: 'ring' },
+      geometry: { type: 'Polygon', coordinates: [ring] } });
+    }
   }
   src.setData({ type: 'FeatureCollection', features: feats });
 }
@@ -765,13 +814,24 @@ let snapGeoBusy = false; // an async pack build is in flight
 let snapGeoFailSlug = '', snapGeoFailAt = 0;
 // a 3x3 lookup covers >= 60 m, past every decision distance: one ring is a complete search
 const SNAP_CELL_M = 60;
-function snapRoutePolys() { const out = []; for (const n of Object.keys(STRETCH)) { const st = STRETCH[n]; if (!st || !st.runs) continue; for (const r of st.runs) if (r.line && r.line.length > 1) out.push({ name: n, pts: r.line }); } return out; }
+function snapRoutePolys() { const out = [];
+for (const n of Object.keys(STRETCH)) { const st = STRETCH[n]; if (!st || !st.runs) continue; for (const r of st.runs) if (r.line && r.line.length > 1) out.push({ name: n, pts: r.line }); } return out;
+}
 function snapBuildIndex(polys, key) {
   const grid = new Map();
-  for (let pi = 0; pi < polys.length; pi++) { const pts = polys[pi].pts; for (let i = 0; i < pts.length - 1; i++) { const ax = pts[i][1] * MLNG, ay = pts[i][0] * MLAT, bx = pts[i + 1][1] * MLNG, by = pts[i + 1][0] * MLAT; const x0 = Math.floor(Math.min(ax, bx) / SNAP_CELL_M), x1 = Math.floor(Math.max(ax, bx) / SNAP_CELL_M), y0 = Math.floor(Math.min(ay, by) / SNAP_CELL_M), y1 = Math.floor(Math.max(ay, by) / SNAP_CELL_M); for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) { const k = gx + ':' + gy; let arr = grid.get(k); if (!arr) { arr = []; grid.set(k, arr); } arr.push(pi, i); } } }
+  for (let pi = 0;
+  pi < polys.length;
+  pi++) { const pts = polys[pi].pts;
+  for (let i = 0;
+  i < pts.length - 1;
+  i++) { const ax = pts[i][1] * MLNG, ay = pts[i][0] * MLAT, bx = pts[i + 1][1] * MLNG, by = pts[i + 1][0] * MLAT;
+  const x0 = Math.floor(Math.min(ax, bx) / SNAP_CELL_M), x1 = Math.floor(Math.max(ax, bx) / SNAP_CELL_M), y0 = Math.floor(Math.min(ay, by) / SNAP_CELL_M), y1 = Math.floor(Math.max(ay, by) / SNAP_CELL_M);
+  for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) { const k = gx + ':' + gy; let arr = grid.get(k); if (!arr) { arr = []; grid.set(k, arr); } arr.push(pi, i); } } }
   return { key, polys, grid };
 }
-function snapSlugFor(ll) { if (!snapCat) return null; for (const c of snapCat) { if (c && Array.isArray(c.bbox) && c.bbox.length === 4 && ll[0] >= c.bbox[0] && ll[0] <= c.bbox[2] && ll[1] >= c.bbox[1] && ll[1] <= c.bbox[3]) return c.slug; } return ''; }
+function snapSlugFor(ll) { if (!snapCat) return null;
+for (const c of snapCat) { if (c && Array.isArray(c.bbox) && c.bbox.length === 4 && ll[0] >= c.bbox[0] && ll[0] <= c.bbox[2] && ll[1] >= c.bbox[1] && ll[1] <= c.bbox[3]) return c.slug; } return '';
+}
 // make the index match ll's area (async, never blocking): in flight the route-only index serves; installs drop holds
 function snapGeoEnsure(ll) {
   if (!snapCat && !snapCatKicked) { snapCatKicked = true; crPackIndexLoad().then(cs => { snapCat = cs || []; }, () => { snapCat = []; }); }
@@ -798,7 +858,19 @@ function snapNearest(ll) {
   if (!snapGeo) return null;
   const cx = Math.floor(ll[1] * MLNG / SNAP_CELL_M), cy = Math.floor(ll[0] * MLAT / SNAP_CELL_M);
   const best = new Map();
-  for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gy = cy - 1; gy <= cy + 1; gy++) { const arr = snapGeo.grid.get(gx + ':' + gy); if (!arr) continue; for (let j = 0; j < arr.length; j += 2) { const poly = snapGeo.polys[arr[j]]; const d = ptSegM(ll, poly.pts[arr[j + 1]], poly.pts[arr[j + 1] + 1]); const cur = best.get(arr[j]); if (!cur || d < cur.d) best.set(arr[j], { d, seg: arr[j + 1] }); } }
+  for (let gx = cx - 1;
+  gx <= cx + 1;
+  gx++) for (let gy = cy - 1;
+  gy <= cy + 1;
+  gy++) { const arr = snapGeo.grid.get(gx + ':' + gy);
+  if (!arr) continue;
+  for (let j = 0;
+  j < arr.length;
+  j += 2) { const poly = snapGeo.polys[arr[j]];
+  const d = ptSegM(ll, poly.pts[arr[j + 1]], poly.pts[arr[j + 1] + 1]);
+  const cur = best.get(arr[j]);
+  if (!cur || d < cur.d) best.set(arr[j], { d, seg: arr[j + 1] });
+  } }
   let bp = null, bd = Infinity, bs = 0; for (const [pi, b] of best) if (b.d < bd) { bd = b.d; bp = snapGeo.polys[pi]; bs = b.seg; }
   return bp ? { poly: bp, d: bd, seg: bs } : null;
 }
@@ -836,13 +908,19 @@ function renderTick(now) {
   if (pred) {
     const pNow = performance.now();
     const dtF = lastDispAt ? Math.min(0.25, Math.max(0, (pNow - lastDispAt) / 1000)) : 0; lastDispAt = pNow;
-    if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3); dispOff = [dispOff[0] * k, dispOff[1] * k]; if (dispSettled()) dispOff = [0, 0]; } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
+    if (dtF > 0 && !dispSettled()) { const k = Math.pow(0.2, dtF / 0.3);
+    dispOff = [dispOff[0] * k, dispOff[1] * k];
+    if (dispSettled()) dispOff = [0, 0];
+    } // the correction offset decays with a ~0.3 s time constant, on the same performance clock the prediction reads
     dispPos = [pred[0] + dispOff[0] / MLAT, pred[1] + dispOff[1] / MLNG];
     { const tgt = snapHeld ? 1 : 0; if (dtF > 0 && snapW !== tgt) { snapW = tgt + (snapW - tgt) * Math.pow(0.1, dtF / SNAP_BLEND_S); if (Math.abs(snapW - tgt) < 0.002) snapW = tgt; if (snapW === 0) snapOutPt = null; else if (snapW === 1) snapAnchor = null; } } // Beta 1.204: the snap blend advances per frame toward the held state (in on engage, out on release - the same ease both ways, so the shown point never teleports), on this same frame clock and step (dtF) as the correction decay above
   }
   // the camera state joins the push key, bucketed: every projection input is in it, so any change re-pushes
   let camKey = '';
-  if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight; if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]); camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16); } } // Beta 1.194: the puck's projected position is the RENDERED point (dispShownPos) - keyed on what is actually drawn, so a held puck does not re-push frames for display-track motion nobody sees
+  if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight;
+  if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]);
+  camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16);
+  } } // the puck's projected position is the RENDERED point (dispShownPos), so a held puck never re-pushes unseen frames
   // the key carries the painted beam rot: the spring repaints through this gate, stopping when it rests
   const key = dispPos ? dispShownPos()[0] + ',' + dispShownPos()[1] + ',' + (beamDeg != null ? Math.round(beamDeg * 10) / 10 : facingDeg) + ',' + gpsAccM + ',' + camKey : '';
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
@@ -1074,12 +1152,24 @@ function _fxDelta(a, b) { // the signed difference of two doubles' bit patterns,
   return (d <= _FX_LIM && d >= -_FX_LIM) ? d : null;
 }
 function _FxWriter() { return { b: [], u8(v) { this.b.push(v & 255); }, uv(v) { while (v > 127n) { this.b.push(Number(v & 127n) | 128); v >>= 7n; } this.b.push(Number(v)); }, sv(n) { this.uv(n >= 0n ? n * 2n : -n * 2n - 1n); } }; }
-function _FxReader(bytes) { return { b: bytes, i: 0, u8() { if (this.i >= this.b.length) throw new Error('fx eof'); return this.b[this.i++]; }, uv() { let v = 0n, s = 0n; for (;;) { const c = this.u8(); v |= BigInt(c & 127) << s; if (!(c & 128)) return v; s += 7n; if (s > 70n) throw new Error('fx varint'); } }, sv() { const u = this.uv(); return (u & 1n) === 0n ? u / 2n : -(u + 1n) / 2n; } }; }
+function _FxReader(bytes) { return { b: bytes,
+  i: 0,
+  u8() { if (this.i >= this.b.length) throw new Error('fx eof'); return this.b[this.i++]; },
+  uv() { let v = 0n, s = 0n; for (;;) { const c = this.u8(); v |= BigInt(c & 127) << s; if (!(c & 128)) return v; s += 7n; if (s > 70n) throw new Error('fx varint'); } },
+  sv() { const u = this.uv(); return (u & 1n) === 0n ? u / 2n : -(u + 1n) / 2n; } };
+}
 function _fxPack7(bytes) { let out = '', acc = 0, nb = 0; for (let i = 0; i < bytes.length; i++) { acc = (acc << 8) | bytes[i]; nb += 8; while (nb >= 7) { nb -= 7; out += String.fromCharCode(0x100 + ((acc >> nb) & 127)); } acc &= (1 << nb) - 1; } if (nb > 0) out += String.fromCharCode(0x100 + ((acc << (7 - nb)) & 127)); return out; }
 function _fxUnpack7(f, nbytes) { const bytes = []; let acc = 0, nb = 0; for (let i = 0; i < f.length; i++) { const v = f.charCodeAt(i) - 0x100; if (v < 0 || v > 127) throw new Error('fx pack char'); acc = (acc << 7) | v; nb += 7; while (nb >= 8) { nb -= 8; bytes.push((acc >> nb) & 255); } acc &= (1 << nb) - 1; if (bytes.length > nbytes) throw new Error('fx pack overflow'); } if (bytes.length !== nbytes) throw new Error('fx pack length'); return bytes; }
 // the delta state an entry leaves for the next entry's encoding (nulls where a field cannot anchor)
 function _fxState(e) {
-  return { ts: _fxFin(e[0]) ? e[0] : null, latB: _fxFin(e[1]) ? _fxUBits(e[1]) : null, lngB: _fxFin(e[2]) ? _fxUBits(e[2]) : null, accB: _fxFin(e[3]) ? _fxUBits(e[3]) : null, spdB: _fxFin(e[4]) ? _fxUBits(e[4]) : null, hdgB: _fxFin(e[5]) ? _fxUBits(e[5]) : null, out: Array.isArray(e[6]) ? e[6] : null, run: _fxFin(e[7]) ? e[7] : 0 };
+  return { ts: _fxFin(e[0]) ? e[0] : null,
+    latB: _fxFin(e[1]) ? _fxUBits(e[1]) : null,
+    lngB: _fxFin(e[2]) ? _fxUBits(e[2]) : null,
+    accB: _fxFin(e[3]) ? _fxUBits(e[3]) : null,
+    spdB: _fxFin(e[4]) ? _fxUBits(e[4]) : null,
+    hdgB: _fxFin(e[5]) ? _fxUBits(e[5]) : null,
+    out: Array.isArray(e[6]) ? e[6] : null,
+    run: _fxFin(e[7]) ? e[7] : 0 };
 }
 function _fxScalarW(w, v, prevB) { // one raw leaf (acc/spd/hdg): null tag, bit-pattern delta, or absolute pattern
   if (!_fxFin(v)) { w.u8(0); return; }
@@ -1181,7 +1271,8 @@ function _fxEncodeEntry(e, prev) {
   if (!prev) return key;
   const dTs = (typeof e[0] === 'number' && typeof prev[0] === 'number') ? e[0] - prev[0] : NaN;
   if (!Number.isInteger(dTs)) return key; // an unanchored or fractional timestamp cannot delta — the entry keyframes
-  if (typeof e[1] !== 'number' || typeof prev[1] !== 'number' || !isFinite(e[1]) || !isFinite(prev[1]) || typeof e[2] !== 'number' || typeof prev[2] !== 'number' || !isFinite(e[2]) || !isFinite(prev[2])) return key; // a refused (null / non-finite) coordinate on either side keyframes
+  if (typeof e[1] !== 'number' || typeof prev[1] !== 'number' || !isFinite(e[1]) || !isFinite(prev[1]) || typeof e[2] !== 'number' || typeof prev[2] !== 'number' || !isFinite(e[2]) || !isFinite(prev[2])) return key;
+  // a refused (null / non-finite) coordinate on either side keyframes
   const dLat = _fxBits(e[1]) - _fxBits(prev[1]), dLng = _fxBits(e[2]) - _fxBits(prev[2]), LIM = 9007199254740991n;
   if (dLat > LIM || dLat < -LIM || dLng > LIM || dLng < -LIM) return key;
   let outSlot = null;
@@ -1196,7 +1287,9 @@ function _fxEncodeEntry(e, prev) {
   }
   return [dTs, Number(dLat), Number(dLng), _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), outSlot, e[7] === prev[7] ? null : (Number.isFinite(e[7]) ? e[7] : 0)];
 }
-function fixLogEncodeSessions(sessions) { return { e: 3, s: sessions.map(s => { const w = _FxWriter(); let st = null; for (const e of s.f) st = _fxEncEntry(w, e, st); return { v: s.v, t0: s.t0, n: s.f.length, b: w.b.length, f: _fxPack7(w.b) }; }) }; }
+function fixLogEncodeSessions(sessions) { return { e: 3,
+  s: sessions.map(s => { const w = _FxWriter(); let st = null; for (const e of s.f) st = _fxEncEntry(w, e, st); return { v: s.v, t0: s.t0, n: s.f.length, b: w.b.length, f: _fxPack7(w.b) }; }) };
+}
 // any stored or backup value -> the absolute sessions, through the one lens; a non-log decodes to []
 function fixLogDecodeSessions(parsed) {
   const numOrNull = x => (typeof x === 'number' && isFinite(x)) ? x : null;
@@ -1245,7 +1338,10 @@ function fixLogEstChars() {
   for (const s of fixLog) { const a = _fxAcct.get(s); t += 80 + Math.ceil((a ? a.b : 0) * 8 / 7); }
   return t;
 }
-try { fixLog = fixLogDecodeSessions(parseJ(lsGet(LS.fixlog), [])); for (const s of fixLog) { fixLogCount += s.f.length; _fxMeasure(s); } } catch (e) { fixLog = []; fixLogCount = 0; } // a damaged log record costs the debug history, never the boot
+try { fixLog = fixLogDecodeSessions(parseJ(lsGet(LS.fixlog), []));
+for (const s of fixLog) { fixLogCount += s.f.length; _fxMeasure(s); } } catch (e) { fixLog = [];
+fixLogCount = 0;
+} // a damaged log record costs the debug history, never the boot
 // the caps (at open and every append): oldest sessions evict whole; a lone over-cap session head-trims, newest surviving
 function fixLogTrim() {
   // a session that arrived without its byte account is measured before any cap is judged on it
@@ -1266,14 +1362,25 @@ function fixLogTrim() {
       const share = () => Math.ceil(a.b * 8 / 7) - Math.ceil(Math.max(0, a.b - rs) * 8 / 7);
       while (drop < s.f.length && share() < excess) { rs += (a.bl[drop] || 0); drop++; }
       if (!drop) break;
-      s.f.splice(0, drop); a.bl.splice(0, drop); a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop;
+      s.f.splice(0, drop);
+      a.bl.splice(0, drop);
+      a.b = Math.max(0, a.b - rs);
+      if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0;
+      fixLogCount -= drop;
       break;
     }
     fixLogCount -= s.f.length; fixLog.shift();
   }
 }
 fixLogTrim(); // a log written under a larger cap (or planted) is bounded at load too
-function fixLogOpen() { if (!fixLogEnabled) return; try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] }; _fxAcct.set(fixLogSession, { b: 0, bl: [] }); fixLog.push(fixLogSession); fixLogTrim(); markDirty('fixlog'); } catch (e) { fixLogSession = null; } }
+function fixLogOpen() { if (!fixLogEnabled) return;
+try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] };
+_fxAcct.set(fixLogSession, { b: 0, bl: [] });
+fixLog.push(fixLogSession);
+fixLogTrim();
+markDirty('fixlog');
+} catch (e) { fixLogSession = null;
+} }
 // the fix, before any gate: returns the live entry for fixLogOut or null, faults silent to GPS
 function fixLogRaw(pos) {
   try {
@@ -1393,7 +1500,13 @@ function acceptFix(pos) {
 let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
 function coverFix(ll) {
   if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
-  if (covBoxesFor !== covSamplesGen) { covBoxes = {}; const pLat = COV_RADIUS_M / MLAT, pLng = COV_RADIUS_M / MLNG; for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9, b = -1e9, c = 1e9, e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen; }
+  if (covBoxesFor !== covSamplesGen) { covBoxes = {};
+  const pLat = COV_RADIUS_M / MLAT, pLng = COV_RADIUS_M / MLNG;
+  for (const n of STREETNAMES) { const pts = SAMPLES[n]; if (!pts || !pts.length) continue; let a = 1e9,
+    b = -1e9,
+    c = 1e9,
+    e = -1e9; for (const p of pts) { if (p[0] < a) a = p[0]; if (p[0] > b) b = p[0]; if (p[1] < c) c = p[1]; if (p[1] > e) e = p[1]; } covBoxes[n] = [a - pLat, b + pLat, c - pLng, e + pLng]; } covBoxesFor = covSamplesGen;
+  }
   let changed = false;
   for (const n of STREETNAMES) {
     if (streetComplete(n)) continue;
