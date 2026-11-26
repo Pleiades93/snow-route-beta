@@ -1,14 +1,7 @@
 'use strict';
 
-// Parts scan: the push path's two detectors over parts/, one home.
-// Write rule: an outcome-returning write (lsSet, txSet, upSet,
-// upPut, the save family) is tested, returned or assigned, or it
-// carries an immediate write-safe comment naming why not.
-// Clone rule: a NEW pair of identical or renamed-identical
-// function bodies, or of identical CSS blocks, fails. The pairs
-// already standing are recorded in parts-clone-baseline.json.
-// Regenerate that baseline deliberately, never by hand:
-//   node scripts/scan-parts.cjs . --write-baseline
+// Parts scan: the push path's two detectors over parts/ - ignored
+// write outcomes and new clones fail the push.
 
 const { createHash } = require('node:crypto');
 const fs = require('node:fs');

@@ -16442,6 +16442,60 @@
    "red": "proof fails: check 10 convicts the changed enumeration bound (12 passed, 1 failed)",
    "green": "proof-1254: 13 passed, 0 failed on the rejoined tree; full proof suite 95/95 re-observed at this re-issue",
    "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r3",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the scripts/scan-parts.cjs entry removed from JUDGE_PATHS in check-receipts.py (re-issued after the scanner header compression changed the scanner's hash)",
+   "red": "gate --changed scripts/scan-parts.cjs exits 0: no receipt demanded, the scanner is invisible to the receipts gate",
+   "green": "shipped JUDGE_PATHS restored byte-identical: the same gate refuses, exit 1, naming scripts/scan-parts.cjs as having no current mutation receipt",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-scan-parts-r4",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree (re-issued after the header compression): ignored lsSet appended to parts/app1.js; settleAmount body cloned as settleAmountPlant in parts/brand-snow.js; #snowCv CSS block duplicated as #snowCvPlant inside the style block in parts/head.html",
+   "red": "each plant convicted with its exact diagnostic (app1.js:847 lsSet write outcome ignored; clone pair settleAmount/settleAmountPlant; CSS clone #snowCv/#snowCvPlant), scanner exit 1 on all three",
+   "green": "scratch tree restored byte-identical to the shipped parts/ (diff -r clean): parts scan PASS, 593 clone pairs checked, exit 0",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-push-scan-gate-r2",
+   "check": "scripts/push.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/push.py": "026198faf0270400884a567466a83d1b96857c56e1fc5fa652f9bd5ac3cbf2a9",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "scripts/scan-parts.cjs moved aside so push.py's parts_scan_gate finds no scanner and stands down, with an ignored lsSet planted in parts/app1.js (re-issued after the scanner header compression)",
+   "red": "push.py plan for the planted tree is ACCEPTED (limits gate only): the neutered gate lets an ignored write through",
+   "green": "shipped scanner in place: the same plan is REFUSED - the parts scan failed: parts/app1.js:847 lsSet write outcome ignored; tree restored byte-identical after the probe",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-gate-fixtures-scan-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "d67d797ebfa468872f0927160f3c6f64b5d79bdca7df0613d94a217e9e4d4ff5",
+    "scripts/scan-parts.cjs": "545d4df09375958b1aca40cb9cfd7423e7ec2a6e03a6d25be95d30c06ae49a08"
+   },
+   "mutation": "the write rule's conviction condition in scan-parts.cjs disabled (false &&), fixture suite run (re-issued after the scanner header compression)",
+   "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (112 pass, 1 fail)",
+   "green": "shipped scanner restored byte-identical: gate fixtures 113 pass, 0 fail",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }
