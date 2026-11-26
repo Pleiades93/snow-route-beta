@@ -15,24 +15,18 @@
 // multiplier bookkeeping.
 //
 // THE LANE RULE: once a name has VISIBLY appeared - placed in a
-// sample with its own effective opacity over 0.5 - it must not then
-// be missing or at 0.5 or below for LANE_DROP_RUN or more
+// sample with its own effective opacity over 0.5 - it must not
+// then be missing or at 0.5 or below for LANE_DROP_RUN or more
 // CONSECUTIVE samples. A shorter absence is not a blink: the
-// sampler's queryRenderedFeatures read provably misses a rendered
-// name for a sample or two around camera stops (the drive216
-// investigation behind title-drop.mjs's DROP_RUN, the same bound).
-// The blink class this lane exists for lasted ~1-2 s - tens of
-// samples - so the bound costs the lane nothing it was built to
-// catch. (The round's first judge suspended the check on samples
-// that were themselves invisible, which acquitted exactly the
-// visible -> invisible -> visible sequence the lane exists to
-// catch; here every sample counts toward the run - judgment is
-// never suspended, it is only not yet conclusive.)
+// placement read provably misses a rendered name for a sample or
+// two around camera stops (the same bound title-drop.mjs's
+// DROP_RUN is built on). The blink class this lane exists for
+// lasted ~1-2 s - tens of samples. Every sample counts toward
+// the run: judgment is never suspended, only not yet conclusive.
 // Names never seen visible are not judged: during the hold every
 // name sits at 0 by design, and the ramp is monotonic, so a name
 // crosses 0.5 exactly once, at the joint reveal. A name gone at
-// the window's end is graded by the drives' final-count checks,
-// not here.
+// the window's end is graded by the drives' final-count checks.
 
 export const LANE_DROP_RUN = 3;
 
@@ -93,20 +87,17 @@ export function bracketsOverlap(brackets) {
   return Math.max(...brackets.map((b) => b[0])) <= Math.min(...brackets.map((b) => b[1]));
 }
 
-// THE SYNC RULE (drive219's A6): two name groups landing from one
-// flight are in sync when they complete in the same WAVE - the gap
-// between their completion times no larger than the longer group's
-// own streaming span (the slice opening when it is already
-// placing then, else its first rise, to first reaching its window
-// maximum), floored at SYNC_FLOOR_MS. A group
-// held back and released in a burst - the shipped 1.266 defect,
-// seconds of nameless map after landing - has a short span and a
-// long gap and fails. Continuous slow streaming (tile fetches
-// under runner load) stretches the span with the gap and passes:
-// the old flat 3000 ms bracket measured fetch latency, not desync
-// (flake census 2, 2026-11-25: road names completing at +3155 and
-// +3247 ms against titles at +0, the pipelines 23 ms apart at
-// event level). Series are plain { t, n } count series so the
+// THE SYNC RULE (drive219's A6): two name groups landing from
+// one flight are in sync when they complete in the same WAVE -
+// the gap between their completion times no larger than the
+// longer group's own streaming span (the slice opening when it
+// is already placing then, else its first rise, to first
+// reaching its window maximum), floored at SYNC_FLOOR_MS. A
+// group held back and released in a burst has a short span and
+// a long gap and fails; continuous slow streaming (tile fetches
+// under runner load) stretches the span with the gap and
+// passes - a flat wall bracket would measure fetch latency,
+// not desync. Series are plain { t, n } count series so the
 // rule is fixture-testable without the sampler.
 export const SYNC_FLOOR_MS = 3000;
 
@@ -114,6 +105,9 @@ export function syncVerdict(seriesA, seriesB) {
   const one = (series) => {
     if (!series.length) return { completeAt: null, span: 0 };
     const maxN = Math.max(...series.map((s) => s.n));
+    // A group that never places a single name never completes -
+    // an all-zero series is a nameless map, not an instant one.
+    if (maxN === 0) return { completeAt: null, span: 0 };
     const completeAt = series.find((s) => s.n === maxN).t;
     const rise = series.find((s) => s.n > series[0].n);
     // Already placing at the opening: it was streaming before the

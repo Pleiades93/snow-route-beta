@@ -13,9 +13,9 @@ const S = (t, held, groups) => ({ t, held, mult: held ? 0 : 1, groups });
 const G = (names, effMax, effMin) => ({ names, effMax, effMin: effMin === undefined ? effMax : effMin });
 
 // ---------- the lane: a sustained absence after appearing convicts ----------
-// (Re-derived 2026-11-25, flake census 2: the sampler provably
-// misses a rendered name for a sample or two - title-drop's
-// DROP_RUN evidence - so conviction needs the full run bound.)
+// (The sampler provably misses a rendered name for a sample or
+// two - title-drop's DROP_RUN evidence - so conviction needs
+// the full run bound.)
 check('F1 a name placed visibly, absent for three consecutive samples, then back: convicted',
   JSON.stringify(laneViolations([
     S(0, false, { titles: G({ Velmar: 1 }, 1) }),
@@ -121,6 +121,10 @@ check('S5 a fast joint landing - both complete inside the 3000 ms floor: passes'
   syncVerdict(N([[0, 0], [300, 30]]), N([[0, 0], [900, 40]])).pass === true);
 check('S6 an empty series never passes',
   syncVerdict([], N([[0, 40]])).pass === false);
+check('S7 a group placing zero names in every sample never completes: fails (the pre-wave completeAt returned -1 here)',
+  syncVerdict(N([[0, 0], [400, 30]]), N([[100, 0], [400, 0], [1000, 0]])).pass === false);
+check('S8 both groups all-zero: fails',
+  syncVerdict(N([[0, 0], [500, 0]]), N([[0, 0], [500, 0]])).pass === false);
 
 console.log(`selftest-lane219: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
