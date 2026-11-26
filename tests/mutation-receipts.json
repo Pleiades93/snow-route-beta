@@ -16401,6 +16401,34 @@
    "red": "slice break: check B5 fails; glass break: check A6 fails",
    "green": "proof-1235: 18 passed, 0 failed; needles B5/B7/B9/A6 now span the wrapped shapes exactly | full proof suite 95/95 re-observed on the final tree at this re-issue",
    "issued": "2026-11-26 phase1-detectors"
+  },
+  {
+   "id": "phase1-scan-parts-r3",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011",
+    "scripts/parts-clone-baseline.json": "ac2cd725fc36995366c03eb34a65883ab29a6a5d63f7556bbabd8c54dbf731b7",
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/head.html": "25af895b76532ac9f08868c479350d8ce6e02b66b43a3dc989f07114892d9b74"
+   },
+   "mutation": "three plants in a scratch copy of the final tree: ignored lsSet appended to parts/app1.js; settleAmount body cloned as settleAmountPlant in parts/brand-snow.js; #snowCv CSS block duplicated as #snowCvPlant inside the style block in parts/head.html",
+   "red": "each plant convicted with its exact diagnostic (app1.js:847 lsSet write outcome ignored; clone pair settleAmount/settleAmountPlant; CSS clone #snowCv/#snowCvPlant), scanner exit 1 on all three",
+   "green": "scratch tree restored byte-identical to the shipped parts/ (diff -r clean): parts scan PASS, 593 clone pairs checked, exit 0",
+   "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "phase1-receipts-judge-scan-r2",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "f8a0600c827735cb3e8a801d2fcb2d799600d59c5ef5dbca71b276e8b8a288ae",
+    "scripts/scan-parts.cjs": "95eb05211b7906fa1b59d2e8c58e92b4a3c96bccc11d6c035947f692747d8011"
+   },
+   "mutation": "the scripts/scan-parts.cjs entry removed from JUDGE_PATHS in check-receipts.py",
+   "red": "gate --changed scripts/scan-parts.cjs exits 0: no receipt demanded, the scanner is invisible to the receipts gate",
+   "green": "shipped JUDGE_PATHS restored byte-identical: the same gate refuses, exit 1, naming scripts/scan-parts.cjs as having no current mutation receipt",
+   "issued": "2026-11-26 phase1-detectors-finish"
   }
  ]
 }
