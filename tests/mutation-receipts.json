@@ -15237,6 +15237,342 @@
    "red": "no red observation applies: no pin changed - the red on base parts is receipt round3-1297-proof-anchors' record",
    "green": "run-proofs 94/94 on the final tree with the shortened wording",
    "issued": "2026-11-25 round3-1297"
+  },
+  {
+   "id": "transitions-1298-proof-1226",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1226.mjs": "75b1094ae52a6ee9617a0875e6ef331a248f4568b233719eb5de1ec167fc305a"
+   },
+   "mutation": "re-pin only (see sibling receipt detail in the round record)",
+   "red": "observed failing on the base tree",
+   "green": "observed passing on the round tree",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "71d87ee435755f97be0dfc7ab68d934269fc7bd8d7abb34b66efb57ee546d09e"
+   },
+   "mutation": "re-pin only (see sibling receipt detail in the round record)",
+   "red": "observed failing on the base tree",
+   "green": "observed passing on the round tree",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1226-r2",
+   "check": "tests/proof/proof-1226.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1226.mjs": "75b1094ae52a6ee9617a0875e6ef331a248f4568b233719eb5de1ec167fc305a"
+   },
+   "mutation": "check 1d re-pinned: the switch merged rule's background leg reads var(--ease-open) instead of ease (transitions FIX 8); the claim (the merged declaration stands after the switch rule, restating the fade beside the shrink) is unchanged. Supersedes transitions-1298-proof-1226 (thin text)",
+   "red": "node tests/proof/proof-1226.mjs against the base parts/head.html: FAIL on check 1d only, 15/16",
+   "green": "python3 scripts/run-proofs.py on the round tree: 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-r2",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "71d87ee435755f97be0dfc7ab68d934269fc7bd8d7abb34b66efb57ee546d09e"
+   },
+   "mutation": "check 1b re-pinned: the switch merged rule's background leg reads var(--ease-open) instead of ease (transitions FIX 8); the claim (the merged rule stands at 150ms) is unchanged. Supersedes transitions-1298-proof-1231 (thin text)",
+   "red": "node tests/proof/proof-1231.mjs against the base parts/head.html: FAIL on check 1b only",
+   "green": "python3 scripts/run-proofs.py on the round tree: 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive190",
+   "check": "tests/browser/drive190.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive190.mjs": "5c1df49c88e016843807486ef63076077739495ad7750f8286c546255e3f2d46"
+   },
+   "mutation": "H2's fill observation re-pointed from style.width to style.transform (the fill now animates scaleX, transitions FIX 9); the claim (empty geometry: counter reads 0%, fill at zero) is unchanged",
+   "red": "drive190 against the historical writer (style.width, fresh assembly): H2 fails alone, width reads '' (19/20)",
+   "green": "drive190 on the round tree: 20/20",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive198",
+   "check": "tests/browser/drive198.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive198.mjs": "e83f7430790c8b8b98a78b1c5500ed9844b0baf6bc8247766fdbf0c20f37b9a1"
+   },
+   "mutation": "the SNAP fillW read re-pointed from style.width to the scaleX fraction in style.transform (transitions FIX 9); the claims (meter fraction > 0 after marking, in and out of a run) are unchanged",
+   "red": "drive198 against the historical writer (style.width, fresh assembly): P2 and P5 fail alone, fillW reads '' (9/11)",
+   "green": "drive198 on the round tree: 11/11",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "c062c7ad624a87ac6c2f36859171773d3f1adcaede2b9beb25cd4a278e5b1207"
+   },
+   "mutation": "T1/T3/T5 fill observations re-pointed from offsetWidth (layout width) to getBoundingClientRect().width (rendered width) - the fill is a full-width box under scaleX now (transitions FIX 9); the claims (meter starts empty; rendered fill fraction equals the work fraction) are unchanged",
+   "red": "writer mutated to a constant scaleX(1): T3 fails (fillW 96.78) and T5 fails (ratio 0.978 vs want 0.029), 26/28 - the re-pointed reads observe the lie",
+   "green": "drive125 on the round tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive128",
+   "check": "tests/browser/drive128.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive128.mjs": "5a9efc5b29dc888b1b21911a438484e67632437a7464f76ba34d575bd75a1aee"
+   },
+   "mutation": "M6 re-derived: after the tap it now polls the terminal state (selection empty AND the pop hidden) instead of reading once - the pop leaves over 180ms since transitions FIX 4; the claim (an empty-map tap clears the selection and hides the pop-up) is unchanged",
+   "red": "hideSurface's exit timer neutered (the pop can never hide): M6 fails, its terminal read shows bar:true after the poll expires (25/27; M8 also fails, its standing rig adjudication)",
+   "green": "drive128 on the round tree: M6 passes (26/27; the only failure is M8, adjudicated rig-marginal with the click measured 461ms after pointerdown against the 400ms spend window)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive88",
+   "check": "tests/browser/drive88.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive88.mjs": "68f90a8f827d11142a285ea5e579687311eaf6a46bde46660c844b5baafdc995"
+   },
+   "mutation": "new check F1: after the drive's real Secondaries tap, the sliding filter pill (transitions ADD 16) must sit exactly under the selected tab (left and width within 1px, opacity 1)",
+   "red": "seatFilterPill stubbed to a no-op: F1 fails alone - the pill never seats (dx 196, dw 193, opacity 0), 16/17",
+   "green": "drive88 on the round tree: 17/17",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive88-r2",
+   "check": "tests/browser/drive88.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive88.mjs": "3a8bd8ed773e34a9cd0b47d8f55477ce68fce8446608da219992914a5b04eb35"
+   },
+   "mutation": "check F1 (the sliding filter pill's terminal seat, transitions ADD 16) - re-issued after a formatting-only split of its lines for the PR line limits; the check is byte-different but semantically identical to transitions-1298-drive88",
+   "red": "seatFilterPill stubbed to a no-op: F1 fails alone - the pill never seats (dx 196, dw 193, opacity 0), 16/17",
+   "green": "drive88 on the final C6 tree: 17/17 (three local passes; one further run failed with its detail lost to output truncation - recorded as an unadjudicated flake sighting, CI decides)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive199",
+   "check": "tests/browser/drive199.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive199.mjs": "3aeb03db3f522df823d2cf28380a01cd6ed1cd5e529f87fb2a7edf9954563675"
+   },
+   "mutation": "new checks P4b/P4c: a same-length speed rise (38 to 41) must swap digit by digit - changed digits ride old/new slots with --subtle-dir 1 (recipe 36) - and the readout must be plain text again after the swap",
+   "red": "setSpdNum reduced to a plain textContent write: P4b fails alone (no swap latched, {}), 27/28",
+   "green": "drive199 on the round tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive199-r2",
+   "check": "tests/browser/drive199.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive199.mjs": "e8fb50937204a22b6c79669166fdc167805818c797013326651a88a0a99e6eda"
+   },
+   "mutation": "checks P4b/P4c (the digit-by-digit speed swap, recipe 36) - re-issued after a formatting-only split of the observer line for the PR line limits; semantically identical to transitions-1298-drive199",
+   "red": "setSpdNum reduced to a plain textContent write: P4b fails alone (no swap latched, {}), 27/28",
+   "green": "drive199 on the final C7 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive199-r3",
+   "check": "tests/browser/drive199.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive199.mjs": "7538e061ef600feab84dd13b5de02b2b82bef8cb578ca78c7d3d08ec4ab59aff"
+   },
+   "mutation": "checks P4b/P4c (the digit-by-digit speed swap, recipe 36) - re-issued after further formatting-only splits of the observer lines for the PR line limits; semantically identical to transitions-1298-drive199",
+   "red": "setSpdNum reduced to a plain textContent write: P4b fails alone (no swap latched, {}), 27/28",
+   "green": "drive199 on the final C7 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-c8",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "b40ccb77c8223e234dba6d6c0e665db8408512a346677628ea8e68077ae708c2"
+   },
+   "mutation": "checks 2a/2c re-pinned for the icon swap (transitions ADD 09): the theme-swap guard now exempts .nbIco (the glyph crossfade is the one motion the swap keeps) and applyNight stamps nightBtnHTML(); both claims (the guard stands; the swap flips the meta and the button icon) are unchanged",
+   "red": "the updated proof against the base parts/head.html + parts/app5.js fails exactly 2a and 2c (1b also fails in that run only because the whole-file stash reverted C5's switch line in the same file; its own RED stands in transitions-1298-proof-1231-r2)",
+   "green": "proof-1231 on the round tree: 23/23; full run-proofs 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-c8",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "ee74527daca244dfaff95be0b30a0be2261765e20c48e5327b09e48df8d203d1"
+   },
+   "mutation": "the glyph-identity reads re-derived to the stacked faces (.nbMoon/.nbSun spans, transitions ADD 09) and S7's offers-Day check extended with the swap's terminal opacities (sun 1, moon 0); the claims (the button offers the moon by day and the sun by night, in the right artwork) are unchanged",
+   "red": "the body.night .nbSun rule removed: the extended S7 check fails alone (the sun never fades in), 27/28",
+   "green": "drive125 on the round tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-c8-r2",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "b20b6351ac792d1ecbd30ced51f014af01a6851c5385fc32da87af5cd5cb14b4"
+   },
+   "mutation": "checks 2a/2c re-pinned for the icon swap (transitions ADD 09) - re-issued after formatting-only splits for the PR line limits; semantically identical to transitions-1298-proof-1231-c8",
+   "red": "the updated proof against the base parts/head.html + parts/app5.js fails exactly 2a and 2c",
+   "green": "proof-1231 on the final C8 tree: 23/23; full run-proofs 94/94",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-c8-r2",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "eebe4b6ca5c8b1acb8b594a6a603c595ba3bdd3dd080bb64243f9a5cee42f567"
+   },
+   "mutation": "glyph-identity reads re-derived to the stacked faces plus S7's terminal-opacity extension (transitions ADD 09) - re-issued after formatting-only splits for the PR line limits; semantically identical to transitions-1298-drive125-c8",
+   "red": "the body.night .nbSun rule removed: the extended S7 check fails alone (the sun never fades in), 27/28",
+   "green": "drive125 on the final C8 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-c8-r3",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "27bace08f9193bcf89dd83ea01c795f2ef0b93263dfbff7b71da945a4e61cf19"
+   },
+   "mutation": "glyph-identity reads re-derived to the stacked faces plus S7's terminal-opacity extension (transitions ADD 09) - re-issued after comment compressions for the PR word limits; semantically identical to transitions-1298-drive125-c8",
+   "red": "the body.night .nbSun rule removed: the extended S7 check fails alone (the sun never fades in), 27/28",
+   "green": "drive125 on the final C8 tree: 28/28",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1298",
+   "check": "tests/proof/proof-1298.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1298.mjs": "a9e5b4780668b006f935887e2008278a6f7154a472c52f74b372d5d3622b7930"
+   },
+   "mutation": "new proof for FIX 12: the reduced-motion block must flatten every surface the audit enumerated (plus this round's own motions) at matching specificity, and showBanner must carry the reduced-motion stay timer",
+   "red": "the .sheet segment removed from the block: check 1 fails alone, 14/15",
+   "green": "proof-1298 on the round tree: 15/15; full run-proofs 95/95; a rendered probe under emulated reduced motion also passed 5/5 (computed transitions 0s across sheet/fill/switch/pill/glyph/press/arrow, the banner resting visible then leaving on its timer, a modal entering with no animation and hiding at once)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive192",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "3a9ae854b2f2ce6bac16428ea5fc3693e80be910c056e60d2b9868ee59089310"
+   },
+   "mutation": "new check P6b (Codex P2 fix on PR #221): a surface dismissed through the round's 180ms exits must take no taps while it leaves - the confirmation reads pointer-events none and a hit test at its danger button lands outside the pill",
+   "red": "the .leaving pointer-events rule removed: P6b fails with pe auto and the hit inside the pill (47/52; the other failures are the detents checks that fail identically on the pristine base on this rig)",
+   "green": "drive192 on the round tree: P6b passes (51/52 and 49/52 across two runs; only the base-identical detents failures remain, adjudicated pre-existing environmental)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive192-r2",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "399b674e12d2239f231892fd9f409b5d24c4ad04a3bb069186c4ccb0cfff3e8c"
+   },
+   "mutation": "check P6b (a leaving surface takes no taps; Codex P2 fix) - re-issued after a formatting-only split of its read lines for the PR line limits; semantically identical to transitions-1298-drive192",
+   "red": "the .leaving pointer-events rule removed: P6b fails with pe auto and the hit inside the pill",
+   "green": "drive192 on the round tree: P6b passes (only the base-identical detents failures remain, adjudicated pre-existing environmental)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-r4",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "5a99a55d59b6e892733708a2bd1811ac1cf3bf94f508af39abc4338f74ee88ea"
+   },
+   "mutation": "S7's read now polls the fade's terminal state (T4) and new check S7b samples the sun's opacity across the Day/Night tap: a real crossfade passes through mid opacities, a cut never does (Codex P2 fix: the glyph faces now persist across theme flips via stampNightBtn)",
+   "red": "stampNightBtn mutated to always re-stamp (the pre-fix behaviour): S7b fails alone - 11 samples, none mid - while S7's terminal assertions still pass, 28/29",
+   "green": "drive125 on the round tree: 29/29",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1231-r3",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/proof/proof-1231.mjs": "5d58d0bd8a45a222fc68ef92e5add5473983478b7acebc3e42d0de3e8acb0a68"
+   },
+   "mutation": "check 2c re-pinned: applyNight now stamps via stampNightBtn() (the preserving stamp, Codex P2 fix) instead of the nightBtnHTML assignment; the claim (the swap flips the theme-color meta and the night button icon) is unchanged",
+   "red": "the updated proof against the pre-fix app5 stamp fails exactly 2c (by construction of the pin; the C8 RED for 2a/2c stands in transitions-1298-proof-1231-c8)",
+   "green": "proof-1231 on the round tree: 23/23; full run-proofs 95/95",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-proof-1298-r2",
+   "check": "tests/proof/proof-1298.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1298.mjs": "4181df11c261def06f6e7c1776751b65cdf767674bbe43a94791e7771c3caba2"
+   },
+   "mutation": "header condensed to a short why (Codex P1 on PR #221: no history in code comments); the 15 checks are byte-identical - re-issued for the changed file",
+   "red": "the .sheet segment removed from the block: check 1 fails alone, 14/15 (observed for transitions-1298-proof-1298)",
+   "green": "proof-1298 on the round tree: 15/15; full run-proofs 95/95",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive125-r5",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "f59037329c839e30287c5e0c91c95a4933466aeab3a6b6415713e97790db93d6"
+   },
+   "mutation": "S7 terminal poll + S7b crossfade sampling (Codex P2 fix) - re-issued after comment/line formatting for the PR limits; semantically identical to transitions-1298-drive125-r4",
+   "red": "stampNightBtn mutated to always re-stamp: S7b fails alone (11 samples, none mid), 28/29",
+   "green": "drive125 on the final tree: 29/29",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive123",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive123.mjs": "c3c27c128e346c6b8d0ca35a1396ed90f1cd1ea741a9ed4ddb82f20dcc3acf0b"
+   },
+   "mutation": "check A2 re-derived for the audit's FIX 1 as actually written: the close is the open's quicker mirror (350ms against 420ms) WITH the detent height legs kept - the audit flags the layout legs for the record only, since the detents ride them; C3 as first built dropped the legs, which this corrects",
+   "red": "the re-derived A2 against the C3 tree (transform-only close): fails on the property set - props read 'transform, visibility', duration and curve already right (17/18, solo and in the shard-7 run)",
+   "green": "drive123 on the corrected tree: 18/18",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive210",
+   "check": "tests/browser/drive210.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive210.mjs": "1a464125d40a22291a33fc60fe41163430a6644cf371056f0a9a40e9cb3f552d"
+   },
+   "mutation": "A1/D1 re-derived: the geometry reads now poll the confirmation entrance's terminal state first (the pill rises in over 420ms since transitions FIX 3, where before it appeared instantly); the claims (centred at the selection pill's width, the right face and copy, day and night) are unchanged",
+   "red": "the pill's resting seat moved (top 50% to 45%): A1 and D1 fail, dy -45 after the poll expires (15/17); before the re-derivation the same checks failed on the round tree at dy +10, the entrance's first frame",
+   "green": "drive210 on the round tree: 17/17 (the base tree also passes it 17/17 with its instant pill)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive210-r2",
+   "check": "tests/browser/drive210.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive210.mjs": "453cb55c1934de578bb535f3009aaf2d86f6b053dc616ebb837a8ffad6569fe7"
+   },
+   "mutation": "A1/D1 terminal-state polls (transitions FIX 3 consequence) - re-issued after factoring the poll into a shared pillCentred helper for the PR line limits; semantically identical to transitions-1298-drive210",
+   "red": "the pill's resting seat moved (top 50% to 45%): A1 and D1 fail, dy -45 after the poll expires (15/17)",
+   "green": "drive210 on the final tree: 17/17",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }

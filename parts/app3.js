@@ -421,19 +421,27 @@ $('resetBtn').addEventListener('click', ev => {
   $('finMsg').textContent = (nDone || nNotes)
     ? (nDone + ' of ' + STREETNAMES.length + ' streets cleaned' + (nNotes ? ', notes on ' + nNotes + ' street' + (nNotes === 1 ? '' : 's') : '') + '. The clean is saved to Previous cleans with its notes, and the board clears for the next clean.' + (nDone < 3 && nDone < STREETNAMES.length ? ' Careful: under 3 streets, so this will clear WITHOUT being saved.' : '')) // issue #180: the warning matches finishRun's rule - a FULL clean of a short route (every street done) IS saved, so it is never warned as unsaved
     : 'Nothing is marked yet. Finishing just clears the board - nothing will be saved.';
-  $('finModal').classList.remove('hidden');
+  showSurface($('finModal'));
 });
-$('finNo').addEventListener('click', () => $('finModal').classList.add('hidden'));
+$('finNo').addEventListener('click', () => hideSurface($('finModal')));
 $('finYes').addEventListener('click', ev => {
   if (!tapGuard('finYes', ev)) return;
-  $('finModal').classList.add('hidden');
+  hideSurface($('finModal'));
   const finished = finishRun();
   if (finished && finished.gpsGap) showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); // after the finish fully completes: the save is never obstructed
 });
 // THE shared confirmation surface (#confirmPill): one reusable surface, buttons only; the backdrop is focus, never a tap target
 let confirmDangerCb = null;
-/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */ function showConfirm(o) { const p = $('confirmPill'); p.querySelector('.cfTitle').textContent = o.title; p.querySelector('.cfSub').textContent = o.sub; $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger; confirmDangerCb = o.onDanger || null; $('confirmBackdrop').classList.add('on'); p.classList.remove('hidden'); }
-/** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); $('confirmPill').classList.add('hidden'); confirmDangerCb = null; }
+/** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */
+function showConfirm(o) {
+  const p = $('confirmPill');
+  p.querySelector('.cfTitle').textContent = o.title;
+  p.querySelector('.cfSub').textContent = o.sub;
+  $('cfKeep').textContent = o.keep; $('cfDanger').textContent = o.danger;
+  confirmDangerCb = o.onDanger || null;
+  $('confirmBackdrop').classList.add('on'); showSurface(p);
+}
+/** @returns {void} */ function hideConfirm() { $('confirmBackdrop').classList.remove('on'); hideSurface($('confirmPill')); confirmDangerCb = null; }
 $('cfKeep').addEventListener('click', hideConfirm);
 $('cfDanger').addEventListener('click', () => { const f = confirmDangerCb; hideConfirm(); if (f) f(); });
 /** @returns {void} */ function askCancelStart() { const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart; showConfirm({ title: 'Cancel this run?', sub: 'All progress will be lost.', keep: 'Keep going', danger: 'Yes, cancel', onDanger: () => { if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); } } }); } // Beta 1.255: THE cancel-start ask - every entry point (the Pace sheet's button, the dock's button) routes through this one function, so the confirmation and its route+run binding can never cover one door and miss the other (gate round 3, Codex P2: the dock's #cancelStartBtn still discarded in one tap)
@@ -601,12 +609,12 @@ function setNoteText(n, txt) {
 }
 function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
 let noteFor = null;
-function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); $('noteModal').classList.remove('hidden'); }
-$('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden'));
+function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); showSurface($('noteModal')); }
+$('noteNo').addEventListener('click', () => hideSurface($('noteModal')));
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   const okNote = setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) showBanner('Note not saved');
+  hideSurface($('noteModal')); renderStreets(); if (!okNote.ok) showBanner('Note not saved');
 });
 
 // ===== GPS (checklist SS7) =====
@@ -1301,6 +1309,28 @@ function fixLogOut(e) {
 function fixLogClose() { if (!fixLogSession) return; fixLogSession = null; markDirty('fixlog'); }
 // the record lands in e3 form (the codec note at the loader); in-memory sessions stay absolute
 /** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); }
+let spdShown = '0'; // the readout's standing value: slots double a digit mid-swap, so the DOM is never the source
+function setSpdNum(txt) { // the readout settles digit by digit instead of snapping (recipe 36)
+  const el = $('spdNum'); if (!el || txt === spdShown) return;
+  const prev = spdShown; spdShown = txt;
+  if (el._subtleT) { clearTimeout(el._subtleT); el._subtleT = 0; }
+  el.setAttribute('aria-label', txt);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.classList.remove('animating'); el.textContent = txt; return; }
+  const sameLen = prev.length === txt.length;
+  el.style.setProperty('--subtle-dir', parseInt(txt, 10) >= parseInt(prev, 10) ? '1' : '-1');
+  el.classList.remove('animating');
+  el.replaceChildren();
+  [...txt].forEach((ch, i) => {
+    if (sameLen && prev[i] === ch) { el.append(ch); return; }
+    const slot = document.createElement('span'); slot.className = 'subtleSlot';
+    if (sameLen) { const o = document.createElement('span'); o.className = 'subtleOld'; o.setAttribute('aria-hidden', 'true'); o.textContent = prev[i]; slot.appendChild(o); }
+    const n = document.createElement('span'); n.className = 'subtleNew'; n.textContent = ch; slot.appendChild(n);
+    el.appendChild(slot);
+  });
+  void el.offsetHeight;
+  el.classList.add('animating');
+  el._subtleT = setTimeout(() => { el._subtleT = 0; el.classList.remove('animating'); el.textContent = txt; }, 470); // the slots collapse to plain text once the swap lands
+}
 function acceptFix(pos) {
   // the fix is logged BEFORE every gate below - a refused fix is recorded as delivered, with no estimator output
   const fxEnt = fixLogRaw(pos);
@@ -1334,8 +1364,7 @@ function acceptFix(pos) {
   // the estimator has run: filtered position, display position and smoothed heading join the fix in the log
   fixLogOut(fxEnt);
   // the speed number updates per fix only: visibility is the watch's alone; at rest it reads 0 km/h
-  const spd = $('spdNum');
-  spd.textContent = String(Math.round(Math.max(0, speed || 0) * 3.6)); // the bare number - the KM/H unit is the circle's own centred label now
+  setSpdNum(String(Math.round(Math.max(0, speed || 0) * 3.6))); // the bare number - the KM/H unit is the circle's own centred label now
   // a teleport voids the springs; the map guard keeps this jump from starving the recording block
   if (firstFix && map && (gpsFromRun || watchId != null) && !followPaused) { map.jumpTo({ center: [sm[1], sm[0]], zoom: Math.max(map.getZoom(), 15) }); camVel = [0, 0]; camBVel = 0; camUncapped = false; }
   // outside-route note (route box + 400 m): no box means no area to be outside of, so no note
@@ -1411,7 +1440,7 @@ function startGps(fromRun, restart) {
   $('gpsBtn').classList.toggle('rec', gpsFromRun); // recording wears red on the Locate tab; view-only wears blue
   renderIcons(); // the Locate face follows the state flip at once
   // the speed gate is the watch: it appears with location on, reading 0 until a fix prices speed
-  $('spdNum').textContent = '0'; $('spdPill').classList.remove('hidden');
+  setSpdNum('0'); $('spdPill').classList.remove('hidden');
 }
 function stopGps(silent) {
   watchGen++; // invalidate any callback still queued from this watcher

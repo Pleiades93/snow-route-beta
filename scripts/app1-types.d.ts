@@ -188,6 +188,10 @@ interface AppRect {
 interface AppElement {
   textContent: string;
   innerHTML: string;
+  /** The overlay-exit timer hideSurface stores on the element it is leaving (0 when no leave is pending). */
+  _exitT: number;
+  /** The reduced-motion stay timer showBanner stores on the banner (0 when none is pending). */
+  _rmT: number;
   onanimationend: ((e: { animationName: string }) => void) | null;
   classList: AppClassList;
   style: { bottom: string };
@@ -237,9 +241,13 @@ declare var navigator: {
   maxTouchPoints: number;
 };
 
+/** The media-query surface the overlay-exit helper reads: only the reduced-motion answer is modelled. */
+declare function matchMedia(query: string): { matches: boolean };
+
 declare var window: {
   visualViewport: { height: number } | null;
   innerHeight: number;
+  matchMedia: typeof matchMedia;
   navigator: { userAgent: string; maxTouchPoints: number };
   addEventListener(type: string, listener: () => void, capture?: boolean): void;
   /** The app's own paint host, assigned by engine.js (`window.GLP = GLP`) and read by app2.js. Typed as any like `map` above: its shape is engine's own returned object, not modelled here. */

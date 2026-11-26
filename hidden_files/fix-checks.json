@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3adaaf4158f0aff6194656264f7f794fdfe9b5f2931e467126410221b37b4349",
+  "canonical_registry_sha256": "ed01b449c8ba1dce3428d8ca85fd83101ce60bb2fc806bfbfa8cd2fbb3252938",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -6317,7 +6317,7 @@
    "fix": "Beta 1.203 tilt 45 + top-centre speed pill (PR #47, merge d2f7c808; built and proven as Beta 1.200, renumbered at landing \u2014 Beta 1.201 (glide traverse fix) and Beta 1.202 (pill run-only) shipped while this PR queued behind the drive126 F2 gate block, and the in-app update check (parts/app4.js) refuses a served version lower than the running one, the same Codex P2 that renumbered PR #46). TWO OF ANDREW'S CALLS IN ONE BUILD. THE TILT: the default view (route load-in flight, Home button, route switch) lands at pitch 45, north up, at THE SAME centre/zoom the flat fit computes \u2014 goHomeView (parts/app4.js) takes the fit from cameraForBounds with NO pitch/bearing options (its centre/zoom are the replaced fitBounds' own, bit for bit) and applies pitch 45 at that centre/zoom via easeTo; the intro flyTo gains pitch: 45 (centre/zoom/dwell/curve untouched) and the reduced-motion fallback fit0 lands tilted instantly (fitBounds + jumpTo pitch 45). Follow, heading-up, first-fix jump and street zooms are untouched. THE SPEED PILL: the readout leaves the bottom-left #spd chip (removed whole \u2014 element, both CSS rules, the acceptFix write, the stopGps hide) for #spdPill at top centre, built from #count's exact design tokens (glass, blur, border, 999px radius, 6px 14px padding, 12.5px/700 type, float shadow; night override in the same form) \u2014 computed-style parity with #count measured EQUAL in drive199, day and night. Its gate is the watch alone: startGps shows it reading '0 km/h', acceptFix writes the rounded km/h on the old per-fix cadence, at rest or with no speed reported it reads '0 km/h' rather than vanishing, stopGps hides it on both the Locate and clean paths; speed only (Andrew declined kilometres driven). THE ACCEPTANCE DRIVE LANDS AS drive199, not drive198: the pill round's drive took drive198 when it merged in 1.202 (roster 79 drives / 1347 checks; drive199 sharded into shard 8). One check re-derived at landing, basis in the drive: P10 (height parity with #count) is measured inside the P13 running clean \u2014 since 1.202 #count renders only during a clean, so its rendered height exists only there (first local run failed P10 {pill: 28, count: 0} on exactly that premise; computed-style parity P9/P11 is state-independent and unmoved). Proof: drive199 26/26 and drive194 39/39 PASS locally on the rebased tree and name-checked in the CI shard logs (shard 8 / shard 3) of gate run 43683742464; the full gate on head d05009d4 \u2014 plan, build-and-test, offline-e2e, all 8 shards, tier-drives aggregator \u2014 SUCCESS, codex review gate SUCCESS (bridge run 43683742233; Codex receipt on d05009d4: no major issues); drive126 15/15 in shard 7 (F2 green on the 1.201 spring, the defect that blocked the 1.200 head); merged tree == tested head tree (e5bc4afc); live read-back: the served page is byte-size-identical to the built page, reads Beta 1.203, contains goHomeView and #spdPill, and has no id=\"spd\". The foreign-write census re-pinned for goHomeView's app4 growth (sites +7; totals unchanged 57/24, verified pair-for-pair) \u2014 the round adds no foreign write. If a probe fails, the tilt, the pill or the #spd removal has regressed \u2014 restore the shipped form and re-run drive199 + drive194. [Pruning 2026-11-19: re-pointed - since Beta 1.220 the write sets the bare number on #spdNum; the km/h suffix retired (the unit is the circle's own label). Bite-proven both ways.]",
    "fix_id": "tilt-spd-1203",
    "id": "tiltspd1203-spdpill-write",
-   "pattern": "spd.textContent = String(Math.round(Math.max(0, speed || 0) * 3.6));",
+   "pattern": "setSpdNum(String(Math.round(Math.max(0, speed || 0) * 3.6)));",
    "type": "grep_present"
   },
   {
@@ -9337,7 +9337,7 @@
    "fix": "Beta 1.231 motion round (branch round-motion; PR + gate by parent). The settings switch's own transition rule restates the press shrink at the new 150ms (it replaces the shared declaration, so the timing is written beside its background fade).",
    "fix_id": "motion-1231",
    "id": "motion1231-switch-press",
-   "pattern": "transition: background .18s ease, transform 150ms ease-out;",
+   "pattern": "transition: background .18s var(--ease-open), transform 150ms ease-out;",
    "type": "grep_present"
   },
   {
@@ -9346,7 +9346,7 @@
    "fix": "Beta 1.231 motion round. The theme-swap guard: while applyNight holds the theme-swap class on the root, every transition in the document is suppressed, so a day/night flip steps in one frame instead of animating colours across the screen.",
    "fix_id": "motion-1231",
    "id": "motion1231-theme-guard",
-   "pattern": "html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }",
+   "pattern": "html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::after { transition: none !important; }",
    "type": "grep_present"
   },
   {

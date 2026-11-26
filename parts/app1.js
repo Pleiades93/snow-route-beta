@@ -99,9 +99,28 @@ const jDistM = distM; // the paint engine's name for the same two-point distance
   $('bannerLine').textContent = line || '';
   $('bannerIco').innerHTML = icon && ICONS[icon] ? ICONS[icon] : '';
   b.onanimationend = e => { if (e.animationName === 'bannerExit') b.classList.remove('show'); };
+  if (b._rmT) { clearTimeout(b._rmT); b._rmT = 0; }
   b.classList.remove('show');
   void b.getBoundingClientRect(); // restart the drop on a re-fire
   b.classList.add('show');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) b._rmT = setTimeout(() => { b._rmT = 0; b.classList.remove('show'); }, 3000); // no exit animation runs under reduced motion, so a timer keeps the 3s stay
+}
+// overlay exits: a surface leaves over 180ms, then hides; a re-show cancels the leave
+/** @param {HTMLElement} el @returns {void} */
+function showSurface(el) {
+  if (el._exitT) { clearTimeout(el._exitT); el._exitT = 0; }
+  el.classList.remove('leaving'); el.classList.remove('hidden');
+}
+/** @param {HTMLElement} el @returns {void} */
+function hideSurface(el) {
+  if (el.classList.contains('hidden')) return;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (el._exitT) { clearTimeout(el._exitT); el._exitT = 0; }
+    el.classList.remove('leaving'); el.classList.add('hidden'); return;
+  }
+  el.classList.add('leaving');
+  if (el._exitT) clearTimeout(el._exitT);
+  el._exitT = setTimeout(() => { el._exitT = 0; el.classList.add('hidden'); el.classList.remove('leaving'); }, 180);
 }
 // Storage — guarded; a failure is SHOWN, never silent
 /** @returns {void} */ function flagStorage() { document.body.classList.add('storage-bad'); }

@@ -152,6 +152,19 @@ const T0 = Date.now();
 await feed(base.lat, base.lng, 10.5, T0); await sleep(400);
 P = await pillState();
 ok('P4 a fix at 10.5 m/s prices the circle: 38 | ' + JSON.stringify(P), P.txt === '38' && P.unit === 'KM/H');
+// the swap lives 455ms - too short to chase with reads on a loaded rig, so the observer latches it
+await ev(`(() => { window.__swapSeen = null; const e = document.getElementById('spdNum');
+  new MutationObserver(() => { const slot = e.querySelector('.subtleSlot');
+    if (slot) window.__swapSeen = { anim: e.classList.contains('animating'), slots: e.querySelectorAll('.subtleSlot').length,
+      old: slot.querySelector('.subtleOld') ? slot.querySelector('.subtleOld').textContent : '',
+      fresh: slot.querySelector('.subtleNew').textContent, dir: e.style.getPropertyValue('--subtle-dir') }; }).observe(e, { childList: true, subtree: true, attributes: true }); return true; })()`);
+await feed(base.lat, base.lng + 0.0001, 11.5, T0 + 1000);
+await poll(`!!window.__swapSeen`, 3000);
+const SWAP = JSON.parse(await J(`JSON.stringify(window.__swapSeen)`)) || {}; // null when no swap was latched: P4b then fails as a check, not a crash
+ok('P4b a same-length rise swaps digit by digit: changed digits ride old/new slots, rising (recipe 36) | ' + JSON.stringify(SWAP), SWAP.anim === true && SWAP.slots >= 1 && SWAP.old === '3' && SWAP.fresh === '4' && SWAP.dir === '1');
+await poll(`document.getElementById('spdNum').textContent === '41' && !document.getElementById('spdNum').querySelector('.subtleSlot')`, 3000);
+P = await pillState();
+ok('P4c after the swap the readout is plain text again: 41 | ' + JSON.stringify(P), P.txt === '41');
 await feed(base.lat, base.lng + 0.0002, 0, T0 + 2000); await sleep(400);
 P = await pillState();
 ok('P5 at rest the circle reads 0 and STAYS shown (it does not vanish the way the old chip did) | ' + JSON.stringify(P), P.txt === '0' && P.shown === true);

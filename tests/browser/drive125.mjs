@@ -52,7 +52,7 @@ ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-str
 // dark text (never white-on-white over the bright map), night is a deep blue-black.
 const T1 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, paceBg: surf($('pacePanel')),
-  barBg: surf($('tabBar')), fillW: $('countFill').offsetWidth,
+  barBg: surf($('tabBar')), fillW: $('countFill').getBoundingClientRect().width,
   order: [...document.querySelectorAll('#tabBar .tabItem')].map(b => b.id) }); })()`));
 ok('T1 day menus share one light surface with dark text (bar = sheets; the Settings takeover is blue in both themes since 1.88, asserted at T3) | ' + JSON.stringify(T1),
   T1.sheetBg === 'rgba(255, 255, 255, 0.92)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === T1.sheetBg);
@@ -124,16 +124,31 @@ await tapById(ev, 'startBtn');
 await sleep(700);
 const S6 = JSON.parse(await ev(`(() => { const c = $('cancelStartBtn'); const cr = c.getBoundingClientRect(); const tr = $('tabBar').getBoundingClientRect();
   const hit = document.elementFromPoint(cr.x + cr.width / 2, cr.y + cr.height / 2);
-  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id, moonIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.moon; return $('nightBtn').innerHTML === t.innerHTML; })(), // serialized-vs-serialized: a raw string compare against the ICONS source never matches (the HTML serializer normalizes the SVG)
+  return JSON.stringify({ disp: c.style.display, cancel: { y: cr.y, b: cr.bottom }, tabTop: tr.top, hit: hit && hit.id,
+    moonIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.moon; const nb = $('nightBtn').querySelector('.nbMoon');
+      return !!nb && nb.innerHTML === t.innerHTML; })(), // serialized-vs-serialized: a raw string compare against the ICONS source never matches (the HTML serializer normalizes the SVG)
+    // transitions round: the button stacks both glyphs (recipe 09), so the compare reads the moon face's own span
     listCol: getComputedStyle($('streetsBtn')).color, paceCol: getComputedStyle($('paceBtn')).color, tabCol: getComputedStyle($('homeBtn')).color }); })()`));
 ok('S6 Cancel start floats above the circle, clear of the tab bar, and takes the tap | ' + JSON.stringify(S6),
   S6.disp !== 'none' && S6.cancel.b <= S6.tabTop - 40 && S6.hit === 'cancelStartBtn');
 ok('S7 day mode: chrome is light glass with dark icons (GPS-app behaviour) | ' + JSON.stringify(S6),
   S6.listCol === 'rgb(34, 38, 46)' && S6.paceCol === 'rgb(34, 38, 46)' && S6.tabCol === 'rgb(43, 48, 56)');
+// the sun's opacity sampled across the tap: a crossfade passes through mid values, a cut never does
+await ev(`(() => { window.__fade = []; window.__fadeDone = false; const s = $('nightBtn').querySelector('.nbSun'); const t0 = performance.now();
+  const tick = () => { const o = +getComputedStyle(s).opacity; window.__fade.push(o); const mid = window.__fade.some(v => v > 0.05 && v < 0.95);
+    if (performance.now() - t0 < 3000 && !(mid && o === 1)) { requestAnimationFrame(tick); } else { window.__fadeDone = true; } };
+  requestAnimationFrame(tick); return true; })()`);
 await tapById(ev, 'nightBtn');
+// T4: poll the fade's terminal state, not a fixed sleep
+await poll(`document.body.classList.contains('night') && getComputedStyle(document.querySelector('#nightBtn .nbSun')).opacity === '1'`, 10000);
 await sleep(600);
 ok('S7 day mode: the day/night button offers Night - the moon shows where it takes you, not where you are (Beta 1.28)', S6.moonIcon === true);
-const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'), sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; const im = t.querySelector('img.pico'); if (im) im.src = MASK_PACKS.glyph.icons.sun.n; return $('nightBtn').innerHTML === t.innerHTML; })(), // Beta 1.217 (Codex P2 on PR #94, REAL): the button wears the sun glyph in its NIGHT artwork, so the expected markup is themed the same way before the serialized compare; the sun-identity assertion itself is unchanged. Beta 1.218: the theming mechanism is renderIcons now - it mints ICONS.sun already themed for the active pack, so the re-point above is a no-op safeguard under Pulsar and the compare stands as written
+const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.classList.contains('night'),
+  sunOp: getComputedStyle($('nightBtn').querySelector('.nbSun')).opacity, moonOp: getComputedStyle($('nightBtn').querySelector('.nbMoon')).opacity,
+  sunIcon: (() => { const t = document.createElement('span'); t.innerHTML = ICONS.sun; const im = t.querySelector('img.pico'); if (im) im.src = MASK_PACKS.glyph.icons.sun.n;
+    const nb = $('nightBtn').querySelector('.nbSun'); return !!nb && nb.innerHTML === t.innerHTML; })(),
+  // Beta 1.217 (Codex P2, PR #94): the sun wears its NIGHT artwork - the expected markup is themed before comparing
+  // Beta 1.218: renderIcons mints ICONS.sun already themed, so the re-point above is a no-op safeguard; the compare stands
   listCol: getComputedStyle($('streetsBtn')).color, tabCol: getComputedStyle($('homeBtn')).color,
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
@@ -141,7 +156,10 @@ ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.strin
 const S7b = JSON.parse(await ev(`(() => { const l = map && map.getLayer('buildings-3d'); return JSON.stringify({ there: !!l, type: l && l.type, h: l && map.getPaintProperty('buildings-3d', 'fill-extrusion-height') }); })()`));
 ok('S7b the 3D buildings layer survives a basemap swap (Beta 1.90): a fill-extrusion on the buildings source-layer with the estimated-height ramp, still there after the theme flip rebuilt the style | ' + JSON.stringify(S7b),
   S7b.there && S7b.type === 'fill-extrusion' && JSON.stringify(S7b.h).includes('coalesce'));
-ok('S7 night mode: the day/night button now offers Day - sun icon, state in agreement', S7.sunIcon === true);
+ok('S7 night mode: the day/night button now offers Day - sun icon, state in agreement (transitions round: the swap crossfades - sun fully in, moon fully out)', S7.sunIcon === true && S7.sunOp === '1' && S7.moonOp === '0');
+await poll(`window.__fadeDone === true`, 8000);
+const FADE = JSON.parse(await ev(`JSON.stringify(window.__fade || [])`));
+ok('S7b the swap really crossfades: the sun passes through mid opacities on its way in (Codex P2, PR #221) | samples ' + FADE.length, FADE.some(o => o > 0.05 && o < 0.95));
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')) }); })()`));
 ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 1.75) | ' + JSON.stringify(T4),
@@ -194,7 +212,7 @@ ok('S5 count climbs in the new format after a street is done | ' + C2, new RegEx
 await tapById(ev, 'startBtn');
 await waitTrue(poll, `$('count').offsetParent !== null`, 10000); // the shown pill is T5's premise now
 await sleep(600);
-const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').offsetWidth / $('count').offsetWidth, want: workDoneM() / totalWorkM(), txt: $('countTxt').textContent, count: $('count').textContent }))()`));
+const T5 = JSON.parse(await ev(`(() => JSON.stringify({ ratio: $('countFill').getBoundingClientRect().width / $('count').offsetWidth, want: workDoneM() / totalWorkM(), txt: $('countTxt').textContent, count: $('count').textContent }))()`));
 ok('T5 the pill meter fills with the same work fraction the % reports (measured on the shown pill, inside a run - Beta 1.199) | ' + JSON.stringify(T5),
   Math.abs(T5.ratio - T5.want) < 0.04 && T5.want > 0 && T5.txt === T5.count);
 await tapById(ev, 'cancelStartBtn');

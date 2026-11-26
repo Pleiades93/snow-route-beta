@@ -43,12 +43,12 @@ const sheetT = async () => JSON.parse(await ev(`(() => { const cs = getComputedS
   dur: cs.transitionDuration.split(',')[0].trim(), raw: cs.transitionTimingFunction, props: cs.transitionProperty }); })()`));
 const firstFn = (raw) => { const seg = String(raw).split('),')[0]; return (seg.endsWith(')') ? seg : seg + ')').replace(/\s+/g, ''); };
 const closed = await sheetT(); closed.fn = firstFn(closed.raw);
-ok('A2 closed sheet animates on the close curve at the shared duration, height included | ' + JSON.stringify(closed),
-  closed.dur === '0.42s' && closed.fn === 'cubic-bezier(0.72,0,0.1,0.78)' && closed.props.includes('transform') && closed.props.includes('height') && closed.props.includes('max-height'));
+ok('A2 closed sheet animates on the close curve, quicker than the open (350ms against 420ms), height included | ' + JSON.stringify(closed),
+  closed.dur === '0.35s' && closed.fn === 'cubic-bezier(0.72,0,0.1,0.78)' && closed.props.includes('transform') && closed.props.includes('height') && closed.props.includes('max-height'));
 await ev(`(() => { $('streetsBtn').click(); return true; })()`);
 await poll120(`$('sheet').classList.contains('open')`, 5000);
 const opened = await sheetT(); opened.fn = firstFn(opened.raw);
-ok('A2 open sheet animates on the open curve at the same duration | ' + JSON.stringify(opened),
+ok('A2 open sheet animates on the open curve at the shared 420ms duration | ' + JSON.stringify(opened),
   opened.dur === '0.42s' && opened.fn === 'cubic-bezier(0.22,0.9,0.28,1)');
 
 // A3/A4 (re-aimed Beta 1.23): the fan is gone; its stagger contract retired with it.

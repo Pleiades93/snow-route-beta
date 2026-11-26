@@ -1,5 +1,18 @@
 # Changelog
 
+## Beta 1.298 — 2026-11-26
+
+The transitions round, built from the 2026-11-25 motion audit Andrew picked through (all 12 fixes, 3 additions; the panel reveal was not picked). Surfaces now
+leave as well as enter: the sheets close on the close curve (350 ms, transform only), and the modals, the confirmation pill, the selection pop and the map note
+exit over 180 ms through one shared helper instead of snapping away. The full-screen menus' fades ride the house open and close curves. The Settings switch
+thumb travels on transform, and the progress fill grows from its left edge on transform instead of animating width. The Streets filter highlight is now a pill
+that slides between Primaries and Secondaries; the speed readout settles digit by digit, rising or falling with the value; and the day/night button's sun and
+moon crossfade instead of cutting. Reduced-motion coverage now reaches every surface, and there the banner keeps its 3-second stay by timer. Two audit items
+closed as already conforming (the create face morph, the city results glide) and two as dropped (the toast and the create hint pill were deleted by the
+Beta 1.296 round). Locked timings untouched: the dropdown, the banner's standard behaviour, press feedback, and the 15.2 name handover.
+
+Editorial: this entry; What's New replaced with the transitions lines; the #ver label reads Beta 1.298.
+
 ## Beta 1.297 — 2026-11-25
 
 Two map-transition fixes Andrew decided on 2026-11-25. (1) Street-name handover: the switch from the app's centred route titles to the basemap's own names is

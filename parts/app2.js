@@ -19,7 +19,7 @@ function bootMap() {
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
 let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
 // the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears on recovery
-function noteMapState() { $('mapNote').classList.toggle('hidden', !((mapNoteArmed && !glOk) || basemapDead)); }
+function noteMapState() { if ((mapNoteArmed && !glOk) || basemapDead) showSurface($('mapNote')); else hideSurface($('mapNote')); }
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
 onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
 // proof the basemap is drawing: the moment a tile lands after an outage, the death notice clears itself
@@ -451,8 +451,8 @@ function markUndone(name) { // the mutation is BOARD.clearStreet; the finish sta
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
 function renderPanel() { // one selection pop-up: header strip and multi-select pill are the same pop-up (pill glass, every action inside)
   const p = $('selPop');
-  if (!sel) { p.classList.add('hidden'); return; }
-  p.classList.remove('hidden'); // renderPanel no longer raises body.selOpen: its consumer is retired; the button holds its seat in every state
+  if (!sel) { hideSurface(p); return; }
+  showSurface(p); // renderPanel no longer raises body.selOpen: its consumer is retired; the button holds its seat in every state
   const multi = selSet.length >= 2; // single and multi are the SAME size: same box, same two rows; only the words and buttons change
   if (!multi) {
     $('selName').textContent = sel.name;
@@ -484,7 +484,7 @@ function updateCount() {
   const tw = totalWorkM(); // the share's denominator, read once and guarded: an empty route divided by zero and read 'NaN%'
   const pct = tw > 0 ? Math.round(workDoneM() / tw * 100) : 0;
   // the meter fills with the same fraction the % uses; the total derives from the street list
-  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.width = (tw > 0 ? (workDoneM() / tw * 100) : 0) + '%';
+  $('countTxt').textContent = n + ' of ' + STREETNAMES.length + ' · ' + pct + '%'; $('countFill').style.transform = 'scaleX(' + (tw > 0 ? workDoneM() / tw : 0) + ')';
   $('stats').textContent = statsLine();
   $('startBtn').style.display = runStart ? 'none' : '';
   $('cancelStartBtn').style.display = runStart ? '' : 'none'; // Cancel start is offered for the whole run: it erases the run's records, marks included
@@ -517,7 +517,7 @@ let srowCache = { sig: '', rows: new Map() }; // rows kept between renders when 
 function resetStreetsSession() { // app2's route-switch reset (called by resetSwitchSession): the session's reset knowledge lives here, with its state
   deselect(); // selection + chips + the engine's selection, through the one proven path
   NOTEEDIT.reset(); // the note editor's pending debounced save must never fire into the new route (its flush already happened via collapseNoteEditor)
-  listFilter = 'primaries'; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === 'primaries'));
+  listFilter = 'primaries'; syncFilterTabs(false);
   srowCache = { sig: '', rows: new Map() };
   saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
 }
@@ -629,7 +629,21 @@ function syncNoteSheetRaise() { // at full while an editor is open: only then ca
 function collapseNoteEditor() { // closing resets the list (no editor survives to the next open); the re-render finalizes pending saves first
   if (NOTEEDIT.collapse()) renderStreets();
 }
-document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
+function seatFilterPill(animate) { // the sliding highlight sits exactly under the .on tab
+  const pill = $('filtersPill'); if (!pill) return;
+  const btn = document.querySelector('#filters button.on'); if (!btn || !btn.offsetWidth) { pill.style.opacity = '0'; return; }
+  if (!animate) pill.style.transition = 'none';
+  pill.style.opacity = '1';
+  pill.style.top = btn.offsetTop + 'px';
+  pill.style.height = btn.offsetHeight + 'px';
+  pill.style.width = btn.offsetWidth + 'px';
+  pill.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
+  if (!animate) { void pill.offsetWidth; pill.style.transition = ''; }
+}
+function syncFilterTabs(animate) { document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === listFilter)); seatFilterPill(animate); }
+document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; syncFilterTabs(true); renderStreets(); }));
+window.addEventListener('resize', () => seatFilterPill(false));
+seatFilterPill(false);
 function closeSheetEl(s) { // the close animates: freeze the height for the whole slide-down, clear it only when the motion ends
   cancelSheetSpring(s);
   if (s.id === 'sheet') collapseNoteEditor(); // any animated close of the Streets sheet resets an open note editor first
@@ -830,7 +844,8 @@ wireRouteRows($('rmRoutes'), id => {
   if ($('routeMenu').classList.contains('tab')) { closeRouteMenu(); if (!activeRoute || id !== activeRoute.id) loadRoute(id); }
   else if (window.__bootPickRoute) window.__bootPickRoute(id);
 });
-$('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev)) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); } });
+$('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev)) return; const open = $('sheet').classList.contains('open'); closeSheets();
+  if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); seatFilterPill(false); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
 $('paceBtn').addEventListener('click', ev => { if (!tapGuard('paceBtn', ev)) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
