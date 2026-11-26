@@ -26146,6 +26146,124 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26"
+  },
+  {
+   "id": "snow-menus-1299-final-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "snowCv",
+     "setVer",
+     "routeMenu",
+     "setMenu",
+     "splash"
+    ],
+    "functions": [
+     "live",
+     "park",
+     "resume",
+     "syncSnow",
+     "sceneLive",
+     "stop"
+    ]
+   },
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:live:parts/brand-snow.js:loop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - live() is called from loop in parts/brand-snow.js",
+     "status": "covered",
+     "note": "the frame loop re-reads live() every frame and parks itself when no blue menu is open - drive180 SNOW family, drive226 stops-dead leg"
+    },
+    {
+     "id": "caller:live:parts/brand-snow.js:syncSnow",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - live() is called from syncSnow in parts/brand-snow.js",
+     "status": "covered",
+     "note": "the MutationObserver's single entry: live() decides resume vs park on every menu class flip - drive125 T3 (Settings), drive226 first-frame and toggle legs"
+    },
+    {
+     "id": "caller:park:parts/brand-snow.js:loop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - park() is called from loop in parts/brand-snow.js",
+     "status": "covered",
+     "note": "self-park when the scene ends mid-loop (the pick's finish() removes the splash) - drive180 handoff reads, drive226 stops-dead leg"
+    },
+    {
+     "id": "caller:park:parts/brand-snow.js:syncSnow",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - park() is called from syncSnow in parts/brand-snow.js",
+     "status": "covered",
+     "note": "observer-driven park on the closing flip: canvas cleared, snow-scene dropped, clock and field held - drive226 pile-persistence leg reads amount() across the park"
+    },
+    {
+     "id": "caller:resume:parts/brand-snow.js:syncSnow",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resume() is called from syncSnow in parts/brand-snow.js",
+     "status": "covered",
+     "note": "observer-driven resume on the opening flip, one frame painted synchronously - drive226 first-frame leg times it against the menu's first moving frame"
+    },
+    {
+     "id": "theme:routeMenu",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #routeMenu has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the snow step-aside rule is theme-neutral: the blue gradient is identical day and night (no body.night variant exists), so the field shows the same in both themes - drive125 T3 re-derived at C2, drive226"
+    },
+    {
+     "id": "theme:setMenu",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #setMenu has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "same step-aside rule as routeMenu, theme-neutral; Settings carries no night variant of the blue - drive125 T3, drive226 Settings leg"
+    },
+    {
+     "id": "theme:setVer",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #setVer has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the 58px seat raise is positional and theme-independent; the label colour rule is untouched - drive226 Settings leg reads the seat clear of the 51px crest"
+    },
+    {
+     "id": "theme:snowCv",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #snowCv has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "under body.snow-scene the canvas wears the menus' own gradient, which has no night variant; the visibility gate is theme-independent - drive180 SNOW family, drive226"
+    },
+    {
+     "id": "theme:splash",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #splash has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "markup only: the canvas moved out of #splash to body level; #splash's own rules and #splashBg are untouched - drive180 SNOW1-9 boot scene reads"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "e55a9aa328c0f081aa7f35bcafacfb93efd540486c02354337a402c31544f1f5",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "debbd19a55d304b914e386a9289636efd60f8dd3396af93a037d2bd584bb895a",
+    "parts/app4.js": "5ad883b9934eae961eeb4383801eb9a9a0086592ee0c07967d6958e8cbf58102",
+    "parts/app5.js": "d546a4a24ef3883a816f026444d211befc9e08eb37b9352f2f9bbe81b36acc89",
+    "parts/brand-snow.js": "98eb0ac8409bf028caf2f05eab318784a97b410ae9d2d568d645bd094c3cd69e",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "8bd2ae35f74d588adc9116a7dfc4b90e927e6d95517a49be69b62d4e8b44eae3",
+    "parts/head.html": "5ddfadc5ebf968e61443ce2393da99a067728fb72756308d1ba0d6e184508da5",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26"
   }
  ]
 }

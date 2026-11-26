@@ -38,7 +38,8 @@
    it starts at boot, pauses while the page is hidden (rAF halts; the
    dt clamp keeps the resume jump-free), hides in the menu's
    sub-panes alongside the title (showRmPane carries .away on the
-   canvas) and returns at the main pane, and parks when no blue menu
+   canvas and on #brandLayer alike) and returns at the main pane,
+   and parks when no blue menu
    is open (1.299 - the boot-only lifetime ended there) - no snow on
    the map, ever. Under reduced motion it never
    starts (the app's standing convention - the same media query arm()

@@ -15638,6 +15638,19 @@
    "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
    "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r3",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "fc4e2e82c6be3509b3abcaca1ec65daf409ab719eefcd9c520b5ccbeb8809427",
+    "parts/brand-snow.js": "98eb0ac8409bf028caf2f05eab318784a97b410ae9d2d568d645bd094c3cd69e"
+   },
+   "mutation": "parts/brand-snow.js render(): a 40 ms busy-wait injected per painted frame (re-issued after the premise-lint header line named #brandLayer in brand-snow.js; semantically identical to snow1299-drive226)",
+   "red": "drive226 F3 fails: open-budget p95 gap 83.3 ms, only 8 intervals in the 420 ms window (local, 2026-11-26)",
+   "green": "drive226 F3 passes on the unmutated tree (3/3 local runs after the speck-sprite optimization); full green awaits the PR gate",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }
