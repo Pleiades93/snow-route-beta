@@ -14579,6 +14579,30 @@
    "red": "on the PR tree before this fix: ReferenceError: showBanner is not defined (CI build-and-test run 45733369587, round-112 honesty step; reproduced locally)",
    "green": "after the stub/line fixes: selftest-round112: 17 passed, 0 failed (local node run)",
    "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296rr-drive86",
+   "check": "tests/browser/drive86.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive86.mjs": "cd984f29579b7028c388fe4f8c5207cb98d9a865bead2b291f689659ad1da837"
+   },
+   "mutation": "n/a - check re-scope only: the four silence samples now carry the banner head and excuse only the ambient GPS survivor ('Location is off'), the drive224 precedent",
+   "red": "CI run 45734211500 shard 1 on 53d7f885: drive86 16/18 - T1 and T2 failed on a standing ambient banner (bare shown assertions)",
+   "green": "re-scoped file run locally: drive86 18/18 PASS (second local attempt; the first died on this rig's known reload race)",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
+  },
+  {
+   "id": "popup1296rr-drive136",
+   "check": "tests/browser/drive136.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive136.mjs": "4e056bc6f53caf051d6aec4bb119b6944ecc991ea873d1038d332b076c8fc767"
+   },
+   "mutation": "n/a - check text correction only: F12a asserted 'recovery backup shared instead'; the frozen row-80 line is 'A recovery backup was shared instead'",
+   "red": "CI run 45734211500 shard 6 on 53d7f885: drive136 23/24 - F12a failed; its own log payload shows the app banner text 'Backup not saved A recovery backup was shared instead'",
+   "green": "the corrected substring matches that CI-sampled banner text verbatim; full drive136 green is the cloud gate's call (the local rig crashes at its reload wall, identically on the base tree)",
+   "issued": "2026-11-25 popup-round2 (Beta 1.296)"
   }
  ]
 }

@@ -25,8 +25,8 @@ ok('T1 trail seeded (2 pts)', A.tl === 2);
 await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did
 A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowroute.5w.v4.trail'), toast: $('bannerHead').textContent, shown: $('banner').classList.contains('show') }))()`));
 ok('T1 clear writes [] to storage', A.ls === '[]');
-// shown WITH its text is the failure - a kept pill standing from boot is not the clear's own banner
-ok('T1 no banner fires on a successful clear (the emptied trail is the confirmation)', A.shown === false);
+// shown WITH a clear-related text is the failure - the ambient GPS banner ('Location is off') is not the clear's own
+ok('T1 no banner fires on a successful clear (the emptied trail is the confirmation)', !A.shown || A.toast === 'Location is off');
 await ev(`(() => { location.reload(); return true; })()`); await sleep(3000);
 await ev(`loadRoute('5w'); true`); await sleep(600);
 A = JSON.parse(await ev(`(() => JSON.stringify({ tl: trail.length }))()`));
@@ -37,8 +37,8 @@ await ev(`(() => { trail.push([43.81,-79.56,1767225600],[43.82,-79.57,1767225700
   Storage.prototype.setItem = function(k, v) { if (k === 'snowroute.5w.v4.trail') throw new Error('quota'); return window.__origSI.call(this, k, v); };
   return true; })()`);
 await ev(`(() => { clearTrailAll(); return true; })()`); await sleep(700); // Beta 1.88: the Clear trail button is gone (re-home comes later) - the drives call the clearing itself, which is what the button's second tap did
-A = JSON.parse(await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), dirty: writePending('trail'), ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
-ok('T2 the failed clear is SILENT since Beta 1.296 (its warning is cut - the honesty is the pending flag below)', A.shown === false);
+A = JSON.parse(await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent, dirty: writePending('trail'), ls: localStorage.getItem('snowroute.5w.v4.trail') }))()`));
+ok('T2 the failed clear is SILENT since Beta 1.296 (its warning is cut - the honesty is the pending flag below)', !A.shown || A.head === 'Location is off');
 ok('T2 clear stays pending (trail flag)', A.dirty === true);
 ok('T2 stored trail untouched by failed clear', A.ls !== '[]');
 await ev(`(() => { Storage.prototype.setItem = window.__origSI; flushAux(true); return true; })()`); await sleep(300);
@@ -112,10 +112,10 @@ await ev(`(() => { navigator.geolocation.watchPosition = () => 777; navigator.ge
 // ---- C04: break ONLY the marker key, then start a clean ----
 await ev(`(() => { window.__realLsSet = lsSet; lsSet = (k, v) => k === 'snowroute.5w.v5.sess' ? false : window.__realLsSet(k, v); return true; })()`);
 await ev(`(() => { startClean(); return true; })()`);
-const c04Raw = await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), runStart, marker: Math.floor(runStart / 1000), dirty: writePending('sess'), stored: localStorage.getItem('snowroute.5w.v5.sess') }))()`);
+const c04Raw = await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent, runStart, marker: Math.floor(runStart / 1000), dirty: writePending('sess'), stored: localStorage.getItem('snowroute.5w.v5.sess') }))()`);
 const c04 = JSON.parse(c04Raw);
 ok('C04a marker-save failure at clean start is SILENT since Beta 1.296 (its warning is cut), the clean still starts, retry armed ' +
-  '| ' + JSON.stringify(c04), c04.runStart > 0 && c04.shown === false && c04.dirty === true && (c04.stored === null || c04.stored.indexOf(String(c04.marker)) < 0));
+  '| ' + JSON.stringify(c04), c04.runStart > 0 && (!c04.shown || c04.head === 'Location is off') && c04.dirty === true && (c04.stored === null || c04.stored.indexOf(String(c04.marker)) < 0));
 await ev(`(() => { lsSet = window.__realLsSet; flushAux(true); return true; })()`);
 const c04b = JSON.parse(await ev(`(() => JSON.stringify({ dirty: writePending('sess'), stored: localStorage.getItem('snowroute.5w.v5.sess') }))()`));
 ok('C04b once storage recovers, the flush retry lands the marker | ' + JSON.stringify(c04b), c04b.dirty === false && (c04b.stored || '').indexOf(String(c04.marker)) >= 0);
@@ -125,11 +125,11 @@ await ev(`(() => { trail = [[43.82, -79.56, 1767650000], [43.821, -79.559, 17676
 await ev(`(() => { if (!map) map = { getSource: () => null }; lsSet = (k, v) => k === 'snowroute.5w.v5.sess' ? false : window.__realLsSet(k, v); return true; })()`);
 await ev(`(() => { clearTrailAll(); return true; })()`); // Beta 1.88: was the Clear trail button's double-tap; the clearing lives on as clearTrailAll
 await sleep(300);
-const c05Raw = await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), dirty: writePending('sess'), storedTrail: localStorage.getItem('snowroute.5w.v4.trail'), `
+const c05Raw = await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent, dirty: writePending('sess'), storedTrail: localStorage.getItem('snowroute.5w.v4.trail'), `
   + `storedSess: localStorage.getItem('snowroute.5w.v5.sess') }))()`);
 const c05 = JSON.parse(c05Raw);
 ok('C05a Clear Trail with the marker write broken is SILENT since Beta 1.296 (its warning is cut) - the stored state and the pending flag carry the honesty ' +
-  '| ' + JSON.stringify(c05), c05.shown === false && c05.storedTrail === '[]' && c05.storedSess === '[1767650000]' && c05.dirty === true);
+  '| ' + JSON.stringify(c05), (!c05.shown || c05.head === 'Location is off') && c05.storedTrail === '[]' && c05.storedSess === '[1767650000]' && c05.dirty === true);
 await ev(`(() => { lsSet = window.__realLsSet; flushAux(true); return true; })()`);
 const c05b = JSON.parse(await ev(`(() => JSON.stringify({ dirty: writePending('sess'), storedSess: localStorage.getItem('snowroute.5w.v5.sess') }))()`));
 ok('C05b the retry clears the stored markers once storage recovers | ' + JSON.stringify(c05b), c05b.dirty === false && c05b.storedSess === '[]');

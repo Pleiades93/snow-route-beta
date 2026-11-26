@@ -197,7 +197,7 @@ await poll(`!!window.__shared136`, 15000); await sleep(200);
 const f12a = JSON.parse(await ev(`(() => { try { const o = JSON.parse(window.__shared136); return JSON.stringify({ isRec: o.recovery === true, toast: ($('bannerHead').textContent + ' ' + $('bannerLine').textContent) });` +
   ` } catch (e) { return JSON.stringify({ err: String(e) }); } })()`));
 ok('F12a with saving broken, the Backup press shares a RECOVERY file and the banner says so (row 80, shared path) ' +
-  '| ' + JSON.stringify(f12a), f12a.isRec === true && f12a.toast.indexOf('recovery backup shared instead') >= 0 && f12a.toast.indexOf('Backup not saved') >= 0);
+  '| ' + JSON.stringify(f12a), f12a.isRec === true && f12a.toast.indexOf('recovery backup was shared instead') >= 0 && f12a.toast.indexOf('Backup not saved') >= 0);
 await ev(`__unstub()`);
 await ev(`flushAux(true); window.__shared136 = null; true`); await sleep(200);
 await ev(`shareBackup(); true`);
