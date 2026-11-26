@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3ade0eaafd5ca9b32cad06fcc93848e60e1ebe31ef1eea97b2d994b3eb4c6f28",
+  "canonical_registry_sha256": "99c254de3c7130086369cf202b44e6500fa3eab6061fd70d3eec429b07833c31",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1565,
-   "included": 1535,
+   "canonical": 1566,
+   "included": 1536,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13670,6 +13670,15 @@
    "fix_id": "te-fixture-startup-diag",
    "id": "te-fixture-startup-diag",
    "pattern": "fixture-startup r1 status",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "scripts/shard-durations.json",
+   "fix": "Test-efficiency stage 3: shard durations re-measured from DRIVE_TIME lines in the eight newest successful full-battery runs (median per drive); drive223/224/225 placeholders replaced by measurements (5.5/45.7/37.6); partition spread 93s -> 3s at current measurements.",
+   "fix_id": "te-shard-rebalance",
+   "id": "te-shard-rebalance",
+   "pattern": "\"drive224\": 45.7",
    "type": "grep_present"
   }
  ]
