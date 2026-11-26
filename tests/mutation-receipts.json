@@ -15729,6 +15729,19 @@
    "red": "pre-fix F7 failed on the local rig with the menu ending closed (stretched round trips admitted a toggle tap) and passed in CI without ever closing - it could not observe its claim in either direction",
    "green": "drive226 F7 green locally and the full drive 15/15 in CI on the C7/C8 heads (shard 2)",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive154-e4-r2",
+   "check": "tests/browser/drive154.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive154.mjs": "efbcea8b6e412191061a1d1ae527bb5069e10891c79555a6a31a2994d63a716f",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053"
+   },
+   "mutation": "parts/create-pick.js: crConfirmDismiss drops its hideSurface call, so the delete-confirm modal never hides (re-issued at r2 after a comment-only shortening of the E4 poll line)",
+   "red": "drive154 E4 red on the mutated tree (modalHidden:false after the poll gives up), local 2026-11-26",
+   "green": "drive154 E4 green on the unmutated tree (local 2026-11-26 and CI shard 3 on the C8 head); the poll waits out the 180 ms exit 1.298 added, which the old immediate read raced - CI failures on the C4 and C7 heads of PR #223, pass on C6",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }
