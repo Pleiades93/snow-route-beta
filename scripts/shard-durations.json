@@ -1,5 +1,5 @@
 {
- "about": "Per-drive CI durations in seconds. Refreshed 2026-11-25 (test-efficiency programme stage 3) from DRIVE_TIME lines in the eight newest successful full-battery PR gate runs of 2026-11-25 plus the flake-census failed-job logs: the stored value is the MEDIAN of 3-16 samples per drive (failed-job samples are real timings of drives that completed before the job failed). No placeholders remain: drive223 (was 21.55 placeholder) measures 5.5, drive224 45.7, drive225 37.6 (3 samples - thin, re-measure when its count grows). The runtime balancer (tests/browser/run.mjs --shard) and scripts/gen-shards.py read this file; the key set must name exactly the drive roster (scripts/check-shard-coverage.py enforces it). Re-measure whenever drive times shift materially.",
+ "about": "Per-drive CI durations (s), refreshed 2026-11-25 (stage 3): median DRIVE_TIME per drive (3-16 samples) from the newest 8 full-battery PR runs of 2026-11-25 plus failed-job logs. No placeholders; drive225 has 3 samples.",
  "measured_from_runs": [
   45671983405,
   45669187776,
