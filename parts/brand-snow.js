@@ -87,13 +87,7 @@
    same snow as the splash, identical). It parks when no menu is
    open - clock frozen, field kept, so the pile persists across
    menus in session memory - and resumes with the menu's first
-   frame. Specks draw from a sprite now: path fills cost frames.
-   Beta 1.300: resume() judges liveness by the last executed
-   frame, not the running flag alone - a frame chain that
-   stopped during the boot window (a callback never delivered,
-   a throw before the reschedule) left the flag true and the
-   boot menu snowless, with no seat to revive it. The boot
-   scene is now re-asserted at arm like every other scene. */
+   frame. Specks draw from a sprite now: path fills cost frames. */
 (function snowLayer() {
   var cvS = document.getElementById('snowCv');
   var handle = { cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: function () { return []; } };
@@ -205,6 +199,7 @@
     ctxS.clearRect(0, 0, W, H);
     document.body.classList.remove('snow-scene'); // no menu open: the menus' own opaque blue is their background again
   }
+  // Liveness is judged by executed frames: the boot scene is never re-opened to revive a stopped chain.
   function resume() { // Beta 1.299: the first frame paints synchronously, with the menu's first frame
     if (running && performance.now() - lastFrame <= 400) return; // alive: a frame executed just now
     if (raf) window.cancelAnimationFrame(raf); // Beta 1.300: a stopped chain leaves a stale id - clear it before the restart
