@@ -15716,6 +15716,19 @@
    "red": "pre-fix F7 failed on the local rig with the menu ending closed (stretched round trips admitted a toggle tap) and passed in CI without ever closing - it could not observe its claim in either direction",
    "green": "drive226 F7 green locally and the full drive 15/15 in CI on the C7 head's judge (shard 2); F7's new middle-state assert reads the park the close must produce",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r7",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "6a9bfb72756b5c2a46acb52060936246f5ab4d13c494b7c54821163b811bb482",
+    "parts/brand-snow.js": "b2fc5cebec0e9f75fba7babfc24cd002f7f38acc725852a1428d5ad17c473f0e"
+   },
+   "mutation": "drive226 F7 sequence shape: with routesBtn re-taps scripted at 70 ms the 400 ms tapGuard rejects them and no close is exercised (the pre-fix F7); the fix taps rmClose and asserts the closed-and-parked middle state (re-issued at r7 after a comment-only compression of the F7 header)",
+   "red": "pre-fix F7 failed on the local rig with the menu ending closed (stretched round trips admitted a toggle tap) and passed in CI without ever closing - it could not observe its claim in either direction",
+   "green": "drive226 F7 green locally and the full drive 15/15 in CI on the C7/C8 heads (shard 2)",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }

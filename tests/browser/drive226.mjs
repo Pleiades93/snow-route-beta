@@ -105,10 +105,7 @@ await tapById(ev, 'rmClose');
 await sleep(700);
 
 // ---------- F7: rapid toggle converges to one engine ----------
-// The middle tap is rmClose, not routesBtn: routesBtn sits behind a
-// 400 ms tap guard, so scripted 70 ms re-taps are rejected and the
-// sequence would never close at all (and stretched round trips let
-// one through as a toggle - the outcome depended on rig speed).
+// rmClose bypasses the Routes button's debounce so the middle close is accepted.
 await tapById(ev, 'routesBtn'); await sleep(120);
 await tapById(ev, 'rmClose'); await sleep(120);
 const MID = await J(`({ open: document.getElementById('routeMenu').classList.contains('open'), running: window.__snow.running() })`);
