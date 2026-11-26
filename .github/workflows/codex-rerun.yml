@@ -12,6 +12,7 @@ on:
 
 permissions:
   actions: write
+  pull-requests: read
 
 jobs:
   rerun-bridge:
