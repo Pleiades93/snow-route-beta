@@ -1306,6 +1306,19 @@ with tempfile.TemporaryDirectory() as td:
                                           ("c2", {"parts/a.js": short_block.replace("seven", "SEVEN") + "const a = 1;\n"})])
     check("pr-limits: a rewritten short comment passes",
           run_limits(repo, head1(repo)), 0)
+    # Regex literals: a /* inside one opens no comment; a real
+    # long comment beside one still fails.
+    regex_src = ("const re = /[/*]/;\n"
+                 "const s = \"alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima mike november oscar papa quebec romeo sierra tango uniform victor whiskey xray yankee\";\n"
+                 "/* short */\n")
+    repo, _ = git_repo(t / "regexphantom", [("c1", {"parts/a.js": "const a = 1;\n"}),
+                                            ("c2", {"parts/a.js": regex_src})])
+    check("pr-limits: a regex literal's /* opens no comment",
+          run_limits(repo, head1(repo)), 0)
+    repo, _ = git_repo(t / "regexlong", [("c1", {"parts/a.js": "const re = /[/*]/;\n" + long_block + "const a = 1;\n"}),
+                                         ("c2", {"parts/a.js": "const re = /[/*]/;\n" + long_block.replace("whiskey", "whisky") + "const a = 1;\n"})])
+    check("pr-limits: a long comment beside a regex literal still fails",
+          run_limits(repo, head1(repo)), 1)
     # Fetch shallow ancestry so the size rule sees the product commit.
     src, b = git_repo(t / "mergesrc", [])
     genv = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
@@ -1397,6 +1410,6 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: a baselined clone pair passes",
           run_scan(clone_tree), 0)
 
-total = 113
+total = 115
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

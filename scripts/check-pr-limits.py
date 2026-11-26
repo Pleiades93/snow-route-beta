@@ -82,15 +82,148 @@ def line_errors(path, text):
     return errs
 
 
+_REGEX_PREV_OK = set("(,=:[!&|?{};+-*%~^<>")
+_REGEX_WORDS = {"return", "typeof", "case", "delete", "void", "in", "of",
+                "instanceof", "new", "yield", "await", "else", "do", "throw"}
+
+
+def _js_comment_matches(text):
+    """(start, raw) for each // and /* */ comment in JS source.
+
+    One pass: quoted strings, template literals and regex literals
+    are skipped whole, so a /* inside any of them opens nothing.
+    A / opens a regex when the previous significant token cannot
+    end an expression (the standard lexer heuristic)."""
+    out = []
+    i, n = 0, len(text)
+    prev = ""       # last significant char, or "word" / "str" / "end"
+    word = ""       # last identifier when prev == "word"
+    stack = []      # "tpl" or ("expr", brace depth) inside a template
+    while i < n:
+        c = text[i]
+        if stack and stack[-1] == "tpl":
+            if c == "\\":
+                i += 2
+                continue
+            if c == "`":
+                stack.pop()
+                prev, word = "str", ""
+                i += 1
+                continue
+            if c == "$" and text[i + 1:i + 2] == "{":
+                stack.append(("expr", 1))
+                i += 2
+                continue
+            i += 1
+            continue
+        if c in " \t\r\n":
+            i += 1
+            continue
+        if c == "/" and text[i + 1:i + 2] == "/":
+            j = text.find("\n", i)
+            if j < 0:
+                j = n
+            raw = text[i:j]
+            out.append((i, raw[:-1] if raw.endswith("\r") else raw))
+            i = j
+            continue
+        if c == "/" and text[i + 1:i + 2] == "*":
+            j = text.find("*/", i + 2)
+            if j < 0:
+                i += 2
+                continue
+            out.append((i, text[i:j + 2]))
+            i = j + 2
+            continue
+        if c in "'\"":
+            j = i + 1
+            while j < n:
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == c or text[j] == "\n":
+                    break
+                j += 1
+            i = min(j + 1, n)
+            prev, word = "str", ""
+            continue
+        if c == "`":
+            stack.append("tpl")
+            i += 1
+            continue
+        if c == "/":
+            if prev == "word":
+                regex = word in _REGEX_WORDS
+            elif prev in ("str", "end"):
+                regex = False
+            else:
+                regex = prev == "" or prev in _REGEX_PREV_OK
+            if not regex:
+                prev, word = "/", ""
+                i += 1
+                continue
+            j = i + 1
+            in_class = False
+            while j < n:
+                d = text[j]
+                if d == "\\":
+                    j += 2
+                    continue
+                if d == "[":
+                    in_class = True
+                elif d == "]":
+                    in_class = False
+                elif d == "/" and not in_class:
+                    break
+                elif d == "\n":
+                    break
+                j += 1
+            j = min(j + 1, n)
+            while j < n and text[j].isalpha():
+                j += 1
+            i = j
+            prev, word = "str", ""
+            continue
+        if c == "{" and stack and isinstance(stack[-1], tuple):
+            stack[-1] = ("expr", stack[-1][1] + 1)
+            prev, word = "{", ""
+            i += 1
+            continue
+        if c == "}" and stack and isinstance(stack[-1], tuple):
+            depth = stack[-1][1] - 1
+            if depth:
+                stack[-1] = ("expr", depth)
+            else:
+                stack.pop()
+            prev, word = "}", ""
+            i += 1
+            continue
+        if c.isalnum() or c in "_$":
+            j = i
+            while j < n and (text[j].isalnum() or text[j] in "_$"):
+                j += 1
+            word = text[i:j]
+            prev = "word"
+            i = j
+            continue
+        if c in "+-" and prev == c:
+            prev, word = "end", ""
+            i += 1
+            continue
+        prev, word = c, ""
+        i += 1
+    return out
+
+
 def comment_spans(path, text):
     """Yield zero-based first line, last line and full comment text."""
     ext = Path(path).suffix.lower()
     quoted = r"""(["'])(?:\\[\s\S]|(?!\1|\\)[\s\S])*\1"""
-    if ext in (".js", ".mjs", ".css"):
-        markers = r"/\*[\s\S]*?\*/"
-        if ext != ".css":
-            markers += r"|//[^\r\n]*"
-        pattern = quoted + r"|\x60(?:\\[\s\S]|[^\x60\\])*\x60|" + markers
+    if ext in (".js", ".mjs"):
+        yield from _merge_spans(text, _js_comment_matches(text))
+        return
+    if ext == ".css":
+        pattern = quoted + r"|\x60(?:\\[\s\S]|[^\x60\\])*\x60|" + r"/\*[\s\S]*?\*/"
     elif ext in (".html", ".md"):
         pattern = r"<!--[\s\S]*?-->"
         if ext == ".html":
@@ -106,14 +239,18 @@ def comment_spans(path, text):
     else:
         return
 
+    found = [(m.start(), m.group(0)) for m in re.finditer(pattern, text)
+             if not m.group(0).startswith(("'", '"', "\x60"))]
+    yield from _merge_spans(text, found)
+
+
+def _merge_spans(text, found):
+    """Merge consecutive same-indent // or # lines into one span."""
     block = None
-    for match in re.finditer(pattern, text):
-        raw = match[0]
-        if raw.startswith(("'", '"', "\x60")):
-            continue
-        first = text.count("\n", 0, match.start())
+    for start, raw in found:
+        first = text.count("\n", 0, start)
         last = first + raw.count("\n")
-        indent = text[text.rfind("\n", 0, match.start()) + 1:match.start()]
+        indent = text[text.rfind("\n", 0, start) + 1:start]
         marker = "//" if raw.startswith("//") else "#" if raw.startswith("#") else None
         if marker:
             body = raw[len(marker):]
