@@ -14775,6 +14775,18 @@
    "red": "fixture-startup burned 6 gate runs (flake census 2), each with the captured output discarded",
    "green": "selftest-runner full suite PASS in 2 local rounds under 4x CPU load 2026-11-25; CI build-and-test green on PR #218",
    "issued": "2026-11-25"
+  },
+  {
+   "id": "test-efficiency-live-labels",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "1c2b7942290ec5f431f8dd7d0d041856b3d57deaceabf88fe82b52d624a50120"
+   },
+   "mutation": "none - CI wiring change: the PR limits step reads labels live via the API instead of the frozen event payload (payload kept as fallback)",
+   "red": "PR #213 (2026-11-25): the large-change label added mid-round did not take effect - a job re-run replayed the original payload labels and the limits step kept failing until a new head was pushed; the debt is recorded in the round plan",
+   "green": "gate fixtures 93/93 pass with the new step text; the step's live read is exercised by this PR's own checks runs (build-and-test PR limits step)",
+   "issued": "2026-11-25"
   }
  ]
 }

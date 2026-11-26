@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "8ce4f8a0901be0d9fdb383714b8a264faa4b5313fb917b8f24f476878f27d4e3",
+  "canonical_registry_sha256": "05d3a21bc50835a833a253cd6a1ae69bff1f4572be6e2ae779d9e45456f456b2",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1567,
-   "included": 1537,
+   "canonical": 1568,
+   "included": 1538,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13688,6 +13688,15 @@
    "fix_id": "te-codex-rerun",
    "id": "te-codex-rerun",
    "pattern": "issue_comment",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": ".github/workflows/checks.yml",
+   "fix": "Test-efficiency stage 3: the PR limits step reads the PR labels live at step time (payload list as fallback), closing the labeled-event debt - a mid-round large-change label takes effect on a re-run instead of needing a new head.",
+   "fix_id": "te-live-labels",
+   "id": "te-live-labels",
+   "pattern": "issues/$PR_NUMBER/labels",
    "type": "grep_present"
   }
  ]

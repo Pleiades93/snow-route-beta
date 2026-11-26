@@ -97,6 +97,7 @@ on:
         default: true
 permissions:
   contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository
+  issues: read # the PR limits step reads the PR's labels live at run time (test-efficiency stage 3)
 concurrency:
   # Branch/PR runs cancel superseded runs on the same ref; main runs never
   # cancel each other (unique group per run).
@@ -193,8 +194,16 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: python3 scripts/check-pr-limits.py . --base "$BASE_SHA" --labels "$PR_LABELS"
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PAYLOAD_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          # Labels are read LIVE at step time: the event payload
+          # freezes them at trigger time, so a label added mid-round
+          # (large-change) never reached this step on a re-run - the
+          # labeled-event debt. The payload list is the fallback.
+          PR_LABELS=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" --jq '[.[].name] | join(",")' 2>/dev/null || echo "$PAYLOAD_LABELS")
+          python3 scripts/check-pr-limits.py . --base "$BASE_SHA" --labels "$PR_LABELS"
       - name: Receipts gate (refuse changed checks without current mutation receipts, class N1)
         env:
           EVENT: ${{ github.event_name }}
