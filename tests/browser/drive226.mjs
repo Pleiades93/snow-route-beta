@@ -3,22 +3,17 @@ const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 await bootThrough(ev, poll);
 
 // drive226: Beta 1.299 - SNOW ON EVERY BLUE MENU, the fluidity proof.
-// Andrew's pick (2026-11-26): the menus run the splash engine's own
-// snow, identical. The round's binding bar: prove with frame timing
-// on the real app that the snow costs the menus nothing - the first
-// snow frame lands with the menu's first frame, the 420 ms open and
-// close hold their frames, and the same holds under CPU throttling.
-// The budget derives from the 60 fps frame (16.7 ms), stated here
-// before any measurement: inside the animation window, consecutive
-// painted frames may not gap more than 2 frames (34 ms) at p95 nor
-// 3 frames (51 ms) ever, and at least 20 frame intervals must land
-// in the window. An in-page rAF recorder samples the painted-frame
-// count (__snow.frames()), the menu's computed transform and the
-// rAF timestamps around scripted opens and closes; the drive also
-// proves the engine parks on the map (never any snow there), stops
-// dead on close, and holds the pile across menus (the amount and
-// the flake field a menu closes with are the ones the next opens
-// with - session memory only, no storage).
+// The menus run the splash engine's own snow, identical (Andrew's
+// pick, 2026-11-26); this drive proves the snow costs the menus
+// nothing, with frame timing on the real app. Budget, from the
+// 60 fps frame (16.7 ms) and stated before measurement: from the
+// click, first snow and first menu movement land within 51 ms;
+// inside the 420 ms open/close, gaps <= 34 ms at p95, <= 51 ms
+// ever, >= 20 intervals - the same under 4x CPU throttling. An
+// in-page rAF recorder samples __snow.frames(), the menu's
+// transform and timestamps around scripted opens and closes; the
+// drive also proves the engine parks on the map, stops dead on
+// close, holds the pile across menus, and keeps sub-pane ground.
 
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
@@ -42,18 +37,22 @@ const armRecorder = async () => {
 };
 const disarmRecorder = async () => { await ev(`(() => { if (window.__fr) window.__fr.on = false; return true; })()`); await sleep(60); };
 const readRecorder = async () => J(`window.__fr ? { times: window.__fr.times, snow: window.__fr.snow, menu: window.__fr.menu } : { times: [], snow: [], menu: [] }`);
-const judgeWindow = (rec, fPre) => {
+const markTap = async () => J(`({ t: performance.now(), m: getComputedStyle(document.getElementById('routeMenu')).transform })`);
+const judgeSpan = (rec, mark, fPre) => {
+  let i0 = rec.times.findIndex(t => t >= mark.t);
+  if (i0 < 0) i0 = rec.times.length;
   let firstSnow = -1, firstMove = -1;
-  for (let i = 0; i < rec.snow.length; i++) { if (firstSnow < 0 && rec.snow[i] > fPre) firstSnow = i; if (firstMove < 0 && i > 0 && rec.menu[i] !== rec.menu[0]) firstMove = i; if (firstSnow >= 0 && firstMove >= 0) break; }
-  const ivals = [];
-  if (firstMove >= 0) {
-    const t0 = rec.times[firstMove];
-    for (let i = firstMove; i + 1 < rec.times.length && rec.times[i] - t0 <= 430; i++) ivals.push(rec.times[i + 1] - rec.times[i]);
+  for (let i = i0; i < rec.snow.length; i++) {
+    if (firstSnow < 0 && fPre !== null && rec.snow[i] > fPre) firstSnow = i;
+    if (firstMove < 0 && rec.menu[i] !== mark.m) firstMove = i;
+    if ((fPre === null || firstSnow >= 0) && firstMove >= 0) break;
   }
+  const ivals = [];
+  for (let i = i0; i + 1 < rec.times.length && rec.times[i] - mark.t <= 430; i++) ivals.push(rec.times[i + 1] - rec.times[i]);
   const sorted = [...ivals].sort((a, b) => a - b);
   const p95 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] : 999;
   const max = sorted.length ? sorted[sorted.length - 1] : 999;
-  return { firstSnow, firstMove, n: ivals.length, p95, max };
+  return { snowMs: firstSnow >= 0 ? Math.round(rec.times[firstSnow] - mark.t) : -1, moveMs: firstMove >= 0 ? Math.round(rec.times[firstMove] - mark.t) : -1, n: ivals.length, p95, max };
 };
 
 // ---------- F1: parked on the map ----------
@@ -65,13 +64,14 @@ const N0 = P0.flakes;
 // ---------- F2/F3/F4: Routes open - first frame, budget, alive ----------
 await armRecorder();
 const fPre = await J(`window.__snow.frames()`);
+const markO = await markTap();
 await tapById(ev, 'routesBtn');
 await sleep(750);
 await disarmRecorder();
 const rec1 = await readRecorder();
-const w1 = judgeWindow(rec1, fPre);
-ok('F2 first frame: the snow\'s first painted frame lands no later than the menu\'s first moving frame | ' + JSON.stringify(w1),
-  w1.firstSnow >= 0 && w1.firstMove >= 0 && w1.firstSnow <= w1.firstMove);
+const w1 = judgeSpan(rec1, markO, fPre);
+ok('F2 first frame: from the click, the first painted snow frame and the menu\'s first movement each land within 51 ms, snow no later than the menu | ' + JSON.stringify(w1),
+  w1.snowMs >= 0 && w1.moveMs >= 0 && w1.snowMs <= 51 && w1.moveMs <= 51 && w1.snowMs <= w1.moveMs);
 ok('F3 open budget (60 fps frame = 16.7 ms): >= 20 intervals inside the 420 ms window, p95 gap <= 34 ms, max gap <= 51 ms | ' + JSON.stringify(w1),
   w1.n >= 20 && w1.p95 <= 34 && w1.max <= 51);
 const A1 = await J(`({ running: window.__snow.running(), scene: document.body.classList.contains('snow-scene'), f: window.__snow.flakes().slice(0, 3) })`);
@@ -81,13 +81,20 @@ ok('F4 while Routes is open the snow runs and the flakes move | running ' + A1.r
   A1.running === true && A1.scene === true && JSON.stringify(A1.f) !== JSON.stringify(A2));
 
 // ---------- F5/F6: close stops dead; the pile is held and resumes ----------
+await armRecorder();
+const markC = await markTap();
 await tapById(ev, 'rmClose');
 await sleep(750);
+await disarmRecorder();
+const recC = await readRecorder();
+const wC = judgeSpan(recC, markC, null);
 const C1 = await J(`({ frames: window.__snow.frames(), amount: window.__snow.amount(), f0: window.__snow.flakes()[0], n: window.__snow.flakes().length, vis: getComputedStyle(document.getElementById('snowCv')).visibility })`);
 await sleep(300);
 const C2 = await J(`({ frames: window.__snow.frames(), running: window.__snow.running(), scene: document.body.classList.contains('snow-scene') })`);
 ok('F5 close stops the snow dead: the painted count is frozen, the engine is parked, the canvas is hidden | ' + JSON.stringify({ C1, C2 }),
   C1.frames === C2.frames && C2.running === false && C2.scene === false && C1.vis === 'hidden');
+ok('F5b close budget: the menu moves within 51 ms of the click and the close\'s gaps hold the same budget (>= 20 intervals, p95 <= 34 ms, max <= 51 ms) | ' + JSON.stringify(wC),
+  wC.moveMs >= 0 && wC.moveMs <= 51 && wC.n >= 20 && wC.p95 <= 34 && wC.max <= 51);
 await tapById(ev, 'routesBtn');
 const R1 = await J(`({ amount: window.__snow.amount(), f0: window.__snow.flakes()[0], n: window.__snow.flakes().length, running: window.__snow.running() })`);
 await sleep(400);
@@ -151,17 +158,25 @@ ok('F8b Settings close stops the snow dead too | ' + JSON.stringify({ S3, S4 }),
 await send('Emulation.setCPUThrottlingRate', { rate: 4 }, S);
 await armRecorder();
 const fPre9 = await J(`window.__snow.frames()`);
+const mark9 = await markTap();
 await tapById(ev, 'routesBtn');
 await sleep(900);
 await disarmRecorder();
 const rec9 = await readRecorder();
-const w9 = judgeWindow(rec9, fPre9);
-ok('F9 throttled (4x CPU): first snow frame still lands no later than the menu\'s first moving frame | ' + JSON.stringify(w9),
-  w9.firstSnow >= 0 && w9.firstMove >= 0 && w9.firstSnow <= w9.firstMove);
+const w9 = judgeSpan(rec9, mark9, fPre9);
+ok('F9 throttled (4x CPU): from the click, first snow and first menu movement each still land within 51 ms, snow no later than the menu | ' + JSON.stringify(w9),
+  w9.snowMs >= 0 && w9.moveMs >= 0 && w9.snowMs <= 51 && w9.moveMs <= 51 && w9.snowMs <= w9.moveMs);
 ok('F9b throttled budget, unchanged: >= 20 intervals in the window, p95 gap <= 34 ms, max gap <= 51 ms | ' + JSON.stringify(w9),
   w9.n >= 20 && w9.p95 <= 34 && w9.max <= 51);
+await armRecorder();
+const markC9 = await markTap();
 await tapById(ev, 'rmClose');
 await sleep(900);
+await disarmRecorder();
+const recC9 = await readRecorder();
+const wC9 = judgeSpan(recC9, markC9, null);
+ok('F9c throttled close budget, unchanged: the menu moves within 51 ms of the click and the gaps hold (>= 20 intervals, p95 <= 34 ms, max <= 51 ms) | ' + JSON.stringify(wC9),
+  wC9.moveMs >= 0 && wC9.moveMs <= 51 && wC9.n >= 20 && wC9.p95 <= 34 && wC9.max <= 51);
 await send('Emulation.setCPUThrottlingRate', { rate: 1 }, S);
 
 R.exceptions = consoleLog.filter(l => l.type === 'EXCEPTION').map(l => l.text.slice(0, 200));

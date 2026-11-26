@@ -15677,6 +15677,19 @@
    "red": "drive125 28/29: T3 fails - the menu's own gradient stands and the shared field is covered (local, 2026-11-26)",
    "green": "drive125 29/29 PASS on the unmutated tree (local, 2026-11-26; also CI-green on the C4 head)",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1299-drive226-r5",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "e7204e2878a77f9562350bdb101c83058e52a494477b7a0d68901619619a7b2a",
+    "parts/brand-snow.js": "b2fc5cebec0e9f75fba7babfc24cd002f7f38acc725852a1428d5ad17c473f0e"
+   },
+   "mutation": "parts/brand-snow.js: a one-time 150 ms busy-wait at resume() entry (the open path's first paint stalls before the menu's first moving frame)",
+   "red": "drive226 F2 red (first movement 169 ms after the click, over the 51 ms bound) and F3 red (interval p95 150 ms) on the mutated tree, local 2026-11-26; the pre-fix index-based F2 passed this shape - snow and menu samples arrive together after the stall",
+   "green": "drive226 15/15 on the unmutated tree in CI (the fluidity adjudicating environment); local 12/15 with only the documented rig flakes (F7 tap race, F9/F9b throttled-rig starvation)",
+   "issued": "2026-11-26-snow-menus-1299"
   }
  ]
 }
