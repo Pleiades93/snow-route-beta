@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-lkCsbQHIRxUkpAm1XxfNO3JvPFHC+tTgo+JqCKQky28eC9c5dDqy9ohIGDx2vbPi' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-PI2wpEpgvFdPmf9hUqk05GtfSKIla7/ILXZeoErKWw3qn1TGo4llc4cFV9ALxjz/' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-AQXMYbu6Kc1qoq0Uvy3+9Sod2C2hOp7eVlyhfp2BdxojuYtXEyIl1O+qBdoT33jU' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-PI2wpEpgvFdPmf9hUqk05GtfSKIla7/ILXZeoErKWw3qn1TGo4llc4cFV9ALxjz/' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -761,7 +761,7 @@ html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::aft
 <div id="hud">
   <div id="warn"><strong>Not saving</strong><br><span>Storage is full or blocked</span></div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.299</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.300</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -6886,9 +6886,8 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.299', items: [
-    "Snow now falls in the menus too",
-    "It is the same snow as the start screen, and it settles at the bottom of the menu"
+  v: 'Beta 1.300', items: [
+    "Fixed: the first menu after the start screen now snows like the rest"
   ] }; // entries stay short: one plain line each (Beta 1.223 rule)
 
 function renderAbout() {
@@ -10230,7 +10229,7 @@ async function saveDraftRoute() {
   var MID = { per: 4400, rMin: 1.8, rMax: 3.4, vMin: 26, vMax: 48, swayAmp: 7, swaySpeed: 0.6, alpha: 0.85 };
   var BLOB = { per: 45000, rMin: 26, rMax: 52, vMin: 34, vMax: 56, swayAmp: 12, swaySpeed: 0.25, alpha: 0.3 };
   function rand(a, b) { return a + Math.random() * (b - a); }
-  var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, frames = 0;
+  var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, frames = 0, lastFrame = 0;
   var ctxS = cvS.getContext('2d');
   if (!ctxS) return;
   function resize() {
@@ -10331,8 +10330,10 @@ async function saveDraftRoute() {
     ctxS.clearRect(0, 0, W, H);
     document.body.classList.remove('snow-scene'); // no menu open: the menus' own opaque blue is their background again
   }
+  // Liveness is judged by executed frames: the boot scene is never re-opened to revive a stopped chain.
   function resume() { // Beta 1.299: the first frame paints synchronously, with the menu's first frame
-    if (running) return;
+    if (running && performance.now() - lastFrame <= 400) return; // alive: a frame executed just now
+    if (raf) window.cancelAnimationFrame(raf); // Beta 1.300: a stopped chain leaves a stale id - clear it before the restart
     running = true;
     lastTs = 0;
     document.body.classList.add('snow-scene');
@@ -10347,6 +10348,7 @@ async function saveDraftRoute() {
   }
   function loop(ts) {
     if (!running) return;
+    lastFrame = performance.now(); // the liveness stamp resume() judges
     if (!live()) { park(); return; }
     if (!lastTs) lastTs = ts;
     var dt = Math.min(0.05, (ts - lastTs) / 1000);

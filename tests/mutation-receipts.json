@@ -15742,6 +15742,149 @@
    "red": "drive154 E4 red on the mutated tree (modalHidden:false after the poll gives up), local 2026-11-26",
    "green": "drive154 E4 green on the unmutated tree (local 2026-11-26 and CI shard 3 on the C8 head); the poll waits out the 180 ms exit 1.298 added, which the old immediate read raced - CI failures on the C4 and C7 heads of PR #223, pass on C6",
    "issued": "2026-11-26-snow-menus-1299"
+  },
+  {
+   "id": "snow1300-drive227-stepaside",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "f7cee3a16abf59d9c336b59de55c66ac8e4398def922128fc182c0c6a83684d3",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "parts/head.html: the snow-scene step-aside selector for #routeMenu renamed to #routeMenuMUT, so the boot menu keeps its opaque background over the canvas",
+   "red": "drive227 B1 and B2 FAIL (observed twice): the boot menu background reads linear-gradient(135deg, rgb(61, 101, 239), rgb(27, 47, 182)) instead of none while frames advance",
+   "green": "drive227 3/3 PASS on the final tree (26.2 s and 23.5 s runs)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-resume",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "f7cee3a16abf59d9c336b59de55c66ac8e4398def922128fc182c0c6a83684d3",
+    "parts/brand-snow.js": "88125be6aaf1e4053be1c07c44729cb91485cb9b3569977e437f80a23308970e"
+   },
+   "mutation": "parts/brand-snow.js: resume() reverted to the Beta 1.299 form - it trusts the running flag and never restarts a stopped frame chain (the fix removed)",
+   "red": "drive227 B2 FAIL (observed twice): running reads true, canvas visible, menu background none, but painted frames frozen 5 -> 5 and 4 -> 4 across the sample window - the snowless boot menu exactly as reported; B1 and B2a stayed green",
+   "green": "drive227 3/3 PASS on the final tree (26.2 s and 23.5 s runs)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-liveclause",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "f7cee3a16abf59d9c336b59de55c66ac8e4398def922128fc182c0c6a83684d3",
+    "parts/brand-snow.js": "88125be6aaf1e4053be1c07c44729cb91485cb9b3569977e437f80a23308970e"
+   },
+   "mutation": "parts/brand-snow.js: live() loses its splash-presence clause, so the engine parks from its first frame of the boot window",
+   "red": "drive227 B2a FAIL (observed twice): callbacks dropped 0, painted frames 0 -> 0, running reads false - the stuck-state premise cannot form because the engine never ran; B1 stayed green, proving a parked engine is revived at arm and only the flag-true stuck chain strands the scene",
+   "green": "drive227 3/3 PASS on the final tree (26.2 s and 23.5 s runs)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-stepaside-r2",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "e4a10d79dfbdff170ec218ac269246c7dd364ba56e5c2a8eaa84e9af05245bcc",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "parts/head.html: the snow-scene step-aside selector for #routeMenu renamed to #routeMenuMUT, so the boot menu keeps its opaque background over the canvas",
+   "red": "drive227 B1 and B2 FAIL (observed twice): the boot menu background reads linear-gradient(135deg, rgb(61, 101, 239), rgb(27, 47, 182)) instead of none while frames advance",
+   "green": "drive227 3/3 PASS on the final tree (re-issued after a line wrap in the check file; the wrapped file passes 3/3, 24.8 s)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-resume-r2",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "e4a10d79dfbdff170ec218ac269246c7dd364ba56e5c2a8eaa84e9af05245bcc",
+    "parts/brand-snow.js": "88125be6aaf1e4053be1c07c44729cb91485cb9b3569977e437f80a23308970e"
+   },
+   "mutation": "parts/brand-snow.js: resume() reverted to the Beta 1.299 form - it trusts the running flag and never restarts a stopped frame chain (the fix removed)",
+   "red": "drive227 B2 FAIL (observed twice): running reads true, canvas visible, menu background none, but painted frames frozen 5 -> 5 and 4 -> 4 across the sample window - the snowless boot menu exactly as reported; B1 and B2a stayed green",
+   "green": "drive227 3/3 PASS on the final tree (re-issued after a line wrap in the check file; the wrapped file passes 3/3, 24.8 s)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-liveclause-r2",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "e4a10d79dfbdff170ec218ac269246c7dd364ba56e5c2a8eaa84e9af05245bcc",
+    "parts/brand-snow.js": "88125be6aaf1e4053be1c07c44729cb91485cb9b3569977e437f80a23308970e"
+   },
+   "mutation": "parts/brand-snow.js: live() loses its splash-presence clause, so the engine parks from its first frame of the boot window",
+   "red": "drive227 B2a FAIL (observed twice): callbacks dropped 0, painted frames 0 -> 0, running reads false - the stuck-state premise cannot form because the engine never ran; B1 stayed green, proving a parked engine is revived at arm and only the flag-true stuck chain strands the scene",
+   "green": "drive227 3/3 PASS on the final tree (re-issued after a line wrap in the check file; the wrapped file passes 3/3, 24.8 s)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-resume-r3",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "e4a10d79dfbdff170ec218ac269246c7dd364ba56e5c2a8eaa84e9af05245bcc",
+    "parts/brand-snow.js": "23475db085976626186c545c99659228f4af4c57d6845c41796d6d2b97818a05"
+   },
+   "mutation": "parts/brand-snow.js: resume() reverted to the Beta 1.299 form - it trusts the running flag and never restarts a stopped frame chain (the fix removed)",
+   "red": "drive227 B2 FAIL (observed twice): running reads true, canvas visible, menu background none, but painted frames frozen 5 -> 5 and 4 -> 4 across the sample window - the snowless boot menu exactly as reported; B1 and B2a stayed green",
+   "green": "drive227 3/3 PASS on the final tree (re-issued at the Codex comment fix: the fix's history block left the source header, mechanism unchanged)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-liveclause-r3",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "e4a10d79dfbdff170ec218ac269246c7dd364ba56e5c2a8eaa84e9af05245bcc",
+    "parts/brand-snow.js": "23475db085976626186c545c99659228f4af4c57d6845c41796d6d2b97818a05"
+   },
+   "mutation": "parts/brand-snow.js: live() loses its splash-presence clause, so the engine parks from its first frame of the boot window",
+   "red": "drive227 B2a FAIL (observed twice): callbacks dropped 0, painted frames 0 -> 0, running reads false - the stuck-state premise cannot form because the engine never ran; B1 stayed green, proving a parked engine is revived at arm and only the flag-true stuck chain strands the scene",
+   "green": "drive227 3/3 PASS on the final tree (re-issued at the Codex comment fix: the fix's history block left the source header, mechanism unchanged)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-stepaside-r3",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "3975db389d6ca285d1ffbc5b448e9ef43bbe7001ddd8bd23e7ace03be92f8cfb",
+    "parts/head.html": "e2b1a9d0b51aae5f601a9c02ccf0804b8669a6b4d2e9153e951eab173495dd1e"
+   },
+   "mutation": "parts/head.html: the snow-scene step-aside selector for #routeMenu renamed to #routeMenuMUT, so the boot menu keeps its opaque background over the canvas",
+   "red": "drive227 B1 and B2 FAIL (observed twice): the boot menu background reads linear-gradient(135deg, rgb(61, 101, 239), rgb(27, 47, 182)) instead of none while frames advance",
+   "green": "drive227 3/3 PASS on the final tree (re-issued at the Codex header fix on the drive: history block replaced by a two-line why, checks unchanged)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-resume-r4",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "3975db389d6ca285d1ffbc5b448e9ef43bbe7001ddd8bd23e7ace03be92f8cfb",
+    "parts/brand-snow.js": "23475db085976626186c545c99659228f4af4c57d6845c41796d6d2b97818a05"
+   },
+   "mutation": "parts/brand-snow.js: resume() reverted to the Beta 1.299 form - it trusts the running flag and never restarts a stopped frame chain (the fix removed)",
+   "red": "drive227 B2 FAIL (observed twice): running reads true, canvas visible, menu background none, but painted frames frozen 5 -> 5 and 4 -> 4 across the sample window - the snowless boot menu exactly as reported; B1 and B2a stayed green",
+   "green": "drive227 3/3 PASS on the final tree (re-issued at the Codex header fix on the drive: history block replaced by a two-line why, checks unchanged)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
+  },
+  {
+   "id": "snow1300-drive227-liveclause-r4",
+   "check": "tests/browser/drive227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive227.mjs": "3975db389d6ca285d1ffbc5b448e9ef43bbe7001ddd8bd23e7ace03be92f8cfb",
+    "parts/brand-snow.js": "23475db085976626186c545c99659228f4af4c57d6845c41796d6d2b97818a05"
+   },
+   "mutation": "parts/brand-snow.js: live() loses its splash-presence clause, so the engine parks from its first frame of the boot window",
+   "red": "drive227 B2a FAIL (observed twice): callbacks dropped 0, painted frames 0 -> 0, running reads false - the stuck-state premise cannot form because the engine never ran; B1 stayed green, proving a parked engine is revived at arm and only the flag-true stuck chain strands the scene",
+   "green": "drive227 3/3 PASS on the final tree (re-issued at the Codex header fix on the drive: history block replaced by a two-line why, checks unchanged)",
+   "issued": "2026-11-26-snow-boot-scene-1300"
   }
  ]
 }

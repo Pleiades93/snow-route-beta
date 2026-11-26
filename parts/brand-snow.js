@@ -98,7 +98,7 @@
   var MID = { per: 4400, rMin: 1.8, rMax: 3.4, vMin: 26, vMax: 48, swayAmp: 7, swaySpeed: 0.6, alpha: 0.85 };
   var BLOB = { per: 45000, rMin: 26, rMax: 52, vMin: 34, vMax: 56, swayAmp: 12, swaySpeed: 0.25, alpha: 0.3 };
   function rand(a, b) { return a + Math.random() * (b - a); }
-  var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, frames = 0;
+  var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, frames = 0, lastFrame = 0;
   var ctxS = cvS.getContext('2d');
   if (!ctxS) return;
   function resize() {
@@ -199,8 +199,10 @@
     ctxS.clearRect(0, 0, W, H);
     document.body.classList.remove('snow-scene'); // no menu open: the menus' own opaque blue is their background again
   }
+  // Liveness is judged by executed frames: the boot scene is never re-opened to revive a stopped chain.
   function resume() { // Beta 1.299: the first frame paints synchronously, with the menu's first frame
-    if (running) return;
+    if (running && performance.now() - lastFrame <= 400) return; // alive: a frame executed just now
+    if (raf) window.cancelAnimationFrame(raf); // Beta 1.300: a stopped chain leaves a stale id - clear it before the restart
     running = true;
     lastTs = 0;
     document.body.classList.add('snow-scene');
@@ -215,6 +217,7 @@
   }
   function loop(ts) {
     if (!running) return;
+    lastFrame = performance.now(); // the liveness stamp resume() judges
     if (!live()) { park(); return; }
     if (!lastTs) lastTs = ts;
     var dt = Math.min(0.05, (ts - lastTs) / 1000);

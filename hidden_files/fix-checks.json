@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "037cdd2e4b978fecf4510b533495daafe6a38748f016f01bb44727e81a3fcf36",
+  "canonical_registry_sha256": "d42603f30ae656df427b5a24f06ae320ca869012436b4f0b0039775f13d86d4d",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1589,
-   "included": 1559,
+   "canonical": 1592,
+   "included": 1562,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13886,6 +13886,33 @@
    "fix_id": "snow-menus-1299",
    "id": "snow-menus-1299-frames-handle",
    "pattern": "handle.frames = function () { return frames; };",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/brand-snow.js",
+   "fix": "Boot-scene snow fix (Beta 1.300): loop() stamps lastFrame at every executed frame - the liveness evidence resume() judges, so a frame chain that stops during the boot window is detected instead of trusted.",
+   "fix_id": "snow-boot-scene",
+   "id": "snow-boot-scene-1300-liveness-stamp",
+   "pattern": "lastFrame = performance.now(); // the liveness stamp resume() judges",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/brand-snow.js",
+   "fix": "Boot-scene snow fix (Beta 1.300): resume() returns early only when a frame executed within the last 400 ms; otherwise it cancels any pending frame and restarts the chain, healing the snowless boot menu Andrew hit on a cold start.",
+   "fix_id": "snow-boot-scene",
+   "id": "snow-boot-scene-1300-resume-judgment",
+   "pattern": "if (running && performance.now() - lastFrame <= 400) return; // alive: a frame executed just now",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive227.mjs",
+   "fix": "Boot-scene snow fix (Beta 1.300): drive227 covers the real cold start - the boot menu as the first scene, plus a dropped-callback leg - the path drive226 and drive180 never observed.",
+   "fix_id": "snow-boot-scene",
+   "id": "snow-boot-scene-1300-drive",
+   "pattern": "drive227: Beta 1.300 - THE BOOT SCENE",
    "type": "grep_present"
   }
  ]
