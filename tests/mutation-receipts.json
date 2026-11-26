@@ -17087,6 +17087,151 @@
    "red": "exactly one fixture flips: 'scan: a planted ignored write fails' - got exit 0, want 1 (125 pass, 1 fail)",
    "green": "shipped scanner restored byte-identical: gate fixtures 126 pass, 0 fail, including the two listener-stability fixtures",
    "issued": "2026-11-26 phase1-detectors-finish"
+  },
+  {
+   "id": "snow1301-proof1238-toggle",
+   "check": "tests/proof/proof-1238.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1238.mjs": "357d835ba666f9f3379c740d2bc31a4f0a8e43a902995d74f3e68b2c2ec39f54",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js): const __cv = ; if (__cv) __cv.classList.toggle('away', __away);",
+   "red": "proof-1238 check 1 FAIL (observed twice, identical): the choke point touches the canvas again",
+   "green": "proof-1238 7 pass, 0 fail on the shipped tree",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-proof1238-css",
+   "check": "tests/proof/proof-1238.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1238.mjs": "357d835ba666f9f3379c740d2bc31a4f0a8e43a902995d74f3e68b2c2ec39f54",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308"
+   },
+   "mutation": "restore the retired CSS seat in parts/head.html: #snowCv.away { opacity: 0; }",
+   "red": "proof-1238 check 7 FAIL (observed in the combined-seat run): the canvas hide rule is back",
+   "green": "proof-1238 7 pass, 0 fail on the shipped tree",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-proof1254-skip",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "9b019f70aad92e635b45095dbb82716679d1819c19bca30a8e6c48220922af63",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a"
+   },
+   "mutation": "restore the retired loop skip in parts/brand-snow.js: if (cvS && cvS.classList.contains('away')) { raf = window.requestAnimationFrame(loop); return; }",
+   "red": "proof-1254 check 8 FAIL (observed twice, identical): the away skip is back in the loop",
+   "green": "proof-1254 13 passed, 0 failed on the shipped tree",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-proof1238-toggle-r2",
+   "check": "tests/proof/proof-1238.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1238.mjs": "357d835ba666f9f3379c740d2bc31a4f0a8e43a902995d74f3e68b2c2ec39f54",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js): const __cv = $(snowCv); if (__cv) __cv.classList.toggle(away, __away); - this receipt corrects snow1301-proof1238-toggle, whose mutation string lost the selector to shell substitution at issue time; the observation is the same run",
+   "red": "proof-1238 check 1 FAIL (observed twice, identical): the choke point touches the canvas again",
+   "green": "proof-1238 7 pass, 0 fail on the shipped tree",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive213-b1",
+   "check": "tests/browser/drive213.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive213.mjs": "592faa33a351367a93cf432928a371a0ae5af988e4b608c65a5e316715a213db",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so the canvas carries .away on the Select City pane again",
+   "red": "drive213 B1 FAIL (observed twice): snowAway reads true at the cold-open Select City while frames advance 97 -> 112 and 141 -> 159",
+   "green": "drive213 6/6 PASS on the shipped tree (12.6 s local run)",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive226-f10",
+   "check": "tests/browser/drive226.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive226.mjs": "77d81500a5d6c54d130d5275bccdfcb99d01767ad86fafac48fe771761414dfd",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so the canvas carries .away on the route list pane again",
+   "red": "drive226 F10 FAIL: P1.away reads true on the sub-pane (frames still advancing - the class leg convicts)",
+   "green": "drive226 F10 and F11 PASS on the shipped tree; the full local run reads 13/15 with only the throttled F9/F9b legs failing, which fail harder on the base tree locally (11/15, F2/F3 also red) - rig starvation, CI judges",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive180-snow",
+   "check": "tests/browser/drive180.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive180.mjs": "a894bbfb6a9c94559985c6e6ee322e9857022cdbc452943858c4d97c063473b5",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308"
+   },
+   "mutation": "restore two retired seats together (parts/app2.js canvas toggle + parts/head.html #snowCv.away opacity rule): the toggle alone is inert without the CSS seat, which is itself the finding - the mechanism was always the four seats jointly",
+   "red": "drive180 SNOW6, SNOW10 and SNOW11 FAIL in one run: city-list canvas opacity 0.424 at boot, 0 in tab mode, route list 0.887 mid-fade - all under the 0.99 standing bar",
+   "green": "drive180 SNOW6, SNOW10, SNOW11 PASS on the shipped tree (35/37 local; SEQ1 and SNOW5 fail on trace starvation, a rig family that collapses the base tree to 22/37)",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-proof1238-toggle-r3",
+   "check": "tests/proof/proof-1238.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1238.mjs": "3fe678d3611a74bdb7a1d9be2fad25ce863d9edd599c456104384fec72ef5a92",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so showRmPane touches the canvas again",
+   "red": "proof-1238 check 1 FAIL (observed twice, identical)",
+   "green": "proof-1238 7 pass, 0 fail on the shipped tree; re-issued after the proof header was compressed for the touched-comment judge (checks unchanged)",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-proof1238-css-r2",
+   "check": "tests/proof/proof-1238.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1238.mjs": "3fe678d3611a74bdb7a1d9be2fad25ce863d9edd599c456104384fec72ef5a92",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308"
+   },
+   "mutation": "restore the retired CSS seat in parts/head.html: #snowCv.away { opacity: 0; }",
+   "red": "proof-1238 check 7 FAIL (observed in the combined-seat run)",
+   "green": "proof-1238 7 pass, 0 fail on the shipped tree; re-issued after the proof header was compressed for the touched-comment judge (checks unchanged)",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive213-b1-r2",
+   "check": "tests/browser/drive213.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive213.mjs": "d83bd55cd66866f4c96d7fb40acdff2c5143822e3617620f3847c686fa9aafbf",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb"
+   },
+   "mutation": "restore the retired canvas toggle in showRmPane (parts/app2.js), so the canvas carries .away on the Select City pane again",
+   "red": "drive213 B1 FAIL (observed twice): snowAway reads true at the cold-open Select City while frames advance 97 -> 112 and 141 -> 159",
+   "green": "drive213 6/6 PASS on the shipped tree; re-issued after the drive header was compressed for the touched-comment judge (checks unchanged)",
+   "issued": "2026-11-26 snow-everywhere"
+  },
+  {
+   "id": "snow1301-drive180-snow-r2",
+   "check": "tests/browser/drive180.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive180.mjs": "ed39eacf952e332bd27040a3b88f29b792777e0be48fbd58eedfa3e0e01c82a2",
+    "parts/app2.js": "938878d20c8bce5ded6ad36d74c6db0d02ac8ba778567bfe9e8f4a4b3f3d71eb",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308"
+   },
+   "mutation": "restore two retired seats together (parts/app2.js canvas toggle + parts/head.html #snowCv.away opacity rule): the toggle alone is inert without the CSS seat - the mechanism was always the four seats jointly",
+   "red": "drive180 SNOW6, SNOW10 and SNOW11 FAIL in one run: city-list canvas opacity 0.424 at boot, 0 in tab mode, route list 0.887 mid-fade - all under the 0.99 standing bar",
+   "green": "drive180 SNOW6, SNOW10, SNOW11 PASS on the shipped tree (35/37 local, the residue is trace starvation); re-issued after the SNOW lines were wrapped for the line-length judge (claim strings byte-identical)",
+   "issued": "2026-11-26 snow-everywhere"
   }
  ]
 }

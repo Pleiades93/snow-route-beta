@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "b41d8695b63eb236dc785ae6d824e993ee96636d53228cf3eade96437be6bdb7",
+  "canonical_registry_sha256": "c7d2e7b94cd97020d111a79a8265ebd1dc9b1ca2a1b9000c2be4c9547bc9a710",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1599,
-   "included": 1569,
+   "canonical": 1600,
+   "included": 1570,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13976,6 +13976,15 @@
    "fix_id": "snow-everywhere",
    "id": "snow-everywhere-pane-choke-canvas-free",
    "pattern": "$('snowCv')",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/brand-snow.js",
+   "fix": "Snow on every blue menu (Beta 1.301, Andrew 2026-11-26): syncSnow no longer derives a canvas .away from the brand layer - the canvas follows the scene alone, so a stale title state cannot hide the snow.",
+   "fix_id": "snow-everywhere",
+   "id": "snow-everywhere-syncsnow-no-derivation",
+   "pattern": "classList.toggle('away'",
    "type": "grep_absent"
   }
  ]
