@@ -344,6 +344,46 @@ with tempfile.TemporaryDirectory() as td:
                        tracker="A2B", index="shell Beta 1.0 A2B")
     check("push plan: a parts push with fresh derived artifacts passes",
           run_push(t / "fresh", ["parts/a.js", "index.html"]), 0)
+    # Plan mode compares working files against local HEAD, so
+    # these trees are real git repos with the base committed.
+    def limits_tree(name, rel, base_text, new_text):
+        base = t / name
+        (base / Path(rel)).parent.mkdir(parents=True, exist_ok=True)
+        w(base / "scripts" / "check-pr-limits.py",
+          (ROOT / "scripts" / "check-pr-limits.py").read_text())
+        w(base / rel, base_text)
+        subprocess.run(["git", "init", "-q"], cwd=base)
+        subprocess.run(["git", "add", "-A"], cwd=base)
+        subprocess.run(["git", "-c", "user.email=f@f", "-c",
+                        "user.name=f", "commit", "-qm", "base"],
+                       cwd=base)
+        w(base / rel, new_text)
+        return base
+    check("push plan: a planted line over 240 chars is refused (limits gate)",
+          run_push(limits_tree("limline", "docs/x.md", "ok\n",
+                               "ok\n" + "x" * 250 + "\n"),
+                   ["docs/x.md"]), 1)
+    check("push plan: the same tree without the plant passes (limits gate)",
+          run_push(limits_tree("limok", "docs/x.md", "ok\n",
+                               "ok\nshort\n"),
+                   ["docs/x.md"]), 0)
+    check("push plan: a planted comment over 20 words is refused (limits gate)",
+          run_push(limits_tree("limcomment", "scripts/y.py", "ok\n",
+                               "# " + " ".join(["word"] * 25) + "\n"),
+                   ["scripts/y.py"]), 1)
+    limroot = limits_tree("limroot", "docs/x.md", "ok\n", "ok\n")
+    w(limroot / "plant.txt", "hello\n")
+    check("push plan: a new file at the repo root is refused (limits gate)",
+          run_push(limroot, ["docs/x.md", "plant.txt"]), 1)
+    rep_base = "head();\n" + "route();\n" * 400
+    rep_one = "head2();\n" + "route();\n" * 400
+    check("push plan: one changed line in a 400-line repetitive file counts as one (limits gate)",
+          run_push(limits_tree("limrep", "flags.js", rep_base, rep_one),
+                   ["flags.js"]), 0)
+    rep_many = "head();\n" + "".join(f"route{i}();\n" for i in range(400))
+    check("push plan: 400 genuinely changed product lines are refused (limits gate)",
+          run_push(limits_tree("limrep2", "flags.js", rep_base, rep_many),
+                   ["flags.js"]), 1)
     omit = push_tree2(t / "omit", parts={"a.js": "A2", "b.js": "B2"}, changelog="## Beta 1.0\n",
                       tracker="A2B2", index="shell Beta 1.0 A2B2",
                       branch_parts={"a.js": "A", "b.js": "B"})
@@ -1270,6 +1310,6 @@ with tempfile.TemporaryDirectory() as td:
     check("pr-limits: the labelled control passes in the same "
           "shallow checkout", run_limits(clone, b, "large-change"), 0)
 
-total = 93
+total = 102
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

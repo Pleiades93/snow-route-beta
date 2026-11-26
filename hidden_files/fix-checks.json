@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3ade0eaafd5ca9b32cad06fcc93848e60e1ebe31ef1eea97b2d994b3eb4c6f28",
+  "canonical_registry_sha256": "c469113b9ef8fb273b65782274ff292a3f120a448cf17e42c8e5f0e3883c65f6",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1565,
-   "included": 1535,
+   "canonical": 1570,
+   "included": 1540,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13670,6 +13670,51 @@
    "fix_id": "te-fixture-startup-diag",
    "id": "te-fixture-startup-diag",
    "pattern": "fixture-startup r1 status",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "scripts/shard-durations.json",
+   "fix": "Test-efficiency stage 3: shard durations re-measured from DRIVE_TIME lines in the eight newest successful full-battery runs (median per drive); drive223/224/225 placeholders replaced by measurements (5.5/45.7/37.6); partition spread 93s -> 3s at current measurements.",
+   "fix_id": "te-shard-rebalance",
+   "id": "te-shard-rebalance",
+   "pattern": "\"drive224\": 45.7",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": ".github/workflows/codex-rerun.yml",
+   "fix": "Test-efficiency stage 3: a maintainer @codex review comment re-runs the newest codex-bridge run for the PR head (codex-rerun.yml, actions:write only, no checkout) - the gate verdict refreshes with no empty commit; the gate itself stays base-script, read-only, fail-closed.",
+   "fix_id": "te-codex-rerun",
+   "id": "te-codex-rerun",
+   "pattern": "issue_comment",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": ".github/workflows/checks.yml",
+   "fix": "Test-efficiency stage 3: the PR limits step reads the PR labels live at step time (payload list as fallback), closing the labeled-event debt - a mid-round large-change label takes effect on a re-run instead of needing a new head.",
+   "fix_id": "te-live-labels",
+   "id": "te-live-labels",
+   "pattern": "issues/$PR_NUMBER/labels",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-25",
+   "file": ".github/workflows/checks.yml",
+   "fix": "Test-efficiency stage 3: the premise-lint step in checks.yml is blocking - its continue-on-error is removed (the literal occurs nowhere else in the file, so its absence pins the change); the step is renamed advisory -> blocking.",
+   "fix_id": "te-premise-blocking",
+   "id": "te-premise-blocking",
+   "pattern": "continue-on-error: true",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-25",
+   "file": "scripts/push.py",
+   "fix": "Test-efficiency stage 3: push.py runs the PR-limits rules locally (plan vs local git HEAD, push vs the branch blobs) reusing check-pr-limits.py - an over-limit push is refused before it reaches CI; CI stays the authority on labels.",
+   "fix_id": "te-push-limits",
+   "id": "te-push-limits",
+   "pattern": "LIMITS GATE",
    "type": "grep_present"
   }
  ]

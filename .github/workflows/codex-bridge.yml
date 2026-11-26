@@ -24,9 +24,11 @@
 # Draft PRs are not reviewed by Codex, so a draft times out and fails by
 # design — mark it ready to get a verdict.
 #
-# Known limit: the gate re-evaluates on PR lifecycle and commit events only.
-# If a review's findings are resolved without a new commit, re-run this job
-# from the Actions tab to refresh the verdict for the current head.
+# Refresh without a new commit: if a review's findings are resolved
+# with no new commit, comment '@codex review' on the PR - the
+# codex-rerun workflow re-runs this gate's newest run for the
+# current head (and the comment summons Codex's fresh review).
+# Re-running this job from the Actions tab still works too.
 name: codex-bridge
 
 on:

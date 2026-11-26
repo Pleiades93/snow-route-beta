@@ -97,6 +97,7 @@ on:
         default: true
 permissions:
   contents: read # Beta 1.94 (audit F-08): the workflow only checks out and tests - it never needs write access to the repository
+  issues: read # the PR limits step reads the PR's labels live at run time (test-efficiency stage 3)
 concurrency:
   # Branch/PR runs cancel superseded runs on the same ref; main runs never
   # cancel each other (unique group per run).
@@ -193,8 +194,13 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: python3 scripts/check-pr-limits.py . --base "$BASE_SHA" --labels "$PR_LABELS"
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PAYLOAD_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          # Labels read live: a mid-round label counts on re-runs.
+          PR_LABELS=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" --jq '[.[].name] | join(",")' 2>/dev/null || echo "$PAYLOAD_LABELS")
+          python3 scripts/check-pr-limits.py . --base "$BASE_SHA" --labels "$PR_LABELS"
       - name: Receipts gate (refuse changed checks without current mutation receipts, class N1)
         env:
           EVENT: ${{ github.event_name }}
@@ -321,13 +327,12 @@ jobs:
         run: node tests/browser/selftest-title-drop.mjs
       - name: Gate-script verdict fixtures (protocol fix round, 2026-11-17 - the proof-coverage guard and the proof runner prove both verdicts on synthetic trees)
         run: python3 scripts/gate-fixtures/run-fixtures.py
-      - name: Premise lint (advisory - drive premises this PR's app diff touches)
+      - name: Premise lint (blocking - drive premises this PR's app diff touches)
         if: github.event_name == 'pull_request'
-        continue-on-error: true
         run: |
           git fetch --no-tags --depth=1 origin ${{ github.event.pull_request.base.sha }}
           git diff ${{ github.event.pull_request.base.sha }} -- parts/ > /tmp/pr-premise.diff
-          python3 scripts/premise-lint.py --diff /tmp/pr-premise.diff
+          python3 scripts/premise-lint.py --diff /tmp/pr-premise.diff --strict
   browser-tests:
     # The full battery (tier selection retired by the testing-efficiency
     # rollout, 2026-11-23): runs wherever the plan flags drives - every

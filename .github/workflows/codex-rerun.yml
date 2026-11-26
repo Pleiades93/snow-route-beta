@@ -1,0 +1,38 @@
+# Codex re-run trigger: a maintainer '@codex review' comment
+# re-runs the newest codex-bridge run for the PR's current head,
+# refreshing the gate verdict with no new commit. The bridge
+# itself stays base-script and read-only; a comment-triggered
+# run's own check could never land on the PR head, so this
+# workflow only spends actions: write on that one re-run call.
+name: codex-rerun
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  pull-requests: read
+
+jobs:
+  rerun-bridge:
+    name: re-run the codex bridge for this PR head
+    if: >-
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@codex review') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run the newest bridge run for the current head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+          run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/codex-bridge.yml/runs?head_sha=$head&per_page=5" --jq '.workflow_runs[0].id // empty')
+          if [ -z "$run_id" ]; then echo "no codex-bridge run exists for head $head - nothing to re-run"; exit 0; fi
+          status=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .status)
+          if [ "$status" != "completed" ]; then echo "bridge run $run_id is $status - it is already evaluating this head"; exit 0; fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/rerun"
+          echo "re-ran codex-bridge run $run_id for head $head"
