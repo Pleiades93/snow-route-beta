@@ -58,6 +58,10 @@ const pressEl = async (id) => { const pt = await J(`(() => { const b = $('${id}'
 // ---- (a) first tap: the pill shows, the run is untouched (DAY) ----
 await ev(`$('paceCancel').click(); true`);
 const shownDay = await poll(`!!$('confirmPill') && !$('confirmPill').classList.contains('hidden')`, 8000).catch(() => false);
+// T4: the pill now rises in over 420ms (transitions FIX 3) - geometry is read at the entrance's terminal state
+const pillCentred = `(() => { const p = $('confirmPill'); if (!p || p.classList.contains('hidden')) return false; const r = p.getBoundingClientRect();
+  return Math.abs((r.top + r.height / 2) - window.innerHeight / 2) <= 2; })()`;
+await poll(pillCentred, 8000).catch(() => false);
 const P1 = await pillState();
 ok('A1 (day) the first tap shows the pill, centred at the selection pill\'s width, wearing the day face and Andrew\'s copy | ' + JSON.stringify(P1),
   shownDay === true && Math.abs(P1.w - Math.min(262, P1.vw * 0.92)) <= 1.5 && Math.abs(P1.dx) <= 2 && Math.abs(P1.dy) <= 2
@@ -143,6 +147,7 @@ await ev(`(() => { setThemeOverride(true); applyNight(); return true; })()`);
 const nightOn = await poll(`document.body.classList.contains('night')`, 8000).catch(() => false);
 await ev(`$('paceCancel').click(); true`);
 const shownNight = await poll(`!!$('confirmPill') && !$('confirmPill').classList.contains('hidden')`, 8000).catch(() => false);
+await poll(pillCentred, 8000).catch(() => false); // T4: same terminal-state wait as the day read
 const P4 = await pillState();
 ok('D1 (night) the pill shows again, centred, wearing the night face | ' + JSON.stringify(P4) + ', night ' + nightOn,
   nightOn === true && shownNight === true && Math.abs(P4.dx) <= 2 && Math.abs(P4.dy) <= 2 && P4.bg === 'rgba(20, 21, 27, 0.97)');

@@ -180,7 +180,7 @@
     -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card);
     /* sheets open at HALF height: the three stops are closed / half / full */
     max-height: calc(var(--vvh, 100dvh) * .5); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; padding-bottom: var(--sab);
-    transition: transform 350ms var(--ease-close), visibility 0s linear 350ms; } /* the close rides transform only; the open spec keeps its height legs for the note raise */
+    transition: transform 350ms var(--ease-close), height 350ms var(--ease-close), max-height 350ms var(--ease-close), visibility 0s linear 350ms; } /* the close is the open's quicker mirror, detent legs included (audit FIX 1) */
   .grab, .sheetHead { touch-action: none; }
   #sheetBody, #pacePad, #cleanView { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }

@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-/cDSK/We8b0Qv309zzetQa2T34zWwhldWeE0vj6AYNch2vN9eXYPZ/RXRwh0Jx/z' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-xnAxXMdMB+96jRLl9V7TX2S+qm/N5DJXK9AbWEMF/4jREHXsIMCLn/Io/1As/H6E' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-/cDSK/We8b0Qv309zzetQa2T34zWwhldWeE0vj6AYNch2vN9eXYPZ/RXRwh0Jx/z' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-AoXJSIx2haWuaE756VJIsXLPf04Lh72RvrLf2GFF0G0EV1nr/Rkm7ydPolRM6tn7' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -181,7 +181,7 @@
     -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card);
     /* sheets open at HALF height: the three stops are closed / half / full */
     max-height: calc(var(--vvh, 100dvh) * .5); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; padding-bottom: var(--sab);
-    transition: transform 350ms var(--ease-close), visibility 0s linear 350ms; } /* the close rides transform only; the open spec keeps its height legs for the note raise */
+    transition: transform 350ms var(--ease-close), height 350ms var(--ease-close), max-height 350ms var(--ease-close), visibility 0s linear 350ms; } /* the close is the open's quicker mirror, detent legs included (audit FIX 1) */
   .grab, .sheetHead { touch-action: none; }
   #sheetBody, #pacePad, #cleanView { touch-action: pan-y; }
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }

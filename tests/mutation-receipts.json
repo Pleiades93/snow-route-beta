@@ -15537,6 +15537,42 @@
    "red": "stampNightBtn mutated to always re-stamp: S7b fails alone (11 samples, none mid), 28/29",
    "green": "drive125 on the final tree: 29/29",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive123",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive123.mjs": "c3c27c128e346c6b8d0ca35a1396ed90f1cd1ea741a9ed4ddb82f20dcc3acf0b"
+   },
+   "mutation": "check A2 re-derived for the audit's FIX 1 as actually written: the close is the open's quicker mirror (350ms against 420ms) WITH the detent height legs kept - the audit flags the layout legs for the record only, since the detents ride them; C3 as first built dropped the legs, which this corrects",
+   "red": "the re-derived A2 against the C3 tree (transform-only close): fails on the property set - props read 'transform, visibility', duration and curve already right (17/18, solo and in the shard-7 run)",
+   "green": "drive123 on the corrected tree: 18/18",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive210",
+   "check": "tests/browser/drive210.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive210.mjs": "1a464125d40a22291a33fc60fe41163430a6644cf371056f0a9a40e9cb3f552d"
+   },
+   "mutation": "A1/D1 re-derived: the geometry reads now poll the confirmation entrance's terminal state first (the pill rises in over 420ms since transitions FIX 3, where before it appeared instantly); the claims (centred at the selection pill's width, the right face and copy, day and night) are unchanged",
+   "red": "the pill's resting seat moved (top 50% to 45%): A1 and D1 fail, dy -45 after the poll expires (15/17); before the re-derivation the same checks failed on the round tree at dy +10, the entrance's first frame",
+   "green": "drive210 on the round tree: 17/17 (the base tree also passes it 17/17 with its instant pill)",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive210-r2",
+   "check": "tests/browser/drive210.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive210.mjs": "453cb55c1934de578bb535f3009aaf2d86f6b053dc616ebb837a8ffad6569fe7"
+   },
+   "mutation": "A1/D1 terminal-state polls (transitions FIX 3 consequence) - re-issued after factoring the poll into a shared pillCentred helper for the PR line limits; semantically identical to transitions-1298-drive210",
+   "red": "the pill's resting seat moved (top 50% to 45%): A1 and D1 fail, dy -45 after the poll expires (15/17)",
+   "green": "drive210 on the final tree: 17/17",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }
