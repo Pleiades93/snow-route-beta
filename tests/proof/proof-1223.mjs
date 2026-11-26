@@ -80,18 +80,18 @@ check('3f: the old chip text is gone from the app',
 
 // ---------- 4: one pop-up style + no confirmation + no em dashes ----------
 const POP = 'background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; font-size: 15px; font-weight: 700; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 20px rgba(20,35,110,.45)';
-check('4a: #toast wears option A (the one pop-up declaration set)', rule('#toast').includes(POP));
-check('4b: #createHint wears option A (the same declaration set)', rule('#createHint').includes(POP));
-check('4c: #crHintBtn wears option A (the same declaration set)', rule('#crHintBtn').includes(POP));
+check('4a: the toast pill is gone - the banner is the one pop-up surface', rule('#toast') === '' && !head.includes('id="toast"') && head.includes('#banner {'));
+check('4b: the hint pill is gone with the toast', !head.includes('#createHint'));
+check('4c: #crHintBtn wears the card face now (the blue pill set is retired)', rule('#crHintBtn').includes('background: var(--card-solid)') && !rule('#crHintBtn').includes('linear-gradient'));
 check('4d: the toast\'s old dark-box style is gone', !rule('#toast').includes('background: rgba(20,22,28,.95)'));
 check('4e: the hint\'s old dark-blue glass is gone', !rule('#createHint').includes('background: rgba(20,33,61,.92)'));
-check('4f: the loaded-city confirmation text is gone from the hint state machine',
-  !pick.includes("' — loaded'") && !pick.includes("' — loaded '") && pick.includes('NO success text in the ready state'));
+check('4f: the loaded-city confirmation text is gone - the renderer writes no hint text at all',
+  !pick.includes("' — loaded'") && !pick.includes("' — loaded '") && !pick.includes('createHint'));
 check('4g: the confirmation clock machinery retired with it (no crPillKey/crPillGone writers)',
   !pick.includes('let crPillT = 0') && !pick.includes('const pillKey ='));
-check('4h: the failure states still speak (preparing readout, degraded disclosure, failed remedy)',
-  pick.includes("'Loading ' + crGrid.name + ', '") && pick.includes("' - streets there may be missing'") && pick.includes('crFailText(crPrepFail)'));
-check('4i: the road message is Andrew\'s locked wording', pick.includes("'No road there - tap on a road line'") && !pick.includes('tap right on a road line'));
+check('4h: the failure states are silent now (audit v2); their remedy button still stands',
+  !pick.includes("'Loading ' + crGrid.name + ', '") && !pick.includes('crFailText') && pick.includes("crPrepState === 'failed'"));
+check('4i: the road message is cut with the other guidance (audit v2 row 70)', !pick.includes('No road there'));
 // the dash census: no string literal in any part carries an em dash
 import { readdirSync } from 'node:fs';
 let dashFree = true, dashWhere = '';

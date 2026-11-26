@@ -17,7 +17,7 @@ async function saveDraftRoute() {
   crSaveInFlight = true;
   try {
   const name = $('crNameInput').value.trim();
-  if (!name) { toast('Give the route a name first', 2600); return; }
+  if (!name) return;
   const area = $('crAreaInput').value.trim();
   const roads = crFilteredRoads();
   const ends = (() => { // the pack carries boundary ends computed from the same extract as the sectors; no prepared coverage, no records
@@ -33,9 +33,9 @@ async function saveDraftRoute() {
   })();
   // the save stores chosen sectors only: the draft keeps whole streets, the pack never sees unchosen ends
   const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] });
-  if (!v.ok) { toast('Could not save: ' + v.error, 4000); return; }
+  if (!v.ok) { showBanner('Route not saved', v.error); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
-  if (!(await upPut(pack.id, pack))) { toast('Storage problem - the route could not be saved', 4000); return; } // one route's verified write: no whole-record rewrite remains to erase another route; a failure refuses this route only
+  if (!(await upPut(pack.id, pack))) { showBanner('Route not saved'); return; } // one route's verified write: no whole-record rewrite remains to erase another route; a failure refuses this route only
   userPackCache[pack.id] = pack; // the backup picture joins the commit (create-packs.js: the cache moves only at verified commit points)
   ROUTE_PACKS.push(pack); // live in the runtime list at once - listed and switchable without a reload
   // a new route's preload record is honest: nothing downloaded yet; Status offers the (grown) union download

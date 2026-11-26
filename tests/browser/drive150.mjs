@@ -206,9 +206,9 @@ ok('A2c (Beta 1.121, whole-city amendment) picking the city started its whole-ci
   A2c.state === 'ready' && A2c.cov && A2c.names.join() === 'Alderson Avenue,Bordeaux Drive');
 await ev(installFeatureStub);
 await ev(tapNothing);
-await poll(`document.getElementById('toast').textContent.indexOf('No road there') >= 0`, 10000); // T4: poll the terminal state A2b asserts (the no-road toast)
-const A2b = await J(`({ toast: document.getElementById('toast').textContent, streets: draft ? Object.keys(draft.roads).length : -1 })`);
-ok('A2b a tap with no road feature under it says so and adds nothing | toast: ' + A2b.toast, A2b.toast.indexOf('No road there') >= 0 && A2b.streets === 0);
+await sleep(600); // Beta 1.296: the tap-miss message is cut - there is no terminal text to poll; the silence itself is asserted below
+const A2b = await J(`({ toast: document.getElementById('banner').classList.contains('show'), streets: draft ? Object.keys(draft.roads).length : -1 })`);
+ok('A2b a tap with no road feature under it is SILENT since Beta 1.296 (the no-road message is cut) and adds nothing | banner shown: ' + A2b.toast, A2b.toast === false && A2b.streets === 0);
 await ev(tapStreet('Bordeaux Drive'));
 const gotB = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000);
 ok('A3 tapping Bordeaux Drive (fixture roads feature through the real click handler) adds it from the prepared extract', gotB === true);
@@ -286,7 +286,7 @@ await ev(installPickStub);
 // belongs to a view the map is no longer showing here)
 await ev(`(() => { const pt = { x: 210, y: 320 }; const ll = map.unproject([pt.x, pt.y]); map.fire('click', { lngLat: { lat: ll.lat, lng: ll.lng }, point: pt, originalEvent: {} }); return true; })()`);
 const gotPick = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 20000);
-const PK = await J(`({ streets: draft ? Object.keys(draft.roads) : [], total: draft && draft.roads['Bordeaux Drive'] ? Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total) : -1, toast: document.getElementById('toast').textContent })`);
+const PK = await J(`({ streets: draft ? Object.keys(draft.roads) : [], total: draft && draft.roads['Bordeaux Drive'] ? Math.round(computeStretches(draft.roads)['Bordeaux Drive'].total) : -1, toast: document.getElementById('banner').classList.contains('show') })`);
 ok('P1 (pick seam) a tap whose exact pixel holds NO road still picks the street whose tile line passes nearest the tap (Bordeaux, 12 px) and the pick reaches pickStreet -> the prepared extract (length ' + Math.round(fixtureLen('Bordeaux Drive')) + ' m) | ' + JSON.stringify(PK),
   gotPick === true && PK.streets.join() === 'Bordeaux Drive' && Math.abs(PK.total - fixtureLen('Bordeaux Drive')) <= fixtureLen('Bordeaux Drive') * 0.02);
 ok('P2 (pick seam) the farther street inside the same box (Alderson, 15 px, listed first) is NOT picked', !PK.streets.includes('Alderson Avenue'));

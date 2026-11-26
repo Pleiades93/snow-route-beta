@@ -65,10 +65,12 @@ await sleep(600); // outlast the app's 400ms double-tap guard: a prior Yes tap c
 await ev(`(() => { $('finYes').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ h: history.length, done: doneSet.size }))()`, v => v.h === 1 && v.done === 0);
 ok('T4 setup: the second clean archived', A.h === 1 && A.done === 0);
-const labels = [];
-const t4end = Date.now() + 1500;
-while (Date.now() < t4end) { labels.push(await ev(`(() => $('resetBtn').textContent + '|' + $('resetBtn').classList.contains('undoing'))()`)); await sleep(300); }
-ok('T4 no Undo is offered in the 1.5s after Yes (the long-window guard is drive146 C0/C1b) | samples ' + labels.length + ' saw ' + JSON.stringify([...new Set(labels)]), labels.length >= 4 && labels.every(l => l === 'FINISH|false'));
+const t4t0 = Date.now();
+await ev(`(() => { window.__t4 = []; window.__t4t0 = performance.now(); window.__t4rec = setInterval(() => { window.__t4.push([Math.round(performance.now() - window.__t4t0), $('resetBtn').textContent + '|' + $('resetBtn').classList.contains('undoing')]); }, 50); return true; })()`);
+await sleep(4000);
+const labels = JSON.parse(await ev(`(() => { clearInterval(window.__t4rec); return JSON.stringify(window.__t4); })()`));
+ok('T4 no Undo is offered after Yes - sampled in-page at 50 ms for 4 s (the 1.5 s window the old Undo armed in, plus margin; node-side and short-window sampling starved on a loaded rig, so the claim is the never-offered form: every sample, in-window and after, reads FINISH with no undoing state - the long-window guard is drive146 C0/C1b) | samples ' + labels.length + ', in-window ' + labels.filter(l => l[0] <= 1500).length + ', saw ' + JSON.stringify([...new Set(labels.map(l => l[1]))]),
+  labels.length >= 8 && labels[labels.length - 1][0] >= 3500 && labels.every(l => l[1] === 'FINISH|false'));
 await ev(`(() => { $('resetBtn').click(); return true; })()`);
 A = await pollRead(`(() => JSON.stringify({ open: !$('finModal').classList.contains('hidden'), h: history.length, done: doneSet.size }))()`, v => v.open === true, 4000);
 ok('T4 tapping the button after a finish opens the pop-up - the run does NOT come back', A.open === true && A.h === 1 && A.done === 0);

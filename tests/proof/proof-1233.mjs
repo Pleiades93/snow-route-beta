@@ -94,7 +94,7 @@ check('A1g: tier 2 - the crossing scan retries widened only when the exact pair 
 // ---------- A2: the note line ----------
 check('A2a: the note editor line is the ruled form at all four hint sites (architecture #7: the session owner holds the save acts - scheduleSave for the debounce, saveNow for blur and the Save button, the rebuilt-editor hint in renderStreets - and all four wirings land on them)', (app2.match(/'Not saved - Storage problem'/g) || []).length === 3 && app2.includes('NOTEEDIT.scheduleSave(n, ta, hint, paintNt)') && (app2.match(/NOTEEDIT\.saveNow\(n, ta, hint, paintNt\)/g) || []).length === 2);
 check('A2b: the period form is gone from app2', !app2.includes("'Not saved. Storage problem'"));
-check('A2c: the lowercase toast form elsewhere stands untouched', read('parts/app1.js').includes("'Not saved - storage problem'"));
+check('A2c: app1\'s save warning is the banner headline now, the old toast form gone', read('parts/app1.js').includes("showBanner('Not saved')") && !read('parts/app1.js').includes('Not saved - storage problem'));
 
 // ---------- B1: 58px pills ----------
 check('B1a: the pill class pins exactly 58px', head.includes('font-size: 19px; font-weight: 650; height: 58px; padding: 0 20px;'));

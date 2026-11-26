@@ -109,10 +109,10 @@ try {
     const ta = document.querySelector('.noteEd textarea'); if (ta) ta.value = 'drive188 switch note';
     NOTEEDIT.openFor = 'Mellings'; renderStreets(); // switching streets finalizes Velmar's editor through the :408 flush
     Storage.prototype.setItem = orig; saveWarned = false;
-    const t = document.getElementById('toast');
-    return { toast: t.textContent, shown: t.classList.contains('show') };
+    const t = document.getElementById('banner');
+    return { toast: document.getElementById('bannerHead').textContent, shown: t.classList.contains('show') };
   })()`);
-  ok('D2 a street-switch flush that fails with the episode warning already spent is owed the plain not-saved toast | ' + JSON.stringify(d2), d2.toast === 'Not saved - storage problem' && d2.shown === true);
+  ok('D2 a street-switch flush that fails with the episode warning already spent is owed the plain not-saved banner | ' + JSON.stringify(d2), d2.toast === 'Not saved' && d2.shown === true);
 
   // ---- E: A-03 partial pieceTimes inheritance ----
   const e = await J(`(() => {

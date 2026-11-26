@@ -282,21 +282,21 @@ const jEnterUncached = async () => {
 };
 const k2Uncached = await jEnterUncached();
 const k2Deg = await poll(`crPrepState === 'degraded'`, 30000).catch(() => false);
-const K2a = await J(`({ failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, done: crGrid ? crGrid.cells.filter(c => c.state === 'done').length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
-ok('K2a (one failed cell) the grid settles DEGRADED with the missing part disclosed ("loaded except 1 part", Retry missing parts offered) | uncached ' + k2Uncached + ', ' + JSON.stringify(K2a),
-  k2Uncached === true && k2Deg === true && K2a.failed === 1 && K2a.done === 3 && K2a.hint.indexOf('loaded except 1 part') >= 0 && K2a.btn === 'Retry missing parts');
+const K2a = await J(`({ failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, done: crGrid ? crGrid.cells.filter(c => c.state === 'done').length : -1, btn: document.getElementById('crHintBtn').textContent })`);
+ok('K2a (one failed cell) the grid settles DEGRADED and Retry missing parts is offered (the missing-part wording is cut since Beta 1.296 - the state and the remedy carry it) | uncached ' + k2Uncached + ', ' + JSON.stringify(K2a),
+  k2Uncached === true && k2Deg === true && K2a.failed === 1 && K2a.done === 3 && K2a.btn === 'Retry missing parts');
 await ev(`crStartPrep({ lat: 43.9, lng: -79.56 })`); // the fallback box, outside the city - it lands successfully
 const k2Box = await poll(`!!(crCov && crCov.boxes.some(b => 43.9 >= b.s && 43.9 <= b.n && -79.56 >= b.w && -79.56 <= b.e))`, 20000).catch(() => false);
 await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'degraded' && !!crGrid && crGrid.cells.filter(c => c.state === 'failed').length === 1`, 10000); // T4: poll the terminal state K2b asserts (settled DEGRADED with the one failed cell counted)
-const K2b = await J(`({ state: crPrepState, failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent })`);
-ok('K2b (fallback over a failed cell, CG-PF-14) the fallback box landed (' + k2Box + ') but the city is NOT promoted to ready: the settled state still counts the failed cell - DEGRADED, the missing part still disclosed, Retry missing parts still offered | ' + JSON.stringify(K2b),
-  k2Box === true && K2b.state === 'degraded' && K2b.failed === 1 && K2b.hint.indexOf('loaded except 1 part') >= 0 && K2b.btn === 'Retry missing parts');
-const gapAt152 = async (w, h) => { await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S); await ev(`crRenderHint()`); return await J(`(() => { const hr = document.getElementById('createHint').getBoundingClientRect(), br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5, pillH: Math.round(hr.height) }; })()`); };
+const K2b = await J(`({ state: crPrepState, failed: crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : -1, btn: document.getElementById('crHintBtn').textContent })`);
+ok('K2b (fallback over a failed cell, CG-PF-14) the fallback box landed (' + k2Box + ') but the city is NOT promoted to ready: the settled state still counts the failed cell - DEGRADED, Retry missing parts still offered | ' + JSON.stringify(K2b),
+  k2Box === true && K2b.state === 'degraded' && K2b.failed === 1 && K2b.btn === 'Retry missing parts');
+const gapAt152 = async (w, h) => { await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S); await ev(`crRenderHint()`); return await J(`(() => { const hr = document.getElementById('createBar').getBoundingClientRect(), br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5, pillH: Math.round(hr.height) }; })()`); };
 const GK390 = await gapAt152(390, 844);
 const GK430 = await gapAt152(430, 932);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await ev(`crRenderHint()`);
-ok('K2c (button placement, Beta 1.176) in the DEGRADED state - the missing-part wording wraps at these widths (pill heights ' + GK390.pillH + ' / ' + GK430.pillH + ' px) - the Retry-missing-parts button hangs BELOW the pill BY MEASUREMENT: gap > 0 and zero overlap at 390 px (gap ' + GK390.gap + ' px) and 430 px (gap ' + GK430.gap + ' px) | ' + JSON.stringify({ GK390, GK430 }),
+ok('K2c (button placement, re-scoped Beta 1.296: the hint pill is deleted - the button keeps its fixed seat under the search bar) in the DEGRADED state - the Retry-missing-parts button hangs BELOW the bar BY MEASUREMENT: gap > 0 and zero overlap at 390 px (gap ' + GK390.gap + ' px) and 430 px (gap ' + GK430.gap + ' px) | ' + JSON.stringify({ GK390, GK430 }),
   GK390.gap > 0 && GK390.overlap === false && GK430.gap > 0 && GK430.overlap === false);
 await ev(`window.__kFailCellKey = null`);
 await jExitDiscard();

@@ -95,7 +95,7 @@ const waitReload = async () => { await b.ev(`(() => { window.__preRestore = 1; r
 const waitApp = async () => !!(await until(async () => await b.ev(`typeof restoreBackup === 'function' && typeof buildBackup === 'function'`), 30000));
 await waitApp();
 const pollReload = async () => { const t0 = Date.now(); while (Date.now() - t0 < 25000) { const gone = await b.ev(`typeof window.__preRestore === 'undefined' && !!document.getElementById('ver')`); if (gone === true) return true; await sleep(400); } return false; };
-const pollAddedNothing = async what => !!(await until(async () => { let t = null; try { t = await b.ev(`$('toast').textContent`); } catch (e) { /* a mid-navigation read is a miss, not a failure */ } return typeof t === 'string' && t.indexOf('Backup added nothing') >= 0 ? t : false; }, 9000, what));
+const pollSilent = async () => { let seen = false; for (let i = 0; i < 20; i++) { if (await b.ev(`$('banner').classList.contains('show')`)) { seen = true; break; } await sleep(100); } return !seen; }; // Beta 1.296: a no-addition restore is silent - no toast, no banner, no reload
 const s4plan = await b.ev(`(() => { const p = RESTORE.plan(JSON.parse(${JSON.stringify(backupB)})); return p ? JSON.stringify(p.entries.map(e => e[0])) : 'null'; })()`);
 await waitReload();
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
@@ -105,7 +105,7 @@ const s4a = JSON.parse(await b.ev(`JSON.stringify({ sess: localStorage.getItem('
 ok('S4a a backup carrying a trail but no markers leaves the resident markers AND trail untouched; only the absent theme pair fills | plan keys ' + s4plan + ' ' + JSON.stringify(s4a), s4a.sess === '[1767650000]' && s4a.trail === JSON.parse(backupB).routes['5w'].trail && s4plan === '["snowroute.v2.night","snowroute.v2.nightExp"]');
 await b.ev(`(() => { localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); return true; })()`);
 await b.ev(`(() => { const nb = JSON.parse(${JSON.stringify(backupB)}); delete nb.routes['5w'].trail; restoreBackup(nb); return true; })()`);
-ok('S4b restore of the no-trail backup reports it added nothing', await pollAddedNothing('S4b added-nothing toast'));
+ok('S4b restore of the no-trail backup adds nothing and says nothing', await pollSilent());
 await waitApp();
 const s4b = await b.ev(`localStorage.getItem('snowroute.5w.v5.sess')`);
 ok('S4b current-format restore without a trail leaves the markers untouched | sess ' + s4b, s4b === '[1767650000]');
@@ -113,15 +113,15 @@ await b.ev(`(() => { localStorage.setItem('snowroute.5w.v5.sess', '[1767650000,1
 const backupC = await b.ev(`buildBackup()`);
 await b.ev(`(() => { localStorage.setItem('snowroute.5w.v5.sess', '[1]'); return true; })()`);
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupC)})); return true; })()`);
-ok('S4c restore of the marker-carrying backup reports it added nothing', await pollAddedNothing('S4c added-nothing toast'));
+ok('S4c restore of the marker-carrying backup adds nothing and says nothing', await pollSilent());
 await waitApp();
 const s4c = await b.ev(`localStorage.getItem('snowroute.5w.v5.sess')`);
 ok('S4c backup markers do not displace resident markers (run state is resident-governed) | sess ' + s4c, s4c === '[1]');
 await b.ev(`(() => { localStorage.setItem('snowroute.5w.v4.trail', '[[43.9,-79.6,1767600000]]'); localStorage.setItem('snowroute.5w.v5.sess', '[1767650000]'); return true; })()`);
 await b.ev(`(() => { restoreBackup(JSON.parse(${JSON.stringify(backupB)})); return true; })()`);
-ok('S4d the governed restore reports it added nothing', await pollAddedNothing('S4d added-nothing toast'));
-const s4d = JSON.parse(await b.ev(`(() => JSON.stringify({ toast: $('toast').textContent, trail: localStorage.getItem('snowroute.5w.v4.trail'), sess: localStorage.getItem('snowroute.5w.v5.sess') }))()`));
-ok('S4d a no-addition restore writes nothing: the resident trail and markers stand exactly | ' + JSON.stringify(s4d), s4d.trail === '[[43.9,-79.6,1767600000]]' && s4d.sess === '[1767650000]' && s4d.toast.indexOf('Backup added nothing') >= 0);
+ok('S4d the governed restore adds nothing and says nothing', await pollSilent());
+const s4d = JSON.parse(await b.ev(`(() => JSON.stringify({ banner: $('banner').classList.contains('show'), trail: localStorage.getItem('snowroute.5w.v4.trail'), sess: localStorage.getItem('snowroute.5w.v5.sess') }))()`));
+ok('S4d a no-addition restore writes nothing: the resident trail and markers stand exactly | ' + JSON.stringify(s4d), s4d.trail === '[[43.9,-79.6,1767600000]]' && s4d.sess === '[1767650000]' && s4d.banner === false);
 await closeBrowser(b);
 
 R.exceptions = allExceptions;

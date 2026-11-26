@@ -230,11 +230,3 @@ function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing
   crRenderHint();
   crGridPump(g);
 }
-// no reload for a city that loaded fine; a failed load's remedy is Retry (crGridResume / crStartPrep)
-function crFailText(f) { // the honest taxonomy (scope item 5): unreachable / answered-with-error / too-dense read differently because they ARE different
-  if (!f) return '';
-  if (f.kind === 'dense') return crFailFromGrid ? 'Parts of ' + (crCity ? crCity.name : 'the city') + ' were too dense to load - tap Retry to try those parts again' : 'That area is too dense to load at once - move the map to a less busy part of ' + (crCity ? crCity.name : 'the city') + ', then tap Prepare this area'; // box form per CG-PF-09: the footprint is FIXED, so zooming changes nothing - the working remedy is preparing a less dense area, and the button in this state does exactly that (map centre). Grid form: the dense cells are the failed parts, and Retry resumes exactly them. Beta 1.253 (#20): the branch keys on the failure's SOURCE (crFailFromGrid), never on the grid's existence - through 1.252 it keyed on crGrid like the button's label did, so a dense BOX failure landing over a settled grid told the user to tap a Retry the button did not read
-  if (f.kind === 'error') return 'The street-shape service answered with an error' + (f.status ? ' (' + f.status + ')' : '') + ' - tap Retry';
-  if (f.kind === 'badjson') return 'The street-shape service sent back something unreadable - tap Retry';
-  return 'The street-shape service didn’t answer - tap Retry';
-}

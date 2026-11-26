@@ -62,8 +62,8 @@ check('6: the ready state offers no button and no dispatch (the 1.153 design), a
 
 // ---------- the renderer consumes it ----------
 check('7: the renderer takes its label from the decision, once',
-  pick.includes('btnLabel = crHintAction().label')
-  && (pick.match(/btnLabel = /g) || []).length === 2); // the declaration + the one application - no branch assigns a label any more
+  pick.includes("const btnLabel = gated ? '' : crHintAction().label;")
+  && (pick.match(/btnLabel = /g) || []).length === 1); // the one application - no branch assigns a label any more
 check('8: the old crGrid-keyed failed label is gone',
   !pick.includes("crGrid ? 'Retry'"));
 
@@ -75,9 +75,8 @@ check('10: the handler interprets no state itself (no crFailFromGrid, no prep-st
   handler.length > 0 && !handler.includes('crFailFromGrid') && !handler.includes('crPrepState ==='));
 
 // ---------- the failure text agrees with the button ----------
-check('13: crFailText keys the dense remedy on the failure source too (never on the grid existing)',
-  cache.includes("f.kind === 'dense') return crFailFromGrid ? 'Parts of '")
-  && !cache.includes("f.kind === 'dense') return crGrid ?"));
+check('13: the failure-text function is retired with its texts (the dense remedy lives in the decision, check 4)',
+  !cache.includes('function crFailText') && !pick.includes('crFailText('));
 
 // ---------- the release editorial ----------
 check('11: the CHANGELOG top entry is Beta 1.253', changelog.includes('## Beta 1.253'));

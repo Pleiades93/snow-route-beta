@@ -1,6 +1,6 @@
 // ---- city packs ---- a pack in the catalogue lights its city up in the chooser with no app change
 let crPackCtx = null; // { slug, bbox, failed } while the active city's preparation is pack-backed; null = the service is the source
-let crPackNote = ''; // the disclosed pack state ('' = nothing to say); rides the hint like crCacheNote
+let crPackNote = ''; // the pack source state ('' = undecided, 'service' = fell back to the street service)
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
 let crPackIndexKnown = false; // the catalogue answered: an unlisted city is the live service's dataset ('overpass'); an unanswered catalogue states no identity
 let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
@@ -98,7 +98,7 @@ async function crPackServe(box, name, sessionOk) { // a way belongs when any of 
   if (sessionOk && !sessionOk()) return { ok: false, kind: 'stale' }; // superseded while the pack downloaded: land nowhere (CG-PF-05)
   if (!els) {
     ctx.failed = true;
-    if (!crPackNote) { crPackNote = 'The app’s street library didn’t load - loading from the street service instead'; crRenderHint(); }
+    if (!crPackNote) { crPackNote = 'service'; crRenderHint(); } // the pack fell back to the service; the state is recorded, not announced
     return null;
   }
   const t0 = Date.now();

@@ -77,17 +77,18 @@ ok('A6 close X pinned to the top-right corner, above the title (both sheets) | '
   A6.topGap >= 0 && A6.topGap <= 8 && A6.rightGap >= 0 && A6.rightGap <= 10 && A6.closeTop < A6.titleMid && A6.pacePos === 'absolute');
 await ev(`closeSheets()`); await sleep(300);
 
-// A7 (Beta 1.34, Andrew): EVERY menu's close is the same plain red corner X. The Backup
-// menu's X used to render as a red BOX - the button-grid styles overrode the plain-X rule -
-// and the same collision hit Finish and Note. Beta 1.88: the Backup surface moved into the
-// blue settings takeover, whose close is the blue menus' bare white X (one shared rule with
-// the Routes menu) - so this now asserts BOTH families: the red corner X computed on the
-// Finish and Note dialogs, and the IDENTICAL bare white X computed on Settings and Routes.
+// A7 (Beta 1.34, Andrew; re-scoped Beta 1.296): the SHEET closes keep the same plain red
+// corner X, and the blue menus' closes are the identical bare white X (Settings == Routes).
+// The Finish and Note DIALOGS carried the red corner X until 1.296: Andrew's pop-up rule
+// (no X on a blurred-backdrop pop-up) retired it - their No buttons are Cancel buttons in
+// the button row now, and this asserts exactly that shape instead.
 await ev(`(() => { $('exportBtn').click(); return true; })()`); await sleep(400);
 await ev(`(() => { $('finModal').classList.remove('hidden'); $('noteModal').classList.remove('hidden'); return true; })()`); await poll(`!$('finModal').classList.contains('hidden') && !$('noteModal').classList.contains('hidden') && [$('finModal').querySelector('.card'), $('noteModal').querySelector('.card')].every(c => c.getAnimations().every(a => a.playState !== 'running' && a.playState !== 'pending') && getComputedStyle(c).transform === 'none' && getComputedStyle(c).opacity === '1')`, 10000); // T4 (fix cycle 1): poll the terminal state A7 asserts — both dialogs un-hidden AND both cards' menuRise animations completed (no running/pending card animation; the animated transform/opacity back at their settled none/1 values), because A7 measures card-relative geometry that the rise animation scales
 const A7 = JSON.parse(await ev(`(() => { const one = id => { const e = $(id), cs = getComputedStyle(e), card = e.closest('.card').getBoundingClientRect(), r = e.getBoundingClientRect(); return { bg: cs.backgroundColor, col: cs.color, fs: cs.fontSize, pos: cs.position, topGap: Math.round(r.top - card.top), rightGap: Math.round(card.right - r.right), inGrid: !!e.closest('.grid') }; }; const bx = id => { const cs = getComputedStyle($(id)); return { bg: cs.backgroundColor, col: cs.color, fs: cs.fontSize, fw: cs.fontWeight }; }; return JSON.stringify({ fin: one('finNo'), note: one('noteNo'), set: bx('setClose'), rm: bx('rmClose') }); })()`));
 const xOk = o => o.bg === 'rgba(0, 0, 0, 0)' && o.col === 'rgb(230, 58, 46)' && o.fs === '21px' && o.pos === 'absolute' && o.topGap >= 0 && o.topGap <= 8 && o.rightGap >= 0 && o.rightGap <= 10 && o.inGrid === false;
-ok('A7 dialog closes keep the plain red corner X (Finish, Note) and the settings X computes IDENTICAL to the routes X - one bare-white-X rule for the blue menus (Beta 1.88) | ' + JSON.stringify(A7), xOk(A7.fin) && xOk(A7.note) && JSON.stringify(A7.set) === JSON.stringify(A7.rm) && A7.set.col === 'rgb(255, 255, 255)' && A7.set.fs === '30px');
+const cancelOk = o => o.pos === 'static' && o.fs !== '21px' && o.col !== 'rgb(230, 58, 46)';
+ok('A7 the dialogs carry NO corner X (their No buttons are Cancel in the row) and the settings X computes IDENTICAL to the routes X - one bare-white-X rule for the blue menus (Beta 1.88) | ' + JSON.stringify(A7), cancelOk(A7.fin) && cancelOk(A7.note) && JSON.stringify(A7.set) === JSON.stringify(A7.rm) && A7.set.col === 'rgb(255, 255, 255)' && A7.set.fs === '30px');
+ok('A7b both dialog No buttons read Cancel', await ev(`$('finNo').textContent === 'Cancel' && $('noteNo').textContent === 'Cancel'`));
 await ev(`(() => { $('setClose').click(); $('finModal').classList.add('hidden'); $('noteModal').classList.add('hidden'); return true; })()`); await sleep(200);
 
 // A8 (Beta 1.34, z15 core added Beta 1.41): Download offline maps must actually fetch the VAUGHAN + NEARBY tile set
@@ -103,7 +104,7 @@ await ev(`(() => { $('xPre').click(); return true; })()`);
 await sleep(600);
 await ev(`(() => { $('xPre').click(); return true; })()`); // Beta 1.92 (audit F07): a second tap mid-download must start NO second job
 await sleep(250);
-const A8toast = JSON.parse(await ev(`(() => JSON.stringify({ shown: $('toast').classList.contains('show'), running: preloadRunning }))()`));
+const A8toast = JSON.parse(await ev(`(() => JSON.stringify({ shown: $('banner').classList.contains('show'), running: preloadRunning }))()`));
 let preStat = '';
 for (let i = 0; i < 90; i++) { preStat = await ev(`$('xPreStat').textContent`); if (/Offline maps: saved/.test(preStat)) break; await sleep(250); }
 const A8 = JSON.parse(await ev(`(() => { const seen = window.__preSeen || []; window.fetch = window.__realFetch; const tiles = seen.filter(u => u.endsWith('.mvt')); const inBox = tiles.every(u => { const m = u.match(/\\/(\\d+)\\/(\\d+)\\/(\\d+)\\.mvt$/); if (!m) return false; const z = +m[1], x = +m[2], y = +m[3], n = 2 ** z; const xw = Math.floor((-79.75 + 180) / 360 * n), xe = Math.floor((-79.35 + 180) / 360 * n); const yOf = lat => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n); return x >= xw && x <= xe && y >= yOf(44.05) && y <= yOf(43.70); }); return JSON.stringify({ total: seen.length, tiles: tiles.length, inBox, glyphs: seen.filter(u => u.endsWith('.pbf')).length, sprites: seen.filter(u => u.includes('/sprites/')).length, stat: $('xPreStat').textContent }); })()`));

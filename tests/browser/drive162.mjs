@@ -31,8 +31,8 @@ ok('S1 seeded run stored: note + coverage + start persisted | ' + JSON.stringify
 await ev(`__failKey('snowroute.5w.v4.notes'); __failKey('snowroute.5w.v4.cov'); true`);
 await ev(`(() => { performReset(); return true; })()`); await sleep(300);
 st = await stored();
-const toastA = await ev(`$('toast').textContent`);
-ok('A1 finish committed and warned honestly: archive landed, cleanup gap named | ' + toastA + ' ' + JSON.stringify(st), st.hist === 1 && /could not be written \(notes\)/.test(toastA));
+const toastA = JSON.parse(await ev(`JSON.stringify({ shown: $('banner').classList.contains('show'), head: $('bannerHead').textContent })`));
+ok('A1 finish committed with NO finish/cleanup warning since Beta 1.296 (the could-not-be-written warning is cut - the obligation state in A2 is the honesty; the still-failing writes may honestly raise row 8 not-saving): archive landed | banner: ' + JSON.stringify(toastA) + ' ' + JSON.stringify(st), st.hist === 1 && toastA.head !== 'Finish stopped' && (toastA.shown === false || toastA.head === 'This clean is not saving' || toastA.head === 'Not saving'));
 ok('A2 the failed cleanup is exactly the DA-10 state: old note + coverage still stored, obligation armed | ' + JSON.stringify(st), !!st.notes && st.notes.includes('hazard') && !!st.cov && st.cov.includes('Velmar') && st.marker !== null);
 // Storage heals, and the route state is loaded again - loadRouteState is the
 // exact entry a cold boot runs. (A polite Page.navigate would MASK the defect
@@ -86,10 +86,10 @@ await ev(`(() => { markDone('Velmar', 'test'); markDone('Mellings', 'test'); mar
 const INSTALL_GET_STUB = `(() => { window.__histReads = 0; const orig = Storage.prototype.getItem; window.__origGetItem = orig; Storage.prototype.getItem = function (k) { if (k === 'snowroute.5w.v2.history') { window.__histReads++; if (window.__histReads === 1) return '[]'; if (window.__histReads >= 2) throw new Error('injected read failure'); } return orig.call(this, k); }; return true; })()`;
 ok('G0 history-read fault stub installed', await ev(INSTALL_GET_STUB) === true);
 await ev(`(() => { finishRun(); return true; })()`);
-const toastG = await ev(`$('toast').textContent`);
+const toastG = await ev(`$('bannerHead').textContent + ' ' + $('bannerLine').textContent`);
 await ev(`(() => { if (window.__origGetItem) Storage.prototype.getItem = window.__origGetItem; return true; })()`);
 st = await stored();
-ok('G1 unverifiable archive rollback warns the rollback could not be verified, not "run intact" | got: ' + toastG, /rollback could not be verified/.test(toastG) && !/run intact/.test(toastG));
+ok('G1 unverifiable archive rollback: the banner says the undo could not be checked (row 17), never that the clean is intact | got: ' + toastG, /could not be checked/.test(toastG) && !/clean is intact/.test(toastG));
 ok('G2 the archive entry itself was put back (the delete landed; only its verification failed) | ' + JSON.stringify(st), st.hist === 1);
 
 R.exceptions = consoleLog.filter(c => c.type === 'EXCEPTION');

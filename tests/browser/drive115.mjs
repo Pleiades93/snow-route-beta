@@ -13,7 +13,7 @@ const exc = () => consoleLog.filter(c => c.type === 'EXCEPTION').length;
 // simulating a total basemap outage: the vector style can never load.
 // Asserts the notice appears when no GL load ever lands, that the streets
 // list and marking keep working with no map at all (the beta has no raster
-// fallback, by design), that recovery auto-hides it, that dismissal sticks for the
+// fallback, by design), that recovery auto-hides it, that it carries no dismiss control since Beta 1.296 (it clears only on recovery), that the
 // session, and the Design QA layout measurements in both themes.
 const waitBoot = async () => { for (let i = 0; i < 25; i++) { try { if (await ev(`!!document.getElementById('ver')`)) return true; } catch (e) {} await sleep(400); } return false; };
 const reload = async (ms) => { await ev(`location.reload(); true`); await sleep(500); await waitBoot(); await sleep(ms || 4000); await ev(`loadRoute('5w'); true`); await sleep(600); }; // Beta 1.76: a reload lands on the route menu - load 5W (works with the map dead; GLP catches up via onStyleReady)
@@ -36,7 +36,7 @@ try {
   let R1 = await rects();
   ok('A6 layout (day): notice fully in viewport', R1.note && R1.note.x >= 0 && R1.note.y >= 0 && R1.note.r <= R1.vw && R1.note.btm <= R1.vh);
   ok('A7 layout (day): notice does not overlap the tab bar | note ' + JSON.stringify(R1.note) + ' gear ' + JSON.stringify(R1.gear), !overlaps(R1.note, R1.gear));
-  ok('A8 layout (day): dismiss button is a full-size tap target', await ev(`document.getElementById('mapNoteNo').getBoundingClientRect().height >= 44`));
+  ok('A8 layout (day): the notice carries NO dismiss control (the X is retired in Beta 1.296 - it clears only on recovery)', await ev(`document.getElementById('mapNoteNo') === null`));
 
   // Phase C: recovery - tiles come back, notice clears itself (no dismiss).
   failTiles = false;
@@ -45,14 +45,13 @@ try {
   // outruns the 12s default this helper carries (the death direction already budgets 18s).
   ok('C1 first successful GL load auto-hides the notice', await until(async () => await ev(`glOk === true`) && !(await noteVisible()), 30000));
 
-  // Phase B: failure again after reload; dismissal sticks while still dead.
+  // Phase B: failure again after reload; the notice cannot be dismissed and stays while dead.
   failTiles = true;
   await reload(4000);
   ok('B1 notice shows again on a fresh dead boot', await until(noteVisible, 18000));
-  await ev(`document.getElementById('mapNoteNo').click(); true`); await sleep(400);
-  ok('B2 dismiss hides the notice', !(await noteVisible()));
+  ok('B2 the notice cannot be dismissed (no control exists to dismiss it)', (await noteVisible()) && await ev(`document.getElementById('mapNoteNo') === null`));
   await ev(`setBasemap(); true`); await sleep(2500);
-  ok('B3 dismissal sticks while the map stays dead', !(await noteVisible()) && await ev(`typeof basemapDead !== 'undefined' && basemapDead === true`));
+  ok('B3 the notice stays while the map stays dead (only recovery clears it)', (await noteVisible()) && await ev(`typeof basemapDead !== 'undefined' && basemapDead === true`));
 
   // Phase D: healthy boot, night theme - notice stays away; forced layout check at night.
   failTiles = false;
@@ -66,8 +65,7 @@ try {
   let R2 = await rects();
   ok('D4 layout (night): notice fully in viewport', R2.note && R2.note.h > 40 && R2.note.x >= 0 && R2.note.y >= 0 && R2.note.r <= R2.vw && R2.note.btm <= R2.vh);
   ok('D5 layout (night): notice does not overlap the tab bar | note ' + JSON.stringify(R2.note) + ' gear ' + JSON.stringify(R2.gear), !overlaps(R2.note, R2.gear));
-  await ev(`document.getElementById('mapNoteNo').click(); true`); await sleep(300);
-  ok('D6 night dismiss works', !(await noteVisible()));
+  ok('D6 night: the notice still cannot be dismissed (no control exists)', (await noteVisible()) && await ev(`document.getElementById('mapNoteNo') === null`));
 } catch (e) {
   R.fatal = String(e && e.message || e);
 }

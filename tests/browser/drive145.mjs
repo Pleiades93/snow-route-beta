@@ -187,22 +187,22 @@ ok('N13c-a baseline: Velmar starts out done', await ev(`doneSet.has('Velmar')`))
 await poll(`typeof doRestore === 'function'`, 30000); // the toast read below calls doRestore in the same evaluation - wait for the full app parse, not just the boot marker
 const piecesBefore13c = await ev(`JSON.stringify(pieces.Velmar)`);
 const bootMark13c = await ev(`window.__bootAt`);
-const toast13c = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1doneEmpty)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+const toast13c = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1doneEmpty)}; doRestore(); return document.getElementById('banner').classList.contains('show'); })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13c)}`, 30000); // the one write (the empty done record, the key was absent) still reloads
 await poll(`typeof loadRoute === 'function'`, 30000);
 await loadRoutePolled(ev, sleep);
-ok('N13c-b restoring an EMPTY completion list never clears the board under merge (the R03 replace-era clearing is superseded): it writes only the empty record for the absent key, and the side-derived board stands | ' + toast13c, await ev(`(function(){ try { return doneSet.has('Velmar') && JSON.stringify(pieces.Velmar) === ${JSON.stringify(piecesBefore13c)}; } catch (e) { return false; } })()`) && toast13c.includes('Backup added data to 1 data field'));
+ok('N13c-b restoring an EMPTY completion list never clears the board under merge (the R03 replace-era clearing is superseded): it writes only the empty record for the absent key, and the side-derived board stands, and the restore is SILENT since Beta 1.296 (the restored announcement is cut) | banner shown: ' + toast13c, await ev(`(function(){ try { return doneSet.has('Velmar') && JSON.stringify(pieces.Velmar) === ${JSON.stringify(piecesBefore13c)}; } catch (e) { return false; } })()`) && toast13c === false);
 
 // --- F-05 (Beta 1.94): street names the route does not know are counted and
 // reported in the restore result, not silently dropped by the loaders ------
 const v2badNames = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar', 'Nosuch Avenue']), sides: JSON.stringify({ p: { Velmar: Array(14).fill(3), 'Nosuch Avenue': [3], 'Different Nowhere': [3] }, t: {} }) } } });
 const bootMark13d = await ev(`window.__bootAt`);
-const toast13d = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2badNames)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+const toast13d = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2badNames)}; doRestore(); return document.getElementById('banner').classList.contains('show'); })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13d)}`, 30000);
 await loadRoutePolled(ev, sleep);
-ok('N13d a restore carrying unknown street names reports how many UNIQUE names were ignored - Nosuch Avenue appears twice, counts once (Beta 1.94 F-05; unique counting Beta 1.95, SR-194-08) | ' + toast13d, /2 unknown street names/.test(toast13d) && (await ev(`doneSet.has('Velmar')`)) === true);
+ok('N13d a restore carrying unknown street names drops them SILENTLY since Beta 1.296 (the ignored-names count is cut - the F-05 announcement retires; the known names still land) | banner shown: ' + toast13d, toast13d === false && (await ev(`doneSet.has('Velmar')`)) === true);
 
 // --- SR-194-08 (Beta 1.95): the unknown-name count reads the RAW backup,
 // before any normalization filters names away, and counts each name once.
@@ -211,29 +211,29 @@ ok('N13d a restore carrying unknown street names reports how many UNIQUE names w
 // items were skipped entirely; repeats counted per occurrence.
 const v1badNames = JSON.stringify({ app: 'snowroute-backup', v: 1, at: '2026-11-04T00:00:00.000Z', data: { 'snowroute.v2': JSON.stringify({ Velmar: '2026-11-01T00:00:00.000Z', 'Nosuch Avenue': '2026-11-01T00:00:00.000Z', 'Ghost Road': '2026-11-01T00:00:00.000Z' }), 'snowroute.v2.times': JSON.stringify({ Velmar: '2026-11-01T00:00:00.000Z', 'Nosuch Avenue': '2026-11-01T00:00:00.000Z' }) } });
 const bootMark13e = await ev(`window.__bootAt`);
-const toast13e = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1badNames)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+const toast13e = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v1badNames)}; doRestore(); return document.getElementById('banner').classList.contains('show'); })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13e)}`, 30000);
 await loadRoutePolled(ev, sleep);
-ok('N13e a v1 restore counts unknown names from the raw backup, each name once - object-form done included (Beta 1.95, SR-194-08) | ' + toast13e, /2 unknown street names/.test(toast13e) && (await ev(`doneSet.has('Velmar')`)) === true);
+ok('N13e a v1 restore drops unknown names silently too (object-form done included) | banner shown: ' + toast13e, toast13e === false && (await ev(`doneSet.has('Velmar')`)) === true);
 const v2arrHist = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar']), sides: JSON.stringify({ p: { Velmar: Array(14).fill(3) }, t: {} }), hist: JSON.stringify([{ at: '2026-11-02T00:00:00.000Z', startedAt: '2026-11-02T00:00:00.000Z', items: ['Velmar', 'Phantom Crescent'] }]) } } });
 const bootMark13f = await ev(`window.__bootAt`);
-const toast13f = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2arrHist)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+const toast13f = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2arrHist)}; doRestore(); return document.getElementById('banner').classList.contains('show'); })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13f)}`, 30000);
 await loadRoutePolled(ev, sleep);
-ok('N13f unknown names inside ARRAY-form history items are counted too (Beta 1.95, SR-194-08) | ' + toast13f, /1 unknown street name/.test(toast13f));
+ok('N13f unknown names inside ARRAY-form history items are dropped silently too | banner shown: ' + toast13f, toast13f === false && (await ev(`doneSet.has('Velmar')`)) === true);
 
 // N13g (Beta 1.96, deep audit SR-195-05): OBJECT-form notes ({street: [entries]})
 // pass the restore's shape check and their names are dropped by the loader -
 // 1.95's counter scanned only the array form, so they vanished uncounted.
 const v2objNotes = JSON.stringify({ app: 'snowroute-backup', v: 2, at: '2026-11-04T00:00:00.000Z', routes: { '5w': { done: JSON.stringify(['Velmar']), times: JSON.stringify({ Velmar: '2026-11-01T00:00:00.000Z' }), notes: JSON.stringify({ 'Phantom Lane': [{ at: '2026-11-01T00:00:00.000Z', text: 'gate code 4' }] }) } } });
 const bootMark13g = await ev(`window.__bootAt`);
-const toast13g = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2objNotes)}; doRestore(); return document.getElementById('toast').textContent; })()`);
+const toast13g = await ev(`(function(){ document.getElementById('xText').value = ${JSON.stringify(v2objNotes)}; doRestore(); return document.getElementById('banner').classList.contains('show'); })()`);
 await sleep(900);
 await poll(`!!window.__bootAt && window.__bootAt !== ${JSON.stringify(bootMark13g)}`, 30000);
 await loadRoutePolled(ev, sleep);
-ok('N13g unknown names inside OBJECT-form notes are counted too (Beta 1.96, SR-195-05) | ' + toast13g, /1 unknown street name/.test(toast13g) && (await ev(`doneSet.has('Velmar')`)) === true);
+ok('N13g unknown names inside OBJECT-form notes are dropped silently too (Beta 1.96, SR-195-05) | banner shown: ' + toast13g, toast13g === false && (await ev(`doneSet.has('Velmar')`)) === true);
 
 // --- backups are v2 now ------------------------------------------------------
 ok('N14 buildBackup emits the v2 per-route shape', await ev(`(function(){ var b = JSON.parse(buildBackup()); return b.app === 'snowroute-backup' && b.v === 2 && !!b.routes && typeof b.routes['5w'].sides === 'string' && typeof b.routes['5w'].trail === 'string'; })()`));

@@ -79,8 +79,8 @@ await ev(`startClean()`); await sleep(200);
 await ev(`(function(){ var orig = lsSet; window.__lsOrig133 = orig; lsSet = function(k, v){ if (k === LS.trail) return false; return orig(k, v); }; return true; })()`);
 await ev(`cancelStart()`);
 await sleep(200);
-const S10 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('toast').textContent, dirty: writePending('trail') }))()`));
-ok('S10 a failed trail save qualifies the cancel message (no false erasure claim) | ' + JSON.stringify(S10), /could not be saved yet/.test(S10.toast) && S10.dirty === true);
+const S10 = JSON.parse(await ev(`(() => JSON.stringify({ toast: $('bannerHead').textContent, shown: $('banner').classList.contains('show'), dirty: writePending('trail') }))()`));
+ok('S10 a failed trail save at cancel is SILENT since Beta 1.296 (the qualified cancel message is cut) - the pending write stays honestly pending for the retry | ' + JSON.stringify(S10), S10.shown === false && S10.dirty === true);
 await ev(`(function(){ if (window.__lsOrig133) lsSet = window.__lsOrig133; flushAux(true); return true; })()`);
 
 // S11 (Beta 1.94, deep audit SR-193-02): Start PERSISTS its pre-Start
@@ -115,10 +115,10 @@ const corruptCycle = async (mutate) => {
   await ev(`markDone('Astona', 'test')`);
   await ev(`cancelStart()`);
   await sleep(300);
-  return JSON.parse(await ev(`(() => { const stored = JSON.parse(localStorage.getItem(LS.sides) || '{"p":{}}'); return JSON.stringify({ velmarDone: doneSet.has('Velmar'), astona: pieces.Astona ? pieces.Astona.every(v => v === 0) : 'missing', velmarVal: pieces.Velmar ? pieces.Velmar[0] : 'missing', stored99: JSON.stringify(stored).includes('99'), covBad: (coveredIdx.Velmar || []).some(i => typeof i !== 'number' || i < 0 || i > 5000), stray: doneSet.has('Nowhere Road'), toast: $('toast').textContent }); })()`));
+  return JSON.parse(await ev(`(() => { const stored = JSON.parse(localStorage.getItem(LS.sides) || '{"p":{}}'); return JSON.stringify({ velmarDone: doneSet.has('Velmar'), astona: pieces.Astona ? pieces.Astona.every(v => v === 0) : 'missing', velmarVal: pieces.Velmar ? pieces.Velmar[0] : 'missing', stored99: JSON.stringify(stored).includes('99'), covBad: (coveredIdx.Velmar || []).some(i => typeof i !== 'number' || i < 0 || i > 5000), stray: doneSet.has('Nowhere Road'), toast: $('banner').classList.contains('show') }); })()`));
 };
 const S12a = await corruptCycle(`s => { s.pieces = { Velmar: [99] }; }`);
-ok('S12a a snapshot with an out-of-range value and missing streets is rejected whole - journal fallback, no corruption saved (Beta 1.95, SR-194-03) | ' + JSON.stringify(S12a), S12a.velmarDone === true && S12a.astona === true && S12a.velmarVal === 3 && S12a.stored99 === false && /damaged/.test(S12a.toast));
+ok('S12a a snapshot with an out-of-range value and missing streets is rejected whole - journal fallback, no corruption saved, and the cancel is SILENT since Beta 1.296 (the damaged-snapshot message is cut) (Beta 1.95, SR-194-03) | ' + JSON.stringify(S12a), S12a.velmarDone === true && S12a.astona === true && S12a.velmarVal === 3 && S12a.stored99 === false && S12a.toast === false);
 const S12b = await corruptCycle(`s => { s.pieces.Velmar = [3]; s.pieceTimes.Velmar = { 0: 'garbage' }; }`);
 ok('S12b a snapshot with a wrong-length street and garbage times is rejected whole | ' + JSON.stringify(S12b), S12b.velmarDone === true && S12b.astona === true && S12b.velmarVal === 3 && S12b.stored99 === false);
 const S12c = await corruptCycle(`s => { s.cov = { Velmar: [99999] }; s.done = ['Velmar', 'Nowhere Road']; }`);
@@ -147,12 +147,12 @@ await ev(`togglePiece('Velmar', 0, 0)`);
 await ev(`(function(){ const s2 = JSON.parse(localStorage.getItem(LS.snap)); s2.pieces = { Velmar: [99] }; localStorage.setItem(LS.snap, JSON.stringify(s2)); return true; })()`);
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
 await ev(`(function(){ window.__lsSetOrig = lsSet; lsSet = (k, v) => (k === LS.trail || k === LS.sess) ? false : window.__lsSetOrig(k, v); return true; })()`);
 await ev(`cancelStart()`); await sleep(300);
 const S14a = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
-ok('S14a damaged snapshot + unsaved trail cleanup: the message carries the cleanup warning AND the rebuild explanation - the erasure claim never stands alone (Beta 1.96, SR-195-01) | ' + JSON.stringify(S14a), S14a.some(t => /trail cleanup could not be saved/.test(t) && /rebuilt from the marks/.test(t)));
+ok('S14a damaged snapshot + unsaved trail cleanup: the cancel is SILENT since Beta 1.296 (both cancel messages are cut) - no banner headline names the cleanup | ' + JSON.stringify(S14a), !S14a.some(t => /trail|cleanup/i.test(t)));
 await ev(`(function(){ lsSet = window.__lsSetOrig; flushAux(true); return true; })()`); await sleep(200);
 ok('S14b when storage recovers the pending trail cleanup lands on retry (Beta 1.96, SR-195-01)', (await ev(`!writePending('trail') && !writePending('sess')`)) === true);
 
@@ -168,7 +168,7 @@ await ev(`startClean()`);
 await ev(`(function(){ localStorage.removeItem(LS.snap); return true; })()`); // the snapshot never landed / was lost - the run itself is legitimately open
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
 const S13a = JSON.parse(await ev(`(() => JSON.stringify({ toasts: window.__toasts133 || [], resumed: !!runStart, snapOk: validateSnap(parseJ(lsGet(LS.snap), null), runStart) }))()`));
 ok('S13a a resumed run with no snapshot: the resume lands, the snapshot on disk is unusable for it (Cancel is reduced to a rebuild), and no resume pill fires since Beta 1.221 | ' + JSON.stringify(S13a), S13a.resumed === true && !S13a.snapOk && !S13a.toasts.some(t => /no usable cancel snapshot/.test(t))); // Beta 1.221 gate fix: the unusable test is !snapOk, not === false - validateSnap's contract is a normalized copy or NULL (never false), so the strict-false form could never pass; the property (no usable snapshot for this run) is asserted at the same strength
@@ -176,7 +176,7 @@ await ev(`cancelStart()`); await sleep(300);
 await ev(`startClean()`); await sleep(300); // a fresh Start writes a fresh, valid snapshot
 await ev(`location.reload(); true`);
 await poll(`!!window.__bootAt`, 30000);
-await ev(`(function(){ window.__toasts133 = []; const t = $('toast'); new MutationObserver(() => { const x = t.textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
+await ev(`(function(){ window.__toasts133 = []; const t = $('banner'); new MutationObserver(() => { const x = $('bannerHead').textContent; if (x && window.__toasts133[window.__toasts133.length - 1] !== x) window.__toasts133.push(x); }).observe(t, { childList: true, characterData: true, subtree: true }); return true; })()`);
 await ev(`loadRoute('5w'); true`); await sleep(700);
 const S13b = JSON.parse(await ev(`JSON.stringify(window.__toasts133 || [])`));
 ok('S13b a resumed run WITH its snapshot stays silent | ' + JSON.stringify(S13b), !S13b.some(t => /no usable cancel snapshot/.test(t)));

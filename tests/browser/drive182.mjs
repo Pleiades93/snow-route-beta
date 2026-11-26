@@ -267,9 +267,9 @@ ok('P1 a tap 10 px off the Bordeaux line PICKS Bordeaux - inside the new first b
 // ---------- P3: beyond the new retry square, the UNPICKED Alderson picks NOTHING ----------
 await fireTap(PROBES.a24);
 await sleep(600);
-const P3 = await J(`({ streets: draft ? Object.keys(draft.roads) : null, toast: document.getElementById('toast').textContent })`);
+const P3 = await J(`({ streets: draft ? Object.keys(draft.roads) : null, toast: document.getElementById('banner').classList.contains('show') })`);
 ok('P3 a tap whose square MISSES Alderson under the new retry box picks NOTHING (segment-to-square miss ' + (PROBES.a24 ? PROBES.a24.boxMiss.toFixed(1) : '?') + ' px vs the 20 square; point distance ' + (PROBES.a24 ? PROBES.a24.dMine.toFixed(1) : '?') + ' px; the old 28 square caught this tap) | ' + JSON.stringify(P3),
-  !!P3.streets && !P3.streets.includes('Alderson Avenue') && P3.toast.indexOf('No road there') >= 0);
+  !!P3.streets && !P3.streets.includes('Alderson Avenue') && P3.toast === false); // Beta 1.296: the tap-miss message is cut - the miss is silent
 
 // ---------- P2: the retry square PICKS ----------
 await fireTap(PROBES.a17);

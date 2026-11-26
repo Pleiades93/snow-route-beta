@@ -40,10 +40,10 @@ try {
     window.__d176probe = 1; restoreBackup(${JSON.stringify(backupObj())}); return true; })()`);
   await sleep(1500); // a successful restore reloads at 600 ms; a failed one stays put with its toast
   await waitBoot(); // on the unfixed code the wrongful success reloads the page - wait for the new page's scripts before reading
-  const p1 = await J(`({ probe: typeof window.__d176probe !== 'undefined', toast: $('toast').textContent,
+  const p1 = await J(`({ probe: typeof window.__d176probe !== 'undefined', banner: $('banner').classList.contains('show'), head: $('bannerHead').textContent,
     notes: localStorage.getItem(routeKeys('5w').notes), cov: localStorage.getItem(routeKeys('5w').cov), fin: localStorage.getItem(routeKeys('5w').finclean) })`);
   ok('P1 a refused discharge fails the restore honestly (no success, no reload) | ' + JSON.stringify(p1),
-    p1.probe === true && /Restore failed/.test(p1.toast || ''));
+    p1.probe === true && p1.banner === false); // Beta 1.296: the rollback verified clean, so the failure is silent - honesty is the intact data below
   ok('P1 the rollback leaves the original slot data and the still-armed record intact',
     p1.notes === STALE_NOTES && p1.cov === STALE_COV && p1.fin !== null);
   // the obligation itself is real: with deletes working again, loading the

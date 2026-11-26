@@ -147,9 +147,9 @@ await bootRoute();
 const inPick2 = await pickVaughan();
 const ready2 = await poll(`crPrepState === 'ready'`, 20000);
 const phase2Overpass = wire.slice(wireMark).filter(w => w.kind === 'overpass').length;
-const NH = await J(`({ fromCache: crGrid && crGrid.fromCache, hint: document.getElementById('createHint').textContent, on: document.getElementById('createHint').classList.contains('on') })`);
+const NH = await J(`({ fromCache: crGrid && crGrid.fromCache, hintEl: !!document.getElementById('createHint'), btn: document.getElementById('crHintBtn').style.display })`);
 ok('N7 PERSISTENCE ROUND-TRIP: after a full page reload, re-picking Vaughan is ready from the ON-DEVICE CACHE with ZERO Overpass requests on the wire (phase 2 count: ' + phase2Overpass + ') and the hint says NOTHING (Beta 1.223: the loaded-city confirmation is removed - silence means it loaded, from cache as from the wire) | ' + JSON.stringify(NH) + ' | record complete before reload: ' + savedAll,
-  inPick2 === true && ready2 === true && phase2Overpass === 0 && NH.fromCache === true && NH.hint === '' && NH.on === false && savedAll === true);
+  inPick2 === true && ready2 === true && phase2Overpass === 0 && NH.fromCache === true && NH.hintEl === false && NH.btn === 'none' && savedAll === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
 const gotB2 = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);

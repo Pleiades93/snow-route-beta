@@ -90,7 +90,7 @@ const pickCityVaughan = async () => {
 const jWipe = async () => { await ev(`(async () => { await new Promise(res => { try { const rq = indexedDB.deleteDatabase('snowroute-citycache'); rq.onsuccess = () => res(); rq.onerror = () => res(); rq.onblocked = () => res(); } catch (e) { res(); } }); return true; })()`); };
 const enterManual = async () => { await ev(`openRouteMenu()`); await ev(`document.getElementById('rmCreate').click()`); await ev(`document.getElementById('crDoorManual').click()`); return await pickCityVaughan(); };
 const exitDiscard = async () => { await ev(`document.getElementById('crExit').click()`); await sleep(400); await ev(`(() => { const y = document.getElementById('crModalYes'); if (y && !document.getElementById('crModal').classList.contains('hidden')) y.click(); return true; })()`); await sleep(400); };
-const hintSample = () => J(`({ state: typeof crPrepState !== 'undefined' ? crPrepState : '', on: document.getElementById('createHint').classList.contains('on'), text: document.getElementById('createHint').textContent, btnShown: document.getElementById('crHintBtn').style.display !== 'none', btnText: document.getElementById('crHintBtn').textContent })`);
+const hintSample = () => J(`({ state: typeof crPrepState !== 'undefined' ? crPrepState : '', on: !!document.getElementById('createHint'), text: !!document.getElementById('createHint'), btnShown: document.getElementById('crHintBtn').style.display !== 'none', btnText: document.getElementById('crHintBtn').textContent })`);
 
 // ---------- boot 5W ----------
 await poll(`typeof loadRoute === 'function'`, 20000);
@@ -111,18 +111,18 @@ await ev(`window.__failGeo = true`);
 const inPick1 = await enterManual();
 const failed = await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'failed'`, 45000).catch(() => false);
 const F1 = await hintSample();
-ok('P1a (failed load) with the map service down the preparation settles FAILED and the hint shows the failure with a working remedy offered (entered pick: ' + inPick1 + ') | ' + JSON.stringify(F1),
-  inPick1 === true && failed === true && F1.on === true && F1.text.indexOf('tap Retry') >= 0 && F1.btnShown === true && F1.btnText === 'Retry'); // the failure copy for an HTTP-status failure is the service-error wording ('The street-shape service answered with an error (503). Tap Retry' - the Beta 1.223 dash sweep split the old em-dash form into two sentences) - the claim is the failure + remedy are shown, not one wording
+ok('P1a (failed load) with the map service down the preparation settles FAILED and the remedy stands on the button (Retry) - the failure TEXT is cut since Beta 1.296: no hint surface exists (entered pick: ' + inPick1 + ') | ' + JSON.stringify(F1),
+  inPick1 === true && failed === true && F1.on === false && F1.btnShown === true && F1.btnText === 'Retry'); // the failure copy for an HTTP-status failure is the service-error wording ('The street-shape service answered with an error (503). Tap Retry' - the Beta 1.223 dash sweep split the old em-dash form into two sentences) - the claim is the failure + remedy are shown, not one wording
 await sleep(4600); // longer than the confirmation pill's 4 s: a failure must NOT dismiss itself
 const F2 = await hintSample();
-ok('P1b (failed load) 4.6 s later the failure is STILL up and actionable - failures never auto-dismiss | ' + JSON.stringify(F2),
-  F2.state === 'failed' && F2.on === true && F2.btnShown === true && F2.btnText === 'Retry');
-const gapAt178 = async (w, h) => { await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S); await ev(`crRenderHint()`); return await J(`(() => { const hr = document.getElementById('createHint').getBoundingClientRect(), br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5, pillH: Math.round(hr.height) }; })()`); };
+ok('P1b (failed load) 4.6 s later the failure state and its Retry button STILL stand - the remedy never auto-dismisses | ' + JSON.stringify(F2),
+  F2.state === 'failed' && F2.on === false && F2.btnShown === true && F2.btnText === 'Retry');
+const gapAt178 = async (w, h) => { await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true }, S); await ev(`crRenderHint()`); return await J(`(() => { const hr = document.getElementById('createBar').getBoundingClientRect(), br = document.getElementById('crHintBtn').getBoundingClientRect(); return { gap: Math.round((br.top - hr.bottom) * 10) / 10, overlap: br.top < hr.bottom - 0.5, pillH: Math.round(hr.height) }; })()`); };
 const GP390 = await gapAt178(390, 844);
 const GP430 = await gapAt178(430, 932);
 await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
 await ev(`crRenderHint()`);
-ok('P1m (button placement, Beta 1.176) with the failure pill up - its wording wraps to two lines at these widths (pill heights ' + GP390.pillH + ' / ' + GP430.pillH + ' px), the Retry button hangs BELOW the pill BY MEASUREMENT: gap > 0 and zero overlap at 390 px (gap ' + GP390.gap + ' px) and 430 px (gap ' + GP430.gap + ' px) - through 1.175 the fixed offset sat the button on the bottom edge of the pill | ' + JSON.stringify({ GP390, GP430 }),
+ok('P1m (button placement, re-derived 1.296: the failure pill is gone) with the failure standing, the Retry button hangs BELOW the create bar BY MEASUREMENT: gap > 0 and zero overlap at 390 px and 430 px | ' + JSON.stringify({ GP390, GP430 }),
   GP390.gap > 0 && GP390.overlap === false && GP430.gap > 0 && GP430.overlap === false);
 await ev(`window.__failGeo = false`);
 await ev(`document.getElementById('crHintBtn').click()`); // the failed state's Retry: resume the grid's failed cells
@@ -132,11 +132,11 @@ ok('P1c (failed load -> Retry) activating the failed state\'s Retry after the se
   ready1 === true && F3.done === F3.total && F3.total > 0);
 const F4 = await hintSample();
 ok('P1d (no loaded confirmation, Beta 1.223 - re-derived from the Beta 1.176 fresh-load confirmation check) the load the Retry just completed was FRESH (not restored from cache), the state is ready, and the hint shows NOTHING: pill off, empty text, no button - silence means loaded | ' + JSON.stringify(F4),
-  F4.state === 'ready' && F4.on === false && F4.text === '' && F4.btnShown === false);
+  F4.state === 'ready' && F4.on === false && F4.text === false && F4.btnShown === false);
 await sleep(4600); // past the retired confirmation's 4 s clock: nothing may appear late either
 const F5 = await hintSample();
 ok('P1e (no loaded confirmation, Beta 1.223) 4.6 s after the fresh load readied the hint is STILL off with empty text while the city stays ready - no confirmation appears, late or otherwise | ' + JSON.stringify(F5),
-  F5.state === 'ready' && F5.on === false && F5.text === '');
+  F5.state === 'ready' && F5.on === false && F5.text === false);
 await exitDiscard();
 
 // ---------- P2 (items 1a+3): the cached re-pick - no Refresh, no confirmation pill (Beta 1.223) ----------
@@ -144,18 +144,18 @@ const inPick2 = await enterManual();
 const ready2 = await poll(`typeof crPrepState !== 'undefined' && crPrepState === 'ready' && !!(crGrid && crGrid.fromCache)`, 30000).catch(() => false);
 const C1 = await hintSample();
 ok('P2a (cached re-pick, Beta 1.223) the city readies FROM CACHE and the hint shows NOTHING - no loaded confirmation, no tap-a-road line, and NO refresh control in the healthy state | ' + JSON.stringify(C1),
-  inPick2 === true && ready2 === true && C1.on === false && C1.text === '' && C1.btnShown === false);
+  inPick2 === true && ready2 === true && C1.on === false && C1.text === false && C1.btnShown === false);
 await sleep(4600); // past the retired confirmation's 4 s clock
 const C2 = await hintSample();
-ok('P2b (no confirmation pill, Beta 1.223) seconds after the cached re-pick readied, the hint is STILL off with empty text while the city stays ready | ' + JSON.stringify(C2),
-  C2.state === 'ready' && C2.on === false && C2.text === '');
+ok('P2b (no confirmation pill, Beta 1.223) seconds after the cached re-pick readied, no hint surface exists while the city stays ready | ' + JSON.stringify(C2),
+  C2.state === 'ready' && C2.on === false && C2.text === false);
 
 // ---------- P3 (items 4+2+3): road tap - no 'Added' toast, panel title, pill stays dismissed ----------
 await ev(tapStreet('Bordeaux Drive'));
 await sleep(500);
-const T1 = await J(`({ toast: document.getElementById('toast').textContent, toastShown: document.getElementById('toast').classList.contains('show'), streets: draft ? draftStreets() : [], panel: document.querySelector('.crPanelTitle') ? document.querySelector('.crPanelTitle').textContent.trim() : '', pillOn: document.getElementById('createHint').classList.contains('on') })`);
-ok('P3a (road tap) tapping a road adds it with NO \'Added\' popup - the toast never carries the removed confirmation | ' + JSON.stringify(T1),
-  T1.streets.includes('Bordeaux Drive') && T1.toast.indexOf('Added') < 0);
+const T1 = await J(`({ toast: document.getElementById('banner').classList.contains('show'), toastShown: document.getElementById('banner').classList.contains('show'), streets: draft ? draftStreets() : [], panel: document.querySelector('.crPanelTitle') ? document.querySelector('.crPanelTitle').textContent.trim() : '', pillOn: !!document.getElementById('createHint') })`);
+ok('P3a (road tap) tapping a road adds it with NO popup at all since Beta 1.296 - the add is silent | ' + JSON.stringify(T1),
+  T1.streets.includes('Bordeaux Drive') && T1.toast === false);
 ok('P3b (panel title) the pick panel is headed \'Current selection\' | ' + JSON.stringify(T1.panel),
   T1.panel.indexOf('Current selection') === 0);
 ok('P3c (no confirmation to resurrect, Beta 1.223) the road tap\'s hint re-render keeps the hint off - the loaded confirmation no longer exists',

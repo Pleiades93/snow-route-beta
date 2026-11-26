@@ -34,27 +34,27 @@ try {
   // T1: a v2 backup whose run-start is the tiny string '1' must be REFUSED,
   // naming the field - and nothing may be written (no reload, slot untouched).
   const t1 = JSON.parse(await ev(`(() => { const bk = JSON.parse(${JSON.stringify(bkStr)}); bk.routes['5w'].start = '1'; delete bk.routes['5w'].snap;
-    window.__d171probe = 1; restoreBackup(bk); return JSON.stringify({ toast: $('toast').textContent }); })()`));
+    window.__d171probe = 1; restoreBackup(bk); return JSON.stringify({ toast: $('banner').classList.contains('show') }); })()`));
   await sleep(1200); // a wrongful accept would reload at 600 ms and the probe flag would vanish
   const t1b = await J(`({ probe: typeof window.__d171probe !== 'undefined', start: localStorage.getItem(LS.start), done: localStorage.getItem(LS.done) })`);
-  ok('T1 crafted start="1" refused with a named bad-value message', /bad value for .*start/i.test(t1.toast || ''));
+  ok('T1 crafted start="1" refused SILENTLY since Beta 1.296 (the named bad-value message is cut)', t1.toast === false);
   ok('T1 refused restore wrote nothing and did not reload', t1b.probe === true && t1b.start === null && JSON.parse(t1b.done || '[]').includes('Velmar'));
 
   // T2: the v1 legacy loop shares the same pushField - a v1 backup carrying
   // a crafted start under its legacy key is refused the same way.
   const t2 = JSON.parse(await ev(`(() => { const bk = { app: 'snowroute-backup', v: 1, data: { 'snowroute.v5.start': '1' } };
-    window.__d171probe = 1; restoreBackup(bk); return JSON.stringify({ toast: $('toast').textContent }); })()`));
+    window.__d171probe = 1; restoreBackup(bk); return JSON.stringify({ toast: $('banner').classList.contains('show') }); })()`));
   await sleep(1200);
   const t2b = await J(`({ probe: typeof window.__d171probe !== 'undefined', start: localStorage.getItem(LS.start) })`);
-  ok('T2 v1-loop crafted start refused with a named message', /bad value for .*start/i.test(t2.toast || ''));
+  ok('T2 v1-loop crafted start refused silently too', t2.toast === false);
   ok('T2 v1 refusal wrote nothing and did not reload', t2b.probe === true && t2b.start === null);
 
   // T3: other non-digit / out-of-band starts are refused too ('123abc',
   // 'Infinity', and a digit string below the epoch band).
   for (const bad of ['123abc', 'Infinity', '99999999999']) {
     const t = JSON.parse(await ev(`(() => { const bk = JSON.parse(${JSON.stringify(bkStr)}); bk.routes['5w'].start = ${JSON.stringify(bad)}; delete bk.routes['5w'].snap;
-      restoreBackup(bk); return JSON.stringify({ toast: $('toast').textContent }); })()`));
-    ok('T3 crafted start=' + JSON.stringify(bad) + ' refused', /bad value for .*start/i.test(t.toast || ''));
+      restoreBackup(bk); return JSON.stringify({ toast: $('banner').classList.contains('show') }); })()`));
+    ok('T3 crafted start=' + JSON.stringify(bad) + ' refused silently', t.toast === false);
   }
 
   // T4: 'night' is the writer's enum '0'/'1' - a crafted value is refused
@@ -63,10 +63,10 @@ try {
   // graded as UNCHANGED, not absent.)
   const nightBefore = await J(`localStorage.getItem(LS_GLOBAL.night)`);
   const t4 = JSON.parse(await ev(`(() => { const bk = { app: 'snowroute-backup', v: 2, routes: {}, night: 'banana' };
-    window.__d171probe = 1; restoreBackup(bk); return JSON.stringify({ toast: $('toast').textContent }); })()`));
+    window.__d171probe = 1; restoreBackup(bk); return JSON.stringify({ toast: $('banner').classList.contains('show') }); })()`));
   await sleep(1200);
   const t4b = await J(`({ probe: typeof window.__d171probe !== 'undefined', night: localStorage.getItem(LS_GLOBAL.night) })`);
-  ok('T4 crafted night="banana" refused with a named message', /bad value for night/i.test(t4.toast || ''));
+  ok('T4 crafted night="banana" refused silently too', t4.toast === false);
   ok('T4 night refusal wrote nothing and did not reload (night stays ' + JSON.stringify(nightBefore) + ')', t4b.probe === true && t4b.night === nightBefore && t4b.night !== 'banana');
   // A resident override wins: the backup's value lands only once the resident pair is absent.
   await ev(`(() => { const bk = { app: 'snowroute-backup', v: 2, routes: {}, night: '1' }; window.__d171probe = 1; restoreBackup(bk); return true; })()`);

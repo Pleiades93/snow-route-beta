@@ -20,8 +20,9 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i) + 1); };
 // The two 1.226 group rules, isolated so the exclusion checks read rules, not prose.
-const transLine = head.split('\n').find(l => l.includes('.tabItem, .dockBtn, .runBtn,') && l.includes('transition: transform 150ms ease-out;')) || '';
-const scaleLine = head.split('\n').find(l => l.includes('.tabItem:active, .dockBtn:active, .runBtn:active,') && l.includes('transform: scale(.97);')) || '';
+const ruleText = (startFrag) => { const ls = head.split('\n'); const i = ls.findIndex(l => l.includes(startFrag)); if (i < 0) return ''; let out = ''; for (let k = i; k < ls.length; k++) { out += (out ? ' ' : '') + ls[k].trim(); if (ls[k].includes('}')) break; } return out; };
+const transLine = ruleText('.tabItem, .dockBtn, .runBtn,');
+const scaleLine = ruleText('.tabItem:active, .dockBtn:active, .runBtn:active,');
 
 // ---------- Piece 1: the press shrink ----------
 check('1a: the press transition group exists and carries the core families (tab bar, dock, run button, road panel, blue menus, create)', !!transLine && transLine.includes('#selPop button') && transLine.includes('.rmBtn') && transLine.includes('button.m-card') && transLine.includes('#routeMenu .routeRow') && transLine.includes('.crPrimary') && transLine.includes('.routeDrop .dropLoad') && transLine.includes('.routeDrop .dropDel') && !transLine.includes('.banner button') && transLine.includes('.modal .row button'));

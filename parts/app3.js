@@ -287,7 +287,7 @@ function openClean(i) {
     HIST.deleteAt(cleanIdx);
     const okDel = HIST.save();
     backToCleans();
-    if (!okDel) toast('Storage problem - the delete could not be saved; the clean may return on reload', 4200);
+    if (!okDel) showBanner('Delete not saved', 'The clean may come back on reload');
     updateCount();
   };
   cv.appendChild(del);
@@ -365,15 +365,13 @@ const RUN = {
 // startClean carries the Start fence: the trail windows to the new run here, so pre-Start points are evicted at Start
 // Start is a hard exit: the shown point is back on the true position before the first fix
 function startClean() { snapReset();
-  RUN.begin(); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail'); const okSnap = saveSnap(); const okSess = noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake(); if (!okStart.ok) toast('Clean started - warning: the clean state could not be saved (storage problem)', 4200); else if (!okSess.ok) toast('Clean started - warning: the session marker could not be saved; it will keep retrying', 4200); else if (!okSnap.ok) toast('Clean started - warning: the cancel safety snapshot could not be saved; it will keep retrying', 4200); checkStale(); } // Beta 1.221 gate fix (Codex P2, PR #98): the snapshot branch is guarded by !okSnap.ok - when the toast cuts removed the old success pill, the chain's last branch lost its condition and EVERY healthy Start showed this failure warning; the healthy path must stay silent (drive146 S1/S2) // Beta 1.167 (B5): Start banks a fresh distance counter for the new run (RUN.begin, the transition owner's Start half), so even an instant reload resumes THIS run's counter. // Beta 1.73 (audit C04): the marker save is part of the start's honesty check, not a silent side write // Beta 1.63 (audit F04): the clean still starts - he is standing in the snow - but the message stops claiming a saved state that does not exist
+  RUN.begin(); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail');
+  saveSnap(); noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake();
+  if (!okStart.ok) showBanner('This clean is not saving', 'Storage problem - keep a backup of your marks'); checkStale(); } // the clean still starts; the marker and snapshot saves ride silently
 // Cancel start erases everything the run recorded and stores nothing: only Finish keeps history
 function cancelStart() {
   const wasRunGps = gpsFromRun;
   const startSec = runStart ? Math.floor(runStart / 1000) : 0;
-  // a persisted snapshot that exists but fails validation - the closing message must not claim an exact restore
-  let snapDamaged = false;
-  // no snapshot existed at all: the journal fallback runs, and the closing message names which reason applies
-  let snapAbsent = false;
   if (runStart) {
     trail = trail.filter(p => (p[2] || 0) < startSec);
     trailSessions = trailSessions.filter(s => s !== startSec);
@@ -385,7 +383,6 @@ function cancelStart() {
       const validSnap = persisted ? validateSnap(persisted, runStart) : null;
       if (validSnap) { BOARD.restore(validSnap); }
       else {
-        if (persisted) snapDamaged = true; else snapAbsent = true;
         BOARD.revertRunMarks(runStart); // Arch-2: the journal fallback (unmark at/after Start, re-derive, drop coverage) is the board module's one operation
       }
     }
@@ -393,19 +390,10 @@ function cancelStart() {
     RUN.end();
     markDirty('trail'); markDirty('sess');
   }
-  const okCancel = saveAllWarned().ok; PERSIST.flush(true);
-  // the erasure claim below is gated on the trail/session writes having actually landed
-  const trailPending = writePending('trail') || writePending('sess');
+  saveAllWarned(); PERSIST.flush(true);
   if (wasRunGps) stopGps();
   if (window.GLP) window.GLP.sync(); renderPanel(); renderStreets();
   updateCount(); syncWake();
-  // the message is composed, not chained: the storage warning leads whenever it applies; single-failure messages keep their wording
-  const rebuiltWhy = snapDamaged ? 'the saved snapshot was damaged' : (snapAbsent ? 'no start snapshot was saved' : '');
-  if (okCancel && trailPending) toast('Start cancelled - erased here, but the trail cleanup could not be saved yet; it will keep retrying' + (rebuiltWhy ? ' - the board was rebuilt from the marks made during the clean (' + rebuiltWhy + ')' : ''), 4600);
-  // the damaged disclosure stays: the only surface saying the cancel rebuilt approximately from a corrupt snapshot
-  else if (okCancel && snapDamaged) toast('Start cancelled - clean erased (the saved snapshot was damaged, so the board was rebuilt from the marks made during the clean)', 4600);
-  else if (!okCancel) toast('Start cancelled - warning: the cancellation could not be saved; the clean may return on reload', 4200);
-// cancelStart once ignored saveAll's result and claimed success; it also never refreshed the trail
 }
 $('startBtn').addEventListener('click', ev => { if (!tapGuard('startBtn', ev)) return; startClean(); });
 // CLEAR: the header button beside Pace wipes every mark, time and coverage (the run is untouched); the tap asks first
@@ -415,7 +403,7 @@ function clearAllMarks() {
   if (!any) { return; }
   BOARD.zeroMarks(); // Arch-2: the board emptying is the module's in-place zero
   deselect(); const okClear = finishChange();
-  if (!okClear.ok) toast('Storage problem - the clear could not be saved; marks may return on reload', 4200);
+  if (!okClear.ok) showBanner('Clear not saved', 'Your marks may come back on reload');
 }
 $('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) return; if (boardHasMarks()) askClearAll(); });
 // the Clear ask: the shared confirmation, bound to its route; the wipe is clearAllMarks, unchanged
@@ -571,9 +559,10 @@ function finishRun() {
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
   if (fTx.outcome !== 'committed') {
-    if (fTx.outcome === 'degraded') { toast(fTx.failedStep === 'sides' && archiving ? 'Storage failure - finish stopped, but the archive could not be undone - export a backup now' : 'Storage failure - finish stopped, but the rollback could not be verified - export a backup now', 6000); return; } // Beta 1.141 verify cycle 1: degraded is judged FIRST - an archive failure whose rollback could not be verified is not "run intact", whatever step failed
-    if (fTx.failedStep === 'archive') { toast('Storage full - finish stopped, clean intact', 3600); return; }
-    toast('Storage problem - finish stopped, your clean is intact', 4200); return;
+    if (fTx.outcome === 'degraded') { showBanner('Finish stopped', fTx.failedStep === 'sides' && archiving ?
+      'Undoing the finish did not work - export a backup now' : 'The undo could not be checked - export a backup now'); return; } // degraded is judged first: an unverified rollback is not "clean intact"
+    if (fTx.failedStep === 'archive') { showBanner('Finish stopped', 'Storage is full - your clean is intact'); return; }
+    showBanner('Finish stopped', 'Your clean is intact'); return;
   }
   // the teardown is the owner's (RUN.end): the counter bakes into the archive; copies and trail window go too
   RUN.end(); trail = []; markDirty('trail');
@@ -581,10 +570,9 @@ function finishRun() {
   BOARD.zeroMarks(); notes = {}; // Arch-2: the board half of this reset is the module's in-place zero (the run identity zeroed with RUN.end above)
   // no line to force-draw any more; the window itself was cleared with the counter records above
   stopGps(); deselect();
-  // the sides write already landed; this pass carries the metadata - a failure warns but cannot resurrect anything
-  const restRes = saveAll(); const restOk = restRes.ok;
+  // the sides write already landed; this pass carries the metadata - its details retry silently on the next save
+  saveAll();
   finishChange();
-  if (!restOk) toast((archiving ? 'Clean archived · ' + Object.keys(snap.items).length + ' streets' : 'Board cleared - under 3 streets, nothing saved') + ' - some details could not be written (' + restRes.failedKey + '); they retry on the next save', 3400); // Beta 1.221 adjudication: the finish SUCCESS pill is cut (the board and history are the report), but its failure suffix is a storage-problem warning with no other surface - the pill survives for the failure case only, text verbatim
   // only on the committed path: failures leave the run intact; the chime and vibration play here
   onFinishFeedback();
   return archiving ? snap : null;
@@ -618,7 +606,7 @@ $('noteNo').addEventListener('click', () => $('noteModal').classList.add('hidden
 $('noteYes').addEventListener('click', () => {
   if (!noteFor) return;
   const okNote = setNoteText(noteFor, $('noteText').value);
-  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) toast('Storage problem - the note could not be saved', 4200);
+  $('noteModal').classList.add('hidden'); renderStreets(); if (!okNote.ok) showBanner('Note not saved');
 });
 
 // ===== GPS (checklist SS7) =====
@@ -1394,13 +1382,13 @@ let weakToastAt = 0;
 // the Status GPS row's amber state: set by a permission denial (code 1), cleared by any accepted fix
 let gpsDenied = false;
 function gpsError(e) {
-  if (e && e.code === 1) { gpsDenied = true; toast('Location is off - allow location for this site in your browser settings', 4200); stopGps(); return; }
-  if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); toast('GPS signal weak - still trying', 2600); }
+  if (e && e.code === 1) { gpsDenied = true; showBanner('Location is off', 'Allow location for this site in your browser settings'); stopGps(); return; }
+  if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); showBanner('GPS signal weak', 'Still trying - marks may be off until it improves'); }
 }
 function startGps(fromRun, restart) {
   // a view-only reused for a clean must flip Locate to recording (the sync sits below this return)
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); renderIcons(); } return; }
-  if (!navigator.geolocation) { toast('This device has no GPS access here', 3000); return; }
+  if (!navigator.geolocation) { showBanner('GPS not available', 'This device or browser cannot use location here'); return; }
   // the stale-watch restart passes restart=true (housekeeping, not a user action): it must not clear a deliberate suspension
   gpsFromRun = !!fromRun; if (!restart) followPaused = false; lastPushKey = ''; startCompass();
   // every start records its session start (the watchdog's clock): restarts are bounded to one per stale window

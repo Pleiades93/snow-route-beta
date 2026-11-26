@@ -40,7 +40,7 @@ const geom = () => J(`(() => { const r = (id) => { const e = document.getElement
   return { vh: window.innerHeight, bar, barPadT: cs.paddingTop, barPadB: cs.paddingBottom, itemPadT: ci.paddingTop, itemPadB: ci.paddingBottom,
     dock: r('dock'), attr: r('attrChip'), gapDock: gap('dock'), gapAttr: gap('attrChip'),
     bannerGone: !document.getElementById('suggest') && !document.getElementById('stale'), noteBottom: getComputedStyle(document.getElementById('mapNote')).bottom,
-    toastBottom: getComputedStyle(document.getElementById('toast')).bottom,
+    toastGone: !document.getElementById('toast'),
     items: [...document.querySelectorAll('#tabBar .tabItem')].map(e => { const b = e.getBoundingClientRect(); return { id: e.id, x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom }; }) }; })()`);
 
 let G = await geom();
@@ -58,8 +58,8 @@ ok('B3 all five items fill the content zone (44px tall, equal widths, no overlap
 // ---- the floaters' gaps over the bar's NEW top edge ----------------------
 ok('F1 dock gap above the bar top edge is the pre-change rendered gap: 16px (dock rode 74 -> 67) | gap ' + G.gapDock, G.gapDock !== null && Math.abs(G.gapDock - 16) <= 1);
 ok('F2 attribution chip gap above the bar top edge is the pre-change rendered gap: 10px (chip rode 68 -> 61) | gap ' + G.gapAttr, G.gapAttr !== null && Math.abs(G.gapAttr - 10) <= 1);
-ok('F3 the non-riding offsets are byte-identical: mapNote 240px, toast 188px - and the banner slot is retired entirely (Beta 1.271: no #suggest, no #stale) | ' + [G.noteBottom, G.toastBottom, G.bannerGone].join('/'),
-  G.noteBottom === '240px' && G.toastBottom === '188px' && G.bannerGone === true); // Beta 1.221 gate fix: the toast constant is 188px, not 120px - the placement round raised the pill's CSS floor (placeToast starts from it and hops clear by measurement; drive204 holds the placement property). The F3 property is unchanged: the non-riding offsets equal their design constants exactly
+ok('F3 the non-riding offsets hold: mapNote 240px - and both retired surfaces are gone entirely (the toast element since Beta 1.296, the banner slot since Beta 1.271; the live banner seat is drive225) | ' + JSON.stringify({ note: G.noteBottom, toastGone: G.toastGone, bannerGone: G.bannerGone }),
+  G.noteBottom === '240px' && G.toastGone === true && G.bannerGone === true);
 ok('F4 nothing overlaps the bar: dock and attribution chip clear it | dock ' + JSON.stringify(G.dock) + ' attr ' + JSON.stringify(G.attr),
   !!G.dock && !!G.attr && !overlaps(G.dock, G.bar) && !overlaps(G.attr, G.bar));
 

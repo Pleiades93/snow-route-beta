@@ -93,7 +93,7 @@ check('6a: the readout pill wears the destructive red while it reads Cancel (Bet
 check('6b: the sector bar\'s destructive slot is red (Beta 1.269: the button is Deselect now, wearing the red Cancel wore)', rule('#crSbDeselect {').includes('color: #e63a2e;'));
 check('6c: the selection card Clear is red', rule('#selPop #selClearBtn {').includes('color: #e63a2e;'));
 check('6d: Delete maps wears the shared danger solid (Beta 1.271 Set A - the in-menu tint retired)', head.includes('#confirmPill #cfDanger, #stDel, #stDel:active, #finYes') && !head.includes('#stDel { background: rgba(230,57,46,.18);'));
-check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', !!labels && labels.no === 'Cancel')"));
+check('6e: the confirm No button is red while it reads Cancel', rule('#crModalNo.cancelRed {').includes('color: #e63a2e;') && pick.includes("classList.toggle('cancelRed', crConfirmOneBtn || (!!labels && labels.no === 'Cancel'))"));
 
 
 console.log(`proof-1229: ${pass} passed, ${fail} failed`);

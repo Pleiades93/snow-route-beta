@@ -159,17 +159,17 @@ packDelayMs = 2500;
 await clickChoice(VAUGHAN_NAME);
 const inPickA = await poll(`typeof creating !== 'undefined' && creating === true && crStage === 'pick'`, 15000);
 const prepA = await poll(`crPrepState === 'preparing'`, 8000).catch(() => false);
-const hintDuringA = await J(`({ hint: document.getElementById('createHint').textContent, on: document.getElementById('createHint').classList.contains('on'), btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
+const hintDuringA = await J(`({ btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
 await ev2(`crGrid.startedAt = Date.now() - 6000; crRenderHint(); true`); // the load's own clock seeded past the Beta 1.176 gate - deterministic; the pack file is still in flight (2.5 s fixture delay), so no cell can have landed yet
-const hintGateA = await J(`({ hint: document.getElementById('createHint').textContent, btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
+const hintGateA = await J(`({ btn: document.getElementById('crHintBtn').textContent, btnOn: document.getElementById('crHintBtn').style.display !== 'none' })`);
 const readyA = await poll(`crPrepState === 'ready'`, 30000);
 packDelayMs = 0;
 const wA = wire.slice(wireA0);
 const gridA = await J(`({ fromPack: crGrid && crGrid.fromPack, cells: crGrid ? crGrid.cells.length : -1 })`);
 ok('A3 PACK PATH: Vaughan readies with ZERO Overpass requests, exactly ONE pack-file download, the grid marked fromPack, and DURING the wait the hint shows NOTHING (Beta 1.176 - RE-DERIVED: through 1.175 this check pinned the pack readout naming the app\'s own library during the wait; the readout is now gated to loads past 5 s and the 2.5 s pack wait never reaches it) | overpass: ' + wA.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wA.filter(w => w.kind === 'packfile').length + ' | hint during: ' + JSON.stringify(hintDuringA) + ' | ' + JSON.stringify(gridA),
-  inPickA === true && prepA === true && hintDuringA.hint === '' && hintDuringA.on === false && hintDuringA.btnOn === false && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0 && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
-ok('A3b (Beta 1.176) past the gate (the load\'s clock seeded) the SAME in-flight pack load reads "Loading Vaughan, 0%" with Cancel - ONE readout format for a city load whichever source serves it, the percentage being its own cells done of cells total | ' + JSON.stringify(hintGateA),
-  hintGateA.hint === 'Loading Vaughan, 0%' && hintGateA.btn === 'Cancel' && hintGateA.btnOn === true);
+  inPickA === true && prepA === true && hintDuringA.btnOn === false && readyA === true && wA.filter(w => w.kind === 'overpass').length === 0 && wA.filter(w => w.kind === 'packfile' && w.slug === 'vaughan.json').length === 1 && gridA.fromPack === 'vaughan');
+ok('A3b (Beta 1.176) past the gate (the load\'s clock seeded) the SAME in-flight pack load offers Cancel and nothing else - the percentage readout is cut, no text on any surface | ' + JSON.stringify(hintGateA),
+  hintGateA.btn === 'Cancel' && hintGateA.btnOn === true);
 await installFeatureSeam();
 await tapStreet('Bordeaux Drive');
 const gotBA = await poll(`typeof draft !== 'undefined' && draft && !!draft.roads['Bordeaux Drive']`, 15000).catch(() => false);
@@ -205,9 +205,9 @@ await choicesReady();
 await clickChoice(VAUGHAN_NAME);
 const readyC = await poll(`crPrepState === 'ready'`, 60000);
 const wC = wire.slice(wireC0);
-const hintC = await J(`({ hint: document.getElementById('createHint').textContent })`);
-ok('C1 PACK FAILURE FALLBACK: with the pack file 404ing, preparation falls back to the Overpass GRID (one POST per cell: ' + cellsTotal + '), the city still readies, the pack was tried exactly once, and the hint SAYS the library didn\'t load and the street service is being used | overpass: ' + wC.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wC.filter(w => w.kind === 'packfile').length + ' | hint: ' + (hintC.hint || ''),
-  readyC === true && wC.filter(w => w.kind === 'overpass').length === cellsTotal && wC.filter(w => w.kind === 'packfile').length === 1 && /street service/.test(hintC.hint || ''));
+const hintC = await J(`({ banner: document.getElementById('banner').classList.contains('show'), hintEl: !!document.getElementById('createHint') })`);
+ok('C1 PACK FAILURE FALLBACK: with the pack file 404ing, preparation falls back to the Overpass GRID (one POST per cell: ' + cellsTotal + '), the city still readies, the pack was tried exactly once, and the fallback is SILENT (no hint, no banner - the library failure is not announced) | overpass: ' + wC.filter(w => w.kind === 'overpass').length + ', packfiles: ' + wC.filter(w => w.kind === 'packfile').length + ' | hint: ' + (hintC.hint || ''),
+  readyC === true && wC.filter(w => w.kind === 'overpass').length === cellsTotal && wC.filter(w => w.kind === 'packfile').length === 1 && hintC.banner === false && hintC.hintEl === false);
 packMode = 'ok';
 
 // ---- phase D: the manual door - typed search fixed + honest states ----

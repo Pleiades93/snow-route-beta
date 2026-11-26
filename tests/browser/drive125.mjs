@@ -87,13 +87,14 @@ ok('T3c the backup pane is a menu tree exactly as specced (Beta 1.89; the recove
   T3c3.title === 'Import Text' && T3c3.box && T3c3.imp && T3c4.title === 'Restore' && T3c5.title === 'Backup');
 await tapById(ev, 'setClose'); await sleep(400);
 
-// F03 (Beta 1.92, deep audit): restore feedback must be VISIBLE from inside
-// the Settings takeover it was launched from.
+// F03 (Beta 1.92, deep audit; re-scoped Beta 1.296): restore feedback that
+// speaks must be VISIBLE from inside the Settings takeover it was launched
+// from - refusals are silent by the audit's ruling, rollback failures banner.
 await tapById(ev, 'setBtn'); await sleep(500);
 await tapById(ev, 'exportBtn'); await sleep(400);
-await ev(`(() => { document.getElementById('xText').value = 'not json'; doRestore(); return true; })()`); await waitTrue(poll, `$('toast').classList.contains('show') && $('toast').textContent.length > 0`, 10000); // T4: poll the terminal state F03 asserts (the rejection toast shown with text)
-const F03 = JSON.parse(await ev(`(() => { const t = $('toast'); return JSON.stringify({ show: t.classList.contains('show'), z: +getComputedStyle(t).zIndex, menuZ: +getComputedStyle($('setMenu')).zIndex, txt: t.textContent }); })()`));
-ok('F03 a restore rejection is visible from inside Settings (the toast rides above the takeover) | ' + JSON.stringify(F03), F03.show === true && F03.z > F03.menuZ && F03.txt.length > 0);
+await ev(`(() => { document.getElementById('xText').value = 'not json'; doRestore(); return true; })()`); await sleep(600); // Beta 1.296: a restore REFUSAL is silent now (audit rows 34-51) - nothing was changed, nothing is announced
+const F03 = JSON.parse(await ev(`(() => { const t = $('banner'); return JSON.stringify({ show: t.classList.contains('show'), z: +getComputedStyle(t).zIndex, menuZ: +getComputedStyle($('setMenu')).zIndex, txt: t.textContent }); })()`));
+ok('F03 a restore refusal from inside Settings is silent, and the banner still rides above the takeover for the failures that do speak (rollback failures) | ' + JSON.stringify(F03), F03.show === false && F03.z > F03.menuZ);
 await tapById(ev, 'setClose'); await sleep(400);
 
 // P1 (Beta 1.33, Protomaps): ONE places system - localities (cities/towns/villages) are
