@@ -20113,6 +20113,216 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26 transitions round C5 re-issue 3 (the count fill rule split for the line limits; same marks, fresh pins)"
+  },
+  {
+   "id": "transitions-1298-c6",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "filtersPill",
+     "filters"
+    ],
+    "functions": [
+     "seatFilterPill",
+     "syncFilterTabs"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "opening the Streets sheet reseats the pill under the current tab with no slide - drive88 opens the sheet and its F1 grades the seated pill after a tab tap"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:syncFilterTabs",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from syncFilterTabs in parts/app2.js",
+     "status": "covered",
+     "note": "every tab sync seats the pill: animated on a tap, still on a reset - drive88 F1 (mutation receipt transitions-1298-drive88)"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the first seat runs at load; the sheet is laid out even closed (visibility, not display), and the open/tap seats correct any early miss"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:window:resize",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from window:resize in parts/app2.js",
+     "status": "covered",
+     "note": "a resize reseats without animation so the pill never strands off its tab"
+    },
+    {
+     "id": "caller:syncFilterTabs:parts/app2.js:resetStreetsSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncFilterTabs() is called from resetStreetsSession in parts/app2.js",
+     "status": "covered",
+     "note": "a route switch resets to Primaries and reseats the pill still - drive214/drive218 grade route switches at the gate"
+    },
+    {
+     "id": "caller:syncFilterTabs:parts/app2.js:selBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncFilterTabs() is called from selBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "a tab tap flips .on and slides the pill 250ms on --ease-open - drive88 F1 grades the terminal seat"
+    },
+    {
+     "id": "gesture:parts/app2.js:window:resize",
+     "kind": "gesture",
+     "source": "derived: handler scan - the window resize handler in parts/app2.js touches seatFilterPill without dismissing it",
+     "status": "covered",
+     "note": "resize only reseats geometry; no gesture state is involved"
+    },
+    {
+     "id": "theme:filters",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #filters has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "the track keeps its day/night faces; the buttons lost the .on gradient (now the pill's) and keep position:relative so they paint above it - drives grade the tabs in both themes"
+    },
+    {
+     "id": "theme:filtersPill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #filtersPill has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the pill wears the one app gradient in both themes, exactly as the .on tab did before - no night variant existed or was added"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "3c078e334eb1c83808356464e5422e41e8d269157a825489a45b18f9fc846cd2",
+    "parts/app2.js": "f62ebddc33665d752b215e0db3690c2dfe613b7d9aca17ebed4c9a0d94d6dc18",
+    "parts/app3.js": "0a00697fa0c2967ca75f80c0a54eea92710eaa1134afa058b8ef1437342d9bd9",
+    "parts/app4.js": "76aa7948ea241a42c382a5c25a7cc030e40a3272455cd4994714e9e27f8a0135",
+    "parts/app5.js": "0a7c98f7ba0c482482aaef1811f4bcbc64a026dbf84a90be78baa9767ce49072",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "22f718209cdb163dd732094758e372b124e2b68ccf6357adfa92d6e234671ebe",
+    "parts/head.html": "3ca86d5099a4233dedf16247beb118374dda797eb7842ce985f12e2d1c82b332",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round C6 (ADD 16: the Streets filter highlight becomes a sliding pill), issued by the builder before the C6 push"
+  },
+  {
+   "id": "transitions-1298-c6b",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "filtersPill",
+     "filters"
+    ],
+    "functions": [
+     "seatFilterPill",
+     "syncFilterTabs"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "opening the Streets sheet reseats the pill under the current tab with no slide - drive88 opens the sheet and its F1 grades the seated pill after a tab tap"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:syncFilterTabs",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from syncFilterTabs in parts/app2.js",
+     "status": "covered",
+     "note": "every tab sync seats the pill: animated on a tap, still on a reset - drive88 F1 (mutation receipt transitions-1298-drive88)"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "the first seat runs at load; the sheet is laid out even closed (visibility, not display), and the open/tap seats correct any early miss"
+    },
+    {
+     "id": "caller:seatFilterPill:parts/app2.js:window:resize",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - seatFilterPill() is called from window:resize in parts/app2.js",
+     "status": "covered",
+     "note": "a resize reseats without animation so the pill never strands off its tab"
+    },
+    {
+     "id": "caller:syncFilterTabs:parts/app2.js:resetStreetsSession",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncFilterTabs() is called from resetStreetsSession in parts/app2.js",
+     "status": "covered",
+     "note": "a route switch resets to Primaries and reseats the pill still - drive214/drive218 grade route switches at the gate"
+    },
+    {
+     "id": "caller:syncFilterTabs:parts/app2.js:selBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncFilterTabs() is called from selBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "a tab tap flips .on and slides the pill 250ms on --ease-open - drive88 F1 grades the terminal seat"
+    },
+    {
+     "id": "gesture:parts/app2.js:window:resize",
+     "kind": "gesture",
+     "source": "derived: handler scan - the window resize handler in parts/app2.js touches seatFilterPill without dismissing it",
+     "status": "covered",
+     "note": "resize only reseats geometry; no gesture state is involved"
+    },
+    {
+     "id": "theme:filters",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #filters has a day rule and a body.night rule",
+     "status": "covered",
+     "note": "the track keeps its day/night faces; the buttons lost the .on gradient (now the pill's) and keep position:relative so they paint above it - drives grade the tabs in both themes"
+    },
+    {
+     "id": "theme:filtersPill",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #filtersPill has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the pill wears the one app gradient in both themes, exactly as the .on tab did before - no night variant existed or was added"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "3c078e334eb1c83808356464e5422e41e8d269157a825489a45b18f9fc846cd2",
+    "parts/app2.js": "d5cde7ee9fca35e808ff7aa7bb9ddddd8a394311f4a85a56f8cd685c8e0cbd00",
+    "parts/app3.js": "0a00697fa0c2967ca75f80c0a54eea92710eaa1134afa058b8ef1437342d9bd9",
+    "parts/app4.js": "76aa7948ea241a42c382a5c25a7cc030e40a3272455cd4994714e9e27f8a0135",
+    "parts/app5.js": "0a7c98f7ba0c482482aaef1811f4bcbc64a026dbf84a90be78baa9767ce49072",
+    "parts/brand-snow.js": "86fa9a02f29c7345ee68d68daffd9c72da612921b64da37f1eccf6b72161ac5f",
+    "parts/create-cache.js": "c0710e2d37cc3994ff89cbfc397314a2f694e437a94f7b3f5557c9d01a66a58d",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "d027d091807fa6c75e74b4deedd8e43bdd03f3446e4c94c19cf41fbe930b9c36",
+    "parts/create-packs.js": "d7fae474e75d770f48c0491b899e7c5196b4e56cbf8661ba021386491b5010e7",
+    "parts/create-pick.js": "1ff5e595a75d8b72c678dfad6b8fed8642d1643bf334d3588bb23db7745ea053",
+    "parts/create-save.js": "603c93161910126fe97fb23b689e512781a2b907d48c3caa34a9a63fb1e1be65",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "68293acf5ccdacabe5c40b0ef2c53d23d582a6c9b7ca4581808c14289ba5f07f",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "22f718209cdb163dd732094758e372b124e2b68ccf6357adfa92d6e234671ebe",
+    "parts/head.html": "26b3382e8633901272f270465c5e99f48bbf684cc36a017e573fd58b1ae75a1f",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 transitions round C6 re-issue (lines split for the PR limits after c6; same marks, fresh pins)"
   }
  ]
 }

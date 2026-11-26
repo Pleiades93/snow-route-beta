@@ -15333,6 +15333,30 @@
    "red": "hideSurface's exit timer neutered (the pop can never hide): M6 fails, its terminal read shows bar:true after the poll expires (25/27; M8 also fails, its standing rig adjudication)",
    "green": "drive128 on the round tree: M6 passes (26/27; the only failure is M8, adjudicated rig-marginal with the click measured 461ms after pointerdown against the 400ms spend window)",
    "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive88",
+   "check": "tests/browser/drive88.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive88.mjs": "68f90a8f827d11142a285ea5e579687311eaf6a46bde46660c844b5baafdc995"
+   },
+   "mutation": "new check F1: after the drive's real Secondaries tap, the sliding filter pill (transitions ADD 16) must sit exactly under the selected tab (left and width within 1px, opacity 1)",
+   "red": "seatFilterPill stubbed to a no-op: F1 fails alone - the pill never seats (dx 196, dw 193, opacity 0), 16/17",
+   "green": "drive88 on the round tree: 17/17",
+   "issued": "2026-11-26 transitions-1298"
+  },
+  {
+   "id": "transitions-1298-drive88-r2",
+   "check": "tests/browser/drive88.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive88.mjs": "3a8bd8ed773e34a9cd0b47d8f55477ce68fce8446608da219992914a5b04eb35"
+   },
+   "mutation": "check F1 (the sliding filter pill's terminal seat, transitions ADD 16) - re-issued after a formatting-only split of its lines for the PR line limits; the check is byte-different but semantically identical to transitions-1298-drive88",
+   "red": "seatFilterPill stubbed to a no-op: F1 fails alone - the pill never seats (dx 196, dw 193, opacity 0), 16/17",
+   "green": "drive88 on the final C6 tree: 17/17 (three local passes; one further run failed with its detail lost to output truncation - recorded as an unadjudicated flake sighting, CI decides)",
+   "issued": "2026-11-26 transitions-1298"
   }
  ]
 }

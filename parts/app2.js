@@ -517,7 +517,7 @@ let srowCache = { sig: '', rows: new Map() }; // rows kept between renders when 
 function resetStreetsSession() { // app2's route-switch reset (called by resetSwitchSession): the session's reset knowledge lives here, with its state
   deselect(); // selection + chips + the engine's selection, through the one proven path
   NOTEEDIT.reset(); // the note editor's pending debounced save must never fire into the new route (its flush already happened via collapseNoteEditor)
-  listFilter = 'primaries'; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === 'primaries'));
+  listFilter = 'primaries'; syncFilterTabs(false);
   srowCache = { sig: '', rows: new Map() };
   saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
 }
@@ -629,7 +629,21 @@ function syncNoteSheetRaise() { // at full while an editor is open: only then ca
 function collapseNoteEditor() { // closing resets the list (no editor survives to the next open); the re-render finalizes pending saves first
   if (NOTEEDIT.collapse()) renderStreets();
 }
-document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b)); renderStreets(); }));
+function seatFilterPill(animate) { // the sliding highlight sits exactly under the .on tab
+  const pill = $('filtersPill'); if (!pill) return;
+  const btn = document.querySelector('#filters button.on'); if (!btn || !btn.offsetWidth) { pill.style.opacity = '0'; return; }
+  if (!animate) pill.style.transition = 'none';
+  pill.style.opacity = '1';
+  pill.style.top = btn.offsetTop + 'px';
+  pill.style.height = btn.offsetHeight + 'px';
+  pill.style.width = btn.offsetWidth + 'px';
+  pill.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
+  if (!animate) { void pill.offsetWidth; pill.style.transition = ''; }
+}
+function syncFilterTabs(animate) { document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === listFilter)); seatFilterPill(animate); }
+document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; syncFilterTabs(true); renderStreets(); }));
+window.addEventListener('resize', () => seatFilterPill(false));
+seatFilterPill(false);
 function closeSheetEl(s) { // the close animates: freeze the height for the whole slide-down, clear it only when the motion ends
   cancelSheetSpring(s);
   if (s.id === 'sheet') collapseNoteEditor(); // any animated close of the Streets sheet resets an open note editor first
@@ -830,7 +844,8 @@ wireRouteRows($('rmRoutes'), id => {
   if ($('routeMenu').classList.contains('tab')) { closeRouteMenu(); if (!activeRoute || id !== activeRoute.id) loadRoute(id); }
   else if (window.__bootPickRoute) window.__bootPickRoute(id);
 });
-$('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev)) return; const open = $('sheet').classList.contains('open'); closeSheets(); if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); } });
+$('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev)) return; const open = $('sheet').classList.contains('open'); closeSheets();
+  if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); seatFilterPill(false); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
 $('paceBtn').addEventListener('click', ev => { if (!tapGuard('paceBtn', ev)) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });

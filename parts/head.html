@@ -193,11 +193,13 @@
   #rmClose img, #setClose img { width: 30px; height: 30px; display: block; } /* the artwork at the bottom pair's glyph size (30px) inside the same 44px box; those buttons centre by flex */
   body.kb .sheet { transition: none; } /* the sheet keeps its pre-keyboard size and place (layout variables frozen); its own scroll surfaces the field */
   .modal .card { max-height: calc(var(--vvh, 100dvh) - 44px); overflow-y: auto; } /* a modal card can never outgrow the visible area, keyboard or not */
-  #filters { display: flex; gap: 0; background: #f0f0f3; border-radius: 999px; padding: 3px; margin: 2px 14px 8px; } /* the segmented pill track: the two group tabs ride one grey track, the selected tab wears the app gradient */
+  #filters { display: flex; gap: 0; background: #f0f0f3; border-radius: 999px; padding: 3px; margin: 2px 14px 8px; position: relative; } /* the segmented track: two group tabs on one grey track */
+  #filtersPill { position: absolute; left: 0; top: 0; border-radius: 999px; background: linear-gradient(135deg, #3d65ef, #1b2fb6); opacity: 0;
+    transition: transform 250ms var(--ease-open), width 250ms var(--ease-open); } /* the app gradient rides this pill, sliding between the tabs */
   body.night #filters { background: #26282d; }
-  #filters button { flex: 1; border: none; border-radius: 999px; padding: 8px; font-size: 13px; font-weight: 600; background: transparent; color: #6e6e76; min-height: 38px; }
+  #filters button { flex: 1; border: none; border-radius: 999px; padding: 8px; font-size: 13px; font-weight: 600; background: transparent; color: #6e6e76; min-height: 38px; position: relative; }
   body.night #filters button { color: rgba(214,226,242,.62); }
-  #filters button.on { background: linear-gradient(135deg, #3d65ef, #1b2fb6); color: #fff; }
+  #filters button.on { color: #fff; }
   #sheetBody { overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; }
   .srow { display: flex; align-items: center; gap: 11px; padding: 12px 4px; border-bottom: 1px solid var(--hair); font-size: 15px; cursor: pointer; min-height: 48px; }
   .srow .dot { width: 9px; height: 9px; border-radius: 50%; background: #ef476f; flex-shrink: 0; } /* the 9px state dot (colours unchanged: rose secondary-pending, gold primary below, mint done) */
@@ -839,7 +841,7 @@ html.theme-swap *, html.theme-swap *::before, html.theme-swap *::after { transit
   <div class="sheetHead"><div class="sheetTitle">Streets</div><button id="sheetClose">✕</button></div>
   <div id="stRoute"><span id="stRouteN"></span><span id="stRouteS"></span></div>
   <div id="stHero"></div>
-  <div id="filters"><button data-f="primaries" class="on">Primaries</button><button data-f="secondaries">Secondaries</button></div>
+  <div id="filters"><span id="filtersPill"></span><button data-f="primaries" class="on">Primaries</button><button data-f="secondaries">Secondaries</button></div>
   <div id="stGroup"><span id="stGroupN"></span><span id="stGroupC"></span></div>
   <div id="sheetBody"><div id="streetList"></div></div>
 </div>

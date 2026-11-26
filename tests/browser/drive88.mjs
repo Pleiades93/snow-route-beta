@@ -32,6 +32,11 @@ A = JSON.parse(await ev(`(() => JSON.stringify({ ls: localStorage.getItem('snowr
 ok('P1 note auto-saves to storage (autosave fires on its own - no Save tap needed; Beta 1.184 adds an explicit Save action over the same mechanism)', A.ls.includes('blocked by car') && A.nt.includes('blocked by car'));
 ok('P1 editor confirms the save', /Saved/.test(A.hint));
 await ev(`(() => { document.querySelector('#filters button[data-f="secondaries"]').click(); return true; })()`); await poll(`!![...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Angie')`, 10000); // T4: poll the terminal state the next step needs (Angie's rendered row). Beta 1.109: Angie lives in the Secondaries group now - select it through the real chip before picking her row
+// the slide's terminal state: the pill seated under the newly selected tab
+await poll(`(() => { const p = $('filtersPill'), b = document.querySelector('#filters button.on'); return !!p && !!b && Math.abs(p.getBoundingClientRect().left - b.getBoundingClientRect().left) <= 1; })()`, 10000);
+const PILL = JSON.parse(await ev(`(() => { const p = $('filtersPill'), b = document.querySelector('#filters button.on'); const pr = p.getBoundingClientRect(), br = b.getBoundingClientRect();
+  return JSON.stringify({ on: b.dataset.f, dx: Math.abs(pr.left - br.left), dw: Math.abs(pr.width - br.width), op: getComputedStyle(p).opacity }); })()`));
+ok('F1 the filter highlight is a sliding pill seated under the selected tab (transitions round, recipe 16) | ' + JSON.stringify(PILL), PILL.on === 'secondaries' && PILL.dx <= 1 && PILL.dw <= 1 && PILL.op === '1');
 await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Angie'); r.querySelector('.nwrap').click(); return true; })()`); await poll(`typeof NOTEEDIT !== 'undefined' && NOTEEDIT.openFor === 'Angie'`, 10000); // T4: poll the terminal state (the editor's open-for flag) the next steps assert
 await ev(`(() => { const ta = document.querySelector('.noteEd textarea'); ta.value = 'Could not clean - gate locked'; ta.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 await poll(`noteTextOf('Angie').includes('gate locked')`, 10000); // Beta 1.184 gate round: same terminal-signal wait as the Velmar note above (this is the exact read that flaked in CI)
