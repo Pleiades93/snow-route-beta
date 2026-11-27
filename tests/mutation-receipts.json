@@ -17379,6 +17379,33 @@
    "red": "A changed set naming parts/a.js against an empty survivor ledger exits 1 through the step body extracted from the shipped checks.yml.",
    "green": "Benign set and workflow_dispatch exit 0; all three Survivors step cases pass in the final 147-case suite.",
    "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-push-wiring-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "51443394fb389fdc643653269752f8de79eccbd110e166b009883f370efd2e5e",
+    "scripts/push.py": "b9ead14d7d5a083ac495206d3423b4319c37d24f68a82644c55c138a45863a70"
+   },
+   "mutation": "Re-observation after the Codex P1 refactor: census_gate and survivors_gate now share the _record_gate loader; the survivors wrapper neutered to return None above the shared call.",
+   "red": "Exactly one fixture convicts it: 'push: a parts change with a census but no survivor list is refused (survivors gate)' gets exit 0 against want 1; suite 146/147.",
+   "green": "Restored: the full suite passes 147/147 on the final bytes, including both survivors push cases and both census push cases through the shared loader.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-ci-step-r3",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "52cc47ee4f615625e904acfb9471f4ab2f2f2fdc2fe0826181b41c4bae629203",
+    "scripts/gate-fixtures/run-fixtures.py": "51443394fb389fdc643653269752f8de79eccbd110e166b009883f370efd2e5e",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "Re-issued because run-fixtures.py changed under the Codex P1 fixes (worked-example pins strengthened and relabelled); checks.yml and check-survivors.py are byte-identical to the r2 observation.",
+   "red": "A changed set naming parts/a.js against an empty survivor ledger exits 1 through the Survivors step body extracted from the shipped checks.yml.",
+   "green": "Benign set and workflow_dispatch exit 0; all three Survivors step cases pass in the final 147-case suite.",
+   "issued": "2026-11-26 phase2-prove-it"
   }
  ]
 }

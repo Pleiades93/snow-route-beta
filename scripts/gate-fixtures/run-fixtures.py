@@ -1636,18 +1636,21 @@ def needle_in(rel, *needles):
     return 0 if all(n in text for n in needles) else 1
 
 
-check("examples: E26d grades the migration through real boot (healed gap, earned flag)",
+check("examples: E26d's boot-migration assertion text stands (healed gap, flag earned)",
       needle_in("tests/browser/e2e-offline.mjs",
                 "E26d a recordless all-manifest partial pack migrates at boot",
-                "d26.healed === true"), 0)
-check("examples: drive125 S7b samples the crossfade mid-flight, not its terminal state",
+                "d26.healed === true", "d26.flag === FIX_FP"), 0)
+check("examples: drive125 S7b's mid-flight sampling assertion text stands",
       needle_in("tests/browser/drive125.mjs",
                 "S7b the swap really crossfades", "o > 0.05 && o < 0.95"), 0)
-check("examples: drive154 H3 grades the wired shipped-route Delete end to end",
-      needle_in("tests/browser/drive154.mjs", "H3 SHIPPED DELETE IS WIRED"), 0)
-check("examples: migratePack self-gates (the callee decides; no caller guard can strand it)",
+check("examples: drive154 H3's wired-Delete assertion text stands (reload survival included)",
+      needle_in("tests/browser/drive154.mjs",
+                "H3 SHIPPED DELETE IS WIRED", "stH3b.survivor === true"), 0)
+check("examples: migratePack's self-gate text stands at callee and caller alike",
       needle_in("parts/app5.js",
-                "if (!evidence) return { ok: true, skipped: true }"), 0)
+                "if (!evidence) return { ok: true, skipped: true }")
+      + needle_in("parts/create-packs.js",
+                  "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
 total = 147
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")

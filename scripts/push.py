@@ -448,16 +448,8 @@ def census_gate(prospective_root, instrument_root, remote, local, resolved):
     re-derived there, so a census that would not land with this
     push, or that omits a sibling the pushed tree carries, cannot
     certify it. Returns an error string or None."""
-    script = instrument_root / "scripts" / "check-census.py"
-    if not script.is_file():
-        print("CENSUS GATE SKIPPED: scripts/check-census.py is not in "
-              "this tree (it predates the gate)")
-        return None
-    spec = importlib.util.spec_from_file_location("snow_check_census", script)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    changed = [p for p in resolved if remote.get(p) != local.get(p)]
-    return mod.gate(prospective_root, changed)
+    return _record_gate("check-census.py", "CENSUS", prospective_root,
+                        instrument_root, remote, local, resolved)
 
 
 def survivors_gate(prospective_root, instrument_root, remote, local, resolved):
@@ -466,12 +458,22 @@ def survivors_gate(prospective_root, instrument_root, remote, local, resolved):
     scripts/check-survivors.py owns the record rules). The logic
     loads from the LOCAL tree, the ledger and parts read from the
     PROSPECTIVE tree - the same instrument split as the census."""
-    script = instrument_root / "scripts" / "check-survivors.py"
+    return _record_gate("check-survivors.py", "SURVIVORS", prospective_root,
+                        instrument_root, remote, local, resolved)
+
+
+def _record_gate(checker, label, prospective_root, instrument_root,
+                 remote, local, resolved):
+    """The parts-record gates' shared loader: the checker named
+    loads from the LOCAL tree (the measuring instrument), its
+    ledger and the parts read from the PROSPECTIVE tree."""
+    script = instrument_root / "scripts" / checker
     if not script.is_file():
-        print("SURVIVORS GATE SKIPPED: scripts/check-survivors.py is not in "
+        print(f"{label} GATE SKIPPED: scripts/{checker} is not in "
               "this tree (it predates the gate)")
         return None
-    spec = importlib.util.spec_from_file_location("snow_check_survivors", script)
+    mod_name = "snow_" + checker[:-3].replace("-", "_")
+    spec = importlib.util.spec_from_file_location(mod_name, script)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     changed = [p for p in resolved if remote.get(p) != local.get(p)]
