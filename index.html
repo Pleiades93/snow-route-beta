@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-e8eXadISz13WTT3UWAbTeOcglBwA3n5ZdEz1JxdVpSnjEjklzOz+Twz0Q9Ywm7It' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-O1hNcOHHmZB0nt06wC3r4AiYVOInJmu3FzwZvrP7Gjm/wg5SQNpGuQWpAltNDV/3' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3682,7 +3682,6 @@ function addStack() {
       'text-opacity-transition': { duration: 0, delay: 0 },
       'text-halo-width': 1.6 } });
   LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // the paint and glow groups are the catalogue's
-  // the naming owner builds the title layers inside this pass
   H.glUnifyLabels({ m: GLM, stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack } });
   pushSources();
   applyGlow();
@@ -3889,8 +3888,7 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
     // kind filters are authored in legacy form: rebuilt as expressions, or any combined filter is rejected whole
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f;
     const handover = titlesOn && !(typeof creating !== 'undefined' && creating);
-    const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
-    const baseIds = ['roads_labels_major', 'roads_labels_minor'];
+    const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]], baseIds = ['roads_labels_major', 'roads_labels_minor'];
     for (const baseId of baseIds) {
       const cloneId = baseId + '-route';
       if (m.getLayer(cloneId)) { try { m.removeLayer(cloneId); } catch (e2) {} } // rebuilt below in the handover state, gone in every other
@@ -3953,11 +3951,8 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
 }
 const CR_ROUTE_LAYERS = GLP.layers.stack; // the hide list is the engine's stack via GLP.layers, never hand-kept: proof-1264 fails on any gap
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
-function routeBackdropNeedsHide(m) {
-  // a restack can add a visible layer after the initial snapshot, recorded or not: either standing visible re-fires the hide
-  return crHiddenLayers && CR_ROUTE_LAYERS.some(id => {
-    try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; }
-  });
+function routeBackdropNeedsHide(m) { // a restack can add a visible layer after the snapshot, recorded or not: either re-fires the hide
+  return crHiddenLayers && CR_ROUTE_LAYERS.some(id => { try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } });
 }
 function setRouteBackdrop(m, on, updatePois) { // the creation backdrop's hide/restore, owned here with the naming it flips
   const visPair = (id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot records the layer's live visibility (the live value is the natural one now)
@@ -10088,10 +10083,7 @@ function crSetBackdrop(on) { // the hide/restore itself lives with the naming ow
   if (!map || typeof map.setLayoutProperty !== 'function') return;
   setRouteBackdrop(map, on, () => {
     if (on) ensureCrPoiLayers();
-    else {
-      for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
-      try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
-    }
+    else { for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} } try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {} }
   });
   syncCrGlow(); // the exit's reliable beat: if a trim session outlived its render, the glow still dies here
 }

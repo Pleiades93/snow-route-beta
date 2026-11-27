@@ -1182,10 +1182,7 @@ function crSetBackdrop(on) { // the hide/restore itself lives with the naming ow
   if (!map || typeof map.setLayoutProperty !== 'function') return;
   setRouteBackdrop(map, on, () => {
     if (on) ensureCrPoiLayers();
-    else {
-      for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
-      try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
-    }
+    else { for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} } try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {} }
   });
   syncCrGlow(); // the exit's reliable beat: if a trim session outlived its render, the glow still dies here
 }

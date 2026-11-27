@@ -66,8 +66,7 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
     // kind filters are authored in legacy form: rebuilt as expressions, or any combined filter is rejected whole
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f;
     const handover = titlesOn && !(typeof creating !== 'undefined' && creating);
-    const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
-    const baseIds = ['roads_labels_major', 'roads_labels_minor'];
+    const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]], baseIds = ['roads_labels_major', 'roads_labels_minor'];
     for (const baseId of baseIds) {
       const cloneId = baseId + '-route';
       if (m.getLayer(cloneId)) { try { m.removeLayer(cloneId); } catch (e2) {} } // rebuilt below in the handover state, gone in every other
@@ -130,11 +129,8 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
 }
 const CR_ROUTE_LAYERS = GLP.layers.stack; // the hide list is the engine's stack via GLP.layers, never hand-kept: proof-1264 fails on any gap
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
-function routeBackdropNeedsHide(m) {
-  // a restack can add a visible layer after the initial snapshot, recorded or not: either standing visible re-fires the hide
-  return crHiddenLayers && CR_ROUTE_LAYERS.some(id => {
-    try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; }
-  });
+function routeBackdropNeedsHide(m) { // a restack can add a visible layer after the snapshot, recorded or not: either re-fires the hide
+  return crHiddenLayers && CR_ROUTE_LAYERS.some(id => { try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } });
 }
 function setRouteBackdrop(m, on, updatePois) { // the creation backdrop's hide/restore, owned here with the naming it flips
   const visPair = (id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot records the layer's live visibility (the live value is the natural one now)

@@ -1674,7 +1674,6 @@ function addStack() {
       'text-opacity-transition': { duration: 0, delay: 0 },
       'text-halo-width': 1.6 } });
   LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // the paint and glow groups are the catalogue's
-  // the naming owner builds the title layers inside this pass
   H.glUnifyLabels({ m: GLM, stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack } });
   pushSources();
   applyGlow();
