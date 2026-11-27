@@ -194,27 +194,25 @@ function makeBeamImage() { // the beam is a fan (strong at the dot, fading, soft
   return cv;
 }
 /** @returns {void} */
-function addGpsLayers() {
-  if (map.getSource('gps')) return;
-  map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+function ensureGpsBeamImage() {
   // raw ImageData: handing over the canvas element throws 'mismatched image size' and killed this layer batch silently
   if (!map.hasImage('beam-img')) { const bcv = makeBeamImage(); map.addImage('beam-img', bcv.getContext('2d').getImageData(0, 0, bcv.width, bcv.height), { pixelRatio: 2 }); }
-  map.addLayer({ id: 'gps-beam',
-    type: 'symbol',
-    source: 'gps',
-    filter: ['==', ['get', 'k'], 'beam'],
-    layout: { 'icon-image': 'beam-img',
-      'icon-size': 0.62,
-      'icon-rotate': ['get', 'rot'],
-      'icon-rotation-alignment': 'map',
-      'icon-pitch-alignment': 'map',
+}
+/** @returns {void} */
+function addGpsUnderlayLayers() {
+  map.addLayer({ id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'],
+    layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'],
+      'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map',
       'icon-anchor': 'center',
       'icon-allow-overlap': true,
       'icon-ignore-placement': true } });
   // gradient fan symbol, painted under the accuracy ring and the dot
   map.addLayer({ id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } });
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
-  map.addLayer({
+}
+/** @returns {any} */
+function createGpsPuckLayer() {
+  return {
     id: 'gps-puck-shader', type: 'custom', _prog: null, _buf: null, _aPos: -1, _u: {},
     /** @param {any} m @param {any} gl @returns {void} */
     onAdd(m, gl) {
@@ -293,14 +291,10 @@ function addGpsLayers() {
       const half = D * 0.95;
       const nx = (pt.x * dev / cnv.width) * 2 - 1;
       const ny = 1 - (pt.y * dev / cnv.height) * 2;
-      const prevProg = gl.getParameter(gl.CURRENT_PROGRAM);
-      const prevBuf = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
-      const prevBlend = gl.getParameter(gl.BLEND);
-      const prevDepth = gl.getParameter(gl.DEPTH_TEST);
-      const prevDepthMask = gl.getParameter(gl.DEPTH_WRITEMASK);
-      const prevStencil = gl.getParameter(gl.STENCIL_TEST);
-      const prevScissor = gl.getParameter(gl.SCISSOR_TEST);
-      const prevSrc = gl.getParameter(gl.BLEND_SRC_RGB);
+      const prevProg = gl.getParameter(gl.CURRENT_PROGRAM); const prevBuf = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
+      const prevBlend = gl.getParameter(gl.BLEND); const prevDepth = gl.getParameter(gl.DEPTH_TEST);
+      const prevDepthMask = gl.getParameter(gl.DEPTH_WRITEMASK); const prevStencil = gl.getParameter(gl.STENCIL_TEST);
+      const prevScissor = gl.getParameter(gl.SCISSOR_TEST); const prevSrc = gl.getParameter(gl.BLEND_SRC_RGB);
       const prevDst = gl.getParameter(gl.BLEND_DST_RGB);
       gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
       gl.disable(gl.STENCIL_TEST); gl.disable(gl.SCISSOR_TEST);
@@ -328,7 +322,13 @@ function addGpsLayers() {
     },
     /** @param {any} m @param {any} gl @returns {void} */
     onRemove(m, gl) { if (this._prog) gl.deleteProgram(this._prog); if (this._buf) gl.deleteBuffer(this._buf); this._prog = null; }
-  }); // one WebGL layer: a quad on project(dispPos) per frame, shader-shaped, depth off (buildings never cover it)
+  };
+}
+/** @returns {void} */
+function addGpsLayers() {
+  if (map.getSource('gps')) return;
+  map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  ensureGpsBeamImage(); addGpsUnderlayLayers(); map.addLayer(createGpsPuckLayer()); // one WebGL layer: a quad on project(dispPos) per frame, shader-shaped, depth off (buildings never cover it)
 }
 // no trail layer: his trail is the streets marked done; the stored trail is a distance fallback only
 /** @returns {void} */
