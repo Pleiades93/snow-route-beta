@@ -148,7 +148,7 @@ check('W: none of the old run strings remain in UI literals',
 // and pin the table's emptiness that makes the pack the only source.
 console.log('I - Streets and Settings icons are the picked artwork (the default pack carries them since Beta 1.220)');
 check('I: the ICONS entries for streets and gear ship empty (the mint table carries no artwork)', /^  streets: ''/m.test(app4) && /^  gear: ''/m.test(app4));
-const gBlockI = (app4.match(/const GLYPH_ICONS = \{([\s\S]*?)\n\};/) || [])[1] || '';
+const gBlockI = (app4.match(/const GLYPH_ICONS = (?:\/\*\*[\s\S]*?\*\/ )?\(\{([\s\S]*?)\n\}\);?/) || [])[1] || '';
 const gLine = k => (gBlockI.match(new RegExp('^  ' + k + ": \\{ d: '([^']+)', n: '([^']+)' \\},?", 'm')) || []);
 const uriHashB = u => createHash('sha256').update(Buffer.from(u.split(',')[1], 'base64')).digest('hex');
 check('I: Streets wears the picked highway artwork in the default pack (decoded day URI sha256)',

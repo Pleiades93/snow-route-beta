@@ -273,11 +273,13 @@ jobs:
           # the shards use the runner image's preinstalled browser.
           cache: 'npm'
           cache-dependency-path: scripts/package-lock.json
-      - name: Type check (scope in scripts/tsconfig.json - data.js, app1.js, engine.js, pmstyles.js; begun as the A1 pilot, Beta 1.149)
+      - name: Type check (all parts but app3.js; noImplicitAny on - scope in scripts/tsconfig.json)
         working-directory: scripts
         run: |
           npm ci
           ./node_modules/.bin/tsc -p tsconfig.json
+      - name: Strict-null check (storage files clean; global backlog capped)
+        run: python3 scripts/check-snc.py .
       - name: Parts scan (write outcomes, clones, labelpts ownership, boundaries)
         run: node scripts/scan-parts.cjs .
       - name: Boundary scanner fixtures (G-B gate)

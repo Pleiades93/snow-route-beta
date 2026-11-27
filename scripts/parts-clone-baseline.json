@@ -163,12 +163,12 @@
       "parts/create-pick.js/crAlongSorter/<callback>@86cbda80"
     ],
     [
-      "parts/app2.js/<callback>/closeGesture/<callback>@50caf923",
-      "parts/create-pick.js/<callback>/up/<callback>@50caf923"
+      "parts/app2.js/<callback>#2/closeGesture/<callback>@50caf923",
+      "parts/create-pick.js/<callback>/<callback>/<callback>@50caf923"
     ],
     [
-      "parts/app2.js/<callback>/makeSheetDraggable/end/<callback>@8a870b04",
-      "parts/create-pick.js/<callback>/up/<callback>@8a870b04"
+      "parts/app2.js/<callback>#2/makeSheetDraggable/<callback>/<callback>@8a870b04",
+      "parts/create-pick.js/<callback>/<callback>/<callback>@8a870b04"
     ],
     [
       "parts/app2.js/<callback>@e344627e",
@@ -304,7 +304,7 @@
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
-      "parts/app5.js/<callback>/<callback>@73477076"
+      "parts/app5.js/<callback>#2/<callback>@73477076"
     ],
     [
       "parts/app3.js/startCompass/<callback>@73477076",
@@ -360,7 +360,7 @@
     ],
     [
       "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
-      "parts/app5.js/<callback>/<callback>@73477076"
+      "parts/app5.js/<callback>#2/<callback>@73477076"
     ],
     [
       "parts/app4.js/<callback:addEventListener:click>#7/releasePack",
@@ -379,16 +379,16 @@
       "parts/app4.js/<callback>@3154897e"
     ],
     [
+      "parts/app4.js/<callback>@24f541c8",
+      "parts/app4.js/renderIcons/<callback>@24f541c8"
+    ],
+    [
       "parts/app4.js/<callback>@2eddf373",
       "parts/app4.js/<callback>@2eddf373#2"
     ],
     [
       "parts/app4.js/<callback>@6ffa52db",
       "parts/app4.js/<callback>@6ffa52db#2"
-    ],
-    [
-      "parts/app4.js/<callback>@a15a1702",
-      "parts/app4.js/renderIcons/<callback>@a15a1702"
     ],
     [
       "parts/app4.js/<callback>@bd0f258c",
@@ -420,7 +420,7 @@
     ],
     [
       "parts/app4.js/doRestore/<callback>@73477076",
-      "parts/app5.js/<callback>/<callback>@73477076"
+      "parts/app5.js/<callback>#2/<callback>@73477076"
     ],
     [
       "parts/app4.js/doRestore/<callback>@73477076",
@@ -508,7 +508,7 @@
     ],
     [
       "parts/app5.js/<callback:then>#2/<callback>@73477076",
-      "parts/app5.js/<callback>/<callback>@73477076"
+      "parts/app5.js/<callback>#2/<callback>@73477076"
     ],
     [
       "parts/app5.js/<callback:then>#2/<callback>@73477076",
@@ -523,15 +523,15 @@
       "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
-      "parts/app5.js/<callback>/<callback>@73477076",
+      "parts/app5.js/<callback>#2/<callback>@73477076",
       "parts/app5.js/<callback>@73477076"
     ],
     [
-      "parts/app5.js/<callback>/<callback>@73477076",
+      "parts/app5.js/<callback>#2/<callback>@73477076",
       "parts/app5.js/migratePack/migRelease"
     ],
     [
-      "parts/app5.js/<callback>/<callback>@73477076",
+      "parts/app5.js/<callback>#2/<callback>@73477076",
       "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
@@ -599,8 +599,8 @@
       "parts/app5.js/prefetchIntroTiles/<callback>@73477076"
     ],
     [
-      "parts/app5.js/takePackWriteTurn/<callback>@a6f953f5",
-      "parts/app5.js/takePackWriteTurn/<callback>@a6f953f5#2"
+      "parts/app5.js/takePackWriteTurn/<callback>@984dac97",
+      "parts/app5.js/takePackWriteTurn/<callback>@984dac97#2"
     ],
     [
       "parts/brand-snow.js/snowLayer/amount",
@@ -713,10 +713,6 @@
     [
       "parts/create-pick.js/<callback:addEventListener:input>/<callback>@e33454ee",
       "parts/create-pick.js/crRunCityTypeahead/<callback>@e33454ee"
-    ],
-    [
-      "parts/create-pick.js/<callback:onMapReady>/<callback:on:styledata>/<callback:some>#2/<callback>@98dccb37",
-      "parts/create-pick.js/crSetBackdrop/<callback>@98dccb37"
     ],
     [
       "parts/create-pick.js/chosenSet/<callback>@1c05fac9",

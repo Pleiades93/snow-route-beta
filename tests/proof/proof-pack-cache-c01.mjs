@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { extractTurn } from '../pack-turn.mjs';
 import vm from 'node:vm';
 
 // Pack-cache orphan proof (fix_id: pack-cache-c01-c02, finding C-01, 2026-11-15).
@@ -94,8 +95,7 @@ function extractFn(marker) {
   if (end < 0) throw new Error('function end not found: ' + marker);
   return lines.slice(start, end + 1).join('\n');
 }
-const turnLine = lines.find(l => l.includes('async function takePackWriteTurn'));
-if (!turnLine) throw new Error('takePackWriteTurn not found in parts/app4.js + parts/app5.js');
+const turnLine = extractTurn(lines);
 const handlerSrc = extractHandler("$('xPre').addEventListener('click'");
 const fingerprintSrc = extractFn('function packMigFingerprint');
 if (!handlerSrc.includes('takePackWriteTurn') || !handlerSrc.includes('packCache.keys()') || !handlerSrc.includes('OFFLINE_PACK_CAP_BYTES')) {

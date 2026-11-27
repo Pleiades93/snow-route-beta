@@ -90,15 +90,16 @@
    frame. Specks draw from a sprite now: path fills cost frames. */
 (function snowLayer() {
   var cvS = document.getElementById('snowCv');
-  var handle = { cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: function () { return []; } };
+  var handle = /** @type {any} */ ({ cycle: 16, running: function () { return false; }, amount: function () { return 0; }, ground: function () { return 0; }, flakes: /** @returns {any[]} */ function () { return []; } });
   window.__snow = handle;
   if (!cvS) return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var SPECK = { per: 600, rMin: 0.5, rMax: 1.1, vMin: 14, vMax: 30, swayAmp: 3.5, swaySpeed: 0.5, alpha: 0.62 };
   var MID = { per: 4400, rMin: 1.8, rMax: 3.4, vMin: 26, vMax: 48, swayAmp: 7, swaySpeed: 0.6, alpha: 0.85 };
   var BLOB = { per: 45000, rMin: 26, rMax: 52, vMin: 34, vMax: 56, swayAmp: 12, swaySpeed: 0.25, alpha: 0.3 };
+  /** @param {number} a @param {number} b @returns {number} */
   function rand(a, b) { return a + Math.random() * (b - a); }
-  var W = 0, H = 0, specks = [], mids = [], blobs = [], clock = 0, lastTs = 0, raf = 0, running = false, frames = 0, lastFrame = 0;
+  var W = 0, H = 0, specks = /** @type {SnowFlake[]} */ ([]), mids = /** @type {SnowFlake[]} */ ([]), blobs = /** @type {SnowFlake[]} */ ([]), clock = 0, lastTs = 0, raf = 0, running = false, frames = 0, lastFrame = 0;
   var ctxS = cvS.getContext('2d');
   if (!ctxS) return;
   function resize() {
@@ -111,6 +112,7 @@
     var all = specks.concat(mids, blobs);
     for (var i = 0; i < all.length; i++) { all[i].bx *= sx; all[i].y *= sy; } } // Beta 1.159: a resize scales the field proportionally - positions are preserved, never re-scattered (Beta 1.161: every layer scales)
   }
+  /** @param {number} size @param {number[][]} stops @returns {AppElement} */
   function makeSprite(size, stops) {
     var c = document.createElement('canvas'); c.width = size; c.height = size;
     var g = c.getContext('2d');
@@ -123,6 +125,7 @@
   var speckSprite = makeSprite(32, [[0, 1], [0.75, 1], [1, 0]]); // Beta 1.299: the specks draw from a sprite too - per-frame path fills cost the menus their frames (drive226)
   var midSprite = makeSprite(64, [[0, 1], [0.35, 0.8], [0.7, 0.28], [1, 0]]); // Beta 1.161: the mid layer's soft flake, rendered once
   var blobSprite = makeSprite(256, [[0, 0.55], [0.45, 0.34], [0.75, 0.13], [1, 0]]); // Beta 1.161: the near blobs' extra-soft disc, rendered once
+  /** @param {boolean} scatter @returns {SnowFlake} */
   function newSpeck(scatter) {
     return { bx: rand(0, W),
       y: scatter ? rand(-4, H) : -4,
@@ -136,6 +139,7 @@
       twPhase: rand(0, Math.PI * 2),
       age: scatter ? rand(0.6, 3) : 0 };
   }
+  /** @param {boolean} scatter @returns {SnowFlake} */
   function newMid(scatter) {
     return { bx: rand(0, W),
       y: scatter ? rand(-6, H) : -6,
@@ -147,6 +151,7 @@
       o: rand(0.6, 1),
       age: scatter ? rand(0.6, 3) : 0 };
   }
+  /** @param {boolean} scatter @returns {SnowFlake} */
   function newBlob(scatter) {
     return { bx: rand(0, W),
       y: scatter ? rand(-60, H) : -60,
@@ -165,11 +170,13 @@
     if (t < 15) return 1 - (t - 12) / 3;
     return 0;
   }
+  /** @param {number} x @param {number} amount @returns {number} */
   function groundHeightAt(x, amount) {
     var maxH = 51 * amount; // Beta 1.161: the peak rises 20 -> 58px - the measured height of the app's bottom bar (see the header); the cycle, the profile and the paint are otherwise byte-identical to 1.158-1.160, per Andrew's condition. Beta 1.192: 58 -> 51, following the bar's rendered height down by the same 7px (see the header)
     if (maxH <= 0) return 0;
     return maxH * (0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4));
   }
+  /** @param {number} amount @returns {void} */
   function render(amount) {
     frames++; // Beta 1.299: the painted-frame count drive226 times the menus against
     var ctx = ctxS;
@@ -240,6 +247,7 @@
   function syncSnow() { // menu flips re-judge the scene: resume if live, park if not
     if (live()) resume(); else park();
   }
+  /** @param {number} ts @returns {void} */
   function loop(ts) {
     if (!running) return;
     lastFrame = performance.now(); // the liveness stamp resume() judges
@@ -286,10 +294,13 @@
   handle.frames = function () { return frames; }; // Beta 1.299: drive226's frame-timing proof reads the painted count
   handle.amount = settleAmount;
   handle.ground = function () { return groundHeightAt(W / 2, settleAmount()); };
-  handle.flakes = function () { var out = []; var push = function (f) { out.push({ x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }); }; specks.forEach(push); mids.forEach(push); blobs.forEach(push); return out; };
+  handle.flakes = function () { var out = /** @type {{ x: number, y: number }[]} */ ([]);
+    var push = /** @type {(f: SnowFlake) => void} */ (function (f) { out.push({ x: f.bx + Math.sin(clock * f.swayFreq + f.phase) * f.amp, y: f.y }); });
+    specks.forEach(push); mids.forEach(push); blobs.forEach(push); return out; };
   // x is the RENDERED position (base + sway offset) - the painted one
   raf = window.requestAnimationFrame(loop);
   if (window.MutationObserver) { // Beta 1.299: menu class flips drive park/resume - the observer lands before the next paint
+    /** @param {AppElement|null} el @param {any} attrs @returns {void} */
     var watch = function (el, attrs) { if (el) snowObs.observe(el, attrs); };
     var snowObs = new MutationObserver(syncSnow);
     watch(document.getElementById('routeMenu'), { attributes: true, attributeFilter: ['class'] });

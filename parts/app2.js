@@ -1,19 +1,25 @@
 
 // ===== MAP BOOT + LAYERS (fresh, MapLibre-native) =====
+/** @type {Record<string,any>} */
 const GL_STYLES = { day: PM_DAY, night: PM_NIGHT }; // both basemaps are Protomaps flavours embedded by pmstyles.js: a day/night switch is a local setStyle
-const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day'])); // MapLibre rewrites a handed style's fields: the styles are never handed over directly, every map gets a copy
+const glStyleFor = /** @type {(night: boolean) => any} */ (night =>
+  JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day']))); // MapLibre rewrites a handed style's fields: the styles are never handed over directly, every map gets a copy
 let glOk = false, mapNoteArmed = false, basemapDead = false, tilesOk = 0;
 // bootMap() runs only after the intro: creation's chunks froze the animation mid-intro; registrations replay via onMapReady
+/** @type {any} */
 let map = null;
-const __onMap = [];
+const __onMap = /** @type {(() => void)[]} */ ([]);
+/** @param {() => void} fn @returns {void} */
 function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
 // Capture the token now and check it before the caller lands.
+/** @param {any} token @param {(t: any) => boolean} isCurrent @returns {(land?: () => void) => boolean} */
 function landIfCurrent(token, isCurrent) {
   return land => { if (!isCurrent(token)) return false; if (land) land(); return true; };
 }
+/** @returns {void} */
 function bootMap() {
   if (map) return;
-  window.__bootAt = Date.now();
+  (/** @type {any} */ (window)).__bootAt = Date.now();
   map = new maplibregl.Map({ container: 'map', style: glStyleFor(isNight()), attributionControl: false, fadeDuration: 200, pixelRatio: dpPixelRatio(), maxTileCacheSize: 200, maxTileCacheZoomLevels: 6, cancelPendingTileRequestsWhileZooming: false, minZoom: 8, maxZoom: 19, maxPitch: 60 }); // Beta 1.230: the canvas ratio comes from the device profile (app1) - on Android the applied tier's ratio (the boot starts from the stored hint, the boot grade lands it at the first idle), everywhere else dpPixelRatio() answers the literal 2 this constructor carried through 1.229, so an iPhone's map is built exactly as before (drive131's W1 reads the live value)
   map.setCenter(routeBox ? [(routeBox.w + routeBox.e) / 2, (routeBox.s + routeBox.n) / 2] : [-79.57, 43.82]); map.setZoom(12); // an area view until a route is chosen (loadRoute frames it); no route is baked in
   setTimeout(() => { if (!tilesOk) { basemapDead = true; noteMapState(); } }, 9000);
@@ -21,15 +27,19 @@ function bootMap() {
   __onMap.length = 0;
 } // tiles melt in (200 ms); ratio 2 = 4/9 the pixels, the fluidity win; full gestures stay on
 // Zoom keeps loading tiles so levels appear progressively, not abruptly at the end. One-line revert: drop the constructor option.
+/** @type {RouteBox|null} */
 let routeBox = null; // the pack's box, set by buildGeometry on every load; null before any pick and for an empty pack
 // the maps-failing notice is persistent state, not a pop-up: it shows while the map is dead and clears on recovery
+/** @returns {void} */
 function noteMapState() { if ((mapNoteArmed && !glOk) || basemapDead) showSurface($('mapNote')); else hideSurface($('mapNote')); }
 setTimeout(() => { if (!glOk) { mapNoteArmed = true; noteMapState(); } }, 15000);
-onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } }));
+onMapReady(() => map.on('error', /** @type {(e: any) => void} */ (e => { if (!glOk && e && e.error && /fetch|Failed/i.test(e.error.message || '') && !mapNoteArmed) { mapNoteArmed = true; noteMapState(); } })));
 // proof the basemap is drawing: the moment a tile lands after an outage, the death notice clears itself
-onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } }));
+onMapReady(() => map.on('sourcedata', /** @type {(e: any) => void} */ (e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } })));
+/** @type {string[]} */
 const ROUTE_TILE_NAMES = []; // every street's name as the tiles spell it (drives the exclusion in glUnifyLabels); pack data, refilled per load
 const ROUTE_LABEL_ZOOM = 15.2; // the one handover threshold: titles cap here, the route clones start here
+/** @param {any} m @param {any} _ctx @returns {void} */
 function addRouteTitles(m, { newStack, data, ids, fontStack }) { // the naming owner builds the title layers (engine passes its stack context through the host hook)
   if (newStack) m.addSource('labelpts', { type: 'geojson', data }); // created once per stack; a route switch rewrites it through the unify pass alone
   const PT_MIN = [13.7, 13.35, 13.0, 12.6];
@@ -44,6 +54,7 @@ function addRouteTitles(m, { newStack, data, ids, fontStack }) { // the naming o
     }
   }
 }
+/** @param {any} _ctx @returns {void} */
 function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: the day and night styles are two different ready-made maps
   // on every restack, normalize every basemap text layer (typeface, size curve per kind); route layers are never touched
   try {
@@ -52,32 +63,33 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
     if (routeData && m.getSource('labelpts')) m.getSource('labelpts').setData(routeData);
     const glyphs = (m.getStyle() && m.getStyle().glyphs) || '';
     const font = glyphs.indexOf('versatiles') >= 0 ? ['noto_sans_regular'] : ['Noto Sans Regular'];
-    const SIZE = {
+    const SIZE = /** @type {Record<string,any[]>} */ ({
       road: ['interpolate', ['linear'], ['zoom'], 12, 10, 15, 13, 18, 15],
       place: ['interpolate', ['linear'], ['zoom'], 8, 12, 12, 14, 16, 16],
       water: ['interpolate', ['linear'], ['zoom'], 10, 11, 15, 13],
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
-    };
+    });
     // route names get their own label-layer copies (from 15.2, no fade): a filter cannot key on zoom
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
-    const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-    const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // no-op guards: this pass runs on every stack build, and a mutation re-triggers symbol placement - skip matches
-    const setP = (id, k, v) => { if (!eq(m.getPaintProperty(id, k), v)) { try { m.setPaintProperty(id, k, v); } catch (e2) {} } };
+    const eq = /** @type {(a: any, b: any) => boolean} */ ((a, b) => JSON.stringify(a) === JSON.stringify(b));
+    const setL = /** @type {(id: string, k: string, v: any) => void} */ ((id, k, v) => {
+      if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }); // no-op guards: this pass runs on every stack build, and a mutation re-triggers symbol placement - skip matches
+    const setP = /** @type {(id: string, k: string, v: any) => void} */ ((id, k, v) => { if (!eq(m.getPaintProperty(id, k), v)) { try { m.setPaintProperty(id, k, v); } catch (e2) {} } });
     // kind filters are authored in legacy form: rebuilt as expressions, or any combined filter is rejected whole
-    const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f;
+    const convF = /** @type {(f: any) => any} */ (f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f);
     const handover = titlesOn && !(typeof creating !== 'undefined' && creating);
     const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]], baseIds = ['roads_labels_major', 'roads_labels_minor'];
     for (const baseId of baseIds) {
       const cloneId = baseId + '-route';
       if (m.getLayer(cloneId)) { try { m.removeLayer(cloneId); } catch (e2) {} } // rebuilt below in the handover state, gone in every other
       if (handover) {
-        const specL = (spec.layers || []).find(x => x.id === baseId);
+        const specL = (/** @type {any[]} */ ((spec.layers || []))).find(x => x.id === baseId);
         if (specL) {
           const clone = JSON.parse(JSON.stringify(specL));
           clone.id = cloneId; clone.minzoom = ROUTE_LABEL_ZOOM; clone.maxzoom = 24;
           const baseF0 = specL.filter ? convF(specL.filter) : null;
           clone.filter = baseF0 ? ['all', baseF0, routeF] : routeF;
-          const live = m.getStyle().layers; const at = live.findIndex(x => x.id === baseId);
+          const live = /** @type {any[]} */ (m.getStyle().layers); const at = live.findIndex(x => x.id === baseId);
           const beforeId = at >= 0 && live[at + 1] ? live[at + 1].id : undefined; // the clone seats right after its base, so a remove-and-rebuild restores the same layer order
           try { m.addLayer(clone, beforeId); } catch (e2) {}
         }
@@ -99,7 +111,7 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
       if (kind === 'place' && (sl === 'place_labels' || sl === 'places')) {
         // a gate buried in the hamlet filter relaxes to 9, agreeing with the PLACE_EARLY zooms applied before this hook
         if (L.filter) {
-          const relax = f => Array.isArray(f) ? f.map((x, i) => (i === 2 && f[0] === '>=' && Array.isArray(f[1]) && f[1][0] === 'zoom' && typeof x === 'number' && x > 9) ? 9 : relax(x)) : f;
+          const relax = /** @type {(f: any) => any} */ (f => Array.isArray(f) ? f.map((x, i) => (i === 2 && f[0] === '>=' && Array.isArray(f[1]) && f[1][0] === 'zoom' && typeof x === 'number' && x > 9) ? 9 : relax(x)) : f);
           const nf = relax(L.filter);
           if (JSON.stringify(nf) !== JSON.stringify(L.filter)) m.setFilter(L.id, nf);
         }
@@ -113,7 +125,7 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
         setL(L.id, 'symbol-spacing', 250); // Andrew re-picked 250 on 2026-11-24: names repeat sooner when zoomed in.
         if (isBase) {
           // the target follows the handover state: creating or titles off lifts the exclusion (every street named)
-          const specL = (spec.layers || []).find(x => x.id === id);
+          const specL = (/** @type {any[]} */ ((spec.layers || []))).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
           const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
           const targetF = handover ? (baseF ? ['all', baseF, exclF] : exclF) : baseF;
@@ -128,12 +140,15 @@ function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: 
   } catch (e) { /* a style without label layers has nothing to normalize */ }
 }
 const CR_ROUTE_LAYERS = GLP.layers.stack; // the hide list is the engine's stack via GLP.layers, never hand-kept: proof-1264 fails on any gap
+/** @type {[string, string][]|null} */
 let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
+/** @param {any} m @returns {boolean} */
 function routeBackdropNeedsHide(m) { // a restack can add a visible layer after the snapshot, recorded or not: either re-fires the hide
   return crHiddenLayers && CR_ROUTE_LAYERS.some(id => { try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } });
 }
+/** @param {any} m @param {boolean} on @param {() => void} updatePois @returns {void} */
 function setRouteBackdrop(m, on, updatePois) { // the creation backdrop's hide/restore, owned here with the naming it flips
-  const visPair = (id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot records the layer's live visibility (the live value is the natural one now)
+  const visPair = /** @type {(id: string) => [string, string]} */ ((id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible']); // a snapshot records the layer's live visibility (the live value is the natural one now)
   if (on) {
     if (!crHiddenLayers) crHiddenLayers = [];
     // a route layer landing after the snapshot joins the record here, so the hide covers its first frame
@@ -146,6 +161,7 @@ function setRouteBackdrop(m, on, updatePois) { // the creation backdrop's hide/r
   // the backdrop flip is the naming flip: creating lifts the route-name exclusion; exit returns it
   glUnifyLabels({ m });
 }
+/** @returns {void} */
 function addReferenceLayers() {
   const feats = [];
   for (const name of Object.keys(REFERENCE)) { if (name === 'Village Green' || name === 'Ott' || name === 'West link') continue; // all reference lines are off the map (duplicates or over-traces); the data stays, nothing draws
@@ -161,10 +177,11 @@ function addReferenceLayers() {
     paint: { 'line-color': isNight() ? '#aab4c0' : '#8a929c', 'line-width': 3, 'line-opacity': 0.55, 'line-dasharray': [2, 1.6] } },
     map.getLayer('t1-casing') ? 't1-casing' : undefined);
 }
+/** @returns {AppElement} */
 function makeBeamImage() { // the beam is a fan (strong at the dot, fading, soft-skirted); two passes fake the missing blur
   const S = 512, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
   const x = cv.getContext('2d'), c = S / 2;
-  const pass = (halfDeg, len, a0) => {
+  const pass = /** @type {(halfDeg: number, len: number, a0: number) => void} */ ((halfDeg, len, a0) => {
     const g = x.createRadialGradient(c, c, 0, c, c, len);
     g.addColorStop(0, 'rgba(44,74,210,' + a0 + ')');
     g.addColorStop(0.55, 'rgba(44,74,210,' + (a0 * 0.55).toFixed(3) + ')');
@@ -172,10 +189,11 @@ function makeBeamImage() { // the beam is a fan (strong at the dot, fading, soft
     x.fillStyle = g; x.beginPath(); x.moveTo(c, c);
     const h = -Math.PI / 2, hd = halfDeg * Math.PI / 180;
     x.arc(c, c, len, h - hd, h + hd); x.closePath(); x.fill();
-  };
+  });
   pass(48, 238, 0.13); pass(38, 238, 0.22); pass(29, 238, 0.34); // three nested fans: the steps between them are small enough to read as one soft edge
   return cv;
 }
+/** @returns {void} */
 function addGpsLayers() {
   if (map.getSource('gps')) return;
   map.addSource('gps', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -198,9 +216,10 @@ function addGpsLayers() {
   map.addLayer({ id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } });
   map.addLayer({
     id: 'gps-puck-shader', type: 'custom', _prog: null, _buf: null, _aPos: -1, _u: {},
+    /** @param {any} m @param {any} gl @returns {void} */
     onAdd(m, gl) {
-      const sh = (type,
-        src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log('PUCKSHADER compile failed: ' + gl.getShaderInfoLog(s)); return s; };
+      const sh = /** @type {(type: any, src: string) => any} */ ((type,
+        src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log('PUCKSHADER compile failed: ' + gl.getShaderInfoLog(s)); return s; });
       const prog = gl.createProgram();
       gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
         'attribute vec2 a_pos;',
@@ -259,6 +278,7 @@ function addGpsLayers() {
       this._aPos = gl.getAttribLocation(prog, 'a_pos');
       for (const n of ['u_rect', 'u_half', 'u_D', 'u_L', 'u_faceK', 'u_aa']) this._u[n] = gl.getUniformLocation(prog, n);
     },
+    /** @param {any} gl @param {any} matrix @returns {void} */
     render(gl, matrix) {
       if (!dispPos || !this._prog) return;
       const cnv = map.getCanvas();
@@ -306,14 +326,16 @@ function addGpsLayers() {
       if (prevStencil) gl.enable(gl.STENCIL_TEST);
       if (prevScissor) gl.enable(gl.SCISSOR_TEST);
     },
+    /** @param {any} m @param {any} gl @returns {void} */
     onRemove(m, gl) { if (this._prog) gl.deleteProgram(this._prog); if (this._buf) gl.deleteBuffer(this._buf); this._prog = null; }
   }); // one WebGL layer: a quad on project(dispPos) per frame, shader-shaped, depth off (buildings never cover it)
 }
 // no trail layer: his trail is the streets marked done; the stored trail is a distance fallback only
+/** @returns {void} */
 function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap for our route labels
   // a guessed stack renders NO text: prefer a stack the style itself carries and mentions Noto
   try {
-    const syms = (map.getStyle().layers || []).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
+    const syms = (/** @type {any[]} */ ((map.getStyle().layers || []))).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
     const notoRoad = syms.find(l => /road|highway|street|label/i.test(l.id) && /noto/i.test(l.layout['text-font'].join(' ')));
     const notoAny = syms.find(l => /noto/i.test(l.layout['text-font'].join(' ')));
     const road = syms.find(l => /road|highway|street|label/i.test(l.id));
@@ -321,6 +343,7 @@ function pickFontFromStyle() { // adopt a NOTO stack from the CURRENT basemap fo
     if (pick && window.GLP) window.GLP.setFont(pick);
   } catch (e) { /* keep the default stack */ }
 }
+/** @returns {void} */
 function onStyleReady() {
   glOk = true; noteMapState();
   pickFontFromStyle();
@@ -331,6 +354,7 @@ function onStyleReady() {
 }
 onMapReady(() => map.on('load', onStyleReady));
 let restackArmed = false;
+/** @returns {void} */
 function setBasemap() {
   map.setStyle(glStyleFor(isNight()), { diff: false }); // never a diff: a diff keeps errored tiles, so recovery never re-requested the basemap; a switch rebuilds fully
   if (restackArmed) return;
@@ -346,24 +370,33 @@ function setBasemap() {
 }
 
 // ===== SELECTION + CHIPS =====
+/** @type {{ name: string, idx: number, anchor: LatLng }|null} */
 let sel = null; // {name, idx, anchor:[lat,lng]}
+/** @type {{ name: string, idx: number, anchor: LatLng }[]} */
 let selSet = []; // every stretch currently selected; sel/selStretch stay the anchor entry (last tapped) that positions the chips
+/** @type {{ name: string, idx: number }|null} */
 let selStretch = null; // {name, idx} — the paint engine reads this global in syncSel()
 let swallowClickUntil = 0;
+/** @param {number} ms @returns {void} */
 function spendTap(ms) { swallowClickUntil = Date.now() + ms; } // app2 is the sole writer of its tap-swallow variable: others spend a tap through this setter only
+/** @param {LatLng} p @returns {{ x: number, y: number }} */
 function projLL(p) { return map.project([p[1], p[0]]); }
+/** @param {AppPoint} p @param {AppPoint} a @param {AppPoint} b @returns {number} */
 function ptSegDistPx(p, a, b) { const vx = b.x - a.x, vy = b.y - a.y, L2 = vx * vx + vy * vy;
 let t = L2 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / L2 : 0;
 t = Math.max(0, Math.min(1, t));
 return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t));
 }
+/** @param {{ x: number, y: number }} pt @returns {{ name: string|null, d: number }} */
 function nearestStreet(pt) { let best = null, bd = Infinity;
 for (const n of STREETNAMES) for (const seg of ROADS[n]) for (let i = 1; i < seg.length; i++) { const d = ptSegDistPx(pt, projLL(seg[i - 1]), projLL(seg[i])); if (d < bd) { bd = d; best = n; } } return { name: best, d: bd };
 }
+/** @param {string} name @param {AppPoint} pt @returns {{ idx: number, d: number }} */
 function nearestStretch(name, pt) { let bi = 0, bd = Infinity;
 STRETCH[name].parts.forEach((part, idx) => { for (let i = 1; i < part.length; i++) { const d = ptSegDistPx(pt, projLL(part[i - 1]), projLL(part[i])); if (d < bd) { bd = d; bi = idx; } } });
 return { idx: bi, d: bd };
 }
+/** @param {string} name @param {number} idx @param {LatLng} anchorLL @returns {{ baseLL: LatLng, left: number[] }} */
 function geoSideFrame(name, idx, anchorLL) {
   // side 0 = geographic left, side 1 = right (the engine's convention); returns the projection + left vector
   const part = STRETCH[name].parts[idx];
@@ -378,20 +411,22 @@ function geoSideFrame(name, idx, anchorLL) {
   }
   return { baseLL: [best.gy / MLAT, best.gx / MLNG], left: [best.lx, best.ly] }; // left = [east, north] unit
 }
+/** @returns {void} */
 function clearChips() { $('chips').innerHTML = ''; }
 const GROUP_PATH_JOIN_M = 20; // sections join into a drive when ends sit within this (true joins: 0 m; nearest non-join: 58.7 m)
+/** @param {number} side @returns {number[]} */
 function groupSideMap(side) { // a press toggles the driver's side along the tap-order drive, read off the anchor - not the raw side
   const n = selSet.length;
   const raw = selSet.map(() => side);
   if (n < 2) return raw;
   const ends = selSet.map(en => { const p = STRETCH[en.name].parts[en.idx]; return [p[0], p[p.length - 1]]; });
-  const join = [null]; // join[k]: {a, b} = ends where selSet[k] joins selSet[k-1]; null = a new drive at k
+  const join = /** @type {({ a: number, b: number, d: number }|null)[]} */ ([null]); // join[k]: {a, b} = ends where selSet[k] joins selSet[k-1]; null = a new drive at k
   for (let k = 1; k < n; k++) {
     let best = null;
     for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) { const d = distM(ends[k - 1][a], ends[k][b]); if (d <= GROUP_PATH_JOIN_M && (!best || d < best.d)) best = { a, b, d }; }
     join.push(best);
   }
-  const drives = [];
+  const drives = /** @type {number[][]} */ ([]);
   for (let k = 0; k < n; k++) { if (k === 0 || !join[k]) drives.push([]); drives[drives.length - 1].push(k); }
   const withDir = new Array(n).fill(null); // withDir[k]: section k is travelled as drawn; null = a single-section drive (no direction)
   for (const drv of drives) {
@@ -411,7 +446,9 @@ function groupSideMap(side) { // a press toggles the driver's side along the tap
   return selSet.map((en, k) => { if (withDir[k] === null) return side; return driverRight ? (withDir[k] ? 1 : 0) : (withDir[k] ? 0 : 1); });
 }
 // a side reads done only when every stretch has the side this press would toggle on it (groupSideMap)
+/** @param {number} side @returns {boolean} */
 function groupSideDone(side) { const map = groupSideMap(side); return selSet.length > 0 && selSet.every((en, k) => !!(pieces[en.name][en.idx] & (map[k] ? 2 : 1))); }
+/** @returns {void} */
 function showChips() {
   clearChips();
   if (!sel) return;
@@ -426,6 +463,7 @@ function showChips() {
   });
   positionChips();
 }
+/** @returns {void} */
 function positionChips() {
   if (!sel || !map) return; // chips are placed by projection: with no map, throwing here would abort the rest of refreshSelUI
   const kids = $('chips').children; if (kids.length !== 2) return;
@@ -455,8 +493,11 @@ function positionChips() {
   });
 }
 onMapReady(() => map.on('move', positionChips));
+/** @returns {void} */
 function refreshSelUI() { if (window.GLP) window.GLP.syncSel(); showChips(); renderPanel(); }
+/** @param {string} name @param {number} idx @param {LatLng} anchor @returns {void} */
 function selectStretch(name, idx, anchor) { selSet = [{ name, idx, anchor }]; sel = { name, idx, anchor }; selStretch = { name, idx }; refreshSelUI(); } // a fresh single selection (streets list, drives)
+/** @param {string} name @param {number} idx @param {LatLng} anchor @returns {void} */
 function tapStretch(name, idx, anchor) { // map taps ACCUMULATE: tapping a selected stretch removes just it; the anchor follows the last remaining selection
   const i = selSet.findIndex(en => en.name === name && en.idx === idx);
   if (i >= 0) selSet.splice(i, 1); else selSet.push({ name, idx, anchor });
@@ -465,8 +506,9 @@ function tapStretch(name, idx, anchor) { // map taps ACCUMULATE: tapping a selec
   sel = { name: top.name, idx: top.idx, anchor: top.anchor }; selStretch = { name: top.name, idx: top.idx };
   refreshSelUI();
 }
+/** @returns {void} */
 function deselect() { sel = null; selStretch = null; selSet = []; clearChips(); if (window.GLP) window.GLP.syncSel(); renderPanel(); }
-onMapReady(() => map.on('click', e => {
+onMapReady(() => map.on('click', /** @type {(e: any) => void} */ (e => {
   if (creating) return; // in the create flow, map taps pick streets for the DRAFT: they never mark the active route
   if (Date.now() < swallowClickUntil) return;
   const pt = map.project([e.lngLat.lng, e.lngLat.lat]);
@@ -475,28 +517,34 @@ onMapReady(() => map.on('click', e => {
   // tolerance comes from the engine (GLP.tapTolPx), following the widest paint at this zoom, floored at 24 px
   if (near.name && near.d <= tol) { const st = nearestStretch(near.name, pt); tapStretch(near.name, st.idx, [e.lngLat.lat, e.lngLat.lng]); }
   else deselect();
-}));
+})));
 
 // ===== MARKING (one finish path) =====
 let saveWarned = false; // the storage-warning episode state: one warning per failure episode; resets on the next fully successful save
 // the non-transactional path: saveAll plus the episode warning; the finish transaction calls saveAll with its own messaging
+/** @returns {any} */
 function saveAllWarned() { const r = saveAll();
   if (!r.ok) { if (!saveWarned) { saveWarned = true; showBanner('Not saving', (r.failedKey || 'Changes') + ' could not be saved - export a recovery backup now'); } }
   else saveWarned = false; return r; }
 // callers that announce an outcome branch on the save result - since the storage-outcome object, that is the object
+/** @returns {any} */
 function finishChange() { if (window.GLP) window.GLP.sync(); renderPanel(); updateCount(); renderStreets(); const r = saveAllWarned(); syncWake(); return r; }
 // on failure, no outcome banner replaces the storage warning; if it already fired, 'not saved' is owed
+/** @returns {any} */
 function finishChangeMarked() { const wb = saveWarned; const r = finishChange(); if (!r.ok && wb) showBanner('Not saved'); return r; }
+/** @param {string} name @param {number} idx @param {number} side @param {boolean} on @returns {any} */
 function applyPiece(name, idx, side, on) { // mutation is BOARD.setSide; this wrapper fires completion feedback on the false-to-true flip, returns the name
   const t = BOARD.setSide(name, idx, side, on);
-  if (t.completed) onStreetComplete(t.completed);
+  if (t.completed) (/** @type {(name: any) => void} */ (onStreetComplete))(t.completed);
   return t.completed;
 }
+/** @param {string} name @param {number} idx @param {number} side @returns {void} */
 function togglePiece(name, idx, side) {
   const bit = side ? 2 : 1;
   applyPiece(name, idx, side, !(pieces[name][idx] & bit));
   showChips(); finishChangeMarked();
 }
+/** @param {number} side @returns {void} */
 function togglePieceGroup(side) { // one chip, selection: not-done-everywhere completes everywhere, done-everywhere clears; the side is the driver's (groupSideMap)
   if (!selSet.length) return;
   const on = !groupSideDone(side);
@@ -507,16 +555,20 @@ function togglePieceGroup(side) { // one chip, selection: not-done-everywhere co
 // the outcome is an OBJECT: {ok:false} is truthy, so branch on .ok, never the object
 $('selAllBtn').addEventListener('click', ev => { if (!tapGuard('selAll', ev)) return; for (const en of selSet) for (const side of [0, 1]) { applyPiece(en.name, en.idx, side, true); } showChips(); finishChangeMarked(); });
 $('selClearBtn').addEventListener('click', ev => { if (!tapGuard('selClear', ev)) return; deselect(); });
+/** @param {string} name @param {string} via @param {any} [at] @returns {void} */
 function markDone(name, via, at) { // mutation is BOARD.completeStreet: marked sides keep their real times, the rest inherit the completion moment
   const t = BOARD.completeStreet(name, via, at);
-  if (t.flipped) onStreetComplete(name); // whole-street marking bypasses applyPiece: the completion feedback fires only on a real false-to-true flip here too
+  if (t.flipped) (/** @type {(name: any) => void} */ (onStreetComplete))(name); // whole-street marking bypasses applyPiece: the completion feedback fires only on a real false-to-true flip here too
   finishChangeMarked(); // the total derives from the route's street list
 }
+/** @param {string} name @returns {void} */
 function markUndone(name) { // the mutation is BOARD.clearStreet; the finish stays here
   BOARD.clearStreet(name);
   finishChangeMarked();
 }
+/** @param {string} name @param {boolean} done @returns {void} */
 function markStreet(name, done) { if (done) markDone(name, 'tap'); else markUndone(name); showChips(); }
+/** @returns {void} */
 function renderPanel() { // one selection pop-up: header strip and multi-select pill are the same pop-up (pill glass, every action inside)
   const p = $('selPop');
   if (!sel) { hideSurface(p); return; }
@@ -547,6 +599,7 @@ function renderPanel() { // one selection pop-up: header strip and multi-select 
 }
 $('selBtn').addEventListener('click', ev => { if (!sel || !tapGuard('selBtn', ev)) return; markStreet(sel.name, !streetComplete(sel.name)); });
 $('selNote').addEventListener('click', ev => { if (!sel || !tapGuard('selNote', ev)) return; openNote(sel.name); });
+/** @returns {void} */
 function updateCount() {
   const n = STREETNAMES.filter(streetComplete).length;
   const tw = totalWorkM(); // the share's denominator, read once and guarded: an empty route divided by zero and read 'NaN%'
@@ -562,29 +615,43 @@ function updateCount() {
 
 // ===== LIST SHEET =====
 let listFilter = 'primaries'; // the Streets filter is the route's two groups: Primaries (gold) or Secondaries (raspberry); Primaries is the opening view
+/** @type {any} */
 const NOTEEDIT = { // the note session owner: the editor's state and acts live here, not in the renderer
   openFor: null, // the street whose editor is open (the user's intent)
   edFor: null, // noteEdFor names the street whose editor is actually in the DOM: the draft's owner
   saveTimer: 0, // the pending debounced save; 0 = none armed
   raiseActive: false, // true while the sheet is at full because the editor raised it: a user's full sheet is never lowered
+  /** @param {AppElement} el @returns {{ draft: string|null, draftFor: string|null }} */
   capture(el) { const openEd = el.querySelector('.noteEd textarea'); return { draft: openEd ? openEd.value : null, draftFor: openEd ? this.edFor : null }; },
   // the flush's result is kept: fresh failures ride the warning; a suppressed one is owed 'not saved'
+  /** @param {string|null} draft @param {string|null} draftFor @returns {void} */
   flushSwitch(draft, draftFor) { clearTimeout(this.saveTimer); const wb = saveWarned; const r = setNoteText(draftFor, draft); if (!r.ok && wb) showBanner('Not saved'); },
+  /** @param {string|null} draft @param {string|null} draftFor @returns {boolean} */
   flushRebuild(draft, draftFor) { clearTimeout(this.saveTimer); this.saveTimer = 0; return setNoteText(draftFor, draft).ok; }, // setNoteText returns an OBJECT: {ok:false} is truthy, so the flush returns .ok, never the object
+  /** @param{string} n @param{AppElement} ta @param{AppElement} hint @param{() => void} paintNt @returns{void} */
   scheduleSave(n, ta, hint, paintNt) { hint.textContent = 'Saving…';
   clearTimeout(this.saveTimer);
   this.saveTimer = setTimeout(() => { const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; }, 400);
   }, // Beta 1.63 (audit F04): the hint tells the truth about the write
   // blur finalizes like the debounced save (same result, same hint): a failed blur save must say so
+  /** @param{string} n @param{AppElement} ta @param{AppElement} hint @param{() => void} paintNt @returns{void} */
   saveNow(n, ta, hint, paintNt) { clearTimeout(this.saveTimer); const ok = setNoteText(n, ta.value); paintNt(); hint.textContent = ok.ok ? 'Saved ✓' : 'Not saved - Storage problem'; },
+  /** @param {string} n @returns {void} */
   toggle(n) { this.openFor = this.openFor === n ? null : n; },
+  /** @returns {void} */
   close() { this.openFor = null; },
+  /** @returns {boolean} */
   collapse() { if (!this.openFor) return false; this.openFor = null; return true; },
+  /** @returns {void} */
   reset() { this.openFor = null; this.edFor = null; if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = 0; } },
+  /** @param {string} n @param {string|null} draft @param {string|null} draftFor @returns {string} */
   takeDraft(n, draft, draftFor) { this.edFor = n; return (draft !== null && draftFor === n) ? draft : noteTextOf(n); },
+  /** @returns {void} */
   detach() { this.edFor = null; }
 };
+/** @type {{ sig: string, rows: Map<string,{ row: AppElement, paintNt: () => void }> }} */
 let srowCache = { sig: '', rows: new Map() }; // rows kept between renders when the visible set is unchanged
+/** @returns {void} */
 function resetStreetsSession() { // app2's route-switch reset (called by resetSwitchSession): the session's reset knowledge lives here, with its state
   deselect(); // selection + chips + the engine's selection, through the one proven path
   NOTEEDIT.reset(); // the note editor's pending debounced save must never fire into the new route (its flush already happened via collapseNoteEditor)
@@ -592,9 +659,13 @@ function resetStreetsSession() { // app2's route-switch reset (called by resetSw
   srowCache = { sig: '', rows: new Map() };
   saveWarned = false; // the storage-warning episode belonged to the outgoing route's saves
 }
+/** @param {number} v @returns {string} */
 function fmtLenM(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m'; }
+/** @param {string} n @returns {boolean} */
 function streetHalf(n) { const p = pieces[n]; return Array.isArray(p) && !streetComplete(n) && p.some(v => v !== 0); } // one side done: some bit set on some stretch, street not complete; list and Pace share this predicate
+/** @param {string} n @returns {string} */
 function srowClass(n) { return 'srow' + (streetComplete(n) ? ' done' : '') + (PRIMARIES.has(n) ? ' primary' : '') + (streetHalf(n) ? ' half' : ''); }
+/** @param {string} n @returns {{ t: string, c: string }} */
 function srowStatus(n) { // the status slot: completed keeps the full string; else 'completed', 'one side done', or an em dash
   const flag = (Array.isArray(notes[n]) && notes[n].some(f => f.k !== 'note')) ? '⚑ ' : ''; // Array.isArray, not truthiness: a 'constructor' street would read the inherited member and .some would throw
   const doneAt = streetComplete(n) && doneTimes[n] ? fmtWhen(doneTimes[n]) : '';
@@ -603,6 +674,7 @@ function srowStatus(n) { // the status slot: completed keeps the full string; el
   if (streetHalf(n)) return { t: flag + 'one side done', c: 'st-half' };
   return { t: flag + '–', c: 'st-todo' };
 } // street-length display for the quiet line: whole metres, thousands separator, never kilometres
+/** @returns {void} */
 function renderStreets() { // tap a street's name area to open its note editor (auto-saves); the pin button flies to the street
   const el = $('streetList'); if (!el) return;
   const scroller = $('sheetBody'); const keepScroll = scroller ? scroller.scrollTop : 0; // a rebuild must not yank the list back to the top while he is working in it
@@ -700,6 +772,7 @@ function renderStreets() { // tap a street's name area to open its note editor (
   if (!el.querySelector('.noteEd')) { NOTEEDIT.detach(); kbSync(); } // an editor removed by a rebuild reports to the owner (kbSync), or the kb state sticks on
   syncNoteSheetRaise(); // the editor's sheet raise follows the editor's existence on every render
 }
+/** @returns {void} */
 function syncNoteSheetRaise() { // at full while an editor is open: only then can the region lift the field above the keyboard
   const sh = $('sheet'); if (!sh) return;
   if (NOTEEDIT.openFor && sh.classList.contains('open')) {
@@ -709,9 +782,11 @@ function syncNoteSheetRaise() { // at full while an editor is open: only then ca
     if (sh.classList.contains('open')) SHEETS.setFull(sh, false);
   }
 }
+/** @returns {void} */
 function collapseNoteEditor() { // closing resets the list (no editor survives to the next open); the re-render finalizes pending saves first
   if (NOTEEDIT.collapse()) renderStreets();
 }
+/** @param {boolean} animate @returns {void} */
 function seatFilterPill(animate) { // the sliding highlight sits exactly under the .on tab
   const pill = $('filtersPill'); if (!pill) return;
   const btn = document.querySelector('#filters button.on'); if (!btn || !btn.offsetWidth) { pill.style.opacity = '0'; return; }
@@ -723,21 +798,24 @@ function seatFilterPill(animate) { // the sliding highlight sits exactly under t
   pill.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
   if (!animate) { void pill.offsetWidth; pill.style.transition = ''; }
 }
+/** @param {boolean} animate @returns {void} */
 function syncFilterTabs(animate) { document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x.dataset.f === listFilter)); seatFilterPill(animate); }
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; syncFilterTabs(true); renderStreets(); }));
 window.addEventListener('resize', () => seatFilterPill(false));
 seatFilterPill(false);
 // a release runs a damped spring (omega 30/s) starting at velocity: a from-rest snap read as 'just disappears'
 const SHEET_OMEGA = 30;
+/** @param {AppElement} sheet @returns {void} */
 function cancelSheetSpring(sheet) { if (sheet._spring) { cancelAnimationFrame(sheet._spring); sheet._spring = null; } }
+/** @param{AppElement} sheet @param{number} q0 @param{number} qT @param{number} v0 @param{(q: number) => void} apply @param{() => void} finish @returns{void} */
 function springSheet(sheet, q0, qT, v0, apply, finish) {
   cancelSheetSpring(sheet);
   // closed form, not per-frame Euler: integration diverged at low frame rates; this is exact at any rate
   const A = q0 - qT, B = Math.max(-4000, Math.min(4000, v0)) + SHEET_OMEGA * A;
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(qT); finish(); return; }
   // clock starts at the first frame's rAF timestamp: starting mid-frame made step one extrapolate backwards
-  let t0 = null;
-  const step = now => {
+  let /** @type {number|null} */ t0 = null;
+  const step = /** @type {(now: number) => void} */ (now => {
     if (t0 === null) t0 = now;
     const t = (now - t0) / 1000;
     const e = Math.exp(-SHEET_OMEGA * t);
@@ -745,13 +823,17 @@ function springSheet(sheet, q0, qT, v0, apply, finish) {
     const vel = (B - SHEET_OMEGA * (A + B * t)) * e;
     if ((Math.abs(q - qT) < 0.7 && Math.abs(vel) < 15) || t > 1) { apply(qT); sheet._spring = null; finish(); return; }
     apply(q); sheet._spring = requestAnimationFrame(step);
-  };
+  });
   sheet._spring = requestAnimationFrame(step);
 }
 const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture settlement, interruption and terminal cleanup for both sheets
+  /** @param {AppElement} sheet @returns {void} */
   function clearHeight(sheet) { sheet.style.height = ''; sheet.style.maxHeight = ''; }
+  /** @param {AppElement} sheet @param {() => void} [prepare] @param {boolean} [keepHeight] @returns {void} */
   function open(sheet, prepare, keepHeight) { if (!keepHeight) clearHeight(sheet); if (prepare) prepare(); sheet.classList.add('open'); }
+  /** @param {AppElement} sheet @param {boolean} full @returns {void} */
   function setFull(sheet, full) { if (full) { sheet.classList.add('full'); sheet.style.maxHeight = 'none'; sheet.style.height = sheetFullH(vvHeight()) + 'px'; } else { sheet.classList.remove('full'); clearHeight(sheet); } }
+  /** @param {AppElement} sheet @returns {void} */
   function close(sheet) { // the close animates: freeze the height for the whole slide-down, clear it only when the motion ends
     cancelSheetSpring(sheet);
     if (sheet.id === 'sheet') collapseNoteEditor(); // the editor resets BEFORE the height is measured
@@ -760,6 +842,7 @@ const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture 
     sheet.classList.remove('open'); sheet.classList.remove('full'); sheet.classList.remove('snapping'); sheet.classList.remove('dragging'); // the base (closing) transition and curve own the motion from here
     setTimeout(() => { if (!sheet.classList.contains('open')) clearHeight(sheet); }, 480);
   }
+  /** @param {AppElement} sheet @param {number} height @param {number} velocity @returns {void} */
   function closeGesture(sheet, height, velocity) { // spring the sheet off the bottom edge at the finger's speed, then land closed
     sheet.classList.remove('full');
     sheet.style.height = height + 'px'; sheet.style.maxHeight = 'none';
@@ -771,10 +854,12 @@ const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture 
       requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
     });
   }
+  /** @returns {void} */
   function closeAll() { document.querySelectorAll('.sheet').forEach(sheet => close(sheet)); } // every sheet by class, present and future: no hand-kept list to fall behind a new menu
   // the drag/flick zone is the empty top strip (handle + title row): content below is pure scrolling
   const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // the three stops: closed, half (SHEET_DEF_VH), full (sheetFullH's title cap; SHEET_FULL_VH is the fallback)
   const SHEET_FULL_MARGIN_PX = 8; // the full stop stands this far above the title's edge: covers the title, never the screen top
+  /** @param {number} vh @returns {number} */
   function sheetFullH(vh) { // the full stop's height, measured per call (drags are rare; a stale cache is how geometry rules drift)
     const t = document.querySelector('#hud .title');
     if (!t) return vh * SHEET_FULL_VH;
@@ -783,8 +868,9 @@ const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture 
     const vvTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
     return vh - Math.max(0, r.top - vvTop - SHEET_FULL_MARGIN_PX);
   }
+  /** @param {AppElement} sheet @returns {void} */
   function makeSheetDraggable(sheet) {
-    let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null, panelMoved = false, samples = [];
+    let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, /** @type {number|null} */ pid = null, panelMoved = false, /** @type {{ t: number, y: number }[]} */ samples = [];
     sheet.addEventListener('pointerdown', e => {
       if (dragging) return;
       if (e.target.closest('button')) return; // buttons keep their taps
@@ -820,12 +906,12 @@ const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture 
       if (samples.length > 8) samples.shift();
       e.preventDefault();
     });
-    const end = e => {
+    const end = /** @type {(e: any) => void} */ (e => {
       if (!dragging || (e && e.pointerId !== pid)) return;
       dragging = false;
       if (!moved) return;
       // swallow the click this drag would otherwise deliver to a row/button
-      const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); };
+      const swallow = /** @type {(ev: any) => void} */ (ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); });
       document.addEventListener('click', swallow, true);
       setTimeout(() => document.removeEventListener('click', swallow, true), 350);
       const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
@@ -842,7 +928,7 @@ const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture 
       }
       // a swipe throws the panel to its next stop on release - only when the panel itself moved
       const flick = panelMoved && Math.abs(v) > 0.30 ? (v > 0 ? 1 : -1) : 0;
-      const settleStop = targetH => { // spring the height to a stop; end state = the old snap's end state
+      const settleStop = /** @type {(targetH: number) => void} */ (targetH => { // spring the height to a stop; end state = the old snap's end state
         const isFull = targetH >= sheetFullH(vh) - 1;
         if (isFull) sheet.classList.add('full'); else sheet.classList.remove('full');
         sheet.style.maxHeight = 'none';
@@ -851,20 +937,22 @@ const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture 
           if (isFull) sheet.style.height = sheetFullH(vh) + 'px';
           else clearHeight(sheet);
         });
-      };
+      });
       if (flick > 0) { settleStop(sheetFullH(vh)); return; }
       if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else closeGesture(sheet, h, v); return; }
       if (h < defH * 0.55) { closeGesture(sheet, h, v); return; }
       if (h > (defH + sheetFullH(vh)) / 2) { settleStop(sheetFullH(vh)); return; }
       settleStop(naturalH);
-    };
+    });
     sheet.addEventListener('pointerup', end);
     sheet.addEventListener('pointercancel', end);
   }
   [$('sheet'), $('pacePanel')].forEach(makeSheetDraggable);
   return { open, close, closeAll, setFull }; })();
+/** @returns {void} */
 function closeSheets() { SHEETS.closeAll(); }
 // one route surface (boot splash and Routes tab share it); the loaded-route marker is a tab-mode-only signal
+/** @param {string} tag @param {string} name @param {string|null} sub @param {any} [opts] @returns {AppElement} */
 function routeRowShell(tag, name, sub, opts) { // the one builder: every row builds here (one place to drift); text via textContent, never markup
   opts = opts || {};
   const b = document.createElement(tag || 'button'); b.className = 'routeRow' + (opts.cls ? ' ' + opts.cls : '');
@@ -876,6 +964,7 @@ function routeRowShell(tag, name, sub, opts) { // the one builder: every row bui
   if (opts.chevron) { const chev = document.createElement('span'); chev.className = 'routeChev'; chev.textContent = '›'; b.appendChild(chev); }
   return b;
 }
+/** @param {RoutePack} p @returns {AppElement} */
 function routeRowEl(p) { // rows are nodes (textContent, never innerHTML); a row is a div - buttons cannot nest in a <button>
   const tab = $('routeMenu').classList.contains('tab');
   const b = routeRowShell('div', p.name, p.area + ' · ' + Object.keys(p.roads).length + ' streets'); b.dataset.route = p.id;
@@ -883,6 +972,7 @@ function routeRowEl(p) { // rows are nodes (textContent, never innerHTML); a row
   if (tab && activeRoute && activeRoute.id === p.id) { const ck = document.createElement('img'); ck.className = 'routeCheck'; ck.alt = 'Currently loaded'; ck.src = GLYPH_MENU.check; b.appendChild(ck); }
   return b;
 }
+/** @param {RoutePack} p @returns {AppElement} */
 function routeDropEl(p) { // dropdown (the row's sibling): Load over Delete, or the inert Loaded pill; Delete lives on every route
   const tab = $('routeMenu').classList.contains('tab');
   const card = document.createElement('div'); card.className = 'routeDrop'; card.dataset.route = p.id;
@@ -893,13 +983,16 @@ function routeDropEl(p) { // dropdown (the row's sibling): Load over Delete, or 
   return card;
 }
 // each row renders with its dropdown card as its sibling
+/** @returns {void} */
 function renderRouteLists() { document.querySelectorAll('.routeList').forEach(el => { el.replaceChildren(...ROUTE_PACKS.flatMap(p => [routeRowEl(p), routeDropEl(p)])); menuListFade(el); }); }
+/** @param {AppElement} el @returns {void} */
 function menuListFade(el) { // edges feather only while hiding content (30 px covered, none at rest); the arrow lives here too
   if (!el) return;
   const max = el.scrollHeight - el.clientHeight;
   el.classList.toggle('fadeT', el.scrollTop > 1);
   el.classList.toggle('fadeB', max > 1 && el.scrollTop < max - 1);
   if (el.id === 'crCityList') { const a = $('crCityArrow'); if (a) { const over = max > 1; a.classList.toggle('gone', !over); a.classList.toggle('hide', over && el.scrollTop > 1); } } }
+/** @param {AppElement} container @param {(id: string) => void} choose @returns {void} */
 function wireRouteRows(container, choose) { container.addEventListener('click', e => { // delegation sorts taps by target: Delete asks, Load chooses, Loaded spends it, anywhere else toggles the dropdown
   const del = e.target.closest('.dropDel'); if (del) { askDeleteRoute(del.closest('.routeDrop').dataset.route); return; }
   const load = e.target.closest('.dropLoad'); if (load) { choose(load.closest('.routeDrop').dataset.route); return; }
@@ -910,6 +1003,7 @@ function wireRouteRows(container, choose) { container.addEventListener('click', 
   container.querySelectorAll('.routeDrop.open').forEach(d => { if (d !== drop) ddClose(d); }); // one open at a time, and the others now CLOSE (335 ms) rather than vanish
   if (wasOpen) ddClose(drop); else ddOpen(drop);
 }); }
+/** @param {AppElement} drop @returns {void} */
 function ddOpen(drop) { // show, reflow (growth from height 0), then .open; a pending close timer cancels first
   const row = drop.previousElementSibling;
   clearTimeout(drop._ddT);
@@ -924,12 +1018,14 @@ function ddOpen(drop) { // show, reflow (growth from height 0), then .open; a pe
   drop.classList.add('open'); if (row && row.classList.contains('routeRow')) row.classList.add('ddOpen');
   const l = drop.closest('.routeList'); if (l) setTimeout(() => menuListFade(l), 430);
 }
+/** @param {AppElement} drop @returns {void} */
 function ddClose(drop) { // close runs 335 ms on --ease-close; only when it has landed does the card leave the layout
   const row = drop.previousElementSibling;
   drop.classList.remove('open'); if (row && row.classList.contains('routeRow')) row.classList.remove('ddOpen');
   clearTimeout(drop._ddT);
   drop._ddT = setTimeout(() => { if (!drop.classList.contains('open')) { drop.style.display = 'none'; const l = drop.closest('.routeList'); if (l) menuListFade(l); } }, 345);
 }
+/** @param {string} id @returns {void} */
 function showRmPane(id) { // the one pane choke point; the title hides off the main pane, the snow never does
   document.querySelectorAll('.rmPane').forEach(p => { if (p._ddPin) { p._ddPin = false; p.style.marginTop = ''; } });
   ['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmNamePane', 'rmCityPane'].forEach(p => $(p).classList.toggle('on', p === id));
@@ -937,7 +1033,9 @@ function showRmPane(id) { // the one pane choke point; the title hides off the m
   const __away = id !== 'rmMain'; const __bl = $('brandLayer'); if (__bl) __bl.classList.toggle('away', __away);
 }
 // showing the menu warms the catalogue (Create lives behind it): the download is nearly done by the list tap
+/** @returns {void} */
 function openRouteMenu() { crWarmCityLibrary(); const rm = $('routeMenu'); closeSheets(); showRmPane('rmMain'); rm.classList.add('tab'); renderRouteLists(); rm.classList.add('open'); }
+/** @returns {void} */
 function closeRouteMenu() { const rm = $('routeMenu'); rm.classList.remove('open'); rm.classList.remove('tab'); }
 $('routesBtn').addEventListener('click', ev => { if (!tapGuard('routesBtn', ev)) return; if ($('routeMenu').classList.contains('open')) closeRouteMenu(); else openRouteMenu(); });
 $('rmClose').addEventListener('click', closeRouteMenu);
@@ -956,4 +1054,5 @@ $('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
 $('paceBtn').addEventListener('click', ev => { if (!tapGuard('paceBtn', ev)) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
+/** @returns {void} */
 function refreshAll() { updateCount(); renderPanel(); renderStreets(); }

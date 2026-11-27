@@ -68,7 +68,7 @@ check('6: the silence timer picks its window by whether a byte has landed - firs
 check('7: a landed chunk re-arms the timer (the flowing window restarts per chunk)',
   citydata.includes('armStall(); // a landed chunk is progress'));
 check('8: the kill is tagged for the retry loop, and only the kill is',
-  citydata.includes("const err = new Error('pack stall'); err.packStall = true; throw err;")
+  citydata.includes("const err = /** @type {any} */ (new Error('pack stall')); err.packStall = true; throw err;")
   && citydata.includes("throw new Error('pack HTTP ' + r.status)")
   && citydata.includes("throw new Error('pack shape')"));
 

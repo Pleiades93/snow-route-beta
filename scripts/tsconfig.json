@@ -1,1 +1,34 @@
-{"compilerOptions":{"allowJs":true,"checkJs":true,"forceConsistentCasingInFileNames":true,"lib":["ES2022"],"module":"none","noEmit":true,"skipLibCheck":false,"strict":false,"target":"ES2022"},"include":["../parts/data.js","../parts/app1.js","../parts/engine.js","../parts/pmstyles.js","app1-types.d.ts"]}
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "ES2022"
+    ],
+    "module": "none",
+    "noEmit": true,
+    "noImplicitAny": true,
+    "skipLibCheck": false,
+    "strict": false,
+    "target": "ES2022"
+  },
+  "include": [
+    "../parts/data.js",
+    "../parts/app1.js",
+    "../parts/engine.js",
+    "../parts/pmstyles.js",
+    "app1-types.d.ts",
+    "../parts/app4.js",
+    "../parts/create-packs.js",
+    "../parts/app5.js",
+    "../parts/create-save.js",
+    "../parts/create-cache.js",
+    "../parts/create-fetch.js",
+    "../parts/create-citydata.js",
+    "../parts/create-pick.js",
+    "../parts/app2.js",
+    "../parts/whatsnew.js",
+    "../parts/brand-snow.js"
+  ]
+}

@@ -56,7 +56,7 @@ check('2d the shipped-route Delete is WIRED, not just drawn (Codex P2, PR #167):
   app5.includes('const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0) return;') &&
   app5.includes("lsSet(SHIPPED_DELETED_KEY, JSON.stringify([...dead, id]))") &&
   packs.includes("const SHIPPED_DELETED_KEY = 'snowroute.v2.shippeddeleted';") &&
-  packs.includes('if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1);') &&
+  packs.includes('if (shippedDead.includes(/** @type {string} */ (ROUTE_PACKS[i].id))) ROUTE_PACKS.splice(i, 1);') &&
   packs.indexOf('shippedDead.includes') < packs.indexOf('mergeUserPacks();') &&
   packs.includes('SHIPPED_PACK_IDS.has(id) || Object.prototype.hasOwnProperty.call(userPackCache, id)') &&
   app4.includes('if (SHIPPED_PACK_IDS.has(id) && !ROUTE_PACKS.some(p => p.id === id)) { deadSkipped.push(id); continue; }') &&

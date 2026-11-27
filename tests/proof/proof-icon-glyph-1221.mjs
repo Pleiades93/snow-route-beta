@@ -51,7 +51,7 @@ const head = readFileSync('parts/head.html', 'utf8');
 const sha = b => createHash('sha256').update(b).digest('hex');
 
 function block(name) {
-  const m = app4.match(new RegExp('const ' + name + ' = \\{([\\s\\S]*?)\\n\\};'));
+  const m = app4.match(new RegExp('const ' + name + ' = (?:\\/\\*\\*[\\s\\S]*?\\*\\/ )?\\(\\{([\\s\\S]*?)\\n\\}\\)?;'));
   return m ? m[1] : '';
 }
 function webpInfo(uri) {

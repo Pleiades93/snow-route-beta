@@ -64,7 +64,7 @@ check('3: ROAD_WIDTH_K is still 1.5 in scripts/genstyles.mjs (the basemap did no
 
 check('4: the scaling chain is intact (SURF_HALF / HALF_HALF derive from WIDTH_K; scaleW multiplies by it; tapTolPx follows surfCASE)',
   eng.includes('const SURF_HALF = 3.3 * WIDTH_K, HALF_HALF = 1.65 * WIDTH_K;') &&
-  eng.includes('v * WIDTH_K') &&
+  eng.includes('(v) * WIDTH_K') &&
   eng.includes('function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); }'));
 
 check('5: calibration arithmetic - WIDTH_K 1.3 at the 1.08 == 1.0x calibration paints 1.204x, within 10% of the 1.20 decision',

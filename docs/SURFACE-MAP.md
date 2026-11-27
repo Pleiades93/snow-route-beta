@@ -6,6 +6,29 @@ and the rule that governs it. Seeded from the snow surface census of
 surface change - briefs reference this map when a change touches a
 surface.
 
+S1 type-safety round (2026-11-27): parts/ changed by JSDoc
+annotation only - no surface, element or behaviour changed. Map
+reviewed against the change; no update needed.
+Stage 2a (app4, create-packs join the type check; data and app5
+touched by a cast and whitespace only): same verdict, no update
+needed.
+Stage 2c (app5 joins the type check): same verdict, no update
+needed.
+Stage 2d (create-save joins the type check): same verdict, no
+update needed.
+Stage 3a (create-cache joins the type check): same verdict, no
+update needed.
+Stage 3b-i (create-fetch and create-citydata join the type
+check): same verdict, no update needed.
+Stage 3b-ii (create-pick joins the type check): same verdict,
+no update needed.
+Stage 3c (app2 joins the type check): same verdict, no update
+needed.
+Stage 3d (whatsnew and brand-snow join the type check): same
+verdict, no update needed.
+Stage 4 (strict-null gate wired for the storage files): same
+verdict, no update needed.
+
 ## The snow rule (one rule, app-wide)
 
 Andrew, 2026-11-26: every blue menu has the snow, no exceptions.

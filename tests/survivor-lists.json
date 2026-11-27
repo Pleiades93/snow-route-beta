@@ -729,6 +729,298 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "s1-type-safety",
+   "kind": "no-cut",
+   "reason": "Annotation-only round: JSDoc comments and cast parens in parts/, declarations in scripts/app1-types.d.ts, tsconfig flags. Nothing is cut, moved or changed; annotated parts are token-identical minus cast parens (RECORD).",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r1",
+   "kind": "no-cut",
+   "reason": "Annotation-only round: JSDoc comments and cast parens in parts/, declarations in scripts/app1-types.d.ts, tsconfig flags. Nothing is cut, moved or changed; annotated parts are token-identical minus cast parens (RECORD).",
+   "changed": [
+    "parts/app1.js",
+    "parts/engine.js"
+   ],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r2",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/, whitespace splits in app5. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-packs.js",
+    "parts/data.js"
+   ],
+   "files": {
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "22ed475cb426f4c6ecf7502abbaebe91957eeca2f0bb00a11ebf8160c456ec74",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r3",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/, whitespace splits in app5. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-packs.js",
+    "parts/data.js"
+   ],
+   "files": {
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "0ed746438758d76da70f9669c87861645adf25d0ec1ce860bdba975b7d353a90",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r4",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/app5.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app5.js"
+   ],
+   "files": {
+    "parts/app5.js": "8c198a73db70c427d987d703ff676253b7d8312cf8b314177f3ae87eb28b657b"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r5",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-save.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-save.js"
+   ],
+   "files": {
+    "parts/create-save.js": "4514b06b458611c26b0740fedc279010ef709a0157df6f142e1a883a5ed14c83"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r6",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-cache.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-cache.js"
+   ],
+   "files": {
+    "parts/create-cache.js": "6e8cc255be7c4486c5e931dfd60e0a825ac584e7d2d330dcde44abf8c9a9894b"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r7",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-cache.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-cache.js"
+   ],
+   "files": {
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r8",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-fetch.js and parts/create-citydata.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-citydata.js",
+    "parts/create-fetch.js"
+   ],
+   "files": {
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r9",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-pick.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "files": {
+    "parts/create-pick.js": "ca4f0ed4f24397e46bc73032c54fca6a15a617237fa8cc6453c9cceed963db19"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r10",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-pick.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "files": {
+    "parts/create-pick.js": "a5bfd76560e0c9459baa9f3ae11bd5f9215dd02b9fb6654a8f2fbe63ac117256"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r11",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-pick.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "files": {
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r12",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/app2.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app2.js"
+   ],
+   "files": {
+    "parts/app2.js": "52d1c583a391f24f78b8da2bc06340d96fef0a8de34a0976f4eb72b059a5a04a"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r13",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/app2.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app2.js"
+   ],
+   "files": {
+    "parts/app2.js": "c913048171e09207c75eed2f2fd526167c9674a9d2250b27696c192ee06166cf"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r14",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/app2.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app2.js"
+   ],
+   "files": {
+    "parts/app2.js": "0a8799df7e167d680317c4b1be80ed0642e8887d230278c9abf9eb585634a8b3"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r15",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/brand-snow.js; parts/whatsnew.js unchanged (its shared-types declaration retired). Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/whatsnew.js"
+   ],
+   "files": {
+    "parts/brand-snow.js": "acb3f5f6a02a71b1a28ee7a061968fbfe264550ed82c063606ffd1500a3274fb",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r16",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/brand-snow.js; parts/whatsnew.js unchanged (its shared-types declaration retired). Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/whatsnew.js"
+   ],
+   "files": {
+    "parts/brand-snow.js": "2813303842a1243a7fc4fc0c076e3f237e7af1896d9b5ba26c6971addc919a14",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r17",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: strict-null seat casts and widenings in the four storage files. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-packs.js",
+    "parts/create-save.js"
+   ],
+   "files": {
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "parts/create-packs.js": "6afee27d782f72520acbdc97f9f4f68951760f935a4237989a3c72a1adbd87be",
+    "parts/create-save.js": "bfc5750e3af84ddcb9d08f2e8190bc011f91ce5d3bc4479697e35c7cf4a15dd8"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r18",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: strict-null seat casts and widenings in the four storage files. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-packs.js",
+    "parts/create-save.js"
+   ],
+   "files": {
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r19",
+   "kind": "no-cut",
+   "reason": "Whole-PR record for the CI gate: the S1 round is annotation-only across all thirteen changed parts files. Nothing cut, moved or changed; every file AST-identical to base (RECORD).",
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/brand-snow.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/data.js",
+    "parts/engine.js"
+   ],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/app2.js": "0a8799df7e167d680317c4b1be80ed0642e8887d230278c9abf9eb585634a8b3",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "parts/brand-snow.js": "2813303842a1243a7fc4fc0c076e3f237e7af1896d9b5ba26c6971addc919a14",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

@@ -34,7 +34,7 @@ const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log
 const rule = (sel) => { const i = head.indexOf(sel); return i < 0 ? '' : head.slice(i, head.indexOf('}', i) + 1).replace(/\s+/g, ' '); };
 const sha = (uri) => createHash('sha256').update(Buffer.from(uri.split(',')[1], 'base64')).digest('hex');
 const payload = (map, key, side) => {
-  const i = app4.indexOf('const ' + map + ' = {'); if (i < 0) return '';
+  const i = app4.indexOf('const ' + map + ' = '); if (i < 0) return '';
   const blk = app4.slice(i, app4.indexOf('};', i));
   const ki = blk.indexOf(key + ': {'); if (ki < 0) return '';
   const seg = blk.slice(ki, blk.indexOf('}', ki));
@@ -89,7 +89,11 @@ check('5d: typing runs the same search at a 300 ms debounce; Enter runs it now',
 check('5e: the rows are named by the crossing display name outright and wear the set pin (Beta 1.234 re-derived: crResultName and the network rows it named are gone - the display name IS the row text)', pick.includes('nameEl.textContent = it.display_name;') && !pick.includes('function crResultName') && pick.includes("pin.className = 'crPin'; pin.innerHTML = ICONS.pin;") && pick.includes("nameEl.className = 'crName'") && !pick.includes('areaEl'));
 
 // ---------- The glyphs ----------
-check('6a: GLYPH_CREATE carries search/cancel/back and NO pin (the rows reuse the set pin)', app4.includes('const GLYPH_CREATE = {') && payload('GLYPH_CREATE', 'search', 'd') !== '' && payload('GLYPH_CREATE', 'cancel', 'd') !== '' && payload('GLYPH_CREATE', 'back', 'd') !== '' && !app4.slice(app4.indexOf('const GLYPH_CREATE = {'), app4.indexOf('};', app4.indexOf('const GLYPH_CREATE = {'))).includes('pin:'));
+const GLYPH_CREATE_DECL = 'const GLYPH_CREATE = /** @type {Record<string,{d:string,n:string}>} */ ({';
+const gcAt = app4.indexOf(GLYPH_CREATE_DECL);
+check('6a: GLYPH_CREATE carries search/cancel/back and NO pin (the rows reuse the set pin)',
+  app4.includes(GLYPH_CREATE_DECL) && payload('GLYPH_CREATE', 'search', 'd') !== '' && payload('GLYPH_CREATE', 'cancel', 'd') !== '' &&
+  payload('GLYPH_CREATE', 'back', 'd') !== '' && !app4.slice(gcAt, app4.indexOf('};', gcAt)).includes('pin:'));
 check('6b: the six payloads are byte-pinned (set treatment: alpha fills, lossless WebP 200x200)',
   sha(payload('GLYPH_CREATE', 'search', 'd')) === '07bdd5ecdb9fc3ba24c97ad6d685cf8ca6c0180c6171830b98e3d58ff916a822' &&
   sha(payload('GLYPH_CREATE', 'search', 'n')) === 'eb70b2316224b4a8f55178de3da47a3cd8f8accbbeeacfa8a8d411fb66853bad' &&

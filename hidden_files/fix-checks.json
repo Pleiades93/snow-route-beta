@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "81b943dfa28e5456d0d305867440d26eac00bbbc907037c349e2c880cf491c61",
+  "canonical_registry_sha256": "b7a1dbf7af5fb3e2cc0b5277c9e73ae7f09761542d07c8fe1da073848a5ac429",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1640,
-   "included": 1610,
+   "canonical": 1643,
+   "included": 1613,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -194,7 +194,7 @@
    "file": "parts/app5.js",
    "fix": "syncViewport pays for a map resize ONLY when the container actually changed size (Beta 1.50 P10) \u2014 it fires on every viewport scroll tick, and an unconditional resize per tick was pure jank. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-perf-resize-guard",
-   "pattern": "if (mw !== syncViewport._w || mh !== syncViewport._h)",
+   "pattern": "if (mw !== (/** @type {any} */ (syncViewport))._w || mh !== (/** @type {any} */ (syncViewport))._h)",
    "type": "grep_present"
   },
   {
@@ -643,7 +643,7 @@
    "file": "parts/app4.js",
    "fix": "The backup envelope stays format v2 ({app, v: 2, at, routes}) \u2014 restores judge files by it; a silent shape change strands every backup Andrew has saved.",
    "id": "beta-backup-v2-shape",
-   "pattern": "const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };",
+   "pattern": "const o = /** @type {BackupV2} */ ({ app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes });",
    "type": "grep_present"
   },
   {
@@ -694,7 +694,7 @@
    "file": "parts/app2.js",
    "fix": "MapLibre is handed a COPY of the embedded styles, never the original (Beta 1.77): MapLibre rewrites fields of a style object it is handed \u2014 a night boot followed by a day flip rewrote the night style's own sprite and the offline preload then missed the dark sprites (893 files, not 897).",
    "id": "beta-styles-handed-to-maplibre-as-copies",
-   "pattern": "const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day']));",
+   "pattern": "JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day']))",
    "type": "grep_present"
   },
   {
@@ -766,7 +766,7 @@
    "file": "parts/app2.js",
    "fix": "Sheet springs SETTLE via settleStop (spring the height to the stop; the end state is the snap's end state) \u2014 a settle that stops mid-travel leaves the sheet at a height no stop owns.",
    "id": "beta-sheet-spring-settle",
-   "pattern": "const settleStop = targetH => { // spring the height to a stop",
+   "pattern": "const settleStop = /** @type {(targetH: number) => void} */ (targetH => { // spring the height to a stop",
    "type": "grep_present"
   },
   {
@@ -1991,7 +1991,7 @@
    "file": "parts/app4.js",
    "fix": "The chime sound table exists (CHIME_SOUNDS, Beta 1.111): the completion chime's sounds are data in one table, not scattered literals.",
    "id": "beta-1111-chime-sounds",
-   "pattern": "const CHIME_SOUNDS = {",
+   "pattern": "const CHIME_SOUNDS = /** @type {Record<string,{name:string,desc:string}>} */ ({",
    "type": "grep_present"
   },
   {
@@ -2209,7 +2209,7 @@
    "file": "parts/data.js",
    "fix": "Route packs LIVE IN data.js (ROUTE_PACKS, Beta 1.117 F1): pack data is a data file's job \u2014 geometry and packs were eval-time code before separation.",
    "id": "sep-packs-live-in-data",
-   "pattern": "const ROUTE_PACKS = [{",
+   "pattern": "const ROUTE_PACKS = /** @type {RoutePack[]} */ ([{",
    "type": "grep_present"
   },
   {
@@ -2882,7 +2882,7 @@
    "file": "parts/create-packs.js",
    "fix": "normalizePack walks the ONE PACK_FIELDS list (Beta 1.131): which fields a pack may carry is a single list shared by create, restore and save \u2014 a field known to one path and not another is a field restore silently drops.",
    "id": "packfields-1131-normalize-walks-list",
-   "pattern": "for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f];",
+   "pattern": "for (const f of PACK_FIELDS) { if (f in cleaned) pack[/** @type {keyof RoutePack} */ (f)] = cleaned[f];",
    "type": "grep_present"
   },
   {
@@ -3071,7 +3071,7 @@
    "file": "parts/app4.js",
    "fix": "On name collision the INCOMING pack wins (Beta 1.142, DA-01): restored packs replace built-ins of the same id in the merged list \u2014 the backup's version of a route is the one Andrew means to restore. SUPERSEDED for restore Beta 1.287 (issue #172, Andrew's 2026-11-23 merge ruling): the resident definition wins; an incoming definition lands only for a route with no resident definition in either home. This probe now pins the landing half.",
    "id": "beta-1142-da01-incoming-wins",
-   "pattern": "additions[rid] = restoredPacks[rid];",
+   "pattern": "additions[rid] = (/** @type {UserPacksRecord} */ (restoredPacks))[rid];",
    "type": "grep_present"
   },
   {
@@ -3191,7 +3191,7 @@
    "file": "parts/engine.js",
    "fix": "DA-02 Codex verify cycle 2: polyCorner's segsOf enumerated phantom between-runs offset segments, inventing a junction pairing that does not exist; it now takes the street's gaps and skips gap-entering segments. (Rolled 2026-11-23 by arch11-stage1, Beta 1.283: the GEO gap set is retired - TOPO owns the run structure and the guard reads TOPO's predicates; this probe now pins the guard's TOPO-era line.)",
    "id": "beta-1144-gapguard-segsof",
-   "pattern": "const segsOf = (off, vi, n) => {",
+   "pattern": "const segsOf = /** @param {AnyPoint[]} off @param {number} vi @param {string} n */ (off, vi, n) => {",
    "type": "grep_present"
   },
   {
@@ -3780,7 +3780,7 @@
    "fix": "Beta 1.149 (Tranche 5, A1 pilot): CI runs the TypeScript checker over the pilot scope (parts/app1.js only) in build-and-test, right after Set up Node - npm ci in scripts/ then tsc -p tsconfig.json; a diagnostic fails the job. If this probe fails, the type-check gate was removed or renamed - restore the step. Re-pinned 2026-11-16 (Monday prune): the CI step name gained its tsconfig scope text; the step stands.",
    "fix_id": "tranche5-a1-tscheck-pilot",
    "id": "tranche5-a1-tscheck-ci-step",
-   "pattern": "Type check (scope in scripts/tsconfig.json - data.js, app1.js, engine.js, pmstyles.js; begun as the A1 pilot, Beta 1.149)",
+   "pattern": "Type check (all parts but app3.js; noImplicitAny on - scope in scripts/tsconfig.json)",
    "type": "grep_present"
   },
   {
@@ -3816,7 +3816,7 @@
    "fix": "Beta 1.149 (Tranche 5, A1 pilot): the pilot tsconfig enables checkJs and scopes the check to parts/app1.js + scripts/app1-types.d.ts only. If this fails, the pilot scope or the checkJs enablement changed - restore the scoped pilot config.",
    "fix_id": "tranche5-a1-tscheck-pilot",
    "id": "tranche5-a1-tsconfig-scope",
-   "pattern": "\"checkJs\":true",
+   "pattern": "\"checkJs\": true",
    "type": "grep_present"
   },
   {
@@ -3888,7 +3888,7 @@
    "fix": "Beta 1.150 (C3): crCovFromWays' name index is a null-prototype map, so streets named constructor/toString/__proto__ cannot throw or mis-bucket. If this fails, the prototype-name throw is back.",
    "fix_id": "security-prototype-name-index",
    "id": "security-prototype-byname",
-   "pattern": "const byName = Object.create(null);",
+   "pattern": "const byName = /** @type {Record<string,{name: string, pts: LatLng[]}[]>} */ (Object.create(null));",
    "type": "grep_present"
   },
   {
@@ -4421,7 +4421,7 @@
    "fix": "Every backup carries the Settings toggles (Beta 1.166): backupObj reads the settings record with the same strictness as the night pair and attaches it additively as the envelope's settings field - old backups without it leave device settings untouched, and a failed settings read fails the whole export, never a silent drop.",
    "fix_id": "beta-1166-storage",
    "id": "backup-settings-field",
-   "pattern": "o.settings = stg;",
+   "pattern": "o.settings = /** @type {string} */ (stg);",
    "type": "grep_present"
   },
   {
@@ -4502,7 +4502,7 @@
    "fix": "A-02: migrateLegacyRoute's decision reads go through rawRead's sentinel - a thrown read reads as UNKNOWN and blocks the migration commit for a next-boot retry, never as an absent key.",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-a02-migget",
-   "pattern": "const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : v; };",
+   "pattern": "const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : /** @type {string | null} */ (v); };",
    "type": "grep_present"
   },
   {
@@ -4511,7 +4511,7 @@
    "fix": "A-03: loadSides' done-time inheritance fills MISSING piece stamps on partially-recorded streets (recorded stamps never overwritten), not only wholly-empty maps. Arch-2 roll (2026-11-19): the inheritance segment moved verbatim into BOARD.loadSides in parts/app1.js (PR #132); the only textual change is the shadowed loop variable renamed T -> T2 (it collided with the street loop's T inside the module) - behaviour proven identical by the round's old-vs-new round-trip harness over corrupt/partial stores. Claim unchanged.",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-a03-partial-inherit",
-   "pattern": "else { const T2 = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }",
+   "pattern": "else { const T2 = pieceTimes[n], out = /** @type {PieceTimePair[]} */ ([]); for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }",
    "type": "grep_present"
   },
   {
@@ -4961,7 +4961,7 @@
    "fix": "Beta 1.176: the gate is a pure render-time decision off each load's own startedAt (re-evaluated by the loaders' 1 s tickers) - no separate timer exists that could paint the readout after a load ended.",
    "fix_id": "slow-load-pill",
    "id": "slow-load-pill-gate-mechanism",
-   "pattern": "const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS;",
+   "pattern": "const pastGate = /** @type {(t0: number|null|undefined) => boolean} */ (t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS);",
    "type": "grep_present"
   },
   {
@@ -6524,7 +6524,7 @@
    "fix": "mergeStrands dead-score fix (finding:mergestrands-score, 2026-11-14; judged round verdict NON-EMPTY geometry diff - edges/paint source only - Andrew approved shipping 2026-11-15), landed as maintenance PR #52, merge c755d2dc6294c01d6f55710c655a076f0afaef94 (no Beta bump; page still reads Beta 1.204): the mergeStrands winner object in parts/engine.js now stores its score, so score-2 exact joins beat score-1 junction bridges regardless of scan order (ties unchanged). engine.js joined the type check (scripts/tsconfig.json include, assembly order) with truthful JSDoc annotations - with the annotations and without the fix, tsc's sole engine error is the defect (TS2741 'score' missing); with the fix the expanded set is at zero. Pinning proof tests/proof/proof-mergestrands-score.mjs runs in build-and-test (fails on the unfixed engine, passes fixed). If a probe fails, the named piece has regressed or been reverted - restore the shipped form.",
    "fix_id": "mergestrands-score",
    "id": "mergestrands-winner-type",
-   "pattern": "score: number, merged: any",
+   "pattern": "score: number, merged: EngineStrand",
    "type": "grep_present"
   },
   {
@@ -6542,7 +6542,7 @@
    "fix": "mergeStrands dead-score fix (finding:mergestrands-score, 2026-11-14; judged round verdict NON-EMPTY geometry diff - edges/paint source only - Andrew approved shipping 2026-11-15), landed as maintenance PR #52, merge c755d2dc6294c01d6f55710c655a076f0afaef94 (no Beta bump; page still reads Beta 1.204): the mergeStrands winner object in parts/engine.js now stores its score, so score-2 exact joins beat score-1 junction bridges regardless of scan order (ties unchanged). engine.js joined the type check (scripts/tsconfig.json include, assembly order) with truthful JSDoc annotations - with the annotations and without the fix, tsc's sole engine error is the defect (TS2741 'score' missing); with the fix the expanded set is at zero. Pinning proof tests/proof/proof-mergestrands-score.mjs runs in build-and-test (fails on the unfixed engine, passes fixed). If a probe fails, the named piece has regressed or been reverted - restore the shipped form.",
    "fix_id": "mergestrands-score",
    "id": "mergestrands-tsc-step-scope",
-   "pattern": "data.js, app1.js, engine.js, pmstyles.js",
+   "pattern": "all parts but app3.js",
    "type": "grep_present"
   },
   {
@@ -6754,7 +6754,7 @@
    "fix": "Primaries storage completion (PR #65, merge cc0fd6796e97a105d136e24fed3fca66f756d742; rollback: revert the merge -> 70dd4572). Andrew's override (2026-11-15) of the Beta 1.205 persisted-field exception: the stored route-pack field is 'primaries' ONLY - no 'main'/'mains' aliases anywhere. These probes REPLACE primaries1205-stored-field-translation and primaries1205-normalizepack-aliases, which pinned the retired exception (buildGeometry translating pack.main; normalizePack accepting three keys). [Re-pinned 2026-11-20 by correct-phase3-a: Beta 1.259 added the 'ends' field to the writer's cleaned pack object - the pin follows it; the primaries claim is unchanged.]",
    "fix_id": "primaries-rename-1205",
    "id": "primaries1205-writer-primaries",
-   "pattern": "const cleaned = { name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference, ends };",
+   "pattern": "const cleaned = /** @type {Record<string,any>} */ ({ name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference, ends });",
    "type": "grep_present"
   },
   {
@@ -8974,7 +8974,7 @@
    "fix": "Beta 1.227 (PR #105, merge 8a62af4c). The create bar's Glyph Neue payloads live in the create-specific map.",
    "fix_id": "search-bar-1227",
    "id": "searchbar1227-glyph-map",
-   "pattern": "const GLYPH_CREATE = {",
+   "pattern": "const GLYPH_CREATE = /** @type {Record<string,{d:string,n:string}>} */ ({",
    "type": "grep_present"
   },
   {
@@ -11778,7 +11778,7 @@
    "fix": "/correct Phase 3 round (d): the app1-types.d.ts provenance fix - applyNight's declaration names its real home (app5.js), after the mirror named its earlier home app4.js through the 1.258 and 1.259 rounds (the type was right; only the provenance had drifted, the direction tsc cannot see). The mirrors check's types family now fails if any section-2 cross-part global's named home stops declaring it. If this probe fails, the stale provenance is back - fix the comment, not the probe.",
    "fix_id": "correct-phase3d-c4",
    "id": "correct-phase3d-types-provenance",
-   "pattern": "until /correct Phase 3 round (d) - the declaration",
+   "pattern": "names each global's real home part",
    "type": "grep_present"
   },
   {
@@ -12725,7 +12725,7 @@
    "id": "arch8-restore-doorway",
    "type": "grep_present",
    "file": "parts/app4.js",
-   "pattern": "function restoreBackup(parsed) { const planned = RESTORE.plan(parsed);",
+   "pattern": "function restoreBackup(parsed) { const planned = /** @type {Promise<any>} */ (RESTORE.plan(parsed));",
    "fix": "Architecture #8 (Beta 1.280): restoreBackup dispatches plan -> execute with NO intervening await of its own - a synchronously produced plan executes in the same tick, preserving the one-flow restore's suspension contract (it suspended only at the created-route store reads; the restore drives read the outcome toast synchronously). If this probe fails, check whether an unconditional await crept back into the doorway.",
    "added": "2026-11-23",
    "fix_id": "arch8-restore-1280"
@@ -14346,6 +14346,32 @@
    "id": "gb-fixtures",
    "pattern": "boundary fixtures:",
    "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/tsconfig.snc.json",
+   "fix": "S1 stage 4: the strict-null program exists and turns strictNullChecks on over the main tsconfig. If this fails, the SNC gate lost its config - restore scripts/tsconfig.snc.json (extends ./tsconfig.json, strictNullChecks true, no include override).",
+   "fix_id": "s1-type-safety",
+   "id": "s1-snc-config-present",
+   "pattern": "\"strictNullChecks\":true",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": ".github/workflows/checks.yml",
+   "fix": "S1 stage 4: CI runs the strict-null gate (scripts/check-snc.py) in the cheap-checks job. If this fails, the SNC step was dropped from checks.yml - restore it next to the Type check step.",
+   "fix_id": "s1-type-safety",
+   "id": "s1-snc-ci-step",
+   "pattern": "check-snc.py",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "command": "cd . && (test -x scripts/node_modules/.bin/tsc || (cd scripts && npm ci)) && python3 scripts/check-snc.py .",
+   "fix": "S1 stage 4: the strict-null gate is green - the storage files (app4, create-packs, app5, create-save) carry zero strictNullChecks errors and the global backlog is at or under its cap. If this fails, a storage file regressed or the backlog grew; burn it annotation-only or record the finding.",
+   "fix_id": "s1-type-safety",
+   "id": "s1-snc-gate-green",
+   "type": "command_exit0"
   }
  ]
 }

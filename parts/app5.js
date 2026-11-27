@@ -1,3 +1,4 @@
+/** @returns {void} */
 function renderAbout() {
   const cur = $('ver').textContent.trim();
   $('wnHead').textContent = "WHAT'S NEW · " + cur; // the header names the live version from the title's element: never a second hard-coded copy to go stale
@@ -25,6 +26,7 @@ document.addEventListener('pointerdown', e => {
 });
 ['finModal', 'noteModal'].forEach(id => { const mEl = $(id); mEl.addEventListener('pointerdown', e => { if (e.target === mEl) hideSurface(mEl); }); });
 // div rows never enter :active in some browsers: they take the press shrink through this class instead
+/** @type {AppElement|null} */
 let pressRowEl = null;
 const pressRowOff = () => { if (pressRowEl) { pressRowEl.classList.remove('pressOn'); pressRowEl = null; } };
 document.addEventListener('pointerdown', e => {
@@ -42,7 +44,7 @@ const OPEN_ID_SEL = '#streetsBtn, #paceBtn, #routesBtn, #setBtn, #selNote, #rmCh
 const OPEN_ROW_SEL = '.srow, .crPRow, .prow.histRow';
 // exempt: the row's handler focuses the editor synchronously, and iOS raises the keyboard only inside the real gesture
 const OPEN_FOCUS_EXEMPT_SEL = '.srow';
-let openPressRec = null, openPendingEl = null, openPendingTimer = 0;
+let openPressRec = /** @type {{el: AppElement, t: number, x: number, y: number, moved: boolean}|null} */ (null), openPendingEl = /** @type {AppElement|null} */ (null), openPendingTimer = 0;
 /** @param {any} t @returns {Element | null} */
 const openerElOf = t => { // the opener a press belongs to, or null
   if (!t || !t.closest) return null;
@@ -69,6 +71,7 @@ document.addEventListener('click', e => {
   openPendingEl = rec.el;
   openPendingTimer = setTimeout(() => { openPendingTimer = 0; openPendingEl = null; rec.el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); }, wait);
 }, true);
+/** @returns {void} */
 function applyNight() { // the swap is instant: the guard suppresses transitions while the class flips, so colours step in one frame
   const de = document.documentElement; de.classList.add('theme-swap');
   document.body.classList.toggle('night', isNight()); const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute('content', isNight() ? '#14171d' : '#eceff2');
@@ -78,6 +81,7 @@ function applyNight() { // the swap is instant: the guard suppresses transitions
   requestAnimationFrame(lift); setTimeout(lift, 150);
 } // the button shows where it takes you (day offers Night, night offers Day); the icon flips, no label
 $('nightBtn').addEventListener('click', ev => { if (!tapGuard('nightBtn', ev)) return; setThemeOverride(!isNight()); applyNight(); setBasemap(); }); // a session override only: the sun takes over at the next sunrise/sunset or full app open
+/** @returns {void} */
 function goHomeView() { // view: the flat fit tilted to 45 at its centre/zoom; folding tilt into the fit changes the zoom
   if (!routeBox) return;
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
@@ -88,7 +92,7 @@ function goHomeView() { // view: the flat fit tilted to 45 at its centre/zoom; f
 $('homeBtn').addEventListener('click', ev => { if (!tapGuard('homeBtn', ev)) return; if (!routeBox) return; goHomeView(); }); // no route loaded (or an empty pack): no box to frame
 // ===== SERVICE WORKER + BOOT =====
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(e => { window.__swErr = (e && e.name) || 'error'; }); // a refused registration records why: the preload refuses to run without the worker and can say why
+  navigator.serviceWorker.register('sw.js').catch(/** @type {(e: any) => void} */ (e => { window.__swErr = (e && e.name) || 'error'; })); // a refused registration records why: the preload refuses to run without the worker and can say why
   void (async () => {
     const reloadKey = 'snowroute.bootUpdateReloaded';
     try {
@@ -132,16 +136,31 @@ if ('serviceWorker' in navigator) {
 // packs in the browsing cache can be evicted: copy them into the pack cache; a flag ends the migration
 const PACKMIG_KEY = 'snowroute.v5.packmig';
 const PACKMIG_CENSUS_KEY = 'snowroute.v5.packmigcensus'; // the partial-pack recognition record migratePack persists (see its recognition path)
-let packWriteChain = Promise.resolve(); async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let release; const held = new Promise(res => { release = res; }); let acquired; const acq = new Promise(res => { acquired = res; }); let lockFailed = false; const done = navigator.locks.request('snowroute-pack-write', async () => { acquired(); await held; }); done.catch(() => { lockFailed = true; acquired(); }); await acq; if (!lockFailed) return release; } let release; const held = new Promise(res => { release = res; }); const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return release; } // Beta 1.183 (Codex P2, PR #21): the pack has TWO writers - this download (the xPre handler above) and migratePack's boot heal - and ONE deleter, the Status pane's stDel, which takes the same turn since the C-02 fix (2026-11-15): it weighs nothing and writes nothing, but deleting the cache under a writer strands that writer's writes in a detached cache it can still confirm against - and a byte budget is only SHARED if they take turns: each writer censuses the pack when its own turn starts, so serialized writers see each other's finished writes in their census and account against the true total; two writers holding independent snapshots could each pass the cap check and together overshoot it. A turn is held for the writer's whole run and released in its finally. The turn is a WEB LOCK (navigator.locks) whenever the platform offers one: the lock is origin-wide, so two tabs of this app writing the same shared pack cache serialize as well - a per-page chain alone could not do that (Codex P2, PR #21) - and where Web Locks do not exist (older engines) the in-page promise chain is the fallback and the budget is shared within the page only. Either way a dead page takes its turn with it (the platform releases a Web Lock when its holder's context dies; the chain is page memory), so no stale lock can persist.
+/** @type {Promise<any>} */
+let packWriteChain = Promise.resolve();
+/** @returns {Promise<() => void>} */
+async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let /** @type {(() => void)|undefined} */ release;
+const held = new Promise(res => { release = /** @type {() => void} */ (res); });
+/** @type {(() => void)|undefined} */
+let acquired;
+const acq = new Promise(res => { acquired = /** @type {() => void} */ (res); }); let lockFailed = false;
+const done = navigator.locks.request('snowroute-pack-write', async () => { (/** @type {() => void} */ (acquired))(); await held; });
+done.catch(() => { lockFailed = true; (/** @type {() => void} */ (acquired))(); }); await acq; if (!lockFailed) return /** @type {() => void} */ (release); }
+let /** @type {(() => void)|undefined} */ release; const held = new Promise(res => { release = /** @type {() => void} */ (res); });
+const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return /** @type {() => void} */ (release); } // the pack writers' turn: a Web Lock where offered, else the in-page chain; held for the whole run
+/** @param {string[]} list @returns {string} */
 function packMigFingerprint(list) { // the flag is a fingerprint of the manifest it certifies: a changed list means the full pass runs again
   let h = 0; const s = list.join('\n');
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
   return 'v1:' + list.length + ':' + (h >>> 0).toString(36);
 }
+/** @param {Iterable<string>} urls @returns {string} */
 function packCensusFingerprint(urls) { return packMigFingerprint([...urls].sort()); } // a stored pack's key-set fingerprint: the manifest fingerprint of the sorted set, so set equality is one string compare
+/** @returns {boolean} */
 function anyPreloadRecord() { // ever downloaded under any route? Every route's own record is the test; the active route's alone misses others
-  return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(p.id).pre), null));
+  return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(/** @type {string} */ (p.id)).pre), null));
 }
+/** @returns {Promise<any>} */
 async function migratePack() { let migRelease = () => {}; // the move, honestly: only manifest entries migrate, strays are pruned, and the flag sets only after verification
   try {
     migRelease = await takePackWriteTurn(); if (!('caches' in window)) return { ok: false, why: 'nocache' };
@@ -197,7 +216,9 @@ async function migratePack() { let migRelease = () => {}; // the move, honestly:
 }
 // migratePack() runs from create.js after mergeUserPacks (here the manifest would miss created packs); offsets follow the live report while typing
 let fullH = 0;
-const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+/** @returns {boolean} */
+const inStandalone = () => !!(window.navigator.standalone || ((/** @type {any} */ (window)).matchMedia && matchMedia('(display-mode: standalone)').matches));
+/** @returns {void} */
 function syncViewport() {
   try {
     const vv = window.visualViewport; if (!vv) return;
@@ -216,8 +237,8 @@ function syncViewport() {
     if ((!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
     if (typeof map !== 'undefined' && map) { const mc = map.getContainer();
     const mw = mc.clientWidth, mh = mc.clientHeight;
-    if (mw !== syncViewport._w || mh !== syncViewport._h) { syncViewport._w = mw;
-    syncViewport._h = mh;
+    if (mw !== (/** @type {any} */ (syncViewport))._w || mh !== (/** @type {any} */ (syncViewport))._h) { (/** @type {any} */ (syncViewport))._w = mw;
+    (/** @type {any} */ (syncViewport))._h = mh;
     map.resize();
     } } // fires on every visual-viewport scroll tick: only pay for a map resize when the container actually changed size
   } catch (e) { /* map/viewport not up yet */ }
@@ -225,8 +246,9 @@ function syncViewport() {
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', syncViewport); window.visualViewport.addEventListener('scroll', syncViewport); }
 window.addEventListener('resize', syncViewport);
 // keyboard state: while a field has focus, sheets stop resizing; on close, release only once the height settles
+/** @type {number|null} */
 let kbSettle = null;
-let kbInSettle = null, kbShiftHost = null, kbVisH = -1, kbShiftPx = 0;
+let kbInSettle = /** @type {number|null} */ (null), kbShiftHost = /** @type {AppElement|null} */ (null), kbVisH = -1, kbShiftPx = 0;
 document.addEventListener('focusin', e => {
   if (!e.target.matches('textarea, input')) return;
   if (kbSettle) { clearInterval(kbSettle); kbSettle = null; }
@@ -244,6 +266,7 @@ document.addEventListener('focusin', e => {
   };
   kbInSettle = setInterval(step, 80); step();
 });
+/** @returns {void} */
 function ensureFieldVisible() { // a covered field surfaces locally (list scroll or card shift, cleared at leave): the layout stays frozen
   try {
     const ae = document.activeElement; if (!ae || (ae.tagName !== 'TEXTAREA' && ae.tagName !== 'INPUT')) return;
@@ -273,9 +296,10 @@ function ensureFieldVisible() { // a covered field surfaces locally (list scroll
 // while open, a material resize re-runs the visibility check (layout frozen; only the local scroll/shift re-evaluates)
 if (window.visualViewport) window.visualViewport.addEventListener('resize', () => {
   if (!document.body.classList.contains('kb') || kbInSettle) return;
-  const h = window.visualViewport.height;
+  const h = (/** @type {any} */ (window.visualViewport)).height;
   if (kbVisH >= 0 && Math.abs(h - kbVisH) > 4) ensureFieldVisible();
 });
+/** @returns {void} */
 function startKbSettle() { // the settle sampler has ONE home: focusout and kbSync both start it here
   if (!document.body.classList.contains('kb')) return;
   if (kbSettle) clearInterval(kbSettle);
@@ -295,6 +319,7 @@ function startKbSettle() { // the settle sampler has ONE home: focusout and kbSy
   };
   kbSettle = setInterval(step, 100); step();
 }
+/** @returns {void} */
 function kbSync() { // the owner: a render destroying the focused editor calls kbSync(), releasing through the blur's own settle path
   const ae = document.activeElement;
   if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return; // still typing in another field
@@ -317,6 +342,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 [400, 1200, 3000, 6500].forEach(ms => setTimeout(syncViewport, ms));
 let __tailDone = false;
 window.__tailAt = Date.now();
+/** @returns {void} */
 function __bootTail() { if (__tailDone) return; __tailDone = true; bootMap(); applyNight(); } // the route-scoped boot steps happen in loadRoute, when a route is chosen
 // the boot waits for the intro to finish (the animation gets the phone to itself); reduced-motion boots immediately
 const __splashEl = document.getElementById('splash');
@@ -329,6 +355,7 @@ if (__splashEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 // no style pre-warm fetch: both styles are embedded, so the first day/night swap is instant by construction
 
 // ===== ROUTE LOADING + SPLASH EXIT ===== readiness = map live + one tile drawn; the failsafe is 6 s
+/** @param {number[][]} b @param {number} zoom @returns {void} */
 function prefetchIntroTiles(b, zoom) { // the ruled prefetch: a user-initiated flight to a known destination, never route preloading
   try {
     const style = map.getStyle();
@@ -346,12 +373,13 @@ function prefetchIntroTiles(b, zoom) { // the ruled prefetch: a user-initiated f
     }
   } catch (e) {}
 }
+/** @returns {void} */
 function introToRoute() { // a pick opens wide and flies in slowly as the splash leaves: dwell and pace are deliberate
   if (!routeBox) { return; } // an empty pack has no area to fly to: the map simply stays where it is
   const liGen = loadInGen; // this intro's pick generation: a newer pick during the dwell retires the flight (the timeout checks it)
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
   const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); map.jumpTo({ pitch: 45 }); } catch (e) {} }; // the no-flight fallback lands on the same tilted default instantly: flat fit first, tilt at its centre/zoom
-  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit settles the camera in one pass - no flight, no mid-flight placement
+  if (!map.cameraForBounds || ((/** @type {any} */ (window)).matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit settles the camera in one pass - no flight, no mid-flight placement
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above
@@ -361,14 +389,16 @@ function introToRoute() { // a pick opens wide and flies in slowly as the splash
 }
 let loadInGen = 0;
 
+/** @returns {void} */
 function resetSwitchSession() { // the reset a switch runs: everything naming the outgoing route's session dies here, before the new pack exists
   // the knowledge lives with the owners: this block only calls their hooks and clears dirty flags via markClean
   resetNotesHistorySession(); // app3: runSnap, history panel + clean-delete arming, modal note, suggestion set + banners
   resetStreetsSession(); // app2: selection (deselect), note editor + its timer, Streets filter, street-row cache, storage-warning episode
   markClean('trail'); markClean('sess'); markClean('snap'); markClean('start'); markClean('aux'); markClean('primary'); // the flags described the outgoing route's writes; the incoming route starts clean - a stale flag never re-fires
 }
+/** @param {string} id @returns {void} */
 function loadRoute(id) {
-  const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
+  const pack = /** @type {IdentifiedRoutePack|undefined} */ (ROUTE_PACKS.find(p => p.id === id)); if (!pack) return;
   if (routeLoaded && activeRoute && activeRoute.id === id) return; // picking the route already loaded changes nothing (the Routes tab handler guards this too)
   loadInGen++; // every effective pick starts a new generation: a pending intro flight from an earlier pick retires on it
   hideConfirm(); // a switch clears any pending confirmation: its question belongs to the route asked over, never the new one
@@ -399,12 +429,13 @@ function loadRoute(id) {
   if (runStart) startGps(true);
   else if (watchId != null) { gpsFromRun = false; $('gpsBtn').classList.toggle('rec', false); renderIcons(); } // switching to a route with no live clean retires the recording face; the watch runs on as view-only
 }
+/** @returns {void} */
 function unloadRouteToBoot() { // route deleted while active: return to the boot picker, cold-boot style, no flush (the slot wipes next)
   loadInGen++; // the route is gone - a pending intro flight retires on the generation bump
   const hadRun = !!runStart;
   resetSwitchSession();
   if (hadRun) stopGps(true); // a clean on a deleted route cannot keep recording - its trail's slot no longer exists
-  buildGeometry({ roads: {}, reference: {}, primaries: [] }); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
+  buildGeometry(/** @type {any} */ ({ roads: {}, reference: {}, primaries: [] })); // the eval-time emptiness a cold boot shows before any pick (drive149's zero-geometry state)
   if (map && window.GLP) window.GLP.rebuildRoute();
   BOARD.emptyBoard(); notes = {}; runStart = 0; trail = []; trailSessions = []; // the eval empties (app1's declarations) - Arch-2: the board's six are emptied by the module
   HIST.unload(); // history empties and its snapshot retires with the route: a snapshot must never merge into another slot
@@ -420,6 +451,7 @@ function unloadRouteToBoot() { // route deleted while active: return to the boot
   renderRouteLists();
   syncWake();
 }
+/** @param {string} id @returns {Promise<void>} */
 async function deleteRoute(id) { // order is the safety: definition first, verified (failure touches nothing); then unregister, wipe, picker, re-render
   const ix = ROUTE_PACKS.findIndex(p => p.id === id); if (ix < 0) return;
   const pack = ROUTE_PACKS[ix];
@@ -444,6 +476,7 @@ async function deleteRoute(id) { // order is the safety: definition first, verif
   // nothing else keys on a route id (cache by city): removing the pack un-certifies the old union download
   if (wasActive) unloadRouteToBoot(); else renderRouteLists();
 }
+/** @param {string} id @returns {void} */
 function askDeleteRoute(id) { // Delete on a row: the shared confirm asks with the deletion labels, for EVERY route, shipped included
   const pack = ROUTE_PACKS.find(p => p.id === id); if (!pack) return;
   crConfirm('Delete ' + pack.name + '?', 'The route and everything saved for it on this phone (progress, notes, history) will be removed. This can’t be undone.', () => deleteRoute(id), { yes: 'Delete', no: 'Cancel', danger: true });
