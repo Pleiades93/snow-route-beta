@@ -1595,6 +1595,66 @@
       "parts/head.html/button.m-card:active"
     ],
     [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#brandLayer, #brandLayer.bye"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#confirmBackdrop, #confirmBackdrop.on"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#countFill"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#crCityResults"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#createResults .crRowOut"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#filtersPill"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#rmCityListPane #crCityA~d439277f6cc933f5"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#routeMenu .rmPane .rout~11d66f67a9e8dcd7"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#routeMenu, #routeMenu.b~95ffa095b87b00f3"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#routeMenu.boot .rmPane,~64075701e3e99a2c"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/#setMenu, #setMenu.open"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/.m-switch, .m-switch::after"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/.sheet, .sheet.open"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/@media (prefers-reduced-motion: reduce)/.tabItem, .dockBtn, .run~dfd12658f5ebfe8d"
+    ],
+    [
+      "parts/head.html/.sheet.dragging",
+      "parts/head.html/body.kb .sheet"
+    ],
+    [
       "parts/head.html/.srow.pressOn, .crPRow.pressOn, .cvRow.pressOn, .prow.histRow.pressOn",
       "parts/head.html/.tabItem:active, .dockBtn:active, .runBtn:active, .sideChip .chi~4372bb61cca88c28"
     ],

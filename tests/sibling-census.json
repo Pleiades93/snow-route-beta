@@ -63681,6 +63681,111 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s2r1-openclean"
+  },
+  {
+   "id": "solid-sheets",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "sheet",
+     "pacePanel"
+    ],
+    "functions": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/head.html"
+   ],
+   "rows": [
+    {
+     "id": "theme:pacePanel",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #pacePanel has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "#pacePanel has no element-level day/night rule by design: its face is the shared .sheet rule plus the --card-solid token, whose body.night override (#202125) is the theme face. drive231 reads the open Pace sheet's computed background and backdrop filter in both themes."
+    },
+    {
+     "id": "theme:sheet",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #sheet has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "#sheet has no element-level day/night rule by design: its face is the shared .sheet rule plus the --card-solid token, whose body.night override (#202125) is the theme face. drive231 reads the open Streets sheet's computed background and backdrop filter in both themes."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1c351ded63faa6094218b3b7ab25d1b535583659c7714cdec98dd8c25024e8a7",
+    "parts/head.html": "9354b201521adeb3bfed3a438f5be1bfac7edc6a3be6f5e52087ceb53d02e26f",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "solid-sheets-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "sheet",
+     "pacePanel"
+    ],
+    "functions": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "theme:pacePanel",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #pacePanel has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "#pacePanel has no element-level day/night rule by design: its face is the shared .sheet rule plus the --card-solid token, whose body.night override (#202125) is the theme face. drive231 reads the open Pace sheet's computed background and backdrop filter in both themes."
+    },
+    {
+     "id": "theme:sheet",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #sheet has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "#sheet has no element-level day/night rule by design: its face is the shared .sheet rule plus the --card-solid token, whose body.night override (#202125) is the theme face. drive231 reads the open Streets sheet's computed background and backdrop filter in both themes."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1c351ded63faa6094218b3b7ab25d1b535583659c7714cdec98dd8c25024e8a7",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 solid-sheets"
   }
  ]
 }

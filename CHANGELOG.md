@@ -1,5 +1,17 @@
 # Changelog
 
+## Beta 1.304 — 2026-11-27
+
+Solid sheets (Andrew's live report, 2026-11-27: the Streets and Pace menus were subtly transparent - the
+blue Start button tinted through them). The sheets wore the frosted card colour (white at 92% by day,
+charcoal at 94% by night) behind a saturation-boosting blur, so a strong colour behind a sheet showed
+through instead of washing out. The sheets now wear the solid card colour at full opacity in both themes
+and carry no backdrop blur. The bottom tab bar keeps its frosted face - Andrew's explicit pick when
+asked - and the new drive231 pins both halves of that decision: the sheets opaque day and night, the tab
+bar's frost unchanged. Plus 1 maintenance PR since Beta 1.303.
+
+Editorial: this entry; What's New replaced with the solid-sheets line; the #ver label reads Beta 1.304.
+
 ## Beta 1.303 — 2026-11-27
 
 Pinch fix (Andrew's live report, 2026-11-27: in phone Safari the blue menus could be pinch-zoomed, and

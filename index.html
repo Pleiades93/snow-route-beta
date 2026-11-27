@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3BX8hgRoTPNpxkj+Xrk4+ZN2N4aSf+T7HDWQVntptOLRqBRJgI3v3ZIq2Hyv4MUl' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-QVeGX7fzdgo7rqxGXLsAC9JJMc43+ppxd/suw6IHDm88rWy4OZ8U5vLwxldJEkTc' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-CHJDBnTZOzID5CTcygWYTE/af/R/sBAwO9zp/9qiJSSJLv3WtOXXhs0WAQ2DJKQR' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-ipaj5Z5yn/e87/r1yJngc8ErL/VxsGM4NebRVtF+L+bg/7w+EtVR61sgqPwi4Dk5' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -314,8 +314,8 @@
     cursor: pointer;
     box-shadow: var(--shadow-float);
     } /* Beta 1.24 (Andrew): above the Start circle - below it, the tab bar swallowed it */
-  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card); color: var(--ink);
-    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card);
+  .sheet { position: fixed; left: 0; right: 0; bottom: var(--vvb, 0px); z-index: 1100; background: var(--card-solid); color: var(--ink);
+    border-radius: 18px 18px 0 0; box-shadow: var(--shadow-card);
     /* sheets open at HALF height: the three stops are closed / half / full */
     max-height: calc(var(--vvh, 100dvh) * .5); display: flex; flex-direction: column; transform: translateY(105%); visibility: hidden; padding-bottom: var(--sab);
     transition: transform 350ms var(--ease-close), height 350ms var(--ease-close), max-height 350ms var(--ease-close), visibility 0s linear 350ms; } /* the close is the open's quicker mirror, detent legs included (audit FIX 1) */
@@ -324,8 +324,8 @@
   .sheet.open { transform: translateY(0); visibility: visible; transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   .grab { padding: 12px 0 7px; cursor: grab; touch-action: none; flex: none; }
   .grabBar { width: 44px; height: 5px; border-radius: 3px; background: var(--ink-faint); margin: 0 auto; }
-  /* while dragging, the blur drops (repainting stuttered drags) and the sheet wears the solid card colour against show-through */
-  .sheet.dragging { transition: none; backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--card-solid); }
+  /* while dragging, transitions drop so the sheet tracks the finger */
+  .sheet.dragging { transition: none; }
   .sheet.snapping { transition: transform var(--anim-dur) var(--ease-open), height var(--anim-dur) var(--ease-open), max-height var(--anim-dur) var(--ease-open), visibility 0s; }
   #sheetBody { flex: 1 1 auto; min-height: 0; }
   .sheetHead { display: flex; align-items: center; gap: 8px; padding: 8px 48px 6px 14px; }
@@ -1009,7 +1009,7 @@ html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::aft
 <div id="hud">
   <div id="warn"><strong>Not saving</strong><br><span>Storage is full or blocked</span></div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.303</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.304</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -8022,8 +8022,8 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.303', items: [
-    "Menus no longer pinch-zoom in the browser"
+  v: 'Beta 1.304', items: [
+    "The Streets and Pace menus are now fully solid"
   ] }; // entries stay short: one plain line each (Beta 1.223 rule)
 
 /** @returns {void} */

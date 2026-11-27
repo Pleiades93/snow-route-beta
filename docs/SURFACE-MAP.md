@@ -53,6 +53,13 @@ clean-detail surface inside the Pace sheet renders exactly
 as before - same elements, order and values, pinned by
 proof-1299. No surface, element or snow status changed.
 Map reviewed; no update needed beyond this note.
+SOLID SHEETS (Beta 1.304, 2026-11-27): the Streets and Pace
+sheets (the .sheet faces in the table below) are fully
+opaque in both themes - they wear the solid card colour and
+carry no backdrop blur, so nothing behind them tints
+through. The tab bar keeps its frosted card face by
+Andrew's explicit pick, pinned by drive231. The table row
+for the sheets is updated with this note.
 
 ## The snow rule (one rule, app-wide)
 
@@ -92,6 +99,6 @@ canvas carries no .away since Beta 1.301.
 | Surface | Why not |
 |---------|---------|
 | Create picking stage (#createBar, #createSheet, #previewSheet, #createResults) | card faces (white/charcoal) over the MAP; the map rule parks the engine there, and the cards sit below the canvas in z-order, so snow would paint over them |
-| Streets sheet (#sheet), Pace sheet (#pacePanel) | frosted card faces over the map |
+| Streets sheet (#sheet), Pace sheet (#pacePanel) | solid card faces over the map |
 | Selection pop (#selPop), notification banner (#banner), confirmation pill (#confirmPill), modals (#crModal, #finModal, #noteModal) | card faces, not menu blue; the banner is the one notification surface (Beta 1.295) |
 | Map chrome (#tabBar, #dock, #hud, #spdPill) | not surfaces over a blue ground; the map rule governs |

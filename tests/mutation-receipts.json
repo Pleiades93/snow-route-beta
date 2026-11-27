@@ -18869,6 +18869,71 @@
    "red": "proof-1299 exit 1 on the frozen split tree: FAIL 'first tap arms for five seconds; invalid and 699ms taps cannot confirm' and FAIL '700ms confirms in delete, save, back, count order and cancels the timer'; the full 11-mutation set re-run on the frozen bytes, every mutation failing its named check",
    "green": "proof-1299 on the frozen split tree: 11 passed, 0 failed (exit 0); claims byte-identical to the pre-split registration; full proof suite 96/96",
    "issued": "2026-11-27 s2r1-openclean"
+  },
+  {
+   "id": "solid-sheets-drive231",
+   "check": "tests/browser/drive231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive231.mjs": "e5e079e3c10eed0aba96f83f97c7d47fdb71fdc4c1fd404d69d4bfd04d832e4e",
+    "parts/head.html": "9354b201521adeb3bfed3a438f5be1bfac7edc6a3be6f5e52087ceb53d02e26f"
+   },
+   "mutation": "the shipped state itself: base tree 744c8ef5, whose sheets wear the frosted --card colour (alpha .92 day / .94 night) behind blur(18px) saturate(1.6), so colours behind a sheet tint through",
+   "red": "drive231 on base 744c8ef5 (drive file only, final bytes): 21 checks, exactly 8 FAIL - 'background is fully opaque' and 'has no backdrop filter' for the Streets and Pace sheets in day and night; the tab-bar frost pins and the dragging checks PASS on base. Reproduced twice",
+   "green": "drive231 on the fixed tree: 21/21 PASS",
+   "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "solid-sheets-drive231-r2",
+   "check": "tests/browser/drive231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive231.mjs": "e5e079e3c10eed0aba96f83f97c7d47fdb71fdc4c1fd404d69d4bfd04d832e4e",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b"
+   },
+   "mutation": "the shipped state itself: base tree 744c8ef5, whose sheets wear the frosted --card colour (alpha .92 day / .94 night) behind blur(18px) saturate(1.6), so colours behind a sheet tint through",
+   "red": "drive231 on base 744c8ef5 (drive file only, final bytes): 21 checks, exactly 8 FAIL - 'background is fully opaque' and 'has no backdrop filter' for the Streets and Pace sheets in day and night; the tab-bar frost pins and the dragging checks PASS on base. Reproduced twice",
+   "green": "drive231 on the fixed tree: 21/21 PASS, including on the final bytes after the line-46 comment adjudication (r2)",
+   "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "solid-sheets-drive231-r3",
+   "check": "tests/browser/drive231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive231.mjs": "9ca5dc017855af1ec60eea30e6028ac56f1dc9f9c6cd9745f77f9a86c7c128ce",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b"
+   },
+   "mutation": "the shipped state itself: base tree 744c8ef5, whose sheets wear the frosted --card colour (alpha .92 day / .94 night) behind blur(18px) saturate(1.6), so colours behind a sheet tint through",
+   "red": "drive231 on base 744c8ef5 (drive file only): 21 checks, exactly 8 FAIL - 'background is fully opaque' and 'has no backdrop filter' for the Streets and Pace sheets in day and night; the tab-bar frost pins and the dragging checks PASS on base. Reproduced twice on the original drive bytes; the r3 bytes change only the dragging probe's plumbing (it reuses the face helper after Codex's duplication finding) - check names and claims identical",
+   "green": "drive231 on the fixed tree: 21/21 PASS on the r3 bytes (and on the r1/r2 bytes before them)",
+   "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "solid-sheets-drive125",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive125.mjs": "10163b043db509d91758f0e6cc4ff656ae67ce999dafc69f9354c7f0b499a544",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b"
+   },
+   "mutation": "the pre-round tree itself: base 744c8ef5 wears the Beta 1.29 one-surface rule (sheets frosted at .92/.94, bar = sheets), which Andrew's 2026-11-27 decision retired for the sheets only",
+   "red": "updated drive125 on base 744c8ef5: T1 and T4 FAIL on the frosted readings (sheetBg rgba(255, 255, 255, 0.92) day, rgba(32, 33, 37, 0.94) night, barBg equal to sheetBg). The pre-update drive125 failed the other way on the fixed head in CI shard 1, attempts 1 and 2 (job logs: T1/T4 with sheetBg solid, barBg translucent) - the two versions of the check observe exactly the contract change",
+   "green": "updated drive125 on the fixed tree: 29/29 PASS locally (S7b crossfade sampling flaked once locally on each tree and passes in CI; local timing is not evidence)",
+   "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "solid-sheets-drive125-r2",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive125.mjs": "acd57294fcc7ed7771e0e740a6af6d80101c738310795f9f491e29325c422e59",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b"
+   },
+   "mutation": "the pre-round tree itself: base 744c8ef5 wears the Beta 1.29 one-surface rule (sheets frosted at .92/.94, bar = sheets), which Andrew's 2026-11-27 decision retired for the sheets only",
+   "red": "updated drive125 on base 744c8ef5: T1 and T4 FAIL on the frosted readings (sheetBg rgba(255, 255, 255, 0.92) day, rgba(32, 33, 37, 0.94) night, barBg equal to sheetBg). The pre-update drive125 failed the other way on the fixed head in CI shard 1, attempts 1 and 2 (job logs: T1/T4 with sheetBg solid, barBg translucent) - the two versions of the check observe exactly the contract change",
+   "green": "updated drive125 on the fixed tree: 29/29 PASS on the final bytes (r2: one comment word trimmed for the limits judge after r1's runs; S7b crossfade sampling flaked once locally on each tree during the r1 runs and passes in CI)",
+   "issued": "2026-11-27 solid-sheets"
   }
  ]
 }
