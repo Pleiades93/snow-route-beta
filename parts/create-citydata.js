@@ -226,8 +226,7 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
   if (crPrep) crAbortOp(crPrep.op); // a superseding preparation stops the old download outright (CG-PF-10)
   if (crGrid) crGridStop('superseded'); // a fallback over a live grid stops the grid first: otherwise its cells orphan in 'fetching', unresumable forever
   const session = crSession, gen = ++crCovGen;
-  const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen);
-  const preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
+  const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen), preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
   crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to an outstanding offer (it clears inside crPrepBegin); the anchor stays this site's own
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };

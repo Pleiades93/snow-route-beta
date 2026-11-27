@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-M0y8EOW0/23ReuSGZiYC6+y/FyDFAwpEBuArrhQr9KsFnMVyVBDRnIYl8nALlued' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-f2xgx2uWDlmjHTpidlJ6dpTFWGQHV81xT+bC++9pJCicTj75U6GX024UrIxoGcnC' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3847,11 +3847,7 @@ const __onMap = [];
 function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
 // Capture the token now and check it before the caller lands.
 function landIfCurrent(token, isCurrent) {
-  return land => {
-    if (!isCurrent(token)) return false;
-    if (land) land();
-    return true;
-  };
+  return land => { if (!isCurrent(token)) return false; if (land) land(); return true; };
 }
 function bootMap() {
   if (map) return;
@@ -8612,8 +8608,7 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
   if (crPrep) crAbortOp(crPrep.op); // a superseding preparation stops the old download outright (CG-PF-10)
   if (crGrid) crGridStop('superseded'); // a fallback over a live grid stops the grid first: otherwise its cells orphan in 'fetching', unresumable forever
   const session = crSession, gen = ++crCovGen;
-  const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen);
-  const preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
+  const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen), preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
   crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to an outstanding offer (it clears inside crPrepBegin); the anchor stays this site's own
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
@@ -8838,8 +8833,7 @@ function crCityPrepare() { // load the picked city's whole extract: from the cac
   // lastProgressAt restarts at every landing; ds is the grid's dataset identity, set when the pack resolve lands
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null };
   // Resume re-adopts this record with a new generation.
-  g.isCurrent = landIfCurrent(g, crGridCurrent);
-  crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
+  g.isCurrent = landIfCurrent(g, crGridCurrent); crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
   crRenderHint();
   crGridArmTicker(g); // the heartbeat runs from entry: the read and the resolve below are inside the watchdog's reach from here
   // the resolve lands before the read: the fit test needs the dataset identity, which is the resolve's answer
@@ -9763,9 +9757,7 @@ async function crRunCitySearch() {
   const input = $('crCityInput'), settledText = input.value;
   const q = settledText.trim();
   if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // a cleared query invalidates like every change (bump + abort via crResetCitySearch); the clear leaves through animation
-  const seq = ++crCitySeq, session = crSession;
-  const landError = landIfCurrent(seq, crCitySearchSeqCurrent);
-  const landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));
+  const seq = ++crCitySeq, session = crSession, landError = landIfCurrent(seq, crCitySearchSeqCurrent), landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));
   const landRequest = landIfCurrent(settledText, text => landSearch() && input.value === text);
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;

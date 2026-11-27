@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "cac596e3500876d5dfa24f2b4223315d4b8b2a63485addbc0120b66164dac336",
+  "canonical_registry_sha256": "13e3d49013dc220ff96639b8e2560c6a6ee968fd8cd4f95c42de714fd31febb0",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -14134,19 +14134,19 @@
   {
    "added": "2026-11-27",
    "file": "parts/create-citydata.js",
-   "fix": "Phase 5: the fallback prep captures its landers at start - the watchdog, ticker and extract judge through preparing (crPrepCurrent as its engine), the landing through the no-state landPrep.",
+   "fix": "Phase 5: the fallback prep captures its landers at start - the watchdog, ticker and extract judge through preparing (crPrepCurrent as its engine), the landing through the no-state landPrep. Re-pinned in the Phase 5 fix round (2026-11-27): the two prep captures were folded into one declaration line for the line-neutrality restructure; the pattern drops the leading const keyword, claim unchanged.",
    "fix_id": "phase5-land-if-current",
    "id": "phase5-prep-captures",
-   "pattern": "const preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));",
+   "pattern": "preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));",
    "type": "grep_present"
   },
   {
    "added": "2026-11-27",
    "file": "parts/create-pick.js",
-   "fix": "Phase 5: the city search captures its landers at issue - the pre-dispatch re-check, the answer landing and the failure catch judge through them (crCitySearchCurrent / crCitySearchSeqCurrent as their engines).",
+   "fix": "Phase 5: the city search captures its landers at issue - the pre-dispatch re-check, the answer landing and the failure catch judge through them (crCitySearchCurrent / crCitySearchSeqCurrent as their engines). Re-pinned in the Phase 5 fix round (2026-11-27): landError/landSearch were folded into the seq/session declaration line for the line-neutrality restructure; the pattern drops the leading const keyword, claim unchanged.",
    "fix_id": "phase5-land-if-current",
    "id": "phase5-city-captures",
-   "pattern": "const landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));",
+   "pattern": "landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session))",
    "type": "grep_present"
   },
   {

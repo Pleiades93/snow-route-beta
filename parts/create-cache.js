@@ -187,8 +187,7 @@ function crCityPrepare() { // load the picked city's whole extract: from the cac
   // lastProgressAt restarts at every landing; ds is the grid's dataset identity, set when the pack resolve lands
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null };
   // Resume re-adopts this record with a new generation.
-  g.isCurrent = landIfCurrent(g, crGridCurrent);
-  crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
+  g.isCurrent = landIfCurrent(g, crGridCurrent); crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
   crRenderHint();
   crGridArmTicker(g); // the heartbeat runs from entry: the read and the resolve below are inside the watchdog's reach from here
   // the resolve lands before the read: the fit test needs the dataset identity, which is the resolve's answer

@@ -876,9 +876,7 @@ async function crRunCitySearch() {
   const input = $('crCityInput'), settledText = input.value;
   const q = settledText.trim();
   if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // a cleared query invalidates like every change (bump + abort via crResetCitySearch); the clear leaves through animation
-  const seq = ++crCitySeq, session = crSession;
-  const landError = landIfCurrent(seq, crCitySearchSeqCurrent);
-  const landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));
+  const seq = ++crCitySeq, session = crSession, landError = landIfCurrent(seq, crCitySearchSeqCurrent), landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));
   const landRequest = landIfCurrent(settledText, text => landSearch() && input.value === text);
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;

@@ -33,6 +33,7 @@ await poll120(`!document.getElementById('splash')`, 20000);
 
 // Enter the pick stage's state space and stage a settled grid object.
 await ev(`(() => { creating = true; crStage = 'pick'; crGrid = { name: 'Testville', cells: [], stopped: null, ops: new Set(), active: 0, ticker: null, gen: crCovGen, session: crSession, startedAt: Date.now(), lastProgressAt: Date.now() }; return true; })()`);
+await ev(`(() => { crGrid.isCurrent = landIfCurrent(crGrid, crGridCurrent); return true; })()`); // the staged record carries the capture the constructor installs (Phase 5)
 const btnLabel = async () => { const b = await J(`(() => { const b = $('crHintBtn'); return { label: b.textContent, shown: b.style.display !== 'none' }; })()`); return b; };
 
 // ---- W1: dense box failure over a settled grid ----
@@ -49,6 +50,7 @@ ok('W1 the click prepares at the map centre, matching the label | state ' + w1.s
 // ---- W2: a grid failure - Retry that resumes ----
 // (the W1 click's preparation is in flight; stop the world back to a staged failure)
 await ev(`(() => { if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; } crCovGen++; crGrid = { name: 'Testville', cells: [], stopped: null, ops: new Set(), active: 0, ticker: null, gen: crCovGen, session: crSession, startedAt: Date.now(), lastProgressAt: Date.now() }; crWanted = null; crPrepFail = { ok: false, kind: 'error' }; crFailFromGrid = true; crPrepAnchor = null; crPrepState = 'failed'; crRenderHint(); return true; })()`);
+await ev(`(() => { crGrid.isCurrent = landIfCurrent(crGrid, crGridCurrent); return true; })()`); // the re-staged record carries the same capture (Phase 5)
 const w2Label = await btnLabel();
 await ev(`(() => { $('crHintBtn').click(); return true; })()`);
 const w2 = await J(`(() => ({ fail: crPrepFail, fromGrid: crFailFromGrid, anchor: crPrepAnchor }))()`);
