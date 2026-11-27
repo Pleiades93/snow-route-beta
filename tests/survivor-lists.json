@@ -635,6 +635,45 @@
     "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416"
    },
    "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; rows unchanged)"
+  },
+  {
+   "id": "phase7-bearing-frame",
+   "kind": "cut",
+   "surface": "the heading camera (headCam) in parts/app3.js",
+   "cut": "headCam's two hand-rolled frame conversions (the rest check's headDelta call and the camSmoothDampAngle spring call) ported to the convertBearingFrame owner; camSmoothDampAngle itself stays (beamTick still calls it)",
+   "changed": [
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "Heading-up engages during a run and the camera bearing chases the course through the ported frame conversion",
+     "case": "R1 heading-up engages during a run (bearing chases the 90 deg course)",
+     "check": "tests/browser/drive148.mjs",
+     "observes": "the live map bearing chasing the 90 deg course with heading-up on, through the convertBearingFrame call path"
+    },
+    {
+     "behaviour": "While suspended, heading-up does not chase a new course (the guard and rest behaviour survive the port)",
+     "case": "R3 while suspended, heading-up does not chase a new course",
+     "check": "tests/browser/drive148.mjs",
+     "observes": "the map bearing holding while follow is suspended, with the ported headCam in the render loop"
+    },
+    {
+     "behaviour": "After re-centre, heading-up re-engages toward the new course (the spring re-engages from rest through the new call path)",
+     "case": "R4 after re-centre, heading-up re-engages toward the new course",
+     "check": "tests/browser/drive148.mjs",
+     "observes": "the map bearing resuming its chase after re-centre, spring velocity carried by the ported camSmoothDamp call"
+    },
+    {
+     "behaviour": "A map-less world never throws in the heading path and recording continues (headCam's no-map guard survives the port)",
+     "case": "A3 no fix threw: the page-exception count is unchanged since the boot baseline",
+     "check": "tests/browser/drive168.mjs",
+     "observes": "the page-exception count across GPS bursts in the no-map world, headCam included in the render loop"
+    }
+   ],
+   "files": {
+    "parts/app3.js": "f75600819a6d1a977d14675a4ab0307bfae9794be9e69561d101deba65fe30d6"
+   },
+   "issued": "2026-11-27"
   }
  ]
 }
