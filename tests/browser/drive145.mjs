@@ -383,7 +383,7 @@ await sleep(150); const paceMid = await ev(`$('pacePanel').offsetHeight`);
 await sleep(600);
 const paceEnd = JSON.parse(await ev(`(() => JSON.stringify({ h: $('pacePanel').offsetHeight, inl: $('pacePanel').style.height, open: $('pacePanel').classList.contains('open') }))()`));
 ok('N32 a Pace release settles back at the HALF stop | mid ' + paceMid + ' end ' + JSON.stringify(paceEnd), paceMid < paceHalf + 120 && Math.abs(paceEnd.h - 450) <= 8 && paceEnd.inl === '' && paceEnd.open === true);
-await ev(`(function(){ const s = $('pacePanel'); s.style.maxHeight = 'none'; s.style.height = (vvHeight() * 0.94) + 'px'; s.classList.add('full'); })()`); await sleep(100);
+await ev(`(function(){ const sheet = $('pacePanel'); sheet.style.maxHeight = 'none'; sheet.style.height = (vvHeight() * 0.94) + 'px'; sheet.classList.add('full'); })()`); await sleep(100);
 pp = await paceHead();
 await mDown(pp.x, pp.y); await mMove(pp.x, pp.y + 115); await sleep(200); await mMove(pp.x, pp.y + 230); await sleep(200); await mUp(pp.x, pp.y + 230);
 await sleep(150); const paceMid2 = await ev(`$('pacePanel').offsetHeight`);

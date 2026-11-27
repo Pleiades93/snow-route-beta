@@ -163,6 +163,14 @@
       "parts/create-pick.js/crAlongSorter/<callback>@86cbda80"
     ],
     [
+      "parts/app2.js/<callback>/close/<callback>@50caf923",
+      "parts/create-pick.js/<callback>/up/<callback>@50caf923"
+    ],
+    [
+      "parts/app2.js/<callback>/makeSheetDraggable/end/<callback>@8a870b04",
+      "parts/create-pick.js/<callback>/up/<callback>@8a870b04"
+    ],
+    [
       "parts/app2.js/<callback>@e344627e",
       "parts/app2.js/<callback>@e344627e#2"
     ],
@@ -201,14 +209,6 @@
     [
       "parts/app2.js/glUnifyLabels/<callback>@8e5771c4",
       "parts/app4.js/countUnknownNames/setFor/<callback>@8e5771c4"
-    ],
-    [
-      "parts/app2.js/makeSheetDraggable/end/<callback>@8a870b04",
-      "parts/create-pick.js/<callback>/up/<callback>@8a870b04"
-    ],
-    [
-      "parts/app2.js/makeSheetDraggable/end/settleClose/<callback>@50caf923",
-      "parts/create-pick.js/<callback>/up/<callback>@50caf923"
     ],
     [
       "parts/app2.js/pickFontFromStyle/<callback>@403d7d11",
@@ -1108,10 +1108,6 @@
     ],
     [
       "parts/head.html/#brandLayer.away",
-      "parts/head.html/#snowCv.away"
-    ],
-    [
-      "parts/head.html/#brandLayer.away",
       "parts/head.html/@keyframes menuFade/from"
     ],
     [
@@ -1483,22 +1479,6 @@
       "parts/head.html/@media (prefers-reduced-motion: reduce)/#spdNum .subtleOld"
     ],
     [
-      "parts/head.html/#snowCv.away",
-      "parts/head.html/@keyframes menuFade/from"
-    ],
-    [
-      "parts/head.html/#snowCv.away",
-      "parts/head.html/@keyframes menuFadeOut/to"
-    ],
-    [
-      "parts/head.html/#snowCv.away",
-      "parts/head.html/@keyframes splashBgOut/100%"
-    ],
-    [
-      "parts/head.html/#snowCv.away",
-      "parts/head.html/@keyframes splashIconIn/from"
-    ],
-    [
       "parts/head.html/#spdPill.hidden",
       "parts/head.html/#xPreStat:empty"
     ],
@@ -1556,7 +1536,7 @@
     ],
     [
       "parts/head.html/.crResult:active",
-      "parts/head.html/body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene~5e1f017c3c47bf29"
+      "parts/head.html/body.snow-scene #snowCv ~ #routeMenu, body.snow-scene #snowCv ~ #setMenu"
     ],
     [
       "parts/head.html/.crStripTxt",

@@ -8,6 +8,125 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase3-sheet-lifecycle",
+   "kind": "cut",
+   "surface": "the sheet lifecycle: every open, close and full-raise of the Streets sheet and the Pace sheet, including the note editor's reset on close",
+   "cut": "closeSheetEl, the old closeSheets body and settleClose (app2) and the hand-rolled open/close code in openPace, closePace and openClean (app3) were deleted; sheet lifecycle now runs through the SHEETS owner in app2.js",
+   "changed": [
+    "parts/app2.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "A button close freezes the current sheet height for the slide instead of snapping shut instantly",
+     "case": "A5 closing freezes the current height for the slide (no instant snap)",
+     "check": "tests/browser/drive123.mjs",
+     "observes": "the sheet's inline height right after the X is clicked"
+    },
+    {
+     "behaviour": "The frozen height from a button close clears once the close motion has ended (480 ms), so the next open is not stuck at the old height",
+     "case": "A5 the frozen height clears once the close motion has ended",
+     "check": "tests/browser/drive123.mjs",
+     "observes": "the sheet's inline height after the close transition window"
+    },
+    {
+     "behaviour": "Tapping away closes EVERY sheet, enumerated by class - the owner's closeAll is the single funnel behind closeSheets()",
+     "case": "N17 tap-away closes EVERY sheet (enumerated by class, present and future)",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "every .sheet element's open class after a tap-away"
+    },
+    {
+     "behaviour": "The Streets sheet opens at the HALF stop through the owner",
+     "case": "N24 the Streets sheet opens at HALF height",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "the Streets sheet height after opening"
+    },
+    {
+     "behaviour": "Dragging down from the half stop closes the sheet (the owner's gesture close)",
+     "case": "N29 drag down from half CLOSES the sheet",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "the sheet's open class after a downward drag from half"
+    },
+    {
+     "behaviour": "A flick-down close springs at the finger's own release velocity, never restarting from rest",
+     "case": "N30 a flick-down close keeps the finger speed (no restart from rest)",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "the close spring's start velocity against the release velocity"
+    },
+    {
+     "behaviour": "The flick close lands clean: no pop back up, transitions stay off through the landing",
+     "case": "N34 the flick close lands clean - no pop back up, transitions stay off through the landing",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "the sheet transform and transition state across the landing"
+    },
+    {
+     "behaviour": "A Pace sheet release settles back at the HALF stop through the owner",
+     "case": "N32 a Pace release settles back at the HALF stop",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "the Pace sheet height after a partial drag release"
+    },
+    {
+     "behaviour": "Both sheets walk the detents half -> full -> half -> closed by drag, day and night, at three phone sizes",
+     "case": ": open half (${h0}) -> full (${hFull}) -> half (${hHalf}) -> closed",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "the measured sheet height at each drag settle"
+    },
+    {
+     "behaviour": "Opening the Streets note editor raises the sheet to the full stop (through the owner's setFull)",
+     "case": "KB1 opening the note editor raises the Streets sheet to the full stop",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "the sheet's full class and height with the editor open"
+    },
+    {
+     "behaviour": "Closing the note editor returns the sheet to the half stop",
+     "case": "KB3 closing the editor returns the sheet to the half stop",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "the sheet's full class and height after the editor closes"
+    },
+    {
+     "behaviour": "Closing the Streets sheet on its X resets the note editor - the reset rides the owner's button-close funnel, editor state armed before the click",
+     "case": "KB4 closing the sheet on its X resets the note editor (no editor survives to the next open)",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "NOTEEDIT.openFor and the .noteEd element after the X close"
+    },
+    {
+     "behaviour": "A drag close resets the note editor too - the reset rides the owner's gesture-close funnel, editor state armed before the drag",
+     "case": "KB5 a drag close resets the note editor too (the reset rides both close funnels)",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "NOTEEDIT.openFor and the .noteEd element after the drag close"
+    },
+    {
+     "behaviour": "Tapping a saved clean opens its detail inside the Pace sheet, which stays open (the owner opens it keeping its height)",
+     "case": "P7 tapping a saved clean opens its detail INSIDE the Pace sheet (sheet stays open, pace content yields)",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "the Pace sheet's open class and content after the tap"
+    },
+    {
+     "behaviour": "Both settle paths start the close spring at the release velocity (the owner's gesture close kept the finger-speed start)",
+     "case": "3c: both settle paths start the spring at the release velocity",
+     "check": "tests/proof/proof-1231.mjs",
+     "observes": "the spring start velocity argument in the owner's close source"
+    },
+    {
+     "behaviour": "A close cancels a running spring first (the owner's close cancels before it decides)",
+     "case": "3d: a close cancels a running spring first",
+     "check": "tests/proof/proof-1231.mjs",
+     "observes": "the order of the spring cancel inside the owner's close source"
+    },
+    {
+     "behaviour": "The full-height cap computes from the live title rect (the sheetFullH helper moved into the owner unchanged)",
+     "case": "4b: sheetFullH computes the cap from the live title rect",
+     "check": "tests/proof/proof-1228.mjs",
+     "observes": "the sheetFullH( call count and fallback shape in the parts"
+    }
+   ],
+   "files": {
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
   }
  ]
 }

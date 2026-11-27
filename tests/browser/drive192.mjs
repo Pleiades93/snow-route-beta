@@ -176,6 +176,22 @@ try {
   await ev(`(() => { document.querySelector('.noteEd .nedDone').click(); return true; })()`); await sleep(700);
   const kb2 = await J(`(() => ({ h: $('sheet').offsetHeight, full: $('sheet').classList.contains('full') }))()`);
   ok('KB3 closing the editor returns the sheet to the half stop | ' + JSON.stringify(kb2), kb2.full === false && Math.abs(kb2.h - 422) <= 10);
+  await ev(`(() => { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); return true; })()`);
+  await poll(`typeof NOTEEDIT !== 'undefined' && NOTEEDIT.openFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000); await sleep(300);
+  const kb4Armed = await ev(`NOTEEDIT.openFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`);
+  await ev(`$('sheetClose').click(); true`);
+  await poll(`!$('sheet').classList.contains('open')`, 10000); await sleep(300);
+  ok('KB4 closing the sheet on its X resets the note editor (no editor survives to the next open)', kb4Armed === true && await ev(`NOTEEDIT.openFor === null && !document.querySelector('.noteEd')`) === true);
+  await ev(`(() => { if (!$('sheet').classList.contains('open')) $('streetsBtn').click(); return true; })()`); await sleep(650);
+  await ev(`(() => { if (NOTEEDIT.openFor !== 'Velmar') { const r = [...document.querySelectorAll('.srow')].find(x => x.querySelector('.nm').textContent === 'Velmar'); r.querySelector('.nwrap').click(); } return true; })()`);
+  await poll(`typeof NOTEEDIT !== 'undefined' && NOTEEDIT.openFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`, 10000); await sleep(300);
+  const kb5Armed = await ev(`NOTEEDIT.openFor === 'Velmar' && !!document.querySelector('.noteEd textarea')`);
+  const kbp1 = await grabPt('sheet');
+  await drag(kbp1, Math.round(844 * 0.28));
+  const kbp2 = await grabPt('sheet');
+  await drag(kbp2, Math.round(844 * 0.28));
+  await poll(`!$('sheet').classList.contains('open')`, 10000); await sleep(300);
+  ok('KB5 a drag close resets the note editor too (the reset rides both close funnels)', kb5Armed === true && await ev(`NOTEEDIT.openFor === null && !document.querySelector('.noteEd')`) === true);
   await ev(`closeSheets(); true`); await sleep(500);
 
   // ---------- D: detents, both sheets, three viewports, both themes ----------

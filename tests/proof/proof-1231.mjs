@@ -43,8 +43,14 @@ check('2c: the swap still flips the theme-color meta and the night button icon',
 // ---------- Piece 3: the 1.81 spring stands untouched ----------
 check('3a: springSheet stands with its closed form and omega', app2.includes('const SHEET_OMEGA = 30;') && app2.includes('function springSheet(sheet, q0, qT, v0, apply, finish)'));
 check('3b: the spring lands exactly and is hard-capped', app2.includes('(Math.abs(q - qT) < 0.7 && Math.abs(vel) < 15) || t > 1'));
-check('3c: both settle paths start the spring at the release velocity', app2.includes('springSheet(sheet, h, targetH, v * 1000') && app2.includes('springSheet(sheet, 0, h * 1.05 + 8, -v * 1000'));
-check('3d: a close cancels a running spring first', app2.includes('cancelSheetSpring(s);'));
+check('3c: both settle paths start the spring at the release velocity', app2.includes('springSheet(sheet, h, targetH, v * 1000') && app2.includes('springSheet(sheet, 0, height * 1.05 + 8, -velocity * 1000'));
+check('3d: a close cancels a running spring first', (() => {
+  const i = app2.indexOf('function close(sheet, height, velocity)');
+  const seg = i < 0 ? '' : app2.slice(i, i + 700);
+  const cancel = seg.indexOf('cancelSheetSpring(sheet);');
+  const guard = seg.indexOf("if (!sheet.classList.contains('open'))");
+  return cancel >= 0 && guard >= 0 && cancel < guard;
+})());
 
 // ---------- Piece 4: entrances at .97 ----------
 check('4a: menuRise starts at scale .97', head.includes('@keyframes menuRise { from { opacity: 0; transform: translateY(10px) scale(.97); } }'));
