@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "4ed340f2a1d65b1d11d8e03fc58af8d0843e70f11759b5f38bb6f93957e7f54b",
+  "canonical_registry_sha256": "cac596e3500876d5dfa24f2b4223315d4b8b2a63485addbc0120b66164dac336",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1614,
-   "included": 1584,
+   "canonical": 1620,
+   "included": 1590,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -2544,9 +2544,9 @@
   {
    "added": "2026-11-06",
    "file": "parts/create-pick.js",
-   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete. The timer also carries the armSeq stand-down (Beta 1.286, drive153 D5): a public search started before the timer fires supersedes the type-ahead, whose render must not land on the search's answer or re-fill the empty box its failure honestly leaves. Re-pinned in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed - the 500 ms debounce is now the settle point, and a settled word with zero bundled matches fires the capped search on its own; a bundled match means the service never runs. The timer line itself is unchanged.",
+   "fix": "City search typing is DEBOUNCED (500 ms) and ON-DEVICE (Beta 1.120's debounce; issue #180, Beta 1.286): the debounce runs the local gazetteer type-ahead and makes NO public request - the public Nominatim service is asked only from the explicit Search online row, rate-limited to one request per second. Per-keystroke public calls were rate-limit bait, and the service's policy prohibits client-side autocomplete. The timer also carries the armSeq stand-down (Beta 1.286, drive153 D5): a public search started before the timer fires supersedes the type-ahead, whose render must not land on the search's answer or re-fill the empty box its failure honestly leaves. Re-pinned in the popup-round2 round (Beta 1.296, fix 4): the Search online row is removed - the 500 ms debounce is now the settle point, and a settled word with zero bundled matches fires the capped search on its own; a bundled match means the service never runs. The timer line itself is unchanged. Re-pinned in the Phase 5 land-if-current round (2026-11-27): the timer now lands through the captured landTypeahead lander instead of the armSeq local; the stand-down it carries is unchanged.",
    "id": "beta-1120-autocomplete-debounce",
-   "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500);",
+   "pattern": "crCityTimer = setTimeout(() => { crCityTimer = null; landTypeahead(crRunCityTypeahead); }, 500);",
    "type": "grep_present"
   },
   {
@@ -9240,10 +9240,10 @@
   {
    "added": "2026-11-18",
    "file": "parts/create-citydata.js",
-   "fix": "Beta 1.229 Aurora fix round (PR #109, merge 6fbcad76). The fallback-prep progress watchdog stays - a wedged landing is orphaned and the prep fails loudly with Retry instead of sitting at a percentage.",
+   "fix": "Beta 1.229 Aurora fix round (PR #109, merge 6fbcad76). The fallback-prep progress watchdog stays - a wedged landing is orphaned and the prep fails loudly with Retry instead of sitting at a percentage. Re-pinned in the Phase 5 land-if-current round (2026-11-27): the watchdog now takes the captured preparing lander instead of (gen, session); its body and stall behaviour are unchanged.",
    "fix_id": "prep-stall-watchdog-1229",
    "id": "stall1229-prep",
-   "pattern": "function crPrepWatchdog(prep, gen, session)",
+   "pattern": "function crPrepWatchdog(prep, preparing)",
    "type": "grep_present"
   },
   {
@@ -11408,10 +11408,10 @@
   {
    "added": "2026-11-20",
    "file": "parts/create-cache.js",
-   "fix": "/correct Phase 2 round C6 (PR #145, merged dcab120d). The pack-resolve landing's guard line in crCityPrepare - the single guard the drive153 phase F check (correct-c6-phase-f-orphan-landing) grades behaviourally. Its removal or the predicate's neutering is the bd0e7df recurrence shape.",
+   "fix": "/correct Phase 2 round C6 (PR #145, merged dcab120d). The pack-resolve landing's guard line in crCityPrepare - the single guard the drive153 phase F check (correct-c6-phase-f-orphan-landing) grades behaviourally. Its removal or the predicate's neutering is the bd0e7df recurrence shape. Re-pinned in the Phase 5 land-if-current round (2026-11-27): the landing now judges through the grid record's captured lander (g.isCurrent()); the guard and its CG-PF-05 claim are unchanged.",
    "fix_id": "correct-c6",
    "id": "correct-c6-init-landing-guard",
-   "pattern": "if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)",
+   "pattern": "if (!g.isCurrent()) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)",
    "type": "grep_present"
   },
   {
@@ -13603,10 +13603,10 @@
   {
    "added": "2026-11-25",
    "file": "parts/create-pick.js",
-   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search.",
+   "fix": "Beta 1.296 (popup round 2, fix 4): city search - the Search online row is removed; typing answers from the bundled gazetteer, and a settled zero-match word fires the online search on its own under the one-per-second cap, guarded by a settled-text re-check after the cap wait; a city pick cancels a held search. Re-pinned in the Phase 5 land-if-current round (2026-11-27): the re-check now lives in the landRequest lander's predicate (the settled text captured as its token); the guard and its claim are unchanged.",
    "fix_id": "popup-fix4-1296",
    "id": "popupfix4-settled-guard",
-   "pattern": "input.value !== settledText",
+   "pattern": "text => landSearch() && input.value === text",
    "type": "grep_present"
   },
   {
@@ -14111,6 +14111,60 @@
    "fix_id": "notile2-median-sampler",
    "id": "notile2-median-verdict",
    "pattern": "notilePool.length >= 5 && notileDiff >= 0 && notileDiff <= 14",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "Phase 5 (land-if-current owner): the capture/judge combinator exists in parts/app2.js - the create-route currency landings capture their tokens through it instead of threading hand-written checks.",
+   "fix_id": "phase5-land-if-current",
+   "id": "phase5-landifcurrent-owner",
+   "pattern": "function landIfCurrent(token, isCurrent) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/create-cache.js",
+   "fix": "Phase 5: the grid record carries its captured lander, bound to the record itself (crGridCurrent stays its engine), so a resume that re-adopts the record under a new generation judges current again.",
+   "fix_id": "phase5-land-if-current",
+   "id": "phase5-grid-capture",
+   "pattern": "g.isCurrent = landIfCurrent(g, crGridCurrent);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/create-citydata.js",
+   "fix": "Phase 5: the fallback prep captures its landers at start - the watchdog, ticker and extract judge through preparing (crPrepCurrent as its engine), the landing through the no-state landPrep.",
+   "fix_id": "phase5-land-if-current",
+   "id": "phase5-prep-captures",
+   "pattern": "const preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/create-pick.js",
+   "fix": "Phase 5: the city search captures its landers at issue - the pre-dispatch re-check, the answer landing and the failure catch judge through them (crCitySearchCurrent / crCitySearchSeqCurrent as their engines).",
+   "fix_id": "phase5-land-if-current",
+   "id": "phase5-city-captures",
+   "pattern": "const landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/create-pick.js",
+   "fix": "Phase 5: the type-ahead arm is a captured lander, replacing the armSeq local - a search starting first still bumps the sequence and stands the type-ahead down.",
+   "fix_id": "phase5-land-if-current",
+   "id": "phase5-typeahead-lander",
+   "pattern": "const landTypeahead = landIfCurrent(crCitySeq, crCitySearchSeqCurrent);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/create-pick.js",
+   "fix": "Phase 5 deliberate exception: the styledata stand-down listener stays hand-written - it judges live layer state on each event and holds no per-operation token for the combinator to capture.",
+   "fix_id": "phase5-land-if-current",
+   "id": "phase5-styledata-handwritten",
+   "pattern": "if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {",
    "type": "grep_present"
   }
  ]

@@ -254,6 +254,69 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-26 notile2-fresh-look"
+  },
+  {
+   "id": "phase5-land-if-current-r2",
+   "kind": "cut",
+   "surface": "create-route currency guards: grid, fallback prep, city search, type-ahead arm",
+   "cut": "the guards' hand-written capture/threading: (gen, session) args through the prep watchdog + ticker, the inline landing check, the armSeq local, repeated guard calls at landing seats",
+   "changed": [
+    "parts/app2.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-pick.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "A stale grid landing lands nowhere (CG-PF-05): the pack resolve landing after the watchdog orphaned the grid changes nothing - now judged by the grid record's captured lander instead of crGridCurrent(g) at the seat",
+     "case": "F1 ORPHANED INIT LANDING (bd0e7df)",
+     "check": "tests/browser/drive153.mjs",
+     "observes": "the pack resolve's late landing against the stalled grid: no pack identity, dataset or cells adopted, the FAILED settle stands"
+    },
+    {
+     "behaviour": "A healthy city pick readies through the grid's landings (pack resolve, saved-grid read, cell landings), judged by the captured lander; a resume re-adopts the same record under a new generation and judges current again",
+     "case": "S1 (healthy city pick)",
+     "check": "tests/browser/drive181.mjs",
+     "observes": "the none->preparing->ready edges with every cell done and no setter refusal recorded"
+    },
+    {
+     "behaviour": "The currency predicates keep their true input shapes (street search sequence only, city search sequence + session, city catch sequence only) - they survive as the combinators' engines, not as landing-seat evaluations",
+     "case": "A0 (the record + G3 predicates)",
+     "check": "tests/browser/drive181.mjs",
+     "observes": "the predicates' live answers in the page: current true, stale and wrong-session false"
+    },
+    {
+     "behaviour": "A held city search is current before the close owner acts and stale after it on both currency checks; a search issued after the close is current at the new sequence",
+     "case": "5: the held search was current before the close and is stale after it, on both currency checks",
+     "check": "tests/proof/proof-city-search-owner.mjs",
+     "observes": "the predicates' answers run against crResetCitySearch's sequence bump, abort and debounce clear"
+    },
+    {
+     "behaviour": "The fallback prep's mirror watchdog still forces the failed landing past the stall bound, orphaning the wedged landing by generation - now handed the captured preparing lander instead of (gen, session) arguments",
+     "case": "4e: the fallback box prep carries the mirror watchdog, orphaning its wedged landing by generation",
+     "check": "tests/proof/proof-1229.mjs",
+     "observes": "the watchdog's definition and its ticker call in parts/create-citydata.js"
+    },
+    {
+     "behaviour": "A failed city search still clears the results box under the sequence-only check, no local fallback standing on a failure - now judged by the captured landError lander",
+     "case": "B11: a failed fetch still clears the box - no local fallback stands on a failure",
+     "check": "tests/proof/proof-1235.mjs",
+     "observes": "the catch's guard text inside crRunCitySearch in parts/create-pick.js"
+    },
+    {
+     "behaviour": "A failed search request shows nothing false and does not wedge the pane - the catch landing through the captured landError lander",
+     "case": "D5 HONEST FAILURE",
+     "check": "tests/browser/drive153.mjs",
+     "observes": "the results box after a failed request: no rows and no false empty line, and the next search answering normally"
+    }
+   ],
+   "files": {
+    "parts/app2.js": "4590ccc8182f413da9e860c22eeb6e3c60072c328a0559131c832885ae31ade8",
+    "parts/create-cache.js": "5f4481becfa4f7abdc59dfe491d2290eac0fe957456522ad2733c58432ee2afd",
+    "parts/create-citydata.js": "5bccc0594de306ed59c2e577de63e6ef80afcbe6f4607266a8c8d5abd28f3f12",
+    "parts/create-pick.js": "4519f10d616e2f4c6ea04252fad56319fb6ccf805cf0b18bc943e7fe079fd5dc"
+   },
+   "issued": "2026-11-27 phase5-land-if-current (r2: cut text shortened under the 240-char added-line limit; rows unchanged)"
   }
  ]
 }

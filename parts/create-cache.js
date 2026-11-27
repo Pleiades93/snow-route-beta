@@ -126,12 +126,12 @@ function crGridFinish(g) {
 function crGridArmTicker(g) { // the grid's heartbeat, armed at preparation entry: it renders the readout and runs the progress watchdog below
   if (g.ticker) clearInterval(g.ticker);
   g.ticker = setInterval(() => {
-    if (crGridCurrent(g) && crPrepState === 'preparing') { crGridWatchdog(g); if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); }
+    if (g.isCurrent() && crPrepState === 'preparing') { crGridWatchdog(g); if (g.isCurrent() && crPrepState === 'preparing') crRenderHint(); }
     else if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
   }, 1000);
 }
 function crGridWatchdog(g) { // the watchdog: past CR_TIMING.stallMs since anything landed, force the loud landing instead of a percentage that never moves
-  if (!crGridCurrent(g) || g.stopped || crPrepState !== 'preparing') return;
+  if (!g.isCurrent() || g.stopped || crPrepState !== 'preparing') return;
   if (Date.now() - (g.lastProgressAt || g.startedAt) < CR_TIMING.stallMs) return;
   crGridStall(g);
 }
@@ -145,17 +145,17 @@ function crGridStall(g) { // a stalled grid lands like a failed load: downloads 
   crGridFinish(g);
 }
 function crGridPump(g) { // at most CR_GRID_PARALLEL in flight; a failed cell retries once, then is marked failed while the rest continue
-  if (!crGridCurrent(g) || g.stopped) return;
+  if (!g.isCurrent() || g.stopped) return;
   while (g.active < CR_GRID_PARALLEL) {
     const cell = g.cells.find(c => c.state === 'pending');
     if (!cell) break;
     cell.state = 'fetching'; cell.tries++;
     g.active++;
     const op = {}; g.ops.add(op);
-    crSourceExtract(cell.box, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crGridCurrent(g) && !g.stopped, op).then(res => {
+    crSourceExtract(cell.box, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => g.isCurrent() && !g.stopped, op).then(res => {
       if (!g.ops.has(op)) return; // stopped or superseded since launch: a late answer lands nowhere, even if this grid is later resumed
       g.ops.delete(op); g.active--;
-      if (!crGridCurrent(g)) return; // the session moved on: land nowhere (CG-PF-05)
+      if (!g.isCurrent()) return; // the session moved on: land nowhere (CG-PF-05)
       g.lastProgressAt = Date.now(); // a landed cell is progress: the watchdog's clock restarts here, whatever the answer was
       if (res.ok) {
         cell.state = 'done';
@@ -186,17 +186,19 @@ function crCityPrepare() { // load the picked city's whole extract: from the cac
   const cells = crGridCellsFor(bbox);
   // lastProgressAt restarts at every landing; ds is the grid's dataset identity, set when the pack resolve lands
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null };
+  // Resume re-adopts this record with a new generation.
+  g.isCurrent = landIfCurrent(g, crGridCurrent);
   crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
   crRenderHint();
   crGridArmTicker(g); // the heartbeat runs from entry: the read and the resolve below are inside the watchdog's reach from here
   // the resolve lands before the read: the fit test needs the dataset identity, which is the resolve's answer
   crPackResolveCity(name, bbox).then(pk => {
-    if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
+    if (!g.isCurrent()) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
     g.lastProgressAt = Date.now(); // the pack resolve landing is progress: the read's and the pump's clocks start from here
     if (pk) { g.fromPack = pk.slug; crPackCtx = { slug: pk.slug, bbox: pk.bbox, failed: false }; }
     g.ds = crDatasetId(pk);
     crIdbGet(name).then(rec => {
-    if (!crGridCurrent(g)) return;
+    if (!g.isCurrent()) return;
     g.lastProgressAt = Date.now(); // the saved-grid read landing is progress, restored cells or none
     let restored = 0;
     if (!crCacheRecFits(rec, bbox, g.ds)) rec = null; // a record under another box or dataset is not this grid's cache: its cell keys would restore the wrong streets
