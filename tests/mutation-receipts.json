@@ -18934,6 +18934,84 @@
    "red": "updated drive125 on base 744c8ef5: T1 and T4 FAIL on the frosted readings (sheetBg rgba(255, 255, 255, 0.92) day, rgba(32, 33, 37, 0.94) night, barBg equal to sheetBg). The pre-update drive125 failed the other way on the fixed head in CI shard 1, attempts 1 and 2 (job logs: T1/T4 with sheetBg solid, barBg translucent) - the two versions of the check observe exactly the contract change",
    "green": "updated drive125 on the fixed tree: 29/29 PASS on the final bytes (r2: one comment word trimmed for the limits judge after r1's runs; S7b crossfade sampling flaked once locally on each tree during the r1 runs and passes in CI)",
    "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "s2-addstack-proof1300",
+   "check": "tests/proof/proof-1300.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1300.mjs": "78dbc8cba8ca80b0b5a2462f9b2c8316e2f5c9244b991bf1ac6efccad8648799",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "mutation": "parts/engine.js: 10-mutation set against addStack (fades lineMetrics dropped; selGlow data reseated; surface/band order swapped; casing gains a filter; fade-band-g filter b->f; zoom range 12.5->12.6; POI text cut 12.6->12.5; refresh order swapped; add guard dropped; hook title ids emptied)",
+   "red": "proof-1300 exit 1 under each of the 10 mutations on the unmodified tree, each failing its named check (run-mutations.py: ALL BITES)",
+   "green": "proof-1300 on the unmodified tree: 6 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r2-addstack"
+  },
+  {
+   "id": "s2-addstack-proof1264-repoint",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "b526d5265eca39242f9d30041fc013c1e063e081707764a72c3ee1495d058157",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "mutation": "parts/engine.js: delete the fade-fill-g add(line(...)) call from the stack builder (the derivation seat the S2 re-point reads)",
+   "red": "proof-1264 exit 1: FAIL check 3 (nine feather layers derived) and FAIL check 4 (stale: fade-fill-g), observed in a scratch copy 2026-11-27",
+   "green": "proof-1264 on the unmodified tree with the re-pointed derivation: 6 passed, 0 failed (exit 0); derived set identical to the pre-repoint derivation",
+   "issued": "2026-11-27 s2r2-addstack"
+  },
+  {
+   "id": "s2-addstack-proof1300-r2",
+   "check": "tests/proof/proof-1300.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1300.mjs": "00daefad051234a37193bf0aea200c38bebe90c4babdcb03c62ea7f636862e72",
+    "parts/engine.js": "cb2ee369e18a15a1291c89a117d0a5db8df72e66c02000746fca7d320715b395"
+   },
+   "mutation": "parts/engine.js (split tree): the same 10-mutation set against the stack builders (mutations now land inside addRouteStackSources / addRoutePaintLayers and the addStack host)",
+   "red": "proof-1300 exit 1 under each of the 10 mutations on the split tree, each failing its named check (run-mutations.py: ALL BITES)",
+   "green": "proof-1300 on the split tree: 6 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r2-addstack"
+  },
+  {
+   "id": "s2-addstack-proof1264-repoint-r2",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "b526d5265eca39242f9d30041fc013c1e063e081707764a72c3ee1495d058157",
+    "parts/engine.js": "cb2ee369e18a15a1291c89a117d0a5db8df72e66c02000746fca7d320715b395"
+   },
+   "mutation": "parts/engine.js (split tree): delete the fade-fill-g add(line(...)) call from inside addRoutePaintLayers (the helper seat the re-pointed derivation reads)",
+   "red": "proof-1264 exit 1: FAIL check 3 (nine feather layers derived) and FAIL check 4 (stale: fade-fill-g), observed in a scratch copy on the split tree 2026-11-27",
+   "green": "proof-1264 on the split tree: 6 passed, 0 failed (exit 0), derived from the five builder bodies",
+   "issued": "2026-11-27 s2r2-addstack"
+  },
+  {
+   "id": "s2-addstack-proof1300-r3",
+   "check": "tests/proof/proof-1300.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1300.mjs": "00daefad051234a37193bf0aea200c38bebe90c4babdcb03c62ea7f636862e72",
+    "parts/engine.js": "96464f6070bbeb55c3487b5bc00e5b50db09c0d29a038422c3cb4d612f35817d"
+   },
+   "mutation": "parts/engine.js (final split bytes): the 10-mutation set against the stack builders, re-observed after the JSDoc typedef restructure",
+   "red": "proof-1300 exit 1 under each of the 10 mutations on the final split tree, each failing its named check (run-mutations.py: ALL BITES)",
+   "green": "proof-1300 on the final split tree: 6 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r2-addstack"
+  },
+  {
+   "id": "s2-addstack-proof1264-repoint-r3",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "a3ce9a35bba558e7a49da7c074324239713129b1788a35cba87096a9cff17f7a",
+    "parts/engine.js": "96464f6070bbeb55c3487b5bc00e5b50db09c0d29a038422c3cb4d612f35817d"
+   },
+   "mutation": "parts/engine.js (final split bytes): delete the fade-fill-g add(line(...)) call from inside addRoutePaintLayers, re-observed after the comment trims",
+   "red": "proof-1264 exit 1: FAIL check 3 (nine feather layers derived) and FAIL check 4 (stale: fade-fill-g), observed in a scratch copy on the final split tree 2026-11-27",
+   "green": "proof-1264 on the final split tree: 6 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r2-addstack"
   }
  ]
 }
