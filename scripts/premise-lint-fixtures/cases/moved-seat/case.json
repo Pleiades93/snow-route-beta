@@ -1,0 +1,25 @@
+{
+    "comment": "Phase 6 fix (2026-11-27): a literal removed from one parts file but alive in another parts file has moved seats, not expired. The per-file survival model flagged it; the whole-tree model must not flag it in either mode.",
+    "name": "moved-seat",
+    "runs": [
+        {
+            "expect_absent": [
+                "premise flag(s) -"
+            ],
+            "expect_contains": [
+                "premise-lint: no drive premise touched by this diff"
+            ],
+            "keys": false
+        },
+        {
+            "expect_absent": [
+                "key premise flag(s) -",
+                "premise flag(s) -"
+            ],
+            "expect_contains": [
+                "premise-lint --keys: no key premise touched by this diff"
+            ],
+            "keys": true
+        }
+    ]
+}

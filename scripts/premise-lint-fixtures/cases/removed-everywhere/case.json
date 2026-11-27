@@ -1,0 +1,25 @@
+{
+    "comment": "Phase 6 fix guard (2026-11-27): a literal removed from EVERY parts file that held it is a true expiry. The whole-tree survival model must still flag it in base mode; the widening must not weaken real convictions.",
+    "name": "removed-everywhere",
+    "runs": [
+        {
+            "expect_absent": [],
+            "expect_contains": [
+                "premise-lint: 1 premise flag(s)",
+                "'text-radial-offset'  asserted by: drive991.mjs"
+            ],
+            "keys": false
+        },
+        {
+            "expect_absent": [
+                "key premise flag(s) -"
+            ],
+            "expect_contains": [
+                "premise-lint: 1 premise flag(s)",
+                "'text-radial-offset'  asserted by: drive991.mjs",
+                "premise-lint --keys: no key premise touched by this diff"
+            ],
+            "keys": true
+        }
+    ]
+}

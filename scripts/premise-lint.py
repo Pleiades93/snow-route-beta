@@ -8,10 +8,11 @@ silently, until it fails in CI as a mystery (the Beta 1.132 cosmetic
 ship renamed two sector-bar labels and expired three drives' text
 checks; they were noticed only because a human remembered). This lint
 makes the expiry mechanical: given a diff of parts/, it extracts the
-string literals the diff REMOVES, drops any that still exist in the
-head version of their own file (a literal on a merely-touched line is
-not an expired premise), and reports every drive file that still
-contains one of the truly-removed literals.
+string literals the diff REMOVES, drops any that still exist anywhere
+in the head parts/ tree (a literal on a merely-touched line is not an
+expired premise, and neither is one that moved seats to another parts
+file), and reports every drive file that still contains one of the
+truly-removed literals.
 
 Usage:
     python3 scripts/premise-lint.py --diff pr.diff
@@ -30,8 +31,8 @@ constructs or addresses a key: a localStorage/sessionStorage call, a
 construction, a bracket member access (obj['lit']), or an object-key
 position ('lit':) - and flags drives containing such a literal EVEN
 WHEN it survives as display text, unless the literal still appears in
-a key-bearing line in the head version of a file it was removed from
-(it genuinely survives in key position). Base-mode output is unchanged
+a key-bearing line anywhere in the head parts/ tree (it genuinely
+survives in key position). Base-mode output is unchanged
 when --keys is absent. --drives-dir overrides the drive directory
 (the lint fixtures use it); the default is this repo's tests/browser.
 Fix cycle 1 (2026-11-08): key position is judged per literal, not per
@@ -232,17 +233,28 @@ def is_key_line(line, lit):
     return any(_span_is_key(stripped, s, e, lit) for s, e in spans)
 
 
-def key_survives(lit, files, head_root: Path):
-    """True when the literal still appears in a KEY-BEARING line in the head
-    version of any file it was removed from (it survives in key position,
-    not merely as display text)."""
-    for f in files:
-        p = head_root / f
-        if p.exists():
-            for ln in p.read_text(encoding="utf-8").splitlines():
-                if lit in ln and is_key_line(ln, lit):
-                    return True
-    return False
+_parts_lines_cache = {}
+
+
+def _parts_lines(head_root: Path):
+    """Every line of every file under the head parts/ tree (cached)."""
+    key = str(head_root)
+    if key not in _parts_lines_cache:
+        lines = []
+        parts = head_root / "parts"
+        if parts.is_dir():
+            for p in sorted(parts.iterdir()):
+                if p.is_file():
+                    lines.extend(p.read_text(encoding="utf-8").splitlines())
+        _parts_lines_cache[key] = lines
+    return _parts_lines_cache[key]
+
+
+def key_survives(lit, head_root: Path):
+    """True when the literal still appears in a key-bearing line anywhere
+    in the head parts/ tree (survives in key position, not display text)."""
+    return any(lit in ln and is_key_line(ln, lit)
+               for ln in _parts_lines(head_root))
 
 
 def trees_removed(base: Path, head: Path):
@@ -259,13 +271,10 @@ def trees_removed(base: Path, head: Path):
     return removed
 
 
-def surviving(lit, files, head_root: Path):
-    """True when the literal still exists in the head of any file it was removed from."""
-    for f in files:
-        p = head_root / f
-        if p.exists() and lit in p.read_text(encoding="utf-8"):
-            return True
-    return False
+def surviving(lit, head_root: Path):
+    """True when the literal still exists anywhere in the head parts/ tree
+    (a literal that moved seats to another parts file has not expired)."""
+    return any(lit in ln for ln in _parts_lines(head_root))
 
 
 def main() -> int:
@@ -288,7 +297,7 @@ def main() -> int:
     else:
         print(__doc__)
         return 2
-    lits = {lit for lit, files in removed.items() if not surviving(lit, files, head_root)}
+    lits = {lit for lit in removed if not surviving(lit, head_root)}
     if "--drives-dir" in args:
         drives_root = Path(args[args.index("--drives-dir") + 1])
     else:
@@ -323,7 +332,7 @@ def main() -> int:
             if not any(is_key_line(line, lit) for _, line in sites):
                 continue
             files = {f for f, _ in sites}
-            if key_survives(lit, files, head_root):
+            if key_survives(lit, head_root):
                 continue
             key_lits.add(lit)
         for lit in sorted(key_lits):

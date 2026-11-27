@@ -18015,6 +18015,34 @@
    "red": "proof-anchors: 13 passed, 1 failed (check 4a, the cap) - observed twice on the restructured tree",
    "green": "proof-anchors: 14 passed, 0 failed on the reverted restructured tree",
    "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; mutation re-observed)"
+  },
+  {
+   "id": "phase6-premise-lint-moved-seat",
+   "check": "scripts/premise-lint.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/premise-lint.py": "5918040363c15ac3f41efccf2e17efa177a9a4c9952b244427abfdc207f32349",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3"
+   },
+   "mutation": "surviving()/key_survives() reverted to the per-file survival model (premise-lint.py as at base 506efb40); the shipped fixture suite and the PR's real parts diff run against the reverted lint",
+   "red": "fixtures FAIL on moved-seat (3 failures over 18 runs: 'labelpts' flagged expired though alive in head app2.js); the PR parts diff --strict exits 1 with exactly 3 flags ('center' x15 drives, 'labelpts' x4, 'text-radial-offset' x1)",
+   "green": "shipped whole-tree lint: fixtures PASS (18 runs over 9 cases, removed-everywhere still flagging); the same PR parts diff --strict exits 0, no flags",
+   "issued": "2026-11-27 phase6-finisher"
+  },
+  {
+   "id": "phase6-premise-lint-fixtures-moved-seat",
+   "check": "scripts/premise-lint-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/premise-lint-fixtures/run-fixtures.py": "f49863c5a1e70f9fb9d86f1bfc29e6873ee408468deafc4eb652bbfc3ccbc410",
+    "scripts/premise-lint.py": "5918040363c15ac3f41efccf2e17efa177a9a4c9952b244427abfdc207f32349",
+    "scripts/premise-lint-fixtures/cases/moved-seat/case.json": "8205f73a52a335efa39b01171662ab0b282aead0f84666ed3e63b729dbe83785",
+    "scripts/premise-lint-fixtures/cases/removed-everywhere/case.json": "0d1e7f5d3b216a3f724abf434dbc6e6ffb9bfcf4e405630739ad126c2168db3d"
+   },
+   "mutation": "the lint under test reverted to the per-file survival model (premise-lint.py as at base 506efb40); the shipped suite (9 cases incl. the two new Phase 6 cases) run against it",
+   "red": "suite FAILS: 3 failure(s) over 18 run(s), all in moved-seat ('labelpts' convicted as expired though it moved seats to app2.js)",
+   "green": "suite PASS with the shipped whole-tree lint: 18 runs over 9 cases, 0 failures; removed-everywhere flags under both lints",
+   "issued": "2026-11-27 phase6-finisher"
   }
  ]
 }
