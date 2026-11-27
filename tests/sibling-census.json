@@ -29989,6 +29989,12 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "notile2-median-sampler",
+   "kind": "machinery-exempt",
+   "reason": "machinery round: no parts/ file changes - the round changes one check (tests/browser/drive180.mjs) and its ledgers only",
+   "issued": "2026-11-26 notile2-fresh-look"
   }
  ]
 }

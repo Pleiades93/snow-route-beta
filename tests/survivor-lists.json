@@ -246,6 +246,14 @@
     "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0"
    },
    "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "notile2-median-sampler",
+   "kind": "no-cut",
+   "reason": "no removal, port or restructure: NOTILE2's sampler is widened in place (five transparent points, up to three hold shots, median verdict); the claim and the bound 14 are unchanged",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-26 notile2-fresh-look"
   }
  ]
 }

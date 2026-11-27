@@ -17669,6 +17669,19 @@
    "red": "drive145 62/63: the only failure is N17 (the tap-away leaves the Pace sheet open)",
    "green": "drive145 63/63 on the restored tree (clean re-run; one earlier clean run scattered N34, the documented rig class, and the re-run is fully green)",
    "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "notile2-median-tile",
+   "check": "tests/browser/drive180.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive180.mjs": "3ef879c36a0c5fc1a3501de70a64691470cf5ca73a65cd56466284e862d2e211",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308"
+   },
+   "mutation": "tile restored in a scratch copy: parts/head.html #splashIcon gains background:#1b2fb6 (the tile-era opaque navy square), assembled + built there",
+   "red": "fixed drive180 on the mutated tree x3: NOTILE2 fails every run - median 38 over 10 readings, the 12% point reading exactly rgb(27,47,182); NOTILE1/ICONSIZE pass",
+   "green": "fixed drive180 on the clean tree x10: NOTILE2 passes every run - pooled medians 5,5,5,5,10,6,5,5,9,5 vs bound 14 (pools of 10-15 readings)",
+   "issued": "2026-11-26 notile2-fresh-look"
   }
  ]
 }

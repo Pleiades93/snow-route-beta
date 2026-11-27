@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "991198e1d73ea883d995ec5dee34f3c452fff8e8de83fa738276968b437e7d25",
+  "canonical_registry_sha256": "4ed340f2a1d65b1d11d8e03fc58af8d0843e70f11759b5f38bb6f93957e7f54b",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1611,
-   "included": 1581,
+   "canonical": 1614,
+   "included": 1584,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14084,6 +14084,33 @@
    "fix_id": "phase3-sheet-owner",
    "id": "phase3-openclean-keeps-height",
    "pattern": "SHEETS.open($('pacePanel'), null, true);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive180.mjs",
+   "fix": "NOTILE2 fresh look: the rendered tile proof samples five transparent points of the artwork box, not one - a snowflake crossing one window can no longer stand in for tile paint.",
+   "fix_id": "notile2-median-sampler",
+   "id": "notile2-pooled-points",
+   "pattern": "const PTS = [[0.12, 0.12], [0.28, 0.08], [0.5, 0.05], [0.85, 0.1], [0.08, 0.28]];",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive180.mjs",
+   "fix": "NOTILE2 fresh look: the capture widens to up to three hold screenshots, so the judged sample spans the hold instead of one instant of falling snow.",
+   "fix_id": "notile2-median-sampler",
+   "id": "notile2-multi-shot",
+   "pattern": "const takeNotileShot = async () => {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive180.mjs",
+   "fix": "NOTILE2 fresh look: the verdict is the pooled median against the unchanged bound 14 - persistent tile paint (every point, every shot) still convicts; transient flakes are outvoted.",
+   "fix_id": "notile2-median-sampler",
+   "id": "notile2-median-verdict",
+   "pattern": "notilePool.length >= 5 && notileDiff >= 0 && notileDiff <= 14",
    "type": "grep_present"
   }
  ]
