@@ -738,6 +738,9 @@ def gate(root, changed):
     parts_changed = sorted({p for p in changed if p.startswith("parts/")})
     if not parts_changed:
         return None
+    if (root / "docs/SURFACE-MAP.md").exists() and "docs/SURFACE-MAP.md" not in changed:
+        return ("surface-map gate: parts changed without the surface map - "
+                "review the surface change and update docs/SURFACE-MAP.md")
     data, err = load_census(root)
     if err:
         return "the sibling-census gate cannot run: " + err
