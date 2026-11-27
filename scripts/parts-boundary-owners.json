@@ -959,7 +959,7 @@
       "kind": "map-layer",
       "key": "GLP.layers.stack:visibility",
       "owner": "parts/app2.js",
-      "description": "MapLibre route-stack visibility, including title and route POI layers (hide/restore owned by setRouteBackdrop)",
+      "description": "MapLibre route-stack visibility, including title and route POI layers (hide/restore owned by setRouteBackdrop; literal stack-layer layout writes recognized in any function)",
       "recognition": [
         {
           "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
@@ -982,6 +982,21 @@
           "arg": "^[\"']visibility[\"']$",
           "fn": "setRouteBackdrop",
           "index": 1
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"'](?:t1-casing|t1-casingb|t1-surface|t1-band|t1-fill|fade-casing|fade-surf-y|fade-surf-r|fade-band-g|fade-fill-g)[\"']$",
+          "index": 0
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"'](?:t1-sel|t1-selband|t1-selfill|selfade-y|selfade-r|selfade-g|selfade-fill|sel-core-s|sel-core-b|hit)[\"']$",
+          "index": 0
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"'](?:routepoi-ring|routepoi-dot|routepoi-txt|streetnamespt[1-4]|sel-glow[1-5]-[sb])[\"']$",
+          "index": 0
         }
       ],
       "enforce": true

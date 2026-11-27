@@ -41,6 +41,7 @@ function boundaryTree(file) {
 const clones = new Map();
 const pairs = new Map();
 let failures = 0;
+let boundaryFailures = 0;
 let writeExemptions = 0;
 const cloneExemptions = new Map(baseline.exemptions
   .filter(entry => entry.name?.trim() && entry.why?.trim())
@@ -129,6 +130,7 @@ function scanJs(file, source) {
     for (const hit of scanBoundaries(programTree, file, boundaryOwners, boundaryBaseline, boundaryChecker)) {
       boundaryCounts[hit.status]++;
       if (hit.enforced) {
+        boundaryFailures++;
         fail(`${file}:${hit.line}: boundary: new foreign write to ${hit.state}, owned by ${hit.owner}. Route the write through the owner, or record a named exemption in scripts/parts-boundary-owners.json.`);
       } else if (hit.status !== 'KNOWN') console.log(hit.message);
     }
@@ -293,10 +295,13 @@ if (writeBaseline) {
 }
 
 if (writeBoundaryBaseline && boundaryOn) {
-  if (failures) {
+  if (failures - boundaryFailures > 0) {
     console.error('boundary baseline refused: the tree failed the checks above. Fix those failures before regenerating.');
     process.exitCode = 1;
   } else {
+    // Recording the current seats is the deliberate act this flag exists for:
+    // boundary failures alone do not refuse it, they are what gets recorded.
+    failures -= boundaryFailures;
     const seats = boundaryWrites.map(({ state, file, fn, occ }) => ({ state, file, fn, occ }));
     seats.sort((a, b) => {
       const ka = JSON.stringify([a.state, a.file, a.fn, a.occ]);

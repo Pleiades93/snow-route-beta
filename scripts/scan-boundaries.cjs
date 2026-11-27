@@ -42,6 +42,10 @@ function matchWrite(write, rule, checker, owner, fn, key) {
       const end = { toggle: 1, replace: 2 }[write.method];
       return write.args.slice(0, end).some(arg => ts.isStringLiteral(arg) && arg.text === key);
     }
+    // add/remove take many tokens: test the pattern against every argument.
+    if ((write.method === 'add' || write.method === 'remove') && rule.arg) {
+      return write.argText.some(text => rule.arg.test(text));
+    }
     return !rule.arg || rule.arg.test(write.argText[rule.index ?? 0]);
   }
   if (!write.target || !rule.target.test(write.target)) return false;

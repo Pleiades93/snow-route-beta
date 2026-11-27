@@ -18240,6 +18240,81 @@
    "red": "The base workflow runs the parts scan but no boundary fixture step, and JUDGE_PATHS does not name scripts/scan-boundaries.cjs: a boundary verdict change could land with no fixture run in CI and no receipt.",
    "green": "The current workflow carries the boundary scanner fixtures step after the parts scan; JUDGE_PATHS names scripts/scan-boundaries.cjs; the mirrors gate's judges family PASSes with the addition. Re-issue of gb-boundary-wiring: the pinned scanner changed only in its header comment.",
    "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "gb-boundary-enforcement-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "f5d25a817547a55703291b296ba3d3b6eb39648902cff6246c4ebc26620c4035",
+    "scripts/scan-boundaries.cjs": "2944cb9a0e2650166cde093c5daf2d95c15088bda1fa8da7ca5b9dd8b973705c",
+    "scripts/gate-fixtures/run-fixtures.py": "61584073ef937c37f58810aad464987d3ed8c1899afe4d3035f1202b1791c5bf",
+    "scripts/parts-boundary-owners.json": "0cd950668a5717d151f735ebcf9676b5e306c8c3e656523d13cd543c8c4d5b90",
+    "scripts/parts-boundary-baseline.json": "fda415f79a1bddc0b14e11965bc844bb4c89fa4f5a285771528e68eb2a82f9fb"
+   },
+   "mutation": "Two neuters, each observed on the final tree: (A) force the enforced flag false in scan-boundaries.cjs; (B) make the boundary-baseline writer in scan-parts.cjs refuse on any failure again (the pre-fix semantics).",
+   "red": "Neuter A: gate fixtures 168 pass, 3 fail - exactly the three convicting boundary fixtures flip (planted enforced write; blank-reason exemption; planted multi-token write); the unit fixtures exit 1 at the enforcement assertion. Neuter B: 168 pass, 3 fail - the three regeneration fixtures flip (record, carry, plain-scan-after). Pass-side controls stay green under both.",
+   "green": "Shipped files restored byte-identical (sha256 verified): gate fixtures 171 pass, 0 fail; boundary unit fixtures 19 passed; the real-tree parts scan PASSes (193 baselined, 0 exempted, 0 new). Re-issue of gb-boundary-enforcement-r2 after the Codex P2 fixes on PR #233 (multi-token class matching, function-independent stack-layer recognition, baseline-writer absorption).",
+   "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "gb-boundary-fixtures-r3",
+   "check": "tests/boundary-fixtures.cjs",
+   "kind": "mutation",
+   "files": {
+    "tests/boundary-fixtures.cjs": "eb5478220fd3d99a70c0043fbcba34ec3f00dfe352bc94852addad9913f43803",
+    "scripts/scan-boundaries.cjs": "2944cb9a0e2650166cde093c5daf2d95c15088bda1fa8da7ca5b9dd8b973705c",
+    "scripts/parts-boundary-owners.json": "0cd950668a5717d151f735ebcf9676b5e306c8c3e656523d13cd543c8c4d5b90"
+   },
+   "mutation": "The enforcement neuter (gb-boundary-enforcement neuter A) run against the boundary unit fixtures alone.",
+   "red": "The fixtures exit 1 at the enforcement assertion; observed on the original file twice, on the header-shortened file once, and on the final file once (the same neuter run as gb-boundary-enforcement-r3's neuter A).",
+   "green": "Shipped scanner restored byte-identical: boundary fixtures 19 passed, including the multi-token class-token assertions and the function-independent stack-layer assertions added for the Codex P2 fixes. Re-issue of gb-boundary-fixtures-r2 for the changed pinned files.",
+   "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "gb-boundary-wiring-r3",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "65ee6c9a59fa035128b7884c58b99b7921b68bb97fa3a66e61678091d7dcbd9b",
+    "scripts/check-receipts.py": "2a6bde96f18c8894e92e5af7220388c8e872f29a3541c440600dc776d5ba17cb",
+    "scripts/scan-boundaries.cjs": "2944cb9a0e2650166cde093c5daf2d95c15088bda1fa8da7ca5b9dd8b973705c",
+    "scripts/scan-parts.cjs": "f5d25a817547a55703291b296ba3d3b6eb39648902cff6246c4ebc26620c4035"
+   },
+   "mutation": "Compare the checks workflow at base 3897062c with the current tree, and the receipts judge list before and after this round.",
+   "red": "The base workflow runs the parts scan but no boundary fixture step, and JUDGE_PATHS does not name scripts/scan-boundaries.cjs: a boundary verdict change could land with no fixture run in CI and no receipt.",
+   "green": "The current workflow carries the boundary scanner fixtures step after the parts scan; JUDGE_PATHS names scripts/scan-boundaries.cjs; the mirrors gate's judges family PASSes with the addition. Re-issue of gb-boundary-wiring-r2: pinned scanner and scan-parts changed by the Codex P2 fixes (recognition coverage and baseline-writer absorption); the workflow file is unchanged.",
+   "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "gb-boundary-enforcement-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "f5d25a817547a55703291b296ba3d3b6eb39648902cff6246c4ebc26620c4035",
+    "scripts/scan-boundaries.cjs": "2944cb9a0e2650166cde093c5daf2d95c15088bda1fa8da7ca5b9dd8b973705c",
+    "scripts/gate-fixtures/run-fixtures.py": "61584073ef937c37f58810aad464987d3ed8c1899afe4d3035f1202b1791c5bf",
+    "scripts/parts-boundary-owners.json": "41cd18920d365683fef329c4a17bec99856e9b51301d951a373f1c85e25b38ca",
+    "scripts/parts-boundary-baseline.json": "fda415f79a1bddc0b14e11965bc844bb4c89fa4f5a285771528e68eb2a82f9fb"
+   },
+   "mutation": "Two neuters, each observed on the final tree: (A) force the enforced flag false in scan-boundaries.cjs; (B) make the boundary-baseline writer in scan-parts.cjs refuse on any failure again (the pre-fix semantics).",
+   "red": "Neuter A: gate fixtures 168 pass, 3 fail - exactly the three convicting boundary fixtures flip (planted enforced write; blank-reason exemption; planted multi-token write); the unit fixtures exit 1 at the enforcement assertion. Neuter B: 168 pass, 3 fail - the three regeneration fixtures flip (record, carry, plain-scan-after). Pass-side controls stay green under both.",
+   "green": "Shipped files restored byte-identical (sha256 verified): gate fixtures 171 pass, 0 fail; boundary unit fixtures 19 passed; the real-tree parts scan PASSes (193 baselined, 0 exempted, 0 new). Re-issue of gb-boundary-enforcement-r3: after the neuters, the owners map's stack-ID regex was split into three sub-240-char alternatives with identical coverage (widened census still 193 found, 0 new, 0 vanished).",
+   "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "gb-boundary-fixtures-r4",
+   "check": "tests/boundary-fixtures.cjs",
+   "kind": "mutation",
+   "files": {
+    "tests/boundary-fixtures.cjs": "eb5478220fd3d99a70c0043fbcba34ec3f00dfe352bc94852addad9913f43803",
+    "scripts/scan-boundaries.cjs": "2944cb9a0e2650166cde093c5daf2d95c15088bda1fa8da7ca5b9dd8b973705c",
+    "scripts/parts-boundary-owners.json": "41cd18920d365683fef329c4a17bec99856e9b51301d951a373f1c85e25b38ca"
+   },
+   "mutation": "The enforcement neuter (gb-boundary-enforcement neuter A) run against the boundary unit fixtures alone.",
+   "red": "The fixtures exit 1 at the enforcement assertion; observed on the original file twice, on the header-shortened file once, and on the final file once (the same neuter run as gb-boundary-enforcement-r4's neuter A).",
+   "green": "Shipped scanner restored byte-identical: boundary fixtures 19 passed, including the multi-token class-token assertions and the function-independent stack-layer assertions added for the Codex P2 fixes. Re-issue of gb-boundary-fixtures-r3: the pinned owners map changed only by the stack-ID regex split (identical coverage, census-verified).",
+   "issued": "2026-11-27 graft-b-boundaries"
   }
  ]
 }

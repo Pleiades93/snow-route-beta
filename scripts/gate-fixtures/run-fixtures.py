@@ -1767,6 +1767,24 @@ with tempfile.TemporaryDirectory() as td:
     check("boundary: an exemption with a blank reason does not exempt",
           run_scan(boundary_tree(t / "bblank", app3=SCENE_WRITE,
                                  owners=blank_owners)), 1)
+    away_owners = {**BOUNDARY_OWNERS, "states": BOUNDARY_OWNERS["states"] + [
+        {"id": "brand-away", "kind": "dom", "key": "#brandLayer.away",
+         "owner": "parts/app2.js", "enforce": True,
+         "recognition": [{"call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle)$",
+                          "arg": "^[\"']away[\"']$"}]}]}
+    check("boundary: a planted multi-token write to an enforced state fails",
+          run_scan(boundary_tree(t / "bmulti", owners=away_owners,
+                                 app3="function x() { $('brandLayer').classList.add('other', 'away'); }\n")), 1)
+    regen = boundary_tree(t / "bregen", app3=SCENE_WRITE)
+    check("boundary: baseline regeneration records a planted enforced seat",
+          run_scan(regen, "--write-boundary-baseline"), 0)
+    regen_baseline = json.loads(
+        (regen / "scripts" / "parts-boundary-baseline.json").read_text())
+    check("boundary: the regenerated baseline carries the planted seat",
+          0 if {"state": "snow-scene", "file": "parts/app3.js",
+                "fn": "paint", "occ": 1} in regen_baseline else 1, 0)
+    check("boundary: a plain scan passes against the regenerated baseline",
+          run_scan(regen), 0)
 
 # ------------------------------------------------- worked examples
 # TESTING.md rule 6's proof cases, pinned to their observation needles.
@@ -1791,6 +1809,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 168
+total = 171
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

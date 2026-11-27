@@ -22,7 +22,7 @@ with no app inline event handlers. `data.js` supplies the shipped
 pack list, whose runtime mutations are listed below. `pmstyles.js`
 and `whatsnew.js` supply data to consumers.
 
-**107 states** (95 with a named owner, 12 ambiguous), **192
+**107 states** (95 with a named owner, 12 ambiguous), **193
 confirmed foreign state/write seats**, **19 rows enforced** (18
 by this scanner, 1 by the source-ownership rule in the same
 scanner).
@@ -83,7 +83,7 @@ scanner).
 | `brand-off` | Intro brand off/bye classes | `create-save.js` | app5.js | 1 | report-only |
 | `city-list-arrow` | City picker scroll arrow classes | `create-pick.js` | app2.js | 2 | report-only |
 | `gps-source` | MapLibre GeoJSON source `gps` | `app2.js` | app3.js | 1 | report-only |
-| `route-stack-visibility` | MapLibre route-stack visibility, including title and route POI layers (hide/restore owned by setRouteBackdrop) | `app2.js` | None | — | ENFORCED |
+| `route-stack-visibility` | MapLibre route-stack visibility, including title and route POI layers (hide/restore owned by setRouteBackdrop; stack-layer layout writes recognized in any function) | `app2.js` | engine.js | 1 | ENFORCED |
 | `map-pixel-ratio` | Map canvas pixel ratio controlled by the device profile | `app1.js` | None | — | ENFORCED |
 | `map-listeners` | MapLibre listener registration on the shared map | `app2.js` | app1.js, app3.js, create-pick.js | 5 | report-only |
 | `pace-sheet-lifecycle` | Pace sheet lifecycle classes and detent geometry | `app2.js` | None | — | ENFORCED |
@@ -174,6 +174,17 @@ evidence.
   not writers.
 - The other 12 ambiguous states were re-checked seat by seat and
   stay ambiguous for the reasons tabled above.
+- Post-review (Codex P2s on the G-B PR): two recognition gaps in
+  enforced rows were closed. Class-token rules now test every
+  `add`/`remove` argument, not just the first (a multi-token
+  foreign write previously matched nothing). Route-stack
+  recognition now also matches a literal stack-layer ID in any
+  enclosing function, not only inside the two owner functions.
+  The widened census found exactly one new seat, baselined:
+  engine.js `rebuildRoute` sets `routepoi-txt`'s `text-field`
+  (the route name) - a layout write to a stack layer, recorded
+  here rather than silently permitted; 192 -> 193 seats, zero
+  seats vanished.
 
 ## Enforcement
 
@@ -218,7 +229,9 @@ file, enclosing function and the 1-based write ordinal for that
 state within the function; lines are for display. Regenerate it
 only by command (`node scripts/scan-parts.cjs .
 --write-boundary-baseline`), never by hand; regeneration is
-refused when the scan fails. In scan output, KNOWN seats count
+refused when the scan fails for any reason other than the
+boundary seats it exists to record (an enforced NEW seat is
+exactly what a reviewed regeneration accepts). In scan output, KNOWN seats count
 silently, NEW and EXEMPT seats print per write, and the totals
 line reports baselined / exempted / new plus the enforced-state
 count. An `exemptions` entry in the owner map names the exact

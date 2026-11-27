@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "792b2b9f73099268d0976e980ef26f4f75d6144b4e2495b8af051338f240b251",
+  "canonical_registry_sha256": "81b943dfa28e5456d0d305867440d26eac00bbbc907037c349e2c880cf491c61",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -14323,7 +14323,7 @@
   {
    "added": "2026-11-27",
    "file": "scripts/parts-boundary-baseline.json",
-   "fix": "G-B: the boundary baseline records every confirmed foreign seat (192 at the G-B regeneration); basemap-label-policy keeps its one baselined engine.js seat, report-only until that write moves.",
+   "fix": "G-B: the boundary baseline records every confirmed foreign seat (193 at the G-B regeneration, one seat added by the post-review widened census); basemap-label-policy keeps its one baselined engine.js seat, report-only until that write moves.",
    "fix_id": "graft-b-boundaries",
    "id": "gb-baseline-seat",
    "pattern": "\"state\":\"basemap-label-policy\"",

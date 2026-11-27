@@ -67,6 +67,7 @@
   {"state":"rmClose-icon","file":"parts/app4.js","fn":"renderIcons","occ":1},
   {"state":"route-back-icons","file":"parts/app4.js","fn":"renderIcons","occ":1},
   {"state":"route-menu-open","file":"parts/app5.js","fn":"unloadRouteToBoot","occ":1},
+  {"state":"route-stack-visibility","file":"parts/engine.js","fn":"rebuildRoute","occ":1},
   {"state":"routeLoaded","file":"parts/app5.js","fn":"loadRoute","occ":1},
   {"state":"routeLoaded","file":"parts/app5.js","fn":"unloadRouteToBoot","occ":1},
   {"state":"routes-tab-icon","file":"parts/app4.js","fn":"<top-level>","occ":1},
