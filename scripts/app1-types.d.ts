@@ -326,28 +326,6 @@ type EngineGlowLayer = { p?: number, s?: number, b: number, o: number, a: number
 /** Section 2 names each global's real home part; a home that
 stops declaring it fails the mirrors check. */
 
-/** app3.js: `const SAMPLES = {}` - per-street coverage sample points, refilled by buildSamples. */
-declare var SAMPLES: { [street: string]: LatLng[] };
-
-/** app3.js: rebuilds SAMPLES from the live geometry; called by buildGeometry (app1). */
-declare function buildSamples(): void;
-
-/** app3.js: the last accepted GPS fix {ll, at}, or null before any fix. */
-declare var lastGood: { ll: number[], at: number } | null;
-
-
-
-
-/** app3.js: persists the pre-Start snapshot (LS.snap); retried by flushAux (app1). Returns the storage outcome. */
-declare function saveSnap(): StorageOutcome;
-/** app3.js: persists the packed fixlog record. */
-declare function saveFixLog(): StorageOutcome;
-
-/** app3.js: banks the run-distance counter (LS.rundist) - on every recorded fix since Beta 1.193 (the 30 s / 25 m throttle retired), and when forced by flushAux (app1) on a forced flush so a mid-run reload resumes the true figure (Beta 1.186, storage fix round P2). The force flag now only marks the page-death call; banking itself is change-gated. Returns nothing. */
-declare function persistRunDist(force?: boolean): void;
-
-/** app3.js: banks the counter's second copy (LS.rundist2) from flushAux's trail-flush path (app1) - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so the two records fail independently (Beta 1.193, counter hardening). Returns nothing. */
-declare function bankRunDistMirror(): void;
 
 
 
@@ -370,44 +348,26 @@ declare function bankRunDistMirror(): void;
 
 
 
-/** app3.js: GPS distance along the trail since the given epoch ms. */
-declare function trailKm(sinceMs: number): number;
 
-/** app3.js: the flags line for one street's notes. */
-declare function flagText(n: string): string;
 
-/** app3.js: the live fix log's decoded sessions. */
-declare var fixLog: FixLogSession[];
 
-/** app3.js: flips the runtime fix-log switch. */
-declare function fixLogSetEnabled(on: boolean): void;
 
-/** app3.js: reads the runtime fix-log switch. */
-declare function fixLogIsEnabled(): boolean;
 
-/** app3.js: encodes decoded sessions into the stored e3 record. */
-declare function fixLogEncodeSessions(sessions: FixLogSession[]): FixLogRecord;
 
-/** app3.js: decodes any stored or backup value into sessions. */
-declare function fixLogDecodeSessions(parsed: any): FixLogSession[];
 
-/** app3.js: coverage samples for a stretch set, by street. */
-declare function samplesFor(stretch: StretchMap, names: string[]): { [street: string]: LatLng[] };
 
-/** app3.js: the running clean's in-memory snapshot, or null. */
-declare var runSnap: Snap | null;
 
-/** app3.js: re-evaluates the wake-lock want. */
-declare function syncWake(): Promise<void>;
 
-/** app3.js: the icon mint table for the Pace stats. */
-declare var PACE_ICONS: { [key: string]: string };
 
-/** app3.js: true once the browser refused location permission. */
-declare var gpsDenied: boolean;
 
-/** app3.js: the live geolocation watch id, or null. */
-declare var watchId: number | null;
+
+
+
+
+
+
+
+
 
 
 
@@ -438,23 +398,11 @@ declare function crPackLoad(slug: string): Promise<CrPackElement[]>;
 
 
 
-/** app3.js: hides the shared confirmation pill. */
-declare function hideConfirm(): void;
 
-/** app3.js: the stale-clean (over 12 hours) finish ask. */
-declare function checkStale(): void;
 
-/** app3.js: the run/history half of the route-switch session reset. */
-declare function resetNotesHistorySession(): void;
 
-/** app3.js: starts the geolocation watch (fromRun marks a recording watch). */
-declare function startGps(fromRun?: boolean, restart?: boolean): void;
 
-/** app3.js: stops the geolocation watch. */
-declare function stopGps(silent?: boolean): void;
 
-/** app3.js: true while the live watch is a recording (in-run) watch. */
-declare var gpsFromRun: boolean;
 
 
 
@@ -512,41 +460,17 @@ declare var gpsFromRun: boolean;
 
 
 
-/** app3.js: true while GPS follow is paused. */
-declare var followPaused: boolean;
 
-/** app3.js: the displayed GPS position, or null. */
-declare var dispPos: any;
 
-/** app3.js: the position the display currently shows. */
-declare function dispShownPos(): LatLng;
 
-/** app3.js: pushes the GPS features to the map. */
-declare function pushGps(): void;
 
-/** app3.js: the stats line for the count strip. */
-declare function statsLine(): string;
 
-/** app3.js: formats a stored timestamp for display. */
-declare function fmtWhen(iso: string): string;
 
-/** app3.js: formats a stored timestamp as an age. */
-declare function fmtAgo(iso: string): string;
 
-/** app3.js: a street's note text, or ''. */
-declare function noteTextOf(n: string): string;
 
-/** app3.js: sets a street's note text; returns the save outcome. */
-declare function setNoteText(n: string, txt: string | null): any;
 
-/** app3.js: opens the note modal for a street. */
-declare function openNote(name: string): void;
 
-/** app3.js: opens the pace panel. */
-declare function openPace(): void;
 
-/** app3.js: closes the pace panel. */
-declare function closePace(): void;
 
 
 

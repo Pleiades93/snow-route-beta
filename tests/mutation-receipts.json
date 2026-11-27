@@ -18690,6 +18690,43 @@
    "red": "FAIL: delete waits while another writer holds the pack turn.",
    "green": "Restored: the proof passes in full. Re-issued because the shared helper's header comment was trimmed one word for the PR comment limit; the code is unchanged.",
    "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-finish-proof-anchor",
+   "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-fixlog-runv-guard-b02.mjs": "6d39cbdfb1946ebb995fd62d110a72ed08620abfb37b40e3f649b602138b28ed"
+   },
+   "mutation": "Changed _fxMuExact's precision in parts/app3.js (Math.round(v * 1e6) / 1e6 -> 1e5), altering which output positions ride delta encoding, after the proof's extraction end anchor moved from the deleted _fxEncodeEntry to fixLogEncodeSessions.",
+   "red": "Proof exits 1: FAIL on 'S1: encoding is byte-identical to the unmodified encoder' and the S3 byte-identity line; round-trip and runV-guard lines still pass.",
+   "green": "Mutation reverted (app3.js sha256 restored): proof exits 0, 13/13 PASS.",
+   "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "s1-finish-snc-app3-storage",
+   "check": "scripts/check-snc.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-snc.py": "88cae708d5032bec8cbca7072fff9891ee76185d6346ad793c875e8461f4bbcf",
+    "scripts/tsconfig.snc.json": "efac42a857280e490b96ea18f5aa784e51f9dcd79cbba7bf674e009ca6be8efd"
+   },
+   "mutation": "Appended a possibly-null dereference (const __sncProbe = (null).x;) to parts/app3.js, a file this round adds to the gate's STORAGE set.",
+   "red": "SNC GATE FAIL: storage files carry strict-null errors - parts/app3.js(1697,20): error TS2531: Object is possibly 'null'.",
+   "green": "Probe removed: SNC GATE PASS: storage files clean; global backlog 196 of cap 196 (the measured global set is byte-identical to the pre-round base set).",
+   "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "s1-finish-typecheck-scope",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "fe7c8db2783c782b4c33a764b03defb93fb2b2c4e39811be562f683824478d3c"
+   },
+   "mutation": "Appended an unannotated function (implicit-any parameter) to parts/app3.js, the part this round adds to the tsconfig include the renamed CI step runs.",
+   "red": "tsc -p scripts/tsconfig.json exits 2 with parts/app3.js(1697,21): error TS7006: Parameter 'unannotated' implicitly has an 'any' type - the step would fail.",
+   "green": "Probe removed: tsc -p scripts/tsconfig.json exits 0 on the clean tree (all 16 parts).",
+   "issued": "2026-11-27 s1-finish-app3"
   }
  ]
 }

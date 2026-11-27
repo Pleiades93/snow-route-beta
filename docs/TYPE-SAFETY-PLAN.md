@@ -1,76 +1,73 @@
-# Type-safety rollout
+# Type-safety rollout - COMPLETE
 
-The app parts form one classic script. Use [the storage schema](STORAGE-SCHEMA.md)
-for persisted shapes and keep those shapes in `scripts/app1-types.d.ts`.
-Remove a section-2 mirror in the same change that includes its owning part.
-Where an included part needs a binding from an excluded part, declare only
-the surface it uses and name the owning file.
+Status: complete as of S1-FINISH (2026-11-27). The base program covers
+all 16 parts at zero errors, and the strict-null gate covers the five
+storage parts at zero errors with the remaining backlog capped.
 
-## Stage one and base-program expansion
+The app parts form one classic script. Persisted shapes live in
+[the storage schema](STORAGE-SCHEMA.md) and in `scripts/app1-types.d.ts`.
+Where an included part needs a binding from another part, the surface it
+uses is declared in section 2 of that file with the owning file named;
+a section-2 mirror is removed in the same change that includes its
+owning part. Section 2 now holds only the two `create-citydata.js`
+mirrors (`crPackIndexLoad`, `crPackLoad`), kept because the creation
+flow's callers still read them across the part boundary.
 
-Stage one enables `noImplicitAny` for the four files already covered.
-Subsequent steps extend that program in the order below. The order follows
-the save-family calls, Web Storage reads and writes, and IndexedDB transaction
-owners. The last-area suggestion has lower priority than route
-definitions and saved run state.
+## The base program (landed, stages 1-3)
 
-Each row lands with a refreshed Type check scope label/comment in
-`.github/workflows/checks.yml` and a zero-error CI run of
-`cd scripts && ./node_modules/.bin/tsc -p tsconfig.json`. The draft leaves
-the workflow edit for the builder.
+`scripts/tsconfig.json` includes all 16 parts (`data.js`, `app1.js`,
+`engine.js`, `pmstyles.js`, `app4.js`, `create-packs.js`, `app3.js`,
+`app5.js`, `create-save.js`, `create-cache.js`, `create-fetch.js`,
+`create-citydata.js`, `create-pick.js`, `app2.js`, `whatsnew.js`,
+`brand-snow.js`) with `strict: false`, `noImplicitAny: true`,
+`strictNullChecks: false`, and reports zero errors. CI runs it as the
+step "Type check (all 16 parts; noImplicitAny on - scope in
+scripts/tsconfig.json)".
 
-| Step | Files joining and reason | Flags | Section-2 mirrors to remove |
-| --- | --- | --- | --- |
-| 1 | Current set (`data.js`, `app1.js`, `engine.js`, `pmstyles.js`). Establish the baseline around the shared save and slot-migration helpers. | `strict: false`, `noImplicitAny: true`, `strictNullChecks: false` | None |
-| 2a | `app4.js` + `create-packs.js`. Restore validates, writes, rolls back both stores Its IndexedDB counterpart joins too: both sides of the verified writes, the legacy drain. | Same as 1 | `ICONS`; any interim `create-packs.js` mirrors |
-| 2b | `app3.js`. Start, Finish, and Cancel persist live run state, the history transaction, distance counters, fixlog. | Same as 1 | `SAMPLES`, `buildSamples`, `lastGood`, `saveSnap`, `saveFixLog`, `persistRunDist`, `bankRunDistMirror` |
-| 2c | `app5.js`. Route switch flushes the outgoing slot, route deletion sweeps its keys, and pack migration verifies the shared cache. | Same as 1 | `applyNight` |
-| 2d | `create-save.js`. Checks the creation flow's one verified pack write and its preload and last-area metadata. | Same as 1 | None currently |
-| 3a | `create-cache.js`. Owns IndexedDB I/O for city shapes, which can be downloaded again if lost. | Same as 1 | None currently |
-| 3b | `create-pick.js` + `create-fetch.js` + `create-citydata.js`. Check the remaining creation flow together, including last-area reads and writes and the inputs to the city cache. | Same as 1 | None currently |
-| 3c | `app2.js`. Check the main UI, selection, and basemap integration once their persistence dependencies are covered. | Same as 1 | `routeBox`, `ROUTE_TILE_NAMES`, `map`, `setBasemap`, `selSet`, `selStretch`, `glUnifyLabels` |
-| 3d | `whatsnew.js` + `brand-snow.js`. Finish with release data and decoration. | Same as 1 | None currently |
+The rollout order followed the save-family calls, Web Storage reads and
+writes, and IndexedDB transaction owners. `app3.js` (stage 2b) landed
+last, in S1-FINISH: it was blocked on dead code - `_fxEncodeEntry`, a
+second fixlog encoder that was never called and whose own helper
+`_fxScalar` was defined nowhere. The dead function was deleted (proof
+of deadness in the round's RECORD), S1's banked annotation patch was
+applied, the 38 app3 section-2 mirrors were retired, and the file
+joined the program at zero errors.
 
-Remove any additional interim mirrors when their owning files join, even in
-rows where the draft lists none.
+## The strict-null gate (landed, stage 4 - as built)
 
-## Stage two nullability check
+The design sketched during planning (a separate
+`tsconfig.storage.json` covering five parts) was superseded by the
+wiring S1 shipped: `scripts/tsconfig.snc.json` extends the base config
+with `strictNullChecks: true` over all 16 parts, and
+`scripts/check-snc.py` gates the result in CI as the step "Strict-null
+check (storage files clean; global backlog capped)":
 
-After step 2d, prepare the five storage/restore parts in
-`scripts/tsconfig.storage.json` for a second CI command,
-`cd scripts && ./node_modules/.bin/tsc -p tsconfig.storage.json`. This config
-inherits `strict: false` and `noImplicitAny: true`, overrides the include
-list, and turns on `strictNullChecks`. Wire it in as a separate Type check
-step once both programs report zero errors. Update the base Type check scope
-label/comment and name the strict-null scope in the new step.
+- The storage set - `app4.js`, `create-packs.js`, `app3.js`,
+  `app5.js`, `create-save.js` - must carry zero strict-null
+  diagnostics. `app3.js` joined the set in S1-FINISH, its 90
+  diagnostics burned to zero with annotation only (casts, JSDoc
+  widenings, and type predicates on the fixlog codec's finiteness
+  guards); no runtime token changed.
+- The diagnostics in the remaining parts form a capped backlog:
+  `CEILING = 196` in `scripts/check-snc.py`. The measured set after
+  S1-FINISH is byte-identical to the pre-round set - the honest
+  `dispShownPos` return type briefly added two diagnostics in
+  `app2.js`, burned in the same round. The cap only ever moves down:
+  a future round that burns backlog lowers it to the new measured
+  value in the same change.
 
-Type the backup decoder, slot field maps, write sets, rollback snapshots,
-IndexedDB results, run and fixlog state, migration evidence, and save
-outcomes before wiring it in. Preserve distinctions between a missing key,
-an explicit idle assertion, and a failed read. Narrow nullable values at
-the existing guards and review any unguarded use before changing behavior.
+## Schema gaps - resolved
 
-The storage program excludes app1 source, whose storage helpers remain
-checked by the base program. Add storage-program-only cross-part
-declarations for the helpers and other excluded owners the five files
-actually use. Keep these declarations out of the base program, include them
-explicitly in the storage config when wiring it in, and avoid mirrors of
-owners included in the storage program. As an owner joins the base program,
-move any mirror still needed by the storage program to that program's
-declarations.
+The plan's open gap is closed. `snowroute.prep.v1` was documented as a
+flag, but the part source only ever declared its key in `LS_GLOBAL` -
+no code read or wrote the key at any point. S1-FINISH deleted the dead
+declaration (`LS_GLOBAL.prep`). The key stays documented in
+STORAGE-SCHEMA.md as a historical key that may sit in legacy profiles;
+nothing reads it, and the offline e2e setup removes it defensively.
+There is no record shape to type.
 
-Keep the ES2022-only library to avoid the app's `history` collision.
-Update the handcrafted browser declarations to represent nullable lookups,
-file inputs, and IndexedDB results. For DOM IDs guaranteed by
-`parts/head.html`, use a verified fixed-ID overload or an annotated helper
-whose callers honor that guarantee. General lookups must retain
-`AppElement | null`. Share declarations where the two programs use the
-same browser surface. Run both CI commands at each subsequent include step.
+## What remains
 
-## Schema gaps
-
-The partial-pack migration census is code-only. The schema documents the
-pack-migration fingerprint separately. The schema calls `snowroute.prep.v1`
-a flag, and the part source only declares its key. There is no record shape
-to type until the builder identifies a historical format that still needs
-support.
+Nothing in this plan. Burning the 196-diagnostic strict-null backlog
+in the non-storage parts is future work under the cap rule above, one
+part at a time, each landing with its own round.

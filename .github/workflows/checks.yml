@@ -273,7 +273,7 @@ jobs:
           # the shards use the runner image's preinstalled browser.
           cache: 'npm'
           cache-dependency-path: scripts/package-lock.json
-      - name: Type check (all parts but app3.js; noImplicitAny on - scope in scripts/tsconfig.json)
+      - name: Type check (all 16 parts; noImplicitAny on - scope in scripts/tsconfig.json)
         working-directory: scripts
         run: |
           npm ci

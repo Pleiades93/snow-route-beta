@@ -1021,6 +1021,167 @@
     "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-finish-app3",
+   "kind": "cut",
+   "surface": "the fixlog codec in parts/app3.js and the LS_GLOBAL key table in parts/app1.js",
+   "cut": "Deleted two proven-dead declarations: _fxEncodeEntry (app3, never called; its callee _fxScalar is defined nowhere) and LS_GLOBAL.prep (app1, never read or written). The proof's end anchor moved to fixLogEncodeSessions.",
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "Fixlog encodes byte-identically after the dead _fxEncodeEntry deletion and the proof re-anchor",
+     "case": "encoding is byte-identical to the unmodified encoder",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "the live codec extracted from parts/app3.js (now sliced through fixLogEncodeSessions) encoding the corpus to the pinned bytes"
+    },
+    {
+     "behaviour": "Fixlog round-trips entries including run values after the deletion",
+     "case": "round trip returns the original entries (run values included)",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "decode of the encoded corpus returning the original entries with run values intact"
+    },
+    {
+     "behaviour": "The runV guard still refuses fractional and negative run values after the deletion",
+     "case": "fractional runV (first entry) encodes without throwing",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "the guarded encoder boundary in _fxEncEntry accepting fractional/negative runV without throwing and decoding them as run 0"
+    },
+    {
+     "behaviour": "A full backup still restores meaning-identically, global keys included, after the LS_GLOBAL.prep deletion",
+     "case": "S1 backup of the fixture state is meaning-identical on all 10 keys",
+     "check": "tests/browser/drive121.mjs",
+     "observes": "buildBackup/restore round trip over the fixture state with all 10 keys meaning-identical"
+    },
+    {
+     "behaviour": "Restore still refuses a crafted night value after the LS_GLOBAL.prep deletion",
+     "case": "T4 crafted night=\"banana\" refused silently too",
+     "check": "tests/browser/drive171.mjs",
+     "observes": "the restore validator rejecting a crafted night value silently, writing nothing"
+    },
+    {
+     "behaviour": "Restore still accepts a genuine night value after the LS_GLOBAL.prep deletion",
+     "case": "T4 control: a genuine night=\"1\" backup fills an ABSENT override and reloads",
+     "check": "tests/browser/drive171.mjs",
+     "observes": "the restore path filling an absent night override from a genuine backup and reloading"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app3.js": "118db35d173956fef37b60bda6039aeb97fecd459df9246597294e40ae20bce9"
+   },
+   "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "s1-finish-app3-r2",
+   "kind": "cut",
+   "surface": "the fixlog codec in parts/app3.js and the LS_GLOBAL key table in parts/app1.js",
+   "cut": "Deleted two proven-dead declarations: _fxEncodeEntry (app3, never called; its callee _fxScalar is defined nowhere) and LS_GLOBAL.prep (app1, never read or written). The proof's end anchor moved to fixLogEncodeSessions.",
+   "changed": [
+    "parts/app1.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "Fixlog encodes byte-identically after the dead _fxEncodeEntry deletion and the proof re-anchor",
+     "case": "encoding is byte-identical to the unmodified encoder",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "the live codec extracted from parts/app3.js (now sliced through fixLogEncodeSessions) encoding the corpus to the pinned bytes"
+    },
+    {
+     "behaviour": "Fixlog round-trips entries including run values after the deletion",
+     "case": "round trip returns the original entries (run values included)",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "decode of the encoded corpus returning the original entries with run values intact"
+    },
+    {
+     "behaviour": "The runV guard still refuses fractional and negative run values after the deletion",
+     "case": "fractional runV (first entry) encodes without throwing",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "the guarded encoder boundary in _fxEncEntry accepting fractional/negative runV without throwing and decoding them as run 0"
+    },
+    {
+     "behaviour": "A full backup still restores meaning-identically, global keys included, after the LS_GLOBAL.prep deletion",
+     "case": "S1 backup of the fixture state is meaning-identical on all 10 keys",
+     "check": "tests/browser/drive121.mjs",
+     "observes": "buildBackup/restore round trip over the fixture state with all 10 keys meaning-identical"
+    },
+    {
+     "behaviour": "Restore still refuses a crafted night value after the LS_GLOBAL.prep deletion",
+     "case": "T4 crafted night=\"banana\" refused silently too",
+     "check": "tests/browser/drive171.mjs",
+     "observes": "the restore validator rejecting a crafted night value silently, writing nothing"
+    },
+    {
+     "behaviour": "Restore still accepts a genuine night value after the LS_GLOBAL.prep deletion",
+     "case": "T4 control: a genuine night=\"1\" backup fills an ABSENT override and reloads",
+     "check": "tests/browser/drive171.mjs",
+     "observes": "the restore path filling an absent night override from a genuine backup and reloading"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app3.js": "fac28d166656f385fa5b8c167a067eac7f1a4790f0e9bcde2b32e57ac8a2e9c6"
+   },
+   "issued": "2026-11-27 s1-finish-app3 (r2: re-issued after PR-limits line wraps)"
+  },
+  {
+   "id": "s1-finish-app3-r3",
+   "kind": "cut",
+   "surface": "the fixlog codec in parts/app3.js and the LS_GLOBAL key table in parts/app1.js",
+   "cut": "Deleted two proven-dead declarations: _fxEncodeEntry (app3, never called; its callee _fxScalar is defined nowhere) and LS_GLOBAL.prep (app1, never read or written). The proof's end anchor moved to fixLogEncodeSessions.",
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "Fixlog encodes byte-identically after the dead _fxEncodeEntry deletion and the proof re-anchor",
+     "case": "encoding is byte-identical to the unmodified encoder",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "the live codec extracted from parts/app3.js (now sliced through fixLogEncodeSessions) encoding the corpus to the pinned bytes"
+    },
+    {
+     "behaviour": "Fixlog round-trips entries including run values after the deletion",
+     "case": "round trip returns the original entries (run values included)",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "decode of the encoded corpus returning the original entries with run values intact"
+    },
+    {
+     "behaviour": "The runV guard still refuses fractional and negative run values after the deletion",
+     "case": "fractional runV (first entry) encodes without throwing",
+     "check": "tests/proof/proof-fixlog-runv-guard-b02.mjs",
+     "observes": "the guarded encoder boundary in _fxEncEntry accepting fractional/negative runV without throwing and decoding them as run 0"
+    },
+    {
+     "behaviour": "A full backup still restores meaning-identically, global keys included, after the LS_GLOBAL.prep deletion",
+     "case": "S1 backup of the fixture state is meaning-identical on all 10 keys",
+     "check": "tests/browser/drive121.mjs",
+     "observes": "buildBackup/restore round trip over the fixture state with all 10 keys meaning-identical"
+    },
+    {
+     "behaviour": "Restore still refuses a crafted night value after the LS_GLOBAL.prep deletion",
+     "case": "T4 crafted night=\"banana\" refused silently too",
+     "check": "tests/browser/drive171.mjs",
+     "observes": "the restore validator rejecting a crafted night value silently, writing nothing"
+    },
+    {
+     "behaviour": "Restore still accepts a genuine night value after the LS_GLOBAL.prep deletion",
+     "case": "T4 control: a genuine night=\"1\" backup fills an ABSENT override and reloads",
+     "check": "tests/browser/drive171.mjs",
+     "observes": "the restore path filling an absent night override from a genuine backup and reloading"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "fac28d166656f385fa5b8c167a067eac7f1a4790f0e9bcde2b32e57ac8a2e9c6"
+   },
+   "issued": "2026-11-27 s1-finish-app3 (r3: names all three changed parts paths for the push gate; app2 changed annotation-only, nothing cut there)"
   }
  ]
 }

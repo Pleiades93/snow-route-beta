@@ -285,7 +285,7 @@ function addGpsLayers() {
       const cssW = cnv.clientWidth, cssH = cnv.clientHeight;
       if (!cssW || !cssH || !cnv.width) return;
       const dev = cnv.width / cssW;
-      const pt = map.project([dispShownPos()[1], dispShownPos()[0]]); // the puck centres on the rendered point: under the stillness hold that is the held point, still at rest
+      const pt = map.project([/** @type {number[]} */ (dispShownPos())[1], /** @type {number[]} */ (dispShownPos())[0]]); // the puck centres on the rendered point: under the stillness hold that is the held point, still at rest
       const D = 0.054 * cssW * dev;
       const pitch = map.getPitch() * Math.PI / 180;
       const faceK = Math.max(0.30, Math.pow(Math.cos(pitch), 1.47));
@@ -829,7 +829,7 @@ function springSheet(sheet, q0, qT, v0, apply, finish) {
 const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture settlement, interruption and terminal cleanup for both sheets
   /** @param {AppElement} sheet @returns {void} */
   function clearHeight(sheet) { sheet.style.height = ''; sheet.style.maxHeight = ''; }
-  /** @param {AppElement} sheet @param {() => void} [prepare] @param {boolean} [keepHeight] @returns {void} */
+  /** @param {AppElement} sheet @param {(() => void)|null} [prepare] @param {boolean} [keepHeight] @returns {void} */
   function open(sheet, prepare, keepHeight) { if (!keepHeight) clearHeight(sheet); if (prepare) prepare(); sheet.classList.add('open'); }
   /** @param {AppElement} sheet @param {boolean} full @returns {void} */
   function setFull(sheet, full) { if (full) { sheet.classList.add('full'); sheet.style.maxHeight = 'none'; sheet.style.height = sheetFullH(vvHeight()) + 'px'; } else { sheet.classList.remove('full'); clearHeight(sheet); } }
