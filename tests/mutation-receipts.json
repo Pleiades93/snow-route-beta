@@ -17286,6 +17286,45 @@
    "red": "on the final form (Codex round applied): drive228 collapses to 4/21 - every route sub-pane stop fails on the away leg and the W20 coverage comparison fails with them; the pre-refactor form scored 5/21 twice",
    "green": "drive228 21/21 PASS on the shipped tree after the Codex round; W20 separately proven to observe: removing #setAboutPane from the live DOM fails W20 alone (20/21). Re-issued after a comment-only compression in create-fixture.mjs drifted a pinned hash; the drive file is byte-identical to the -r3 runs",
    "issued": "2026-11-26 snow-everywhere codex round"
+  },
+  {
+   "id": "phase2-drive125-s7a",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "8093f3f7855986ec53ae9d2f371dd90ffab0ffa29d058b82eaa398642c4290ea",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc"
+   },
+   "mutation": "Two breaks, one per colliding case ID. (1) Crossfade: stampNightBtn (parts/app4.js) mutated to always re-stamp, the pre-PR-#221 behaviour the preserving stamp replaced. (2) Buildings: the buildings-3d layer id renamed to buildings-3d-off in both basemap styles (parts/pmstyles.js), so the layer the check reads is absent after the swap.",
+   "red": "(1) S7b fails alone, 28/29 - 13 sun-opacity samples, none mid, while the S7 terminal assertions still pass. (2) S7a fails alone on the isolating run, 28/29 - the layer read returns {there:false}; a first run under the same mutation also failed S7a directly while S7b co-failed on local-rig sampling jitter.",
+   "green": "Clean tree, drive125 29/29 locally (chromium-1254): S7a grades the buildings layer, S7b grades the crossfade - one case ID per check, the collision the phase was handed is gone.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-survivors-checker",
+   "check": "scripts/check-survivors.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "The new gate's verdicts exercised on synthetic trees, one break per documented failure shape: no ledger at all (the PR #217 port shape - a cut round that never wrote a list); a row naming a case text its check file does not carry (vacuous naming); a row naming a check file that does not exist; a pinned parts file edited after issue; the named case removed from its check file after issue.",
+   "red": "Every shape refused: the gate exits 1 with no ledger and again on the stale pin and the removed case; issue itself refuses the vacuous needle and the missing check file before any record is written.",
+   "green": "A valid cut record (row needle verified in its check) and a reasoned no-cut record both pass the gate on their paths; verify reports both CURRENT.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-judge-list",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "248bc127da0a7ea4b156a5f0d6acea88ecc777d3cbfe9dd128fd16038763eec3",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "scripts/check-survivors.py present on disk as a judging script (scripts/check-*.py) while JUDGE_PATHS does not name it - the pre-change state of this very edit.",
+   "red": "scripts/check-mirrors.py fails the tree: 'judges: scripts/check-survivors.py is a judging script but is not named in check-receipts.py's JUDGE_PATHS - a change to it would escape the mutation-receipt requirement silently'.",
+   "green": "With check-survivors.py named in JUDGE_PATHS, the mirrors gate passes every family including judges.",
+   "issued": "2026-11-26 phase2-prove-it"
   }
  ]
 }
