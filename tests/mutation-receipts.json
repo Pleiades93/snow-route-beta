@@ -18152,6 +18152,50 @@
    "red": "The base workflow has no parts-scan step and no ESLint step: neither command judges a PR that did not arrive via push.py.",
    "green": "The current workflow carries both steps after the type check; extracted commands on the clean tree exit 0 (parts scan PASS; ESLint 0 errors, 1 warning in a pinned fixture file).",
    "issued": "2026-11-27 graft-a-machinery"
+  },
+  {
+   "id": "gb-boundary-enforcement",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "1b3649f1f848a07dd9e5c4fe0e87db7405e870a08af5f469b90ebd540ecc1d8c",
+    "scripts/scan-boundaries.cjs": "fbdd183bca8dca950883ae69910b0da6e82551ea31686010a94dbfd492562294",
+    "scripts/gate-fixtures/run-fixtures.py": "2b5d1a429db4ce07584d73e69de39135cfa19c92320bf8141e7f26174136b591",
+    "scripts/parts-boundary-owners.json": "176b70d132670d9f495c59251970e0f65fc3774475249bd0d8765429b327a46b",
+    "scripts/parts-boundary-baseline.json": "561ec9fdd4884f562a0a83a618eb7c5d62b2a050c3d6b85090166e3285236387"
+   },
+   "mutation": "Force the enforced flag false in scan-boundaries.cjs (the NEW-write enforcement neuter), then rerun the gate fixture suite and the boundary unit fixtures.",
+   "red": "Observed twice: gate fixtures 166 pass, 2 fail - exactly the two convicting boundary fixtures flip (a planted foreign write to an enforced state; an exemption with a blank reason); the unit fixtures exit 1 at the enforcement assertion. Every pass-side control stays green.",
+   "green": "Shipped scanner restored byte-identical (sha256 verified): gate fixtures 168 pass, 0 fail; boundary unit fixtures 11 passed; the real-tree parts scan PASSes (192 baselined, 0 exempted, 0 new).",
+   "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "gb-boundary-fixtures",
+   "check": "tests/boundary-fixtures.cjs",
+   "kind": "mutation",
+   "files": {
+    "tests/boundary-fixtures.cjs": "9edf8942b383efd9f85fa9e7f63984b487d2442d4714a9b1ccc8b9c49d9661cc",
+    "scripts/scan-boundaries.cjs": "fbdd183bca8dca950883ae69910b0da6e82551ea31686010a94dbfd492562294",
+    "scripts/parts-boundary-owners.json": "176b70d132670d9f495c59251970e0f65fc3774475249bd0d8765429b327a46b"
+   },
+   "mutation": "The same enforcement neuter as gb-boundary-enforcement, run against the boundary unit fixtures alone.",
+   "red": "Observed twice: the fixtures exit 1 at the enforcement assertion (a NEW write to an enforce-marked state reads enforced false instead of true); the report-only assertions above it stay green.",
+   "green": "Shipped scanner restored byte-identical: boundary fixtures 11 passed, including the baselined-write and report-only enforcement assertions.",
+   "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "gb-boundary-wiring",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "65ee6c9a59fa035128b7884c58b99b7921b68bb97fa3a66e61678091d7dcbd9b",
+    "scripts/check-receipts.py": "2a6bde96f18c8894e92e5af7220388c8e872f29a3541c440600dc776d5ba17cb",
+    "scripts/scan-boundaries.cjs": "fbdd183bca8dca950883ae69910b0da6e82551ea31686010a94dbfd492562294"
+   },
+   "mutation": "Compare the checks workflow at base 3897062c with the current tree, and the receipts judge list before and after this round.",
+   "red": "The base workflow runs the parts scan but no boundary fixture step, and JUDGE_PATHS does not name scripts/scan-boundaries.cjs: a boundary verdict change could land with no fixture run in CI and no receipt.",
+   "green": "The current workflow carries the boundary scanner fixtures step after the parts scan; JUDGE_PATHS names scripts/scan-boundaries.cjs; the mirrors gate's judges family PASSes with the addition.",
+   "issued": "2026-11-27 graft-b-boundaries"
   }
  ]
 }
