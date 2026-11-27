@@ -18895,6 +18895,19 @@
    "red": "drive231 on base 744c8ef5 (drive file only, final bytes): 21 checks, exactly 8 FAIL - 'background is fully opaque' and 'has no backdrop filter' for the Streets and Pace sheets in day and night; the tab-bar frost pins and the dragging checks PASS on base. Reproduced twice",
    "green": "drive231 on the fixed tree: 21/21 PASS, including on the final bytes after the line-46 comment adjudication (r2)",
    "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "solid-sheets-drive231-r3",
+   "check": "tests/browser/drive231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive231.mjs": "9ca5dc017855af1ec60eea30e6028ac56f1dc9f9c6cd9745f77f9a86c7c128ce",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b"
+   },
+   "mutation": "the shipped state itself: base tree 744c8ef5, whose sheets wear the frosted --card colour (alpha .92 day / .94 night) behind blur(18px) saturate(1.6), so colours behind a sheet tint through",
+   "red": "drive231 on base 744c8ef5 (drive file only): 21 checks, exactly 8 FAIL - 'background is fully opaque' and 'has no backdrop filter' for the Streets and Pace sheets in day and night; the tab-bar frost pins and the dragging checks PASS on base. Reproduced twice on the original drive bytes; the r3 bytes change only the dragging probe's plumbing (it reuses the face helper after Codex's duplication finding) - check names and claims identical",
+   "green": "drive231 on the fixed tree: 21/21 PASS on the r3 bytes (and on the r1/r2 bytes before them)",
+   "issued": "2026-11-27 solid-sheets"
   }
  ]
 }

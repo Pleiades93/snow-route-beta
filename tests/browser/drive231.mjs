@@ -28,18 +28,11 @@ const themeChecks = async (theme, sheetRgb, barAlpha) => {
   const street = await face('sheet');
   ok(`${theme} Streets sheet background is fully opaque`, solidHue(street, sheetRgb));
   ok(`${theme} Streets sheet has no backdrop filter`, noFilter(street));
-  const dragging = await J(`(() => {
-    const el = document.getElementById('sheet');
-    el.classList.add('dragging');
-    const cs = getComputedStyle(el);
-    const m = /rgba?\\(([^)]+)\\)/.exec(cs.backgroundColor);
-    const parts = m ? m[1].split(',').map((s) => parseFloat(s)) : [];
-    const out = { alpha: parts.length > 3 ? parts[3] : 1, filter: cs.backdropFilter };
-    el.classList.remove('dragging');
-    return out;
-  })()`);
+  await ev(`document.getElementById('sheet').classList.add('dragging')`);
+  const dragging = await face('sheet');
   ok(`${theme} dragging sheet background stays fully opaque`, dragging.alpha === 1);
-  ok(`${theme} dragging sheet has no backdrop filter`, dragging.filter === 'none');
+  ok(`${theme} dragging sheet has no backdrop filter`, noFilter(dragging));
+  await ev(`document.getElementById('sheet').classList.remove('dragging')`);
   await ev(`openPace()`);
   ok(`${theme} Pace sheet opens`, await poll(`document.getElementById('pacePanel').classList.contains('open')`, 5000));
   const pace = await face('pacePanel');
