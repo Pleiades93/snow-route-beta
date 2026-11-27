@@ -1771,6 +1771,75 @@
     "parts/engine.js": "96464f6070bbeb55c3487b5bc00e5b50db09c0d29a038422c3cb4d612f35817d"
    },
    "issued": "2026-11-27 s2r2-addstack"
+  },
+  {
+   "id": "s2-addgpslayers",
+   "kind": "cut",
+   "surface": "GPS layer installation in parts/app2.js (addGpsLayers and its three extracted sections), and the checks that read its IDs",
+   "cut": "addGpsLayers' body is split into three sibling functions in the same part; no behaviour, state or storage change",
+   "changed": [
+    "parts/app2.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The GPS layer set after boot and during a clean is identical: same IDs, same order, same paint, same visibility behaviour",
+     "case": "empty GPS source and ImageData precede beam, ring, outline, and puck",
+     "check": "tests/proof/proof-1301.mjs",
+     "observes": "the extracted install family in a vm with a stub map: the full ordered call list and every layer spec handed to addLayer"
+    },
+    {
+     "behaviour": "The GPS layer set after boot and during a clean is identical: same IDs, same order, same paint, same visibility behaviour",
+     "case": "P3 the puck renders at the fix (opaque blue core found)",
+     "check": "tests/browser/drive193.mjs",
+     "observes": "the rendered page: the shader puck's pixels at the GPS fix, measured in a real browser"
+    },
+    {
+     "behaviour": "Existing source short-circuits all installation on a repeat call",
+     "case": "existing source short-circuits all installation",
+     "check": "tests/proof/proof-1301.mjs",
+     "observes": "the stub map's call log across a second install call in the vm"
+    },
+    {
+     "behaviour": "A mid-batch layer failure propagates and leaves the source seated, so a same-style retry stops",
+     "case": "a layer failure propagates with the source still seated, so same-style retry stops",
+     "check": "tests/proof/proof-1301.mjs",
+     "observes": "the stub map's call log across a throwing addLayer and the retry in the vm"
+    },
+    {
+     "behaviour": "The beam image uploads once as raw ImageData at pixelRatio 2 and is reused on a style without a GPS source",
+     "case": "existing image survives installation on a style without a GPS source",
+     "check": "tests/proof/proof-1301.mjs",
+     "observes": "the stub map's addImage calls and the getImageData arguments across installs in the vm"
+    },
+    {
+     "behaviour": "The puck's GL lifecycle: diagnostics logged, no draw without a fix or a sized canvas, state restored after draw, resources deleted on removal",
+     "case": "draw restores incoming GL program, buffer, blend, depth, stencil and scissor",
+     "check": "tests/proof/proof-1301.mjs",
+     "observes": "the stub GL call sequence around the puck layer's render in the vm"
+    },
+    {
+     "behaviour": "The puck's GL lifecycle: diagnostics logged, no draw without a fix or a sized canvas, state restored after draw, resources deleted on removal",
+     "case": "N1 night mode: shader puck renders after the basemap restack, core still 0.62 x D",
+     "check": "tests/browser/drive193.mjs",
+     "observes": "the rendered page after the night restack: the puck core's measured width in a real browser"
+    },
+    {
+     "behaviour": "addGpsLayers keeps its name and no-arg call: drive124's direct calls and the style-ready batch behave as today",
+     "case": "G1 gps layers exist and the puck renders after a fix",
+     "check": "tests/browser/drive124.mjs",
+     "observes": "the live map after drive124's direct addGpsLayers calls: source and layer presence plus rendered puck pixels"
+    },
+    {
+     "behaviour": "The characterization proof's 10 checks, claims unmodified, green before and after the split",
+     "case": "proof-add-gps-layers:",
+     "check": "tests/proof/proof-1301.mjs",
+     "observes": "the proof's own pass line in the proof runner output"
+    }
+   ],
+   "files": {
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e"
+   },
+   "issued": "2026-11-27 s2r3-addgpslayers"
   }
  ]
 }

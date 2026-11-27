@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "9defe160bf0b1e393dbf13f2181ce88050762e2fc89d447ce5464c272013436b",
+  "canonical_registry_sha256": "223b68c9954159fc925740df9ee1018524ab9dd61acd807bedf040f3fc4426db",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1672,
-   "included": 1642,
+   "canonical": 1678,
+   "included": 1648,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14631,6 +14631,60 @@
    "fix_id": "s2-addstack",
    "id": "s2-addstack-1264-derivation-seat",
    "pattern": "const BUILDERS = ['addStack', 'addRouteStackSources', 'addRoutePaintLayers', 'addSelectionLayers', 'addRoutePoiLayers'];",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "S2 ROUND 3 (2026-11-27): addGpsLayers' beam image registration is its own function - ensureGpsBeamImage uploads the raw ImageData once at pixelRatio 2 behind the hasImage guard. If this fails, the section was inlined or renamed - restore the seam; proof-1301 extracts it by this signature.",
+   "fix_id": "s2-addgpslayers",
+   "id": "s2-addgpslayers-image-section",
+   "pattern": "function ensureGpsBeamImage() {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "S2 ROUND 3 (2026-11-27): addGpsLayers' underlay is its own function - addGpsUnderlayLayers builds the beam symbol, ring fill and ring outline in draw order. If this fails, the section was inlined or renamed - restore the seam; proof-1301 extracts it by this signature.",
+   "fix_id": "s2-addgpslayers",
+   "id": "s2-addgpslayers-underlay-section",
+   "pattern": "function addGpsUnderlayLayers() {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "S2 ROUND 3 (2026-11-27): addGpsLayers' shader puck is its own function - createGpsPuckLayer returns the gps-puck-shader custom layer with its GL lifecycle. If this fails, the section was inlined or renamed - restore the seam; proof-1301 extracts it by this signature.",
+   "fix_id": "s2-addgpslayers",
+   "id": "s2-addgpslayers-puck-section",
+   "pattern": "function createGpsPuckLayer() {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "S2 ROUND 3 (2026-11-27): the host addGpsLayers keeps the existing-source early return ahead of all installation. If this fails, the guard or its seat moved - restore it; proof-1301's short-circuit and retry checks judge the result.",
+   "fix_id": "s2-addgpslayers",
+   "id": "s2-addgpslayers-host-guard-seat",
+   "pattern": "if (map.getSource('gps')) return;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "S2 ROUND 3 (2026-11-27): the host addGpsLayers assembles the GPS batch in the frozen order - image, underlay, puck - after seating the source. If this fails, the assembly order changed - restore it; proof-1301's install-order check judges the result.",
+   "fix_id": "s2-addgpslayers",
+   "id": "s2-addgpslayers-host-assembly-order",
+   "pattern": "ensureGpsBeamImage(); addGpsUnderlayLayers(); map.addLayer(createGpsPuckLayer());",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/proof/proof-1301.mjs",
+   "fix": "S2 ROUND 3 (2026-11-27): proof-1301 is addGpsLayers' characterization contract - it extracts the host plus all three sections and pins install order, image reuse, failure seating and the puck lifecycle. If this fails, the proof no longer extracts the split shape - update the extraction list with the sections, never weaken the claims.",
+   "fix_id": "s2-addgpslayers",
+   "id": "s2-addgpslayers-proof-extracts-sections",
+   "pattern": "'ensureGpsBeamImage', 'addGpsUnderlayLayers', 'createGpsPuckLayer', 'addGpsLayers'",
    "type": "grep_present"
   }
  ]
