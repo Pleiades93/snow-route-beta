@@ -32,16 +32,20 @@ const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
 
 const TITLE_LAYERS = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4'];
+const CLONE_LAYERS = ['roads_labels_major-route', 'roads_labels_minor-route'];
 
 // ---------- the sampler ----------
 await ev(`(() => {
   window.__pres = { samples: [], marks: [] };
   const layers = ${JSON.stringify(TITLE_LAYERS)}.filter(id => map.getLayer(id));
+  const cloneLayers = ${JSON.stringify(CLONE_LAYERS)}.filter(id => map.getLayer(id));
   window.__presTimer = setInterval(() => {
     try {
       const seen = new Set();
       for (const f of map.queryRenderedFeatures({ layers })) { const nm = f.properties && f.properties.name; if (nm) seen.add(nm); }
-      window.__pres.samples.push({ t: [...seen], ok: map.isStyleLoaded() }); // the style flag rides each sample: a setStyle blackout is not title evidence (7c)
+      const clones = new Set();
+      for (const f of map.queryRenderedFeatures({ layers: cloneLayers })) { const nm = f.properties && f.properties.name; if (nm) clones.add(nm); }
+      window.__pres.samples.push({ t: [...seen], c: [...clones], ok: map.isStyleLoaded() }); // the style flag rides each sample: a setStyle blackout is not title evidence (7c)
     } catch (e) {}
   }, 50);
   return true;
@@ -52,14 +56,15 @@ const settle = async () => { await poll(`!!(window.map && map.loaded() && !map.i
 // dropped = absent from 3+ consecutive samples) - extracted under
 // docs/TESTING.md rule 1 and proven by selftest-title-drop.mjs; this
 // drive only fetches the phase's sample window and hands it to the judge.
-const phaseReport = async (fromMark, toMark, opts) => {
+const phaseWindow = async (fromMark, toMark) => {
   const win = await J(`(() => {
     const P = window.__pres;
     const a = P.marks.find(m => m.name === '${fromMark}').at, b = P.marks.find(m => m.name === '${toMark}').at;
     return P.samples.slice(a, b + 1);
   })()`);
-  return judgeTitleDrops(Array.isArray(win) ? win : [], opts);
+  return Array.isArray(win) ? win : [];
 };
+const phaseReport = async (fromMark, toMark, opts) => judgeTitleDrops(await phaseWindow(fromMark, toMark), opts);
 
 // ---------- baseline: the boot placement, stable ----------
 await settle();
@@ -87,12 +92,21 @@ await settle(); await mark('zoom1');
 const zoomUp = await phaseReport('zoom0', 'zoom1');
 ok('P3 zoom through 15: no title drops | samples ' + zoomUp.samples + ', before ' + zoomUp.before + ', after ' + zoomUp.after + ', dropped: ' + JSON.stringify(zoomUp.dropped),
   zoomUp.samples > 5 && zoomUp.loaded >= 3 && zoomUp.dropped.length === 0);
+// endpoint coverage: titles carry names below the switch, clones above - an empty carrier set proves nothing
+const zoomUpWin = await phaseWindow('zoom0', 'zoom1');
+const upFirst = zoomUpWin[0] || { t: [], c: [] }, upLast = zoomUpWin[zoomUpWin.length - 1] || { t: [], c: [] };
+ok('P3b the crossing hands over: the window opens on the titles (Velmar placed) and closes on the clones (Velmar Drive placed, 5+ clone names) | open titles ' + (upFirst.t || []).length + ', close clones ' + (upLast.c || []).length,
+  (upFirst.t || []).includes('Velmar') && (upLast.c || []).includes('Velmar Drive') && (upLast.c || []).length >= 5);
 await mark('zoom2');
 await ev(`(() => { map.zoomTo(13.98, { duration: 900 }); return true; })()`);
 await settle(); await mark('zoom3');
 const zoomDown = await phaseReport('zoom2', 'zoom3');
 ok('P4 zoom back down through 15: no title drops | samples ' + zoomDown.samples + ', dropped: ' + JSON.stringify(zoomDown.dropped),
   zoomDown.samples > 5 && zoomDown.loaded >= 3 && zoomDown.dropped.length === 0);
+const zoomDownWin = await phaseWindow('zoom2', 'zoom3');
+const downLast = zoomDownWin[zoomDownWin.length - 1] || { t: [], c: [] };
+ok('P4b the way back hands back: the window closes on the titles again (Velmar placed, 30+ titles) | close titles ' + (downLast.t || []).length,
+  (downLast.t || []).includes('Velmar') && (downLast.t || []).length >= 30);
 
 await mark('rot0');
 await ev(`(() => { map.rotateTo(30, { duration: 800 }); return true; })()`);

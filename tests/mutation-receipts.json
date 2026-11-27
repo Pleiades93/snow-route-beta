@@ -18043,6 +18043,19 @@
    "red": "suite FAILS: 3 failure(s) over 18 run(s), all in moved-seat ('labelpts' convicted as expired though it moved seats to app2.js)",
    "green": "suite PASS with the shipped whole-tree lint: 18 runs over 9 cases, 0 failures; removed-everywhere flags under both lints",
    "issued": "2026-11-27 phase6-finisher"
+  },
+  {
+   "id": "phase6-drive216-p3-clones-r2",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive216.mjs": "010b4be0ab5d343acd8c65ab68f11d9484ded8d3e82892a1d3fda7c8357e035e",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100"
+   },
+   "mutation": "clone zoom floor raised at the owner's zoom-range guard in parts/app2.js (const minZoom = isClone ? 24 : 13), scratch copy assembled and driven; the construction-seat form (clone.minzoom = 24 at build) self-heals through that guard and does not convict",
+   "red": "drive216 P3b FAILS twice on the mutated final tree - 'close clones 0' both runs; run 1 with the open side healthy (open titles 32, Velmar placed), so the clone term alone convicts; title-side P3 passes both runs",
+   "green": "drive216 on the unmutated final tree: P3b and P4b PASS (9/11, only the documented local sampler-starvation legs failing, dropped: [] throughout; a first clean run read close clones 10)",
+   "issued": "2026-11-27 phase6-finisher"
   }
  ]
 }

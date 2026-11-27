@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "9180f37ecee504bd04bc04a848947c14d537465003b9007c58421f0b0f6aab8e",
+  "canonical_registry_sha256": "87faf4bfbb1fffcdf81640a6bbb548ae194b4f8bb2a60e15b687142fa8fefcc9",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1626,
-   "included": 1596,
+   "canonical": 1627,
+   "included": 1597,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14220,6 +14220,15 @@
    "id": "phase6-no-engine-title-spec",
    "pattern": "maxzoom: 15.2, filter:",
    "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/browser/drive216.mjs",
+   "fix": "Phase 6 (P3 audit fix): drive216's handover judge samples the clone layers as well as the titles - P3b requires the crossing window to close on the clones (Velmar Drive placed, 5+ clone names), so a clone-side drop at 15.2 cannot pass unseen.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-p3-clone-coverage",
+   "pattern": "P3b the crossing hands over",
+   "type": "grep_present"
   }
  ]
 }
