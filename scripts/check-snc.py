@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 STORAGE = {"app4.js", "create-packs.js", "app5.js", "create-save.js"}
-# The global strict-null backlog at wiring time (2026-11-27). Lower
-# this number whenever the backlog burns down; never raise it.
+# The global strict-null backlog measured at wiring time
+# (2026-11-27); the gate fails above it.
 CEILING = 196
 
 

@@ -39,7 +39,7 @@ check('1: computeBoundaryEnds is defined once, in create-packs.js, and called no
 check('2: the create save computes the field from its extract',
   createSave.includes('computeBoundaryEnds(roads, all)'));
 check('3: normalizePack cleans the ends field (and keeps it in the cleaned literal)',
-  createPacks.includes('const ends = {};') && createPacks.includes('roads: rc.roads, reference, ends'));
+  createPacks.includes('const ends = /** @type {Record<string,number[][]>} */ ({});') && createPacks.includes('roads: rc.roads, reference, ends'));
 check('4: PACK_FIELDS carries ends, and buildGeometry attaches it to STRETCH',
   app1.includes("'reference', 'ends']") && app1.includes('STRETCH[n].ends = endsIn[n]'));
 check('5: the shipped 5W pack carries exactly the census fixture (15 records since Beta 1.267: the 7 boundary at fade 15 plus the 8 dead ends at fade 10 - Topper present now, as a dead end)',

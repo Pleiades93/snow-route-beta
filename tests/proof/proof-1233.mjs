@@ -74,7 +74,7 @@ const app4 = resolveGlyphs(read('parts/app4.js'));
 const changelog = read('CHANGELOG.md');
 const sha = b => createHash('sha256').update(b).digest('hex');
 const payload = (table, key) => {
-  const blk = app4.slice(app4.indexOf('const ' + table + ' = {'));
+  const blk = app4.slice(app4.indexOf('const ' + table + ' = '));
   const m = new RegExp(key + ": 'data:image/webp;base64,([A-Za-z0-9+/=]+)'").exec(blk);
   return m ? m[1] : '';
 };

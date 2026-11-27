@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "c861ac071d8715cbb1b079f141cd61d3f9552233348be90a890f0f33d531a17a",
+  "canonical_registry_sha256": "2dfe74afe6af67b68ce8fa04424883ac344dc022fade90dda8b7886cb2925096",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -14367,7 +14367,7 @@
   },
   {
    "added": "2026-11-27",
-   "command": "cd . && python3 scripts/check-snc.py .",
+   "command": "cd . && (test -x scripts/node_modules/.bin/tsc || (cd scripts && npm ci)) && python3 scripts/check-snc.py .",
    "fix": "S1 stage 4: the strict-null gate is green - the storage files (app4, create-packs, app5, create-save) carry zero strictNullChecks errors and the global backlog is at or under its cap. If this fails, a storage file regressed or the backlog grew; burn it annotation-only or record the finding.",
    "fix_id": "s1-type-safety",
    "id": "s1-snc-gate-green",

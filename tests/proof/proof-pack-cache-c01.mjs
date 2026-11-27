@@ -94,8 +94,18 @@ function extractFn(marker) {
   if (end < 0) throw new Error('function end not found: ' + marker);
   return lines.slice(start, end + 1).join('\n');
 }
-const turnLine = lines.find(l => l.includes('async function takePackWriteTurn'));
-if (!turnLine) throw new Error('takePackWriteTurn not found in parts/app4.js + parts/app5.js');
+function extractTurn() {
+  const start = lines.findIndex(l => l.includes('async function takePackWriteTurn'));
+  if (start < 0) throw new Error('takePackWriteTurn not found in parts/app4.js + parts/app5.js');
+  let depth = 0, end = -1;
+  for (let i = start; i < lines.length; i++) {
+    for (const ch of lines[i]) { if (ch === '{') depth++; else if (ch === '}') depth--; }
+    if (depth === 0) { end = i; break; }
+  }
+  if (end < 0) throw new Error('takePackWriteTurn end not found');
+  return lines.slice(start, end + 1).join('\n');
+}
+const turnLine = extractTurn();
 const handlerSrc = extractHandler("$('xPre').addEventListener('click'");
 const fingerprintSrc = extractFn('function packMigFingerprint');
 if (!handlerSrc.includes('takePackWriteTurn') || !handlerSrc.includes('packCache.keys()') || !handlerSrc.includes('OFFLINE_PACK_CAP_BYTES')) {

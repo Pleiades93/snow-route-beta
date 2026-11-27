@@ -106,7 +106,7 @@ check('8: no route preloading rides the load path (Andrew, 2026-11-21: the app m
 const createPick = read('parts/create-pick.js');
 check('9: the create backdrop snapshots LIVE visibility (visPair in the naming owner reads getLayoutProperty directly): with the hold deleted there is no transient none a snapshot could misrecord as the state to restore - ' +
   'the PR #162 hazard\'s precondition is gone, and nameHoldNaturalVis occurs in no part',
-  app2.includes("const visPair = (id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible'];") &&
+  app2.includes("const visPair = /** @type {(id: string) => [string, string]} */ ((id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible']);") &&
   !createPick.includes('nameHoldNaturalVis') && !app2.includes('nameHoldNaturalVis'));
 
 // ---------- (10) editorial ----------

@@ -18397,6 +18397,228 @@
    "red": "check-receipts.py verify reported s1-snc-gate STALE.",
    "green": "Comment removed: check-receipts.py verify reports s1-snc-gate CURRENT again.",
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-repin-proof-1227",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "0ddef5d5f9dcf1ac0b8d2bb526babff97a141b9daa039485aa2df5d33e8aec9c",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744"
+   },
+   "mutation": "Rename the GLYPH_CREATE declaration in parts/app4.js to GLYPH_CREATE_X.",
+   "red": "FAIL: 6a: GLYPH_CREATE carries search/cancel/back and NO pin (the rows reuse the set pin).",
+   "green": "Restored: proof-1227 passes 28/28. The re-pin: the payload slice and the 6a needle match the cast declaration the S1 annotation added.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-1233",
+   "check": "tests/proof/proof-1233.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1233.mjs": "6c2115bea3e512f817f70e4df31b84714b3c3348e7dc453899f84c5fd8417abd",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744"
+   },
+   "mutation": "Rename the GLYPH_MENU check key in parts/app4.js to checkX.",
+   "red": "FAIL: B2e: the check payload is byte-pinned.",
+   "green": "Restored: proof-1233 passes 39/39. The re-pin: the payload slice anchor matches the cast table declaration.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-icon-glyph-1221",
+   "check": "tests/proof/proof-icon-glyph-1221.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-icon-glyph-1221.mjs": "015f1463ac4754bb4833d5ba639f3ec9a6f55eb96d332c1b61043f93a72e3232",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744"
+   },
+   "mutation": "Delete the GLYPH_X bottom entry in parts/app4.js.",
+   "red": "FAIL A: GLYPH_X stands with 2 WebP images [found 1]; the set totals also failed.",
+   "green": "Restored: proof passes 120/120. The re-pin: block() tolerates the JSDoc cast around each glyph table literal, keeping the original scan semantics.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-shader-glow-round",
+   "check": "tests/proof/proof-shader-glow-round.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-shader-glow-round.mjs": "e7aabce54c01553e6aa50b43fcaf188b219ba66f5e436114ef5b464b867b802a",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744"
+   },
+   "mutation": "Swap the GLYPH_ICONS streets artwork token in parts/app4.js to the gear artwork token.",
+   "red": "FAIL I: Streets wears the picked highway artwork in the default pack (decoded day URI sha256).",
+   "green": "Restored: proof passes 28/28. The re-pin: the GLYPH_ICONS extraction regex tolerates the cast declaration.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-1249",
+   "check": "tests/proof/proof-1249.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1249.mjs": "91cd97da1261250e56f33179d2d2e6fc89ce00c5b6da84a824ce4e29e350aff3",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3"
+   },
+   "mutation": "Change the pack-stall error string in parts/create-citydata.js to 'pack stalled'.",
+   "red": "FAIL: 8: the kill is tagged for the retry loop, and only the kill is.",
+   "green": "Restored: proof-1249 passes 17/17. The re-pin: the stall needle matches the any-cast error line.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-1259",
+   "check": "tests/proof/proof-1259.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1259.mjs": "bcf617338c6e96fd09319cdf7548050e7ece68875cb04e2cf3f8a48000896e55",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35"
+   },
+   "mutation": "Drop ends from the cleaned literal in parts/create-packs.js.",
+   "red": "FAIL: 3: normalizePack cleans the ends field (and keeps it in the cleaned literal).",
+   "green": "Restored: proof-1259 passes 13/13. The re-pin: the needle matches the cast ends declaration.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-1268",
+   "check": "tests/proof/proof-1268.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1268.mjs": "306c22f253c904914ee96b37e84ea46b75a83f32bdfcc2e4c945a82b8fd51f17",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "mutation": "Change SURF_HALF in parts/engine.js from 3.3 * WIDTH_K to 3.4 * WIDTH_K.",
+   "red": "FAIL 4: the scaling chain is intact (SURF_HALF / HALF_HALF derive from WIDTH_K; scaleW multiplies by it; tapTolPx follows surfCASE).",
+   "green": "Restored: proof-1268 passes 6/6. The re-pin: the scaleW needle matches the cast multiplication.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-1270",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "c900be414255448b8c0d93b402679b4ccebfbb0c950b3a0f1b495ff9aa39fcab",
+    "parts/app2.js": "0a8799df7e167d680317c4b1be80ed0642e8887d230278c9abf9eb585634a8b3"
+   },
+   "mutation": "Switch visPair in parts/app2.js from getLayoutProperty to getPaintProperty.",
+   "red": "FAIL 9: the create backdrop snapshots LIVE visibility (visPair reads getLayoutProperty directly).",
+   "green": "Restored: proof-1270 passes 13/13. The re-pin: the needle matches the cast visPair declaration.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-1271",
+   "check": "tests/proof/proof-1271.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1271.mjs": "dd63d27dc15163abd2f70599f97ff2f08c46f2cf77c84081c9252c224d44980c",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35"
+   },
+   "mutation": "Change the shipped-route splice in parts/create-packs.js from splice(i, 1) to splice(i, 0).",
+   "red": "FAIL 2d: the shipped-route Delete is WIRED, not just drawn.",
+   "green": "Restored: proof-1271 passes 15/15. The re-pin: the needle matches the cast id argument.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-city-search-owner",
+   "check": "tests/proof/proof-city-search-owner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-city-search-owner.mjs": "eee46915c3b67f83ccf9d89141d7023dd807a0fb41e3259ecb9e97435fac0c98",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806"
+   },
+   "mutation": "Change crCitySeq++ to crCitySeq += 2 inside crResetCitySearch in parts/create-pick.js.",
+   "red": "FAIL: 1b: the owner body is the historical ritual (sequence bump, abort + handle drop, debounce clear).",
+   "green": "Restored: proof passes 10/10. The re-pin: the state-line needle matches the inline-annotated declaration.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-paint-model",
+   "check": "tests/proof/proof-paint-model.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-paint-model.mjs": "829be7255baa0b36f4da896a1503f333952472e9dbdae00e303814e449b83b99",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "mutation": "Rename the strands field of the PAINT literal in parts/engine.js to strandsX.",
+   "red": "FAIL: 2a: the PAINT model is declared in engine.js with its three decisions and the strand seat.",
+   "green": "Restored: proof-paint-model passes 17/17. The re-pin: the needle matches the cast strands field.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-pack-cache-c01",
+   "check": "tests/proof/proof-pack-cache-c01.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pack-cache-c01.mjs": "6624c6eddf91146b520f75e2f111354629e458452b7336da53cbc5d584d0bc85",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68"
+   },
+   "mutation": "Flip the prune-proof test in the parts/app4.js download handler so a stored pack tile outside the manifest returns true.",
+   "red": "FAIL: stored route outside the manifest: orphan survives (prune skipped, cache preserved).",
+   "green": "Restored: the proof passes in full. The repair: takePackWriteTurn is extracted brace-balanced instead of by its old single line, which the S1 whitespace split ended.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-pack-cache-c02",
+   "check": "tests/proof/proof-pack-cache-c02.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pack-cache-c02.mjs": "705accec9457634fdc67ea5f79d2eea75a72fe9e9494bb88cc65afbc51d62a89",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68"
+   },
+   "mutation": "Replace await held with await Promise.resolve() in the Web Lock callback of takePackWriteTurn in parts/app5.js.",
+   "red": "FAIL: delete waits while another writer holds the pack turn.",
+   "green": "Restored: the proof passes in full. The repair: takePackWriteTurn is extracted brace-balanced instead of by its old single line, which the S1 whitespace split ended.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-snc-gate-r2",
+   "check": "scripts/check-snc.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-snc.py": "1ffb5eaa6346067bccbf9a557d6f871ffbcd76ef07fe86b91dbcef50808e519c",
+    "scripts/tsconfig.snc.json": "efac42a857280e490b96ea18f5aa784e51f9dcd79cbba7bf674e009ca6be8efd"
+   },
+   "mutation": "Append a possibly-null dereference (const __sncProbe = window.localStorage.length; const __sncY = (null).x;) to parts/app4.js.",
+   "red": "check-snc.py exited 1, naming the storage file with TS18047 errors (the same red observed for s1-snc-gate before the comment reword).",
+   "green": "Probe removed: check-snc.py exits 0 (SNC GATE PASS, backlog 196 of cap 196). Re-issued because the CEILING comment was reworded; the gate code is unchanged.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-1227-r2",
+   "check": "tests/proof/proof-1227.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1227.mjs": "6be24a77f02f88680b336801103d20fa740ecf25e07ea7b8948aa6bb5ebd8b21",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744"
+   },
+   "mutation": "Rename the GLYPH_CREATE declaration in parts/app4.js to GLYPH_CREATE_X (same mutation as s1-repin-proof-1227).",
+   "red": "FAIL: 6a: GLYPH_CREATE carries search/cancel/back and NO pin (the rows reuse the set pin).",
+   "green": "Restored: proof-1227 passes 28/28. Re-issued because the 6a check line was split for the PR line limit; the needle text is unchanged.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-city-search-owner-r2",
+   "check": "tests/proof/proof-city-search-owner.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-city-search-owner.mjs": "38de5b23543ed0a498e1828f6590521db5fc73d5e7aaaa127531224148e196de",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806"
+   },
+   "mutation": "Change crCitySeq++ to crCitySeq += 2 inside crResetCitySearch in parts/create-pick.js (same mutation as s1-repin-proof-city-search-owner).",
+   "red": "FAIL: 1b: the owner body is the historical ritual (sequence bump, abort + handle drop, debounce clear).",
+   "green": "Restored: proof passes 10/10. Re-issued because the state-line needle moved into a const for the PR line limit; the needle text is unchanged.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-paint-model-r2",
+   "check": "tests/proof/proof-paint-model.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-paint-model.mjs": "678b70487f233784a207db456e0d11e44ba53b7c77205aa1ac74237127dad987",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "mutation": "Rename the strands field of the PAINT literal in parts/engine.js to strandsX (same mutation as s1-repin-proof-paint-model).",
+   "red": "FAIL: 2a: the PAINT model is declared in engine.js with its three decisions and the strand seat.",
+   "green": "Restored: proof-paint-model passes 17/17. Re-issued because the 2a check line was wrapped for the PR line limit; the needle text is unchanged.",
+   "issued": "2026-11-27"
   }
  ]
 }

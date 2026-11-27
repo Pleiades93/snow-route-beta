@@ -45,8 +45,9 @@ function extractFn(src, header) {
 
 // ---------- 1-3: the owner exists, the ritual survives once, every seat calls it ----------
 const ownerFn = extractFn(pick, 'function crResetCitySearch()');
+const CITY_STATE_LINE = 'let /** @type {number|null} */ crCityTimer = null, crCitySeq = 0, /** @type {any} */ crCityCtl = null;';
 check('1a: crResetCitySearch exists in create-pick.js, beside the city-search state it closes',
-  !!ownerFn && pick.includes('let crCityTimer = null, crCitySeq = 0, crCityCtl = null;') && pick.indexOf('function crResetCitySearch()') > pick.indexOf('let crCityTimer = null, crCitySeq = 0, crCityCtl = null;'));
+  !!ownerFn && pick.includes(CITY_STATE_LINE) && pick.indexOf('function crResetCitySearch()') > pick.indexOf(CITY_STATE_LINE));
 check('1b: the owner body is the historical ritual (sequence bump, abort + handle drop, debounce clear)',
   ownerFn.includes('crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }')
   && ownerFn.includes('if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }'));
@@ -61,7 +62,7 @@ check('3: all five seats call the owner (pane open, short-query return, input ev
 // ---------- 4-6: the owner's three moves, run for real ----------
 const prelude = [
   'let crSession = 7;',
-  'let crCityTimer = null, crCitySeq = 0, crCityCtl = null;',
+  'let /** @type {number|null} */ crCityTimer = null, crCitySeq = 0, /** @type {any} */ crCityCtl = null;',
   extractFn(pick, 'function crCitySearchCurrent('),
   extractFn(pick, 'function crCitySearchSeqCurrent('),
   ownerFn,
