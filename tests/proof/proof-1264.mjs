@@ -32,7 +32,7 @@
 // (check 5). The drift class this guards is the same one, one level up:
 // a stack layer missing from the catalogue leaks exactly as before.
 
-// Phase 6: the owner builds the tiers from the catalogue's ids, passed through the unify hook (check 1 pins it).
+// the owner builds the tiers from the catalogue's ids, passed through the unify hook (check 1 pins it).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -54,7 +54,7 @@ const stackBody = stackStart > -1 && stackEnd > stackStart ? engine.slice(stackS
 const stack = new Set();
 for (const m of stackBody.matchAll(/add\(line\('([^']+)'/g)) stack.add(m[1]);
 for (const m of stackBody.matchAll(/add\(\{ id: '([^']+)'/g)) stack.add(m[1]);
-// Phase 6: the tiers come from the catalogue's titles, via the hook in addStack (check 1).
+// the tiers come from the catalogue's titles, via the hook in addStack (check 1).
 const hookTitles = stackBody.includes('ids: LAYERS.titles');
 
 // ---------- read the hide list: the engine catalogue's stack (Beta 1.282) ----------

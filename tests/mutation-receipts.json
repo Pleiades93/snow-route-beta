@@ -18056,6 +18056,50 @@
    "red": "drive216 P3b FAILS twice on the mutated final tree - 'close clones 0' both runs; run 1 with the open side healthy (open titles 32, Velmar placed), so the clone term alone convicts; title-side P3 passes both runs",
    "green": "drive216 on the unmutated final tree: P3b and P4b PASS (9/11, only the documented local sampler-starvation legs failing, dropped: [] throughout; a first clean run read close clones 10)",
    "issued": "2026-11-27 phase6-finisher"
+  },
+  {
+   "id": "phase6-repin-1263-r4",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "fbb54047ddc02bfb1e746a08fb3167884f507f0de7cf5b997f9105d6037720b5",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416"
+   },
+   "mutation": "the naming owner's shared handover constant raised (ROUTE_LABEL_ZOOM 15.2 -> 16 in parts/app2.js)",
+   "red": "proof-1263: 12 passed, 1 failed (check 2, the cap at the shared constant) - observed twice on the final tree",
+   "green": "proof-1263: 13 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-finisher (r4: Codex P1 comment tidy - history tags stripped, claims unchanged; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1264-r4",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "79ef260565192bc9b2881a63f6446786c8bbff233472dad8dfae35ceeca0f719",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7"
+   },
+   "mutation": "addStack's unify hook stops passing the catalogue title ids (ids: LAYERS.titles -> ids: [] in parts/engine.js)",
+   "red": "proof-1264: 4 passed, 2 failed (check 1 plumbing, check 4 stale titles) - observed twice on the final tree",
+   "green": "proof-1264: 6 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-finisher (r4: Codex P1 comment tidy - history tags stripped, claims unchanged; mutation re-observed)"
+  },
+  {
+   "id": "phase6-premise-lint-fixtures-moved-seat-r2",
+   "check": "scripts/premise-lint-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/premise-lint-fixtures/run-fixtures.py": "5e433fd857b36fbeeaa3029c3a93736b16d2fbf41648247affff3a64f03ea9e1",
+    "scripts/premise-lint.py": "5918040363c15ac3f41efccf2e17efa177a9a4c9952b244427abfdc207f32349",
+    "scripts/premise-lint-fixtures/cases/moved-seat/case.json": "8205f73a52a335efa39b01171662ab0b282aead0f84666ed3e63b729dbe83785",
+    "scripts/premise-lint-fixtures/cases/removed-everywhere/case.json": "0d1e7f5d3b216a3f724abf434dbc6e6ffb9bfcf4e405630739ad126c2168db3d"
+   },
+   "mutation": "the lint under test reverted to the per-file survival model (premise-lint.py as at base 506efb40); the shipped suite (9 cases incl. the two new moved-seat cases) run against it",
+   "red": "suite FAILS: 3 failure(s) over 18 run(s), all in moved-seat ('labelpts' convicted as expired though it moved seats to app2.js) - re-observed on the final tree",
+   "green": "suite PASS with the shipped whole-tree lint: 18 runs over 9 cases, 0 failures; removed-everywhere flags under both lints",
+   "issued": "2026-11-27 phase6-finisher (r2: runner docstring history tags stripped; mutation re-observed)"
   }
  ]
 }

@@ -159,7 +159,7 @@ try {
     SPOT: {}, pieces: { 'constructor': [1, 1, 1], LongAve: [1, 1, 1] },
     selStretch: null, selSet: [], isNight: () => false,
     activeRoute: { name: 'Proof' },
-    // Phase 6: the stub honours the hook contract, creating the title source from the stack context.
+    // the stub honours the hook contract, creating the title source from the stack context.
     glUnifyLabels: ({ m, stack }) => { if (stack && stack.newStack) m.addSource('labelpts', { type: 'geojson', data: stack.data }); },
   };
   const sources = {}, layers = [];

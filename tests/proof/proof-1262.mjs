@@ -83,7 +83,7 @@ check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158
   'the ensure pushes the point only on change, and the stand-down still re-applies the backdrop when a route layer stands visible again ' +
   '(the order-sensitive piece: GLP.init re-creates the route stack after this listener\'s turn on a swap)',
   pick.includes("if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {") &&
-  pick.includes("if (routeBackdropNeedsHide(map)) crSetBackdrop(true);") && // Phase 6 re-point: the condition is the owner's routeBackdropNeedsHide scan
+  pick.includes("if (routeBackdropNeedsHide(map)) crSetBackdrop(true);") && // the condition is the owner's routeBackdropNeedsHide scan
   app2.includes("return crHiddenLayers && CR_ROUTE_LAYERS.some(id => {") &&
   app2.includes("try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; }") &&
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
