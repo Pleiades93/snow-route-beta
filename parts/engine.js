@@ -1710,32 +1710,27 @@ const LAYERS = {
 };
 LAYERS.text = [...LAYERS.titles, 'routepoi-txt'];
 LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];
-function addStack() {
-  tunePlaceLabels();
-  const newStack = !GLM.getSource('centres');
-  if (newStack) {
-    GLM.addSource('centres', { type: 'geojson', data: CUR.centres });
-    GLM.addSource('bands', { type: 'geojson', data: CUR.bands });
-    GLM.addSource('edges', { type: 'geojson', data: CUR.edges });
-    GLM.addSource('fills', { type: 'geojson', data: CUR.fills });
-    GLM.addSource('fades', { type: 'geojson', lineMetrics: true, data: CUR.fades }); // lineMetrics is line-gradient's precondition
-    GLM.addSource('selFades', { type: 'geojson', lineMetrics: true, data: CUR.selFades });
-    GLM.addSource('sel', { type: 'geojson', data: CUR.sel });
-    GLM.addSource('selBand', { type: 'geojson', data: CUR.selBand });
-    GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
-    GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
-    GLM.addSource('hit', { type: 'geojson', data: HIT });
-    GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
-  }
-  const before = firstSymbolId();
-  const add = /** @param {EngineLayer} layer */ (layer) => { if (!GLM.getLayer(layer.id)) GLM.addLayer(layer, before); };
-  const line = /** @param {string} id @param {string} source @param {Record<string, unknown>} paint @param {Record<string, unknown>} [layout] @param {unknown} [filter] */ (id, source, paint, layout, filter) => {
-    /** @type {EngineLayer} */
-    const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };
-  // NOTE: a present-but-undefined `filter` key makes MapLibre silently drop the layer
+/** @typedef {(layer: EngineLayer) => void} StackAdd */
+/** @typedef {(id: string, source: string, paint: Record<string, unknown>, layout?: Record<string, unknown>, filter?: unknown) => EngineLayer} StackLine */
+function addRouteStackSources() {
+  GLM.addSource('centres', { type: 'geojson', data: CUR.centres });
+  GLM.addSource('bands', { type: 'geojson', data: CUR.bands });
+  GLM.addSource('edges', { type: 'geojson', data: CUR.edges });
+  GLM.addSource('fills', { type: 'geojson', data: CUR.fills });
+  GLM.addSource('fades', { type: 'geojson', lineMetrics: true, data: CUR.fades }); // lineMetrics is line-gradient's precondition
+  GLM.addSource('selFades', { type: 'geojson', lineMetrics: true, data: CUR.selFades });
+  GLM.addSource('sel', { type: 'geojson', data: CUR.sel });
+  GLM.addSource('selBand', { type: 'geojson', data: CUR.selBand });
+  GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
+  GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
+  GLM.addSource('hit', { type: 'geojson', data: HIT });
+  GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
+}
+
+/** @param {StackAdd} add @param {StackLine} line */
+function addRoutePaintLayers(add, line) {
   /* --- T1: the surface carries the state; red sorts before yellow, green bands above centres */
-  add(line('t1-casing',
-    'centres',
+  add(line('t1-casing', 'centres',
     { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } },
     { 'line-cap': 'butt' }));
   add(line('t1-casingb', 'bands', { 'line-color': H.isNight() ? '#000000' : '#5a5f6a', 'line-width': surfCASE, 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
@@ -1746,23 +1741,24 @@ function addStack() {
   add(line('t1-fill', 'fills', { 'line-color': ['get', 'col'], 'line-width': wScale(surfW, 0.5), 'line-opacity': ['step', ['zoom'], 0, 12.6, 1], 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }));
   // --- feathers: one literal-gradient layer per colour (line-gradient cannot read properties); features carry k and col
   const fadeOp = ['step', ['zoom'], 0, 12.6, 1];
-  add(line('fade-casing',
-    'fades',
+  add(line('fade-casing', 'fades',
     { 'line-gradient': fadeGrad(H.isNight() ? '#000000' : '#5a5f6a'), 'line-width': surfCASE, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
     { 'line-cap': 'butt' },
     ['==', ['get', 'k'], 'x']));
-  add(line('fade-surf-y',
-    'fades',
+  add(line('fade-surf-y', 'fades',
     { 'line-gradient': fadeGrad(mute(YELLOW)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
     { 'line-cap': 'butt' },
     ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(YELLOW)]]));
-  add(line('fade-surf-r',
-    'fades',
+  add(line('fade-surf-r', 'fades',
     { 'line-gradient': fadeGrad(mute(RED)), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } },
     { 'line-cap': 'butt' },
     ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], mute(RED)]]));
   add(line('fade-band-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': surfW, 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'b']));
   add(line('fade-fill-g', 'fades', { 'line-gradient': fadeGrad(MUGREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': fadeOp, 'line-opacity-transition': { duration: 0, delay: 0 } }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
+}
+
+/** @param {StackAdd} add @param {StackLine} line */
+function addSelectionLayers(add, line) {
   // --- selection glow: three nested widths in the street's own colour; these layers use round joins, not miter
   add(line('sel-glow4-s', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 0]));
   add(line('sel-glow4-b', 'selGlow', { 'line-color': ['get', 'col'], 'line-width': wPlus(surfW, 30), 'line-opacity': 0.05, 'line-blur': 14 }, { 'line-cap': 'butt', 'line-join': 'round' }, ['==', ['get', 'band'], 1]));
@@ -1786,29 +1782,36 @@ function addStack() {
   add(line('selfade-r', 'selFades', { 'line-gradient': fadeGrad(RED), 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['all', ['==', ['get', 'k'], 'c'], ['==', ['get', 'col'], RED]]));
   add(line('selfade-g', 'selFades', { 'line-gradient': fadeGrad(GREEN), 'line-width': surfW, 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'b']));
   add(line('selfade-fill', 'selFades', { 'line-gradient': fadeGrad(GREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
+}
+
+/** @param {StackAdd} add */
+function addRoutePoiLayers(add) {
+  // at 12.6 the paint and names pop out, the POI in: no fading (Andrew), never one alone
+  add({ id: 'routepoi-ring', type: 'circle', source: 'routepoi', maxzoom: 13.3,
+    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-dot', type: 'circle', source: 'routepoi', maxzoom: 13.3,
+    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
+  add({ id: 'routepoi-txt', type: 'symbol', source: 'routepoi', maxzoom: 13.3,
+    layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false },
+    paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333', 'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['step', ['zoom'], 1, 12.6, 0],
+      'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.6 } });
+}
+
+function addStack() {
+  tunePlaceLabels();
+  const newStack = !GLM.getSource('centres');
+  if (newStack) addRouteStackSources();
+  const before = firstSymbolId();
+  const add = /** @param {EngineLayer} layer */ (layer) => { if (!GLM.getLayer(layer.id)) GLM.addLayer(layer, before); };
+  const line = /** @param {string} id @param {string} source @param {Record<string, unknown>} paint @param {Record<string, unknown>} [layout] @param {unknown} [filter] */ (id, source, paint, layout, filter) => {
+    /** @type {EngineLayer} */
+    const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };
+  // NOTE: a present-but-undefined `filter` key makes MapLibre silently drop the layer
+  addRoutePaintLayers(add, line);
+  addSelectionLayers(add, line);
   // --- hit (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
-  // at 12.6 the paint and names pop out, the POI in: no fading (Andrew), never one alone
-  add({ id: 'routepoi-ring',
-    type: 'circle',
-    source: 'routepoi',
-    maxzoom: 13.3,
-    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 13.5, 9], 'circle-color': '#ffffff', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-dot',
-    type: 'circle',
-    source: 'routepoi',
-    maxzoom: 13.3,
-    paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4.5, 13.5, 6.5], 'circle-color': '#ef476f', 'circle-opacity': ['step', ['zoom'], 1, 12.6, 0], 'circle-opacity-transition': { duration: 0, delay: 0 } } });
-  add({ id: 'routepoi-txt',
-    type: 'symbol',
-    source: 'routepoi',
-    maxzoom: 13.3,
-    layout: { 'text-field': (H.activeRoute && H.activeRoute.name) || 'Snow Route', 'text-font': fontStack, 'text-size': 11, 'text-anchor': 'left', 'text-offset': [1.1, 0], 'text-allow-overlap': false },
-    paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333',
-      'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)',
-      'text-opacity': ['step', ['zoom'], 1, 12.6, 0],
-      'text-opacity-transition': { duration: 0, delay: 0 },
-      'text-halo-width': 1.6 } });
+  addRoutePoiLayers(add);
   LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // the paint and glow groups are the catalogue's
   H.glUnifyLabels({ m: GLM, stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack } });
   pushSources();

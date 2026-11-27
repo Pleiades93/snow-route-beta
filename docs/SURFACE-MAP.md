@@ -60,6 +60,13 @@ carry no backdrop blur, so nothing behind them tints
 through. The tab bar keeps its frosted card face by
 Andrew's explicit pick, pinned by drive231. The table row
 for the sheets is updated with this note.
+S2 ROUND 2 (2026-11-27): addStack in engine.js is split
+into its four sections (stack sources, paint layers,
+selection layers, POI layers) as sibling functions in the
+same part. The route layer stack builds exactly as before
+- same layers, order and paint, pinned by proof-1300. No
+surface, element or snow status changed. Map reviewed; no
+update needed beyond this note.
 
 ## The snow rule (one rule, app-wide)
 

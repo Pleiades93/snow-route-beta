@@ -1657,6 +1657,120 @@
     "parts/whatsnew.js": "1c351ded63faa6094218b3b7ab25d1b535583659c7714cdec98dd8c25024e8a7"
    },
    "issued": "2026-11-27 solid-sheets (r2: changed paths named properly)"
+  },
+  {
+   "id": "s2-addstack",
+   "kind": "cut",
+   "surface": "the route layer stack installation in parts/engine.js (addStack and its four extracted sections) and the checks that read its body",
+   "cut": "addStack's body is split into four sibling functions in the same part; proof-1264's derivation is re-pointed at the five builder bodies; no behaviour, state or storage change",
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The layer stack after boot and after a route load is identical: same IDs, same order, same paint and layout",
+     "case": "paint, feathers, selection, hit and POI register in drawing order before basemap symbols",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the extracted stack builders in a vm with a stub GLM: the full ordered layer-id list and every layer spec handed to addLayer"
+    },
+    {
+     "behaviour": "Sources seat before layers, carry their own data, and enable lineMetrics only on the two feather sources",
+     "case": "sources precede layers, carry their own data, and enable metrics only for feathers",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the addSource call order and spec objects the stub GLM records during addStack"
+    },
+    {
+     "behaviour": "A repeat addStack call preserves existing layers and sources, restores a missing layer, and reruns the refresh",
+     "case": "repeat preserves existing layers and sources, restores a missing layer, and reruns the refresh",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the second addStack call in the vm: existing layer object identity, the restored hit layer, the refresh event sequence"
+    },
+    {
+     "behaviour": "proof-1264's derived stack still equals the catalogue stack in both directions, derived from the real builder seats",
+     "case": "every route-stack layer addStack builds is named in the catalogue stack CR_ROUTE_LAYERS reads",
+     "check": "tests/proof/proof-1264.mjs",
+     "observes": "the layer ids derived from the five builder bodies against the LAYERS catalogue stack, in both directions"
+    },
+    {
+     "behaviour": "In create mode the backdrop hides every feather layer the stack builds (the rendered leak class proof-1264 guards statically)",
+     "case": "create mode: ZERO rendered features across all nine fade layers",
+     "check": "tests/browser/drive217.mjs",
+     "observes": "rendered fade features in a real browser across route mode, create mode, theme swaps and exit"
+    },
+    {
+     "behaviour": "The unify hook still hands the label owner the stack context from inside addStack",
+     "case": "the owner builds them from the stack context addStack passes through the unify hook",
+     "check": "tests/proof/proof-green-half-road.mjs",
+     "observes": "the hook literal in the engine slice from addStack to rebuildRoute, with the owner's single labelpts source creation"
+    },
+    {
+     "behaviour": "The title hook receives the fresh-stack arguments and the refresh closes in labels, push, glow, theme order",
+     "case": "title hook receives fresh-stack arguments before data, glow, and theme refresh",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the unify-hook argument object (map, newStack flag, LABELPTS data, catalogue title ids, font stack) and the closing event order in the vm"
+    }
+   ],
+   "files": {
+    "parts/engine.js": "cb2ee369e18a15a1291c89a117d0a5db8df72e66c02000746fca7d320715b395"
+   },
+   "issued": "2026-11-27 s2r2-addstack"
+  },
+  {
+   "id": "s2-addstack-r2",
+   "kind": "cut",
+   "surface": "the route layer stack installation in parts/engine.js (addStack and its four extracted sections) and the checks that read its body",
+   "cut": "addStack's body is split into four sibling functions in the same part; proof-1264's derivation is re-pointed at the five builder bodies; no behaviour, state or storage change",
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The layer stack after boot and after a route load is identical: same IDs, same order, same paint and layout",
+     "case": "paint, feathers, selection, hit and POI register in drawing order before basemap symbols",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the extracted stack builders in a vm with a stub GLM: the full ordered layer-id list and every layer spec handed to addLayer"
+    },
+    {
+     "behaviour": "Sources seat before layers, carry their own data, and enable lineMetrics only on the two feather sources",
+     "case": "sources precede layers, carry their own data, and enable metrics only for feathers",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the addSource call order and spec objects the stub GLM records during addStack"
+    },
+    {
+     "behaviour": "A repeat addStack call preserves existing layers and sources, restores a missing layer, and reruns the refresh",
+     "case": "repeat preserves existing layers and sources, restores a missing layer, and reruns the refresh",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the second addStack call in the vm: existing layer object identity, the restored hit layer, the refresh event sequence"
+    },
+    {
+     "behaviour": "proof-1264's derived stack still equals the catalogue stack in both directions, derived from the real builder seats",
+     "case": "every route-stack layer addStack builds is named in the catalogue stack CR_ROUTE_LAYERS reads",
+     "check": "tests/proof/proof-1264.mjs",
+     "observes": "the layer ids derived from the five builder bodies against the LAYERS catalogue stack, in both directions"
+    },
+    {
+     "behaviour": "In create mode the backdrop hides every feather layer the stack builds (the rendered leak class proof-1264 guards statically)",
+     "case": "create mode: ZERO rendered features across all nine fade layers",
+     "check": "tests/browser/drive217.mjs",
+     "observes": "rendered fade features in a real browser across route mode, create mode, theme swaps and exit"
+    },
+    {
+     "behaviour": "The unify hook still hands the label owner the stack context from inside addStack",
+     "case": "the owner builds them from the stack context addStack passes through the unify hook",
+     "check": "tests/proof/proof-green-half-road.mjs",
+     "observes": "the hook literal in the engine slice from addStack to rebuildRoute, with the owner's single labelpts source creation"
+    },
+    {
+     "behaviour": "The title hook receives the fresh-stack arguments and the refresh closes in labels, push, glow, theme order",
+     "case": "title hook receives fresh-stack arguments before data, glow, and theme refresh",
+     "check": "tests/proof/proof-1300.mjs",
+     "observes": "the unify-hook argument object (map, newStack flag, LABELPTS data, catalogue title ids, font stack) and the closing event order in the vm"
+    }
+   ],
+   "files": {
+    "parts/engine.js": "96464f6070bbeb55c3487b5bc00e5b50db09c0d29a038422c3cb4d612f35817d"
+   },
+   "issued": "2026-11-27 s2r2-addstack"
   }
  ]
 }

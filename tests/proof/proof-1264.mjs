@@ -47,13 +47,21 @@ const changelog = read('CHANGELOG.md');
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
-// ---------- derive the route stack from addStack ----------
-const stackStart = engine.indexOf('function addStack(');
-const stackEnd = engine.indexOf('\n}\n', stackStart);
-const stackBody = stackStart > -1 && stackEnd > stackStart ? engine.slice(stackStart, stackEnd) : '';
+// ---------- derive the route stack from the stack builders ----------
+// Reads each named builder body, never the whole file.
+const BUILDERS = ['addStack', 'addRouteStackSources', 'addRoutePaintLayers', 'addSelectionLayers', 'addRoutePoiLayers'];
+const bodyOf = (name) => {
+  const s = engine.indexOf('function ' + name + '(');
+  const e = s > -1 ? engine.indexOf('\n}\n', s) : -1;
+  return s > -1 && e > s ? engine.slice(s, e) : '';
+};
+const stackBody = bodyOf('addStack');
 const stack = new Set();
-for (const m of stackBody.matchAll(/add\(line\('([^']+)'/g)) stack.add(m[1]);
-for (const m of stackBody.matchAll(/add\(\{ id: '([^']+)'/g)) stack.add(m[1]);
+for (const name of BUILDERS) {
+  const b = bodyOf(name);
+  for (const m of b.matchAll(/add\(line\('([^']+)'/g)) stack.add(m[1]);
+  for (const m of b.matchAll(/add\(\{ id: '([^']+)'/g)) stack.add(m[1]);
+}
 // the tiers come from the catalogue's titles, via the hook in addStack (check 1).
 const hookTitles = stackBody.includes('ids: LAYERS.titles');
 
@@ -70,7 +78,7 @@ const FADES = ['fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade
 const EXCLUSIONS = []; // route-stack layers that stay visible in create mode, each with its reason - none today (see header)
 
 // ---------- (1) the derivation is real, not an empty extraction ----------
-check('1: the derivation reads the stack (35+ layer ids from addStack, the catalogue title ids among them via the unify hook) and the catalogue (35+ ids in its stack) - a silently empty extraction fails here, not downstream',
+check('1: the derivation reads the stack (35+ layer ids from the stack builders, the catalogue title ids among them via the unify hook) and the catalogue (35+ ids in its stack) - a silently empty extraction fails here, not downstream',
   stack.size >= 35 && list.size >= 35 && stack.has('streetnamespt1') && stack.has('streetnamespt4') && list.has('sel-glow5-b') &&
   hookTitles && app2.includes('function addRouteTitles(m, { newStack, data, ids, fontStack })') && app2.includes('for (const [index, id] of ids.entries())'));
 
