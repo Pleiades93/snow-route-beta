@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "f2f099f4e7d1733238c267934535f0bfbe4149d8d3e1a0b135fde8b4b664725b",
+  "canonical_registry_sha256": "14ecca18b73323254704aa049aa03bc9a6bb69cabcae903e17bc63b1568db235",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -4961,7 +4961,7 @@
    "fix": "Beta 1.176: the gate is a pure render-time decision off each load's own startedAt (re-evaluated by the loaders' 1 s tickers) - no separate timer exists that could paint the readout after a load ended.",
    "fix_id": "slow-load-pill",
    "id": "slow-load-pill-gate-mechanism",
-   "pattern": "const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS;",
+   "pattern": "const pastGate = /** @type {(t0: number|null|undefined) => boolean} */ (t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS);",
    "type": "grep_present"
   },
   {

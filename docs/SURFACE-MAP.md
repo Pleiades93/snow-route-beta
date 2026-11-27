@@ -20,6 +20,8 @@ Stage 3a (create-cache joins the type check): same verdict, no
 update needed.
 Stage 3b-i (create-fetch and create-citydata join the type
 check): same verdict, no update needed.
+Stage 3b-ii (create-pick joins the type check): same verdict,
+no update needed.
 
 ## The snow rule (one rule, app-wide)
 

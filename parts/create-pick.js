@@ -1,5 +1,6 @@
 // the load readout is gone (audit v2): only the action button renders, and only past its five-second gate
 const CR_LOAD_GATE_MS = 5000;
+/** @returns {{ label: string, act: string }} */
 function crHintAction() { // the one decision for the hint button: label and click action both read it, so they can never diverge
   if (crPrepState === 'preparing') return { label: 'Cancel', act: 'cancel' };
   if (crWanted) return { label: crWanted.label, act: 'wanted' };
@@ -16,12 +17,13 @@ function crHintAction() { // the one decision for the hint button: label and cli
   if (map && map.getZoom() >= 14) return { label: 'Prepare this area', act: 'prepare-centre' };
   return { label: '', act: '' };
 }
+/** @returns {void} */
 function crRenderHint() { // the one writer of the action button and the city chip: state-driven, so no stale state survives
   if (!creating || crStage !== 'pick') return;
   const btn = $('crHintBtn');
   if (crSectorSession.street) { btn.style.display = 'none'; return; } // while trimming, no button: the sector bar's own line already tells him
   const load = crPrep || crGrid; // the in-flight load, box or grid: its start times the gate
-  const pastGate = t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS;
+  const pastGate = /** @type {(t0: number|null|undefined) => boolean} */ (t0 => !!t0 && (Date.now() - t0) >= CR_LOAD_GATE_MS);
   const gated = crPrepState === 'preparing' && !!load && !pastGate(load.startedAt); // inside the gate the button stays hidden
   const btnLabel = gated ? '' : crHintAction().label; // the button's label is the one decision's (crHintAction)
   if (btnLabel) { btn.textContent = btnLabel; btn.style.display = ''; } else btn.style.display = 'none';
@@ -36,8 +38,11 @@ function crRenderHint() { // the one writer of the action button and the city ch
 }
 // ---- the DRAFT owner ---- every draft mutation and its following render live here; sector state is the same owner's
 const DRAFT = {
+  /** @returns {void} */
   render() { renderDraft(); renderCrLists(); crRenderHint(); }, // the ONE post-mutation render, in the order every mutation site already used
+  /** @returns {void} */
   renderLists() { renderDraft(); renderCrLists(); }, // the category toggle's tail: the hint does not read the primaries, so it is not re-rendered
+  /** @param {string} name @param {LatLng[][]} segs @returns {void} */
   addStreet(name, segs) { // the draft keys on the full map name (streets sharing a short name would collide); shortStreetName is display-only now
     draft.roads[name] = segs; draft.osmNames[name] = name; crGeomGen++; // a tapped street joins as a secondary (flip it in the list); the bump invalidates the draft-geometry cache
     delete crPending[name];
@@ -45,6 +50,7 @@ const DRAFT = {
     DRAFT.render();
     // no 'Added' popup: the road's picked state on the map and in the panel is the feedback
   },
+  /** @param {string} name @param {LatLng[][]} segs @returns {void} */
   addRun(name, segs) { // a run joins the same entry (parts append in order); a trim stands, gaining the run's parts as chosen
     const before = DRAFT.hasTrim(name) ? crStreetParts(name) : null;
     draft.roads[name] = draft.roads[name].concat(segs); crGeomGen++;
@@ -57,6 +63,7 @@ const DRAFT = {
     DRAFT.render();
     // no 'Added the other part' popup either: same rule as the add-street method
   },
+  /** @param {string} name @returns {void} */
   removeStreet(name) { // the one removal path (panel x, preview x, Clear): a street leaves with all its draft state
     if (!draft || !draft.roads[name]) return;
     delete draft.roads[name]; draft.primaries.delete(name); delete draft.osmNames[name]; crGeomGen++; // the removal invalidates the shared draft geometry (see crDraftGeom)
@@ -66,19 +73,28 @@ const DRAFT = {
     if (crSectorSession.street === name) crSectorReset();
     DRAFT.render();
   },
+  /** @param {string} name @returns {void} */
   togglePrimary(name) { if (draft.primaries.has(name)) draft.primaries.delete(name); else draft.primaries.add(name); DRAFT.renderLists(); }, // the category flip both row chips spelled out identically through 1.280 - one body now
   // ---- sector state: an absent entry means the whole road; a present one is the sorted chosen part indexes
+  /** @param {string} name @returns {number[]|undefined|null} */
   trimOf(name) { return draft && draft.sectors ? draft.sectors[name] : null; }, // the street's trim exactly as the pre-owner sites read it (an absent key reads undefined; no draft reads null)
+  /** @param {string} name @returns {boolean} */
   hasTrim(name) { return !!(draft && draft.sectors && draft.sectors[name]); }, // the presence test the parts-record pin and the add-run dance once spelled out inline
+  /** @param {string} name @returns {number[]|null} */
   snapshotTrim(name) { const t = DRAFT.trimOf(name); return t ? t.slice() : null; }, // the session's entry snapshot: a copy of the trim in force, or null when the whole road stands
+  /** @param {string} name @param {CrStreetRec} rec @returns {Set<number>} */
   chosenSet(name, rec) { const sel = DRAFT.trimOf(name); return new Set(sel || rec.parts.map((_, i) => i)); }, // no entry = every sector chosen (the whole road)
+  /** @param {string} name @param {CrStreetRec} rec @param {Set<number>} set @returns {void} */
   setChosen(name, rec, set) { // a full set stores as no entry: whole road stays the default, an untrimmed street carries no sector baggage
     draft.sectors = draft.sectors || {};
     if (set.size >= rec.parts.length) delete draft.sectors[name];
     else draft.sectors[name] = [...set].sort((a, b) => a - b);
   },
+  /** @param {string} name @returns {void} */
   dropTrim(name) { if (draft.sectors) delete draft.sectors[name]; }, // a trim leaves with its street (the removal) or with an abandoned restore point (the sector session's cancel, no-snapshot arm)
+  /** @param {string} name @param {number[]} snap @returns {void} */
   restoreTrim(name, snap) { draft.sectors = draft.sectors || {}; draft.sectors[name] = snap.slice(); }, // the session's Cancel restore: the entry snapshot returns as a copy, exactly as it was taken
+  /** @returns {void} */
   clearAll() { // Clear-all's wholesale reset: maps replaced (null-prototype), generation bumped, pending cleared, session reset, then the one render
     draft.roads = Object.create(null); draft.primaries.clear(); draft.osmNames = Object.create(null); draft.sectors = Object.create(null); draft.parts = Object.create(null);
     crGeomGen++; crPending = {}; // the wholesale replacement keeps both mutation duties: bump the generation, clear pending (else the sweep re-adds cleared streets)
@@ -86,17 +102,23 @@ const DRAFT = {
     DRAFT.render();
   }
 };
+/** @param {string} name @param {LatLng[][]} segs @returns {void} */
 function crAddStreet(name, segs) { DRAFT.addStreet(name, segs); } // doorway: the body lives on the DRAFT owner above
+/** @param {string} name @param {LatLng[][]} segs @returns {boolean} */
 function crRunHeld(name, segs) { // is this run already in the draft? Segment identity is exact: re-resolving reproduces the same segments deterministically
   const held = new Set((draft.roads[name] || []).map(sg => JSON.stringify(sg)));
   return segs.length > 0 && segs.every(sg => held.has(JSON.stringify(sg)));
 }
+/** @param {string} name @param {LatLng[][]} segs @returns {void} */
 function crAddRun(name, segs) { DRAFT.addRun(name, segs); } // doorway: the body lives on the DRAFT owner above
+/** @param {string} name @returns {void} */
 function crRemoveStreet(name) { DRAFT.removeStreet(name); } // doorway: the body lives on the DRAFT owner above
 // ---- sectors: a street trims to the junction-to-junction pieces actually cleaned; the pack stores only the chosen polylines
+/** @returns {string} */
 function crCovStamp() { // the fingerprint a record is cut against (generation + size): a landing grows a count, a changed stamp means movement
   return crCov ? crCov.gen + ':' + crCov.boxes.length + ':' + Object.keys(crCov.byId).length : '';
 }
+/** @param {string} name @returns {CrStreetRec|null} */
 function crStreetParts(name) { // sectors are cut against the EXTRACT, not the draft: boundaries never move as streets join or leave the draft
   if (!draft || !draft.roads[name]) return null;
   draft.parts = draft.parts || {};
@@ -105,7 +127,7 @@ function crStreetParts(name) { // sectors are cut against the EXTRACT, not the d
     // a record is pinned while anything live indexes it (a trim, an open session's snapshot/bar/taps); unreferenced, it recomputes
     if (DRAFT.hasTrim(name) || crSectorSession.street === name || rec.covStamp === crCovStamp()) return rec;
   }
-  const one = {}; one[name] = draft.roads[name];
+  const one = /** @type {RoadsMap} */ ({}); one[name] = draft.roads[name];
   const runLines = stitchRuns(name, one).filter(L => L && L.length >= 2);
   if (!runLines.length) return null;
   const own = draft.osmNames ? draft.osmNames[name] : null;
@@ -135,9 +157,13 @@ function crStreetParts(name) { // sectors are cut against the EXTRACT, not the d
   draft.parts[name] = rec;
   return rec;
 }
+/** @param {string} name @param {CrStreetRec} rec @returns {Set<number>} */
 function crChosenSet(name, rec) { return DRAFT.chosenSet(name, rec); } // doorway: the body lives on the DRAFT owner (sector state)
+/** @param {string} name @param {CrStreetRec} rec @param {Set<number>} set @returns {void} */
 function crSetChosen(name, rec, set) { DRAFT.setChosen(name, rec, set); } // doorway: the body lives on the DRAFT owner (sector state)
+/** @param {string} name @param {CrStreetRec} rec @returns {number} */
 function crChosenLenM(name, rec) { const set = crChosenSet(name, rec); let s = 0; for (const i of set) if (rec.parts[i]) s += crLineLen(rec.parts[i]); return s; }
+/** @param {string} name @param {StretchMap} g @returns {number} */
 function crStreetChosenM(name, g) { // a street's length as picked (whole or trimmed): every stated length reads here, so unchosen ends never bill
   const sel = DRAFT.trimOf(name);
   if (!sel) return g && g[name] ? g[name].total : 0;
@@ -145,8 +171,9 @@ function crStreetChosenM(name, g) { // a street's length as picked (whole or tri
   let s = 0; for (const i of sel) if (rec.parts[i]) s += crLineLen(rec.parts[i]);
   return s;
 }
+/** @returns {RoadsMap} */
 function crFilteredRoads() { // what the save stores: a trimmed street contributes only its chosen sectors' polylines; the pack format is untouched
-  const out = {};
+  const out = /** @type {RoadsMap} */ ({});
   for (const n of draftStreets()) {
     const sel = DRAFT.trimOf(n);
     if (sel && sel.length) { const rec = crStreetParts(n); out[n] = rec ? sel.map(i => rec.parts[i]).filter(p => p && p.length > 1) : draft.roads[n]; }
@@ -154,6 +181,7 @@ function crFilteredRoads() { // what the save stores: a trimmed street contribut
   }
   return out;
 }
+/** @param {string} name @param {number} idx @returns {void} */
 function crToggleSector(name, idx) {
   const rec = crStreetParts(name); if (!rec || idx < 0 || idx >= rec.parts.length) return;
   if (rec.parts.length === 1) { return; } // a one-piece street's sector is the whole road: the bar says so plainly and the tap changes nothing
@@ -165,6 +193,7 @@ function crToggleSector(name, idx) {
 }
 // both tap handlers search CR_TAP_BOXES (reach, then one wider retry): one literal for the whole discipline
 const CR_TAP_BOXES = [12, 20];
+/** @param {{ lat: number, lng: number }} lngLat @returns {boolean} */
 function crSectorTap(lngLat) { // a tap toggles the sector under it (features first, geometry fallback); TRUE only when one toggled
   const name = crSectorSession.street; if (!name || !draft || !draft.roads[name]) return false;
   const rec = crStreetParts(name); if (!rec) return false;
@@ -173,7 +202,7 @@ function crSectorTap(lngLat) { // a tap toggles the sector under it (features fi
     try {
       const pt = map.project([lngLat.lng, lngLat.lat]);
       for (const half of CR_TAP_BOXES) {
-        const feats = (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]],
+        const feats = /** @type {any[]} */ (map.queryRenderedFeatures([[pt.x - half, pt.y - half], [pt.x + half, pt.y + half]],
           { layers: ['crDraftHit'] }) || []).filter(f => f && f.properties && f.properties.name === name && typeof f.properties.sector === 'number' && f.properties.sector >= 0);
         if (!feats.length) continue;
         let bd = Infinity;
@@ -193,6 +222,7 @@ function crSectorTap(lngLat) { // a tap toggles the sector under it (features fi
   if (idx >= 0) { crToggleSector(name, idx); return true; }
   return false;
 }
+/** @param {string} name @returns {void} */
 function crOpenSectors(name) { // opens trimming (panel row or map tap on the picked street); entry snapshots the pick as it stands
   if (!draft || !draft.roads || !Object.prototype.hasOwnProperty.call(draft.roads, name)) return; // own-property at this door too: a prototype member must not read as a held run
   if (!crStreetParts(name)) return;
@@ -204,7 +234,9 @@ function crOpenSectors(name) { // opens trimming (panel row or map tap on the pi
   else syncCrPanel();
   renderDraft(); crRenderHint();
 }
+/** @returns {void} */
 function crCloseSectors() { if (!crSectorSession.street) return; crSectorReset(); renderDraft(); syncCrGlow(); const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel(); crRenderHint(); } // Beta 1.208: syncCrGlow stands here explicitly because Done's path does not re-render the draft - the glow dies with the session, not with the next render. Beta 1.223: Done's path DOES re-render now (renderDraft above) - the draft's active flags live in the source features, so without a rebuild the closed street would stay vibrant on crDraftLineActive instead of returning to its gentle mute; every other session-closing path (Cancel, stage change, street removal, Clear all) already re-rendered, and this was the one that did not (Codex P2, PR #100)
+/** @returns {void} */
 function crCancelSectors() { // the back-out restores the pick exactly as at entry; un-picking every sector by toggles instead removes the street
   const s = crSectorSession.street; if (!s || !draft) return;
   if (crSectorSession.snapshot) DRAFT.restoreTrim(s, crSectorSession.snapshot);
@@ -212,11 +244,13 @@ function crCancelSectors() { // the back-out restores the pick exactly as at ent
   crCloseSectors();
   renderDraft(); renderCrLists();
 }
+/** @returns {void} */
 function crDeselectSectors() { // the third door: the street leaves via crRemoveStreet (the one removal path); the landing is crCloseSectors' own
   const s = crSectorSession.street; if (!s || !draft) return;
   crRemoveStreet(s);
   const sheet = $('createSheet'); if (sheet && sheet.classList.contains('on')) crMorphTo(crWantedFace()); else syncCrPanel();
 }
+/** @returns {void} */
 function renderSectorBar() {
   const s = crSectorSession.street; if (!s || !draft || !draft.roads[s]) return;
   const rec = crStreetParts(s); if (!rec) return;
@@ -229,20 +263,25 @@ function renderSectorBar() {
     : chosen.size + ' of ' + rec.parts.length + ' sectors picked · ' + fmtLenM(crChosenLenM(s, rec)) + '. The grey ends stay out of your route';
 }
 // ---- the pick sheet's surface ---- panel, strip and bar are contents of one card; face changes morph its geometry
+/** @type {{ from: string, to: string }|null} */
 let crMorph = null; // { from, to } while the surface morphs between faces, else null
 // the faces in one table (element id + geometry class per face): a fourth face joins in exactly one place
-const CR_FACES = { panel: { el: 'crPanel', cls: null }, strip: { el: 'crStrip', cls: 'crG-strip' }, bar: { el: 'crSectorBar', cls: 'crG-bar' } };
+const CR_FACES = /** @type {Record<string,{ el: string, cls: string|null }>} */ ({ panel: { el: 'crPanel', cls: null }, strip: { el: 'crStrip', cls: 'crG-strip' }, bar: { el: 'crSectorBar', cls: 'crG-bar' } });
+/** @param {string} face @returns {AppElement} */
 function crFaceEl(face) { return $(CR_FACES[face].el); }
 // the sheet wears the face's geometry: its class on, the others off (the panel's geometry is both off)
+/** @param {AppElement} sheet @param {string} face @returns {void} */
 function crFaceClasses(sheet, face) { for (const f of Object.keys(CR_FACES)) { const cls = CR_FACES[f].cls; if (cls) sheet.classList.toggle(cls, f === face); } }
+/** @returns {string} */
 function crWantedFace() { // the face asked for: bar while trimming, strip whenever tucked (any pick count), else the panel
   if (crSectorSession.street && draft && draft.roads[crSectorSession.street]) return 'bar';
   if (crSectorSession.collapsed) return 'strip';
   return 'panel';
 }
+/** @returns {void} */
 function syncCrPanel() { // the rest state: the wanted face's geometry and content; no-op while a morph flies (its finish lands this)
   const sheet = $('createSheet'); if (!sheet) return;
-  const els = {}; for (const f of Object.keys(CR_FACES)) { els[f] = crFaceEl(f); if (!els[f]) return; }
+  const els = /** @type {Record<string,AppElement>} */ ({}); for (const f of Object.keys(CR_FACES)) { els[f] = crFaceEl(f); if (!els[f]) return; }
   if (crMorph) return;
   const want = crWantedFace();
   crSectorSession.face = want;
@@ -250,19 +289,23 @@ function syncCrPanel() { // the rest state: the wanted face's geometry and conte
   for (const f of Object.keys(CR_FACES)) els[f].style.display = f === want ? '' : 'none';
   if (want === 'bar') renderSectorBar();
 }
+/** @param {AppElement} sheet @returns {{ h: number, ml: number, mr: number, mb: number, r: number[] }} */
 function crGeoOf(sheet) { // the surface's border-box geometry as plain numbers, read from computed style so calc()/env() are already resolved to px
   const cs = getComputedStyle(sheet);
   const rad = (cs.borderRadius || '0px').trim().split(/\s+/).map(v => parseFloat(v) || 0);
   const R = rad.length === 1 ? [rad[0], rad[0], rad[0], rad[0]] : rad.length === 2 ? [rad[0], rad[1], rad[0], rad[1]] : rad.length === 3 ? [rad[0], rad[1], rad[2], rad[1]] : rad.slice(0, 4);
   return { h: sheet.offsetHeight, ml: parseFloat(cs.marginLeft) || 0, mr: parseFloat(cs.marginRight) || 0, mb: parseFloat(cs.marginBottom) || 0, r: R };
 }
+/** @returns {void} */
 function crMorphCleanup() { // back to class-driven rest: every geometry the morph set clears, so the landing is exactly the CSS geometry
   const sheet = $('createSheet');
   if (sheet) { sheet.style.height = ''; sheet.style.overflow = ''; sheet.style.marginLeft = ''; sheet.style.marginRight = ''; sheet.style.marginBottom = ''; sheet.style.borderRadius = ''; sheet.style.transform = ''; }
   for (const f of Object.keys(CR_FACES)) { const el = crFaceEl(f); if (!el) continue; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.right = ''; el.style.bottom = ''; el.style.opacity = ''; }
   crMorph = null;
 }
+/** @returns {void} */
 function crSettleMorph() { if (!crMorph) return; cancelSheetSpring($('createSheet')); crMorphCleanup(); syncCrPanel(); } // land an in-flight morph NOW (a grab on the panel head, or a new face decision superseding it)
+/** @param {string} to @param {{ dy?: number, v0?: number }} [opts] @returns {void} */
 function crMorphTo(to, opts) { // the face change: one surface springing between resting shapes, contents cross-fading inside; opts carry a drag release's displacement/speed
   const sheet = $('createSheet'); if (!sheet) { syncCrPanel(); return; }
   opts = opts || {};
@@ -291,7 +334,7 @@ function crMorphTo(to, opts) { // the face change: one surface springing between
   sheet.style.marginLeft = G0.ml + 'px'; sheet.style.marginRight = G0.mr + 'px'; sheet.style.marginBottom = mb0 + 'px';
   sheet.style.borderRadius = G0.r[0] + 'px ' + G0.r[1] + 'px ' + G0.r[2] + 'px ' + G0.r[3] + 'px';
   crMorph = { from, to };
-  const L = (a, b, p) => a + (b - a) * p;
+  const L = /** @type {(a: number, b: number, p: number) => number} */ ((a, b, p) => a + (b - a) * p);
   springSheet(sheet, G0.h, G1.h, opts.v0 || 0, h => { // the spring drives the height (its settle thresholds are calibrated for px); every other property follows the same progress
     const p = Math.min(1, Math.max(0, (h - G0.h) / (G1.h - G0.h)));
     sheet.style.height = h + 'px';
@@ -302,6 +345,7 @@ function crMorphTo(to, opts) { // the face change: one surface springing between
     toEl.style.opacity = String(Math.min(1, Math.max(0, (p - 0.3) / 0.7)));
   }, () => { crMorphCleanup(); syncCrPanel(); });
 }
+/** @param {number} [fromY] @param {number} [v0] @returns {void} */
 function crCollapsePanel(fromY, v0) { // tuck the surface away to the bottom bar: the one box contracts, at any pick count, zero included
   if (crSectorSession.collapsed) { syncCrPanel(); return; }
   crSectorSession.collapsed = true;
@@ -309,11 +353,13 @@ function crCollapsePanel(fromY, v0) { // tuck the surface away to the bottom bar
   if (!sheet || !sheet.classList.contains('on')) { syncCrPanel(); return; }
   crMorphTo('strip', { dy: fromY || 0, v0: -(v0 || 0) }); // the height starts shrinking at the finger's speed: its velocity is the drag velocity negated
 }
+/** @returns {void} */
 function crExpandPanel() { // Review: the bar hands back to the panel in the same one-object motion, reversed
   if (!crSectorSession.collapsed) return;
   crSectorSession.collapsed = false;
   crMorphTo('panel');
 }
+/** @param{string} name @param{{ lat: number, lng: number }} lngLat @param{any} run @param{any} [boundary] @returns{void} */
 function crPendStreet(name, lngLat, run, boundary) { // fail-closed: a shape past coverage after its top-up is pending, never half-known; a wider preparation can complete it
   let openEnd = null;
   // an end is open only when no committed coverage holds it (the top-up's box never becomes coverage)
@@ -323,7 +369,9 @@ function crPendStreet(name, lngLat, run, boundary) { // fail-closed: a shape pas
   renderCrLists(); crRenderHint();
 }
 // ---- the city step (Andrew's amendment) STARTS here ----
+/** @param {any} it @returns {string} */
 function crCityNameOf(it) { const a = (it && it.address) || {}; return a.city || a.town || a.village || a.municipality || a.county || String((it && it.display_name) || '').split(',')[0].trim(); }
+/** @param {any} it @returns {boolean} */
 function crIsPlace(it) { // places only: a city/town/village or an administrative boundary - never a street, POI or postcode area
   if (!it) return false;
   const cls = it.category || it.class; // jsonv2 names this field 'category'; 'class' does not exist in its payloads (reading it silently emptied every result)
@@ -332,6 +380,7 @@ function crIsPlace(it) { // places only: a city/town/village or an administrativ
   return false;
 }
 const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 }; // the city search is Ontario-only: this rectangle bounds the query and the filter's judgement of province-less results
+/** @param {any} it @returns {boolean} */
 function crInOntario(it) { // the filter is the guarantee: a named province is judged by its word; the rectangle alone leaks border cities
   if (!it) return false;
   const st = it.address && it.address.state;
@@ -339,6 +388,7 @@ function crInOntario(it) { // the filter is the guarantee: a named province is j
   const la = parseFloat(it.lat), lo = parseFloat(it.lon);
   return isFinite(la) && isFinite(lo) && la >= CR_ON_BOUNDS.s && la <= CR_ON_BOUNDS.n && lo >= CR_ON_BOUNDS.w && lo <= CR_ON_BOUNDS.e;
 }
+/** @param {any} it @returns {void} */
 function crPickCity(it) {
   const lat = parseFloat(it.lat), lon = parseFloat(it.lon); if (!isFinite(lat) || !isFinite(lon)) return;
   const name = crCityNameOf(it); if (!name) return;
@@ -355,6 +405,7 @@ function crPickCity(it) {
   if (crCity) { askDiscard(() => { draft = newDraft(); crPending = {}; apply(); }); return; } // the reset is guarded: crPickCity is the one landing both doors share; a first pick keeps its draft
   apply();
 }
+/** @returns {void} */
 function crEnterPickFromCity() { // land in the pick stage, fly to the city, start its whole-city preparation (from the cache when saved)
   if (!creating) enterCreate('pick'); else { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('pick'); }
   if (map && crCity && crCity.lat != null) { try { map.flyTo({ center: [crCity.lon, crCity.lat], zoom: 12, duration: 900 }); } catch (e) {} }
@@ -362,6 +413,7 @@ function crEnterPickFromCity() { // land in the pick stage, fly to the city, sta
   crRenderHint();
 }
 // ---- the create gate: two doors, then the list ---- the list IS the catalogue; no hardcoded city names
+/** @returns {void} */
 function crRenderCityChoices() {
   const boxEl = $('crCityList'); if (!boxEl) return;
   boxEl.innerHTML = '';
@@ -377,7 +429,7 @@ function crRenderCityChoices() {
     } // honest unavailability, and the manual door behind Back still works - the gate never dead-ends
     const last = (lsGet(LS_GLOBAL.lastArea) || '').toLowerCase();
     // the last-used city rides first when held (a convenience, never a requirement; the full list is always there)
-    const sorted = entries.slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0));
+    const sorted = (/** @type {any[]} */ (entries)).slice().sort((a, b) => (((b.name || '').toLowerCase() === last) ? 1 : 0) - (((a.name || '').toLowerCase() === last) ? 1 : 0));
     for (const e of sorted) {
       if (!e || !e.name || !e.slug || !Array.isArray(e.bbox) || e.bbox.length !== 4) continue;
       const b = routeRowShell('button', e.name, null, { chevron: true }); // rows carry the name only: no sub-line (sub null = no .routeArea element, no leftover row height)
@@ -389,6 +441,7 @@ function crRenderCityChoices() {
     menuListFade(boxEl); // the feather settles on what the landed list covers
   });
 }
+/** @param {any} e @returns {void} */
 function crPackPickCity(e) { // a chooser tap is a city pick through the same crPickCity: every door behaves identically (guard, caching, draft)
   const s = +e.bbox[0], w = +e.bbox[1], n = +e.bbox[2], ee = +e.bbox[3];
   crPickCity({ lat: String((s + n) / 2),
@@ -397,6 +450,7 @@ function crPackPickCity(e) { // a chooser tap is a city pick through the same cr
     display_name: e.name + ', Ontario, Canada',
     address: { city: e.name, state: 'Ontario', country: 'Canada', country_code: 'ca' } });
 }
+/** @param {string} ret @returns {void} */
 function crOpenCityPane(ret) {
   crResetCitySearch(); // reopening supersedes a held city search too: its late answer must not repopulate the pane (close via crResetCitySearch)
   crCityReturn = ret;
@@ -404,15 +458,19 @@ function crOpenCityPane(ret) {
   if (creating) { if (!routeLoaded) restoreBootChrome(); else openRouteMenu(); }
   showRmPane('rmCityPane');
 }
-let crCityTimer = null, crCitySeq = 0, crCityCtl = null;
+let /** @type {number|null} */ crCityTimer = null, crCitySeq = 0, /** @type {any} */ crCityCtl = null;
 let crCityOnlineAt = 0; // the last request's moment: the service caps one per second; the online search waits out the remainder
+/** @returns {void} */
 function crResetCitySearch() { // the close owner: bump the sequence, abort the request, clear the debounce; seats keep only their own extras
   crCitySeq++; if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} crCityCtl = null; }
   if (crCityTimer) { clearTimeout(crCityTimer); crCityTimer = null; }
 }
+/** @param {number} seq @param {number} session @returns {boolean} */
 function crCitySearchCurrent(seq, session) { return seq === crCitySeq && session === crSession; } // the city-search LANDING's current-check: sequence AND session (the convention is stated at crSearchCurrent)
+/** @param {number} seq @returns {boolean} */
 function crCitySearchSeqCurrent(seq) { return seq === crCitySeq; } // the catch's current-check: sequence ONLY, deliberately weaker (exitCreate never bumps crCitySeq); the name carries the asymmetry
 let crCityBoxTok = 0;
+/** @param {(b: AppElement) => void} build @returns {void} */
 function crCityBoxSwap(build) { // results animate between contents: freeze, swap, transition; measure the target unfrozen, release on the swap's token
   const box = $('crCityResults'); if (!box) return;
   const tok = ++crCityBoxTok;
@@ -427,8 +485,10 @@ function crCityBoxSwap(build) { // results animate between contents: freeze, swa
   setTimeout(() => { if (tok === crCityBoxTok) box.style.height = ''; }, 480);
 }
 // skeleton rows pulse while the search flies: the wait is shown, never a blank pane
+/** @returns {void} */
 function crCityShowSkeletons() { crCityBoxSwap(b => { b.innerHTML = ''; for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'crSkel'; b.appendChild(d); } }); }
 // partial names suggest from a shipped Ontario gazetteer, every entry verified at build time through this search's own discipline
+/** @type {[string, number, number, number, number, number, number, number][]} */
 const CR_CITY_GAZETTEER = [
   ["Addington Highlands", 44.90167, -77.31209, 44.5664, 45.2355, -77.5425, -77.033, 2534],
   ["Adelaide Metcalfe", 42.92624, -81.72602, 42.7856, 43.0659, -81.7956, -81.5551, 3011],
@@ -832,8 +892,10 @@ const CR_CITY_GAZETTEER = [
   ["Woolwich", 43.56655, -80.49952, 43.4438, 43.6896, -80.6261, -80.3063, 26999],
   ["Zorra", 43.14419, -80.95448, 42.9857, 43.3009, -81.1322, -80.8057, 8628]
 ];
+/** @param {any} s @returns {string} */
 function crCityGazKey(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[.''\u2019]/g, '').replace(/[-\u2013/]/g, ' ').replace(/\s+/g, ' ').trim(); }
 const CR_CITY_GAZ_KEYS = CR_CITY_GAZETTEER.map(e => crCityGazKey(e[0]));
+/** @param {string} q @returns {any[]} */
 function crCityLocalMatches(q) {
   const k = crCityGazKey(q); if (k.length < 3) return [];
   const head = [], word = [];
@@ -842,7 +904,7 @@ function crCityLocalMatches(q) {
     if (nk.startsWith(k)) head.push(i);
     else if (nk.split(' ').some(w => w.startsWith(k))) word.push(i);
   }
-  const byPop = (a, b) => (CR_CITY_GAZETTEER[b][7] - CR_CITY_GAZETTEER[a][7]) || (a - b);
+  const byPop = /** @type {(a: number, b: number) => number} */ ((a, b) => (CR_CITY_GAZETTEER[b][7] - CR_CITY_GAZETTEER[a][7]) || (a - b));
   head.sort(byPop); word.sort(byPop);
   return head.concat(word).slice(0,
     6).map(i => { const e = CR_CITY_GAZETTEER[i]; return { display_name: e[0] + ', Ontario, Canada',
@@ -854,6 +916,7 @@ function crCityLocalMatches(q) {
       address: { city: e[0], state: 'Ontario', country: 'Canada', country_code: 'ca' } }; });
   // the service's own item shape, so the row renderer and crPickCity consume a suggestion exactly like a service row
 }
+/** @param {any} it @param {number} i @returns {AppElement} */
 function crCityResultRow(it, i) { // one city result row, shared by the type-ahead and the online search: the two renders must never drift apart
   const dn = it.display_name || '', cut = dn.indexOf(',');
   // search results wear the city list's row: name on its own line, the rest small and dim under it
@@ -862,6 +925,7 @@ function crCityResultRow(it, i) { // one city result row, shared by the type-ahe
   row.addEventListener('click', () => crPickCity(it));
   return row;
 }
+/** @returns {void} */
 function crRunCityTypeahead() { // typing answers from the gazetteer; the online search fires only on a settled zero-match word
   const q = $('crCityInput').value.trim();
   if (q.length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the input event already invalidated through the owner; this seat only clears
@@ -872,6 +936,7 @@ function crRunCityTypeahead() { // typing answers from the gazetteer; the online
     places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));
   });
 }
+/** @returns {Promise<void>} */
 async function crRunCitySearch() {
   const input = $('crCityInput'), settledText = input.value;
   const q = settledText.trim();
@@ -909,7 +974,8 @@ async function crRunCitySearch() {
 }
 
 // ---- geometry cache ---- stretches compute once per geometry change, shared by every consumer; invalidation keys on identity + generation
-let crGeomCache = null, crGeomGen = 0; // crGeomGen is a cache key, not a currency counter: no landing checks it; it stands outside the Current convention
+let /** @type {CrGeomCache|null} */ crGeomCache = null, crGeomGen = 0; // crGeomGen is a cache key, not a currency counter: no landing checks it; it stands outside the Current convention
+/** @returns {StretchMap} */
 function crDraftGeom() {
   if (crGeomCache && crGeomCache.draft === draft && crGeomCache.roads === draft.roads && crGeomCache.gen === crGeomGen) return crGeomCache.g;
   const g = computeStretches(draft.roads);
@@ -917,13 +983,16 @@ function crDraftGeom() {
   return g;
 }
 const DRAFT_SRC = 'crDraft';
+/** @param {number} w @returns {any[]} */
 function crZoomW(w) { // widths hold at z15+, halve per level below (metres hold the z15 value): one helper for the family
   return ['interpolate', ['linear'], ['zoom'], 8, w / 128, 9, w / 64, 10, w / 32, 11, w / 16, 12, w / 8, 13, w / 4, 14, w / 2, 15, w, 19, w];
 }
+/** @returns {string|undefined} */
 function crFirstLabelLayerId() { // create paint stacks below the label layer (names draw on top); the finder is shared with crIsectEnsure
-  try { const lab = ((map.getStyle() && map.getStyle().layers) || []).find(l => l.type === 'symbol' && l.layout && l.layout['text-field']); if (lab) return lab.id; } catch (e) {}
+  try { const lab = (/** @type {any[]} */ ((map.getStyle() && map.getStyle().layers) || [])).find(l => l.type === 'symbol' && l.layout && l.layout['text-field']); if (lab) return lab.id; } catch (e) {}
   return undefined;
 }
+/** @returns {void} */
 function ensureDraftLayers() {
   if (!map || typeof map.addSource !== 'function') return;
   try {
@@ -940,9 +1009,11 @@ function ensureDraftLayers() {
 }
 // the glow is a shader (one WebGL layer): a metre-built ribbon mesh, per-pixel falloff, scaling like real paint
 const CR_GLOW_RINGS = [-20, -13, -9.9, -4.95, 0, 4.95, 9.9, 13, 20]; // signed distances: the kerb (4.95), falloff rings (9.9), outer rings (13, 20) carrying the low-zoom floor's tail
+/** @param {string} hex @returns {number[]} */
 function crGlowRgb(hex) { const n = parseInt(hex.slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; }
+/** @param {any} feats @returns {any} */
 function crGlowStitchFeats(feats) { // chain coincident same-colour features into lines: interior joints get no end-cap fans (fans composite and bump the glow)
-  const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9;
+  const same = /** @type {(a: number[], b: number[]) => boolean} */ ((a, b) => Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9);
   const lines = [];
   for (const f of feats) {
     const c = f.geometry && f.geometry.coordinates; if (!c || c.length < 2) continue;
@@ -956,20 +1027,23 @@ function crGlowStitchFeats(feats) { // chain coincident same-colour features int
   }
   return lines.map(L => ({ type: 'Feature', properties: { col: L.col }, geometry: { type: 'LineString', coordinates: L.coords } }));
 }
+/** @param {any} feats @returns {Float32Array} */
 function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 floats per vertex: mercator x, y, |distance| in metres, r, g, b
-  feats = crGlowStitchFeats(feats).map(f => ({ type: 'Feature', properties: f.properties, geometry: { type: 'LineString', coordinates: f.geometry.coordinates.filter((c, i, a) => i === 0 || Math.abs(c[0] - a[i - 1][0]) > 1e-12 || Math.abs(c[1] - a[i - 1][1]) > 1e-12) } })); // Beta 1.216: stitch the fed parts into continuous runs and drop repeated consecutive points BEFORE any normal is computed - a repeated point is a zero-length segment with a (0,0) normal, and the miter clamp turns that into a x2.22 spear (the 1.216 note above). The feed itself (syncCrGlow's chosen sectors, 1.209) is unchanged
-  const verts = [];
-  const push = (x, y, d, rgb) => { verts.push(x, y, d, rgb[0], rgb[1], rgb[2]); };
+  feats = (/** @type {any[]} */ (crGlowStitchFeats(feats))).map(f => ({ type: 'Feature', properties: f.properties,
+    geometry: { type: 'LineString', coordinates: (/** @type {any[]} */ (f.geometry.coordinates)).filter((c, i, a) =>
+      i === 0 || Math.abs(c[0] - a[i - 1][0]) > 1e-12 || Math.abs(c[1] - a[i - 1][1]) > 1e-12) } })); // Beta 1.216: stitch parts into runs, drop repeated points before normals - a repeated point's zero normal spears the miter
+  const verts = /** @type {number[]} */ ([]);
+  const push = /** @type {(x: number, y: number, d: number, rgb: number[]) => void} */ ((x, y, d, rgb) => { verts.push(x, y, d, rgb[0], rgb[1], rgb[2]); });
   for (const f of feats) {
     const coords = f.geometry && f.geometry.coordinates; if (!coords || coords.length < 2) continue;
     const rgb = crGlowRgb(f.properties.col);
-    const mc = coords.map(c => maplibregl.MercatorCoordinate.fromLngLat({ lng: c[0], lat: c[1] }));
+    const mc = (/** @type {any[]} */ (coords)).map(c => maplibregl.MercatorCoordinate.fromLngLat({ lng: c[0], lat: c[1] }));
     const mm = mc[0].meterInMercatorCoordinateUnits();
     const P = mc.map(p => [p.x, p.y]);
     const N = P.length;
     const segN = [];
     for (let i = 0; i < N - 1; i++) { const dx = P[i + 1][0] - P[i][0], dy = P[i + 1][1] - P[i][1]; const L = Math.hypot(dx, dy) || 1; segN.push([-dy / L, dx / L]); }
-    const staN = [];
+    const staN = /** @type {number[][]} */ ([]);
     for (let i = 0; i < N; i++) {
       if (i === 0) staN.push(segN[0]); else if (i === N - 1) staN.push(segN[N - 2]);
       else { let nx = segN[i - 1][0] + segN[i][0], ny = segN[i - 1][1] + segN[i][1];
@@ -977,7 +1051,7 @@ function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 fl
       if (nl < 1e-9) { nx = segN[i][0]; ny = segN[i][1]; } else { nx /= nl; ny /= nl; const cos = Math.max(0.45, nx * segN[i][0] + ny * segN[i][1]); nx /= cos; ny /= cos; } staN.push([nx, ny]);
       }
     }
-    const ringPt = (i, off) => [P[i][0] + staN[i][0] * off * mm, P[i][1] + staN[i][1] * off * mm];
+    const ringPt = /** @type {(i: number, off: number) => number[]} */ ((i, off) => [P[i][0] + staN[i][0] * off * mm, P[i][1] + staN[i][1] * off * mm]);
     const R = CR_GLOW_RINGS.length;
     for (let i = 0; i < N - 1; i++) for (let k = 0; k < R - 1; k++) { // the ribbon: two triangles per station pair per ring band
       const a = ringPt(i, CR_GLOW_RINGS[k]), b = ringPt(i, CR_GLOW_RINGS[k + 1]), c = ringPt(i + 1, CR_GLOW_RINGS[k]), d2 = ringPt(i + 1, CR_GLOW_RINGS[k + 1]);
@@ -1001,14 +1075,17 @@ function crGlowBuildMesh(feats) { // features -> one triangle vertex array, 6 fl
   }
   return new Float32Array(verts);
 }
+/** @type {any} */
 let crGlowShaderLayer = null;
+/** @returns {any} */
 function crGlowLayerObj() {
   if (crGlowShaderLayer) return crGlowShaderLayer;
-  crGlowShaderLayer = {
+  crGlowShaderLayer = /** @type {any} */ ({
     id: 'crGlowShader', type: 'custom', _data: null, _dirty: false, _prog: null, _buf: null, _aPos: -1, _aDist: -1, _aCol: -1, _u: {},
+    /** @param {any} m @param {any} gl @returns {void} */
     onAdd(m, gl) {
-      const sh = (type,
-        src) => { const s2 = gl.createShader(type); gl.shaderSource(s2, src); gl.compileShader(s2); if (!gl.getShaderParameter(s2, gl.COMPILE_STATUS)) console.log('CRGLOWSHADER compile failed: ' + gl.getShaderInfoLog(s2)); return s2; };
+      const sh = /** @type {(type: any, src: string) => any} */ ((type,
+        src) => { const s2 = gl.createShader(type); gl.shaderSource(s2, src); gl.compileShader(s2); if (!gl.getShaderParameter(s2, gl.COMPILE_STATUS)) console.log('CRGLOWSHADER compile failed: ' + gl.getShaderInfoLog(s2)); return s2; });
       const prog = gl.createProgram();
       gl.attachShader(prog, sh(gl.VERTEX_SHADER, [
         'attribute vec2 a_pos;',
@@ -1036,6 +1113,7 @@ function crGlowLayerObj() {
       this._buf = gl.createBuffer();
       if (this._data) this._dirty = true;
     },
+    /** @param {any} gl @param {any} matrix @returns {void} */
     render(gl, matrix) {
       if (!this._prog || !this._data || !this._data.length) return; // no features: draw nothing and request no frame - the repaint runs only while the glow is live
       if (this._dirty && this._buf) { gl.bindBuffer(gl.ARRAY_BUFFER, this._buf); gl.bufferData(gl.ARRAY_BUFFER, this._data, gl.DYNAMIC_DRAW); this._dirty = false; }
@@ -1074,20 +1152,25 @@ function crGlowLayerObj() {
       if (prevScissor) gl.enable(gl.SCISSOR_TEST);
       if (map) map.triggerRepaint(); // breathing: keep frames coming while the glow is live
     },
+    /** @param {any} m @param {any} gl @returns {void} */
     onRemove(m, gl) { if (this._prog) gl.deleteProgram(this._prog); if (this._buf) gl.deleteBuffer(this._buf); this._prog = null; this._buf = null; }
-  };
+  });
   return crGlowShaderLayer;
 }
+/** @param {any} feats @returns {void} */
 function crGlowSetFeatures(feats) { const layer = crGlowLayerObj(); layer._data = crGlowBuildMesh(feats); layer._dirty = true; if (map && typeof map.triggerRepaint === 'function') map.triggerRepaint(); }
+/** @returns {number} */
 function crGlowCasingHalfM() { // the casing's half-width in metres here: the crZoomW anchor holds z15 up, and its z15 metres below
   if (!map) return 0;
   const c = map.getCenter(); const lat = c ? c.lat * Math.PI / 180 : 0.765;
   return 4.875 * (40075016.686 * Math.cos(lat)) / (512 * Math.pow(2, Math.max(map.getZoom(), 15)));
 }
+/** @returns {void} */
 function ensureCrGlowLayers() {
   if (!map || typeof map.addLayer !== 'function') return;
   try { if (!map.getLayer('crGlowShader')) map.addLayer(crGlowLayerObj(), 'crDraftCase'); } catch (e) { /* the style may still be loading - renderDraft retries on every change */ }
 }
+/** @returns {void} */
 function syncCrGlow() { // the glow's one writer: the session street's chosen sectors, only while trimming; a removed sector never glows
   ensureCrGlowLayers();
   if (!map) return;
@@ -1109,6 +1192,7 @@ function syncCrGlow() { // the glow's one writer: the session street's chosen se
   }
   crGlowSetFeatures(feats);
 }
+/** @returns {void} */
 function renderDraft() { // the draft renders from its own roads through its own source: the active route's geometry/storage are never touched
   ensureDraftLayers();
   if (!map || typeof map.getSource !== 'function') return;
@@ -1149,19 +1233,22 @@ onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered be
 
 // ---- creation backdrop ---- the loaded route's paint hides while creating; a POI marks each route's centre; exit restores visibility
 const CR_POI_SRC = 'crPoi';
+/** @returns {any[]} */
 function crPoiFeatures() {
   return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature',
     properties: { name: p.name || '' },
     geometry: { type: 'Point', coordinates: [(bb.w + bb.e) / 2, (bb.s + bb.n) / 2] } }; }).filter(Boolean);
 }
+/** @returns {string[]} */
 function crPoiFont() { // the basemap's own Noto stack, read the way pickFontFromStyle reads it - a guessed stack renders no text
   try {
-    const syms = (map.getStyle().layers || []).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
+    const syms = (/** @type {any[]} */ ((map.getStyle().layers || []))).filter(l => l.type === 'symbol' && l.layout && l.layout['text-font']);
     const pick = syms.find(l => /noto/i.test(l.layout['text-font'].join(' '))) || syms[0];
     if (pick) return pick.layout['text-font'];
   } catch (e) {}
   return ['Noto Sans Regular'];
 }
+/** @returns {void} */
 function ensureCrPoiLayers() {
   if (!map || typeof map.addSource !== 'function') return;
   try {
@@ -1178,6 +1265,7 @@ function ensureCrPoiLayers() {
       paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
   } catch (e) { /* the style may still be loading - the styledata hook re-runs this while creating */ }
 }
+/** @param {boolean} on @returns {void} */
 function crSetBackdrop(on) { // the hide/restore itself lives with the naming owner (setRouteBackdrop, app2.js); this seat keeps the creation POI half
   if (!map || typeof map.setLayoutProperty !== 'function') return;
   setRouteBackdrop(map, on, () => {
@@ -1186,6 +1274,7 @@ function crSetBackdrop(on) { // the hide/restore itself lives with the naming ow
   });
   syncCrGlow(); // the exit's reliable beat: if a trim session outlived its render, the glow still dies here
 }
+/** @param {string} n @param {StretchMap} g @returns {AppElement} */
 function crRowEl(n, g) {
   const row = document.createElement('div'); row.className = 'crRow';
   const primary = draft.primaries.has(n);
@@ -1201,6 +1290,7 @@ function crRowEl(n, g) {
   row.appendChild(del);
   return row;
 }
+/** @param {string} n @param {StretchMap} g @returns {AppElement} */
 function crPanelRowEl(n, g) { // one row per road: dot, name, length, in-row type chip, x to remove; row tap opens trimming
   const primary = draft.primaries.has(n);
   const row = document.createElement('div'); row.className = 'crPRow';
@@ -1224,6 +1314,7 @@ function crPanelRowEl(n, g) { // one row per road: dot, name, length, in-row typ
   row.addEventListener('click', () => crOpenSectors(n));
   return row;
 }
+/** @returns {void} */
 function renderCrLists() {
   if (!draft) return;
   const g = crDraftGeom(); // shares renderDraft's computation through the draft geometry cache
@@ -1251,22 +1342,27 @@ function renderCrLists() {
   $('pvSaveBtn').disabled = !names.length;
   syncCrPanel();
 }
+/** @type {(() => void)|null} */
 let crConfirmCb = null;
 let crConfirmOneBtn = false; // true while the current confirm is the discard ask (its No reads Cancel, like every two-button confirm)
+/** @param {string} title @param {string} msg @param {() => void} cb @param {any} [labels] @returns {void} */
 function crConfirm(title, msg, cb, labels) { $('crModalTitle').textContent = title; $('crModalMsg').textContent = msg; crConfirmCb = cb;
   crConfirmOneBtn = !!(labels && labels.oneBtn); $('crModalYes').textContent = (labels && labels.yes) || 'Discard';
   $('crModalYes').classList.toggle('danger', !!(labels && labels.danger) || crConfirmOneBtn);
   $('crModalNo').textContent = crConfirmOneBtn ? 'Cancel' : ((labels && labels.no) || '✕');
   $('crModalNo').classList.toggle('cancelRed', crConfirmOneBtn || (!!labels && labels.no === 'Cancel')); showSurface($('crModal')); } // two buttons are the only doors
+/** @returns {void} */
 function crConfirmDismiss() { hideSurface($('crModal')); crConfirmCb = null; }
 $('crModalYes').addEventListener('click', () => { hideSurface($('crModal')); const cb = crConfirmCb; crConfirmCb = null; if (cb) cb(); });
 $('crModalNo').addEventListener('click', crConfirmDismiss);
+/** @returns {void} */
 function parkBootChrome() { const sp = $('splash');
 if (sp) sp.style.visibility = 'hidden';
 $('routeMenu').classList.remove('show');
 const bl = $('brandLayer');
 if (bl) bl.classList.add('parked');
 /* the title lives in its own layer - the park hides it explicitly */ crBootParked = true; }
+/** @returns {void} */
 function restoreBootChrome() { if (!crBootParked) return;
 crBootParked = false;
 const sp = $('splash');
@@ -1275,6 +1371,7 @@ $('routeMenu').classList.add('show');
 const bl = $('brandLayer');
 if (bl) bl.classList.remove('parked');
 /* Beta 1.155: revive the title layer with the picker */ }
+/** @param {string} stage @returns {void} */
 function setCreateStage(stage) {
   if (stage !== 'pick') crSectorReset(); // sector mode is pick-stage only: the preview never inherits its bar (the Cancel snapshot dies with it)
   crStage = stage;
@@ -1287,6 +1384,7 @@ function setCreateStage(stage) {
   renderCrLists(); renderDraft();
   if (stage === 'preview') fitDraft();
 }
+/** @param {string} stage @returns {void} */
 function enterCreate(stage) {
   if (!draft) draft = newDraft();
   creating = true;
@@ -1299,6 +1397,7 @@ function enterCreate(stage) {
   crSetBackdrop(true); // the loaded route's paint steps aside for the picking (POIs only) - see crSetBackdrop
   setCreateStage(stage);
 }
+/** @returns {void} */
 function exitCreate() {
   creating = false; draft = null; crStage = 'pick'; crAreaGuess = '';
   crSectorReset(); crSectorSession.collapsed = false; // panel + session state dies with the creation; these calls stand on their own line and run
@@ -1318,8 +1417,11 @@ function exitCreate() {
   crSetBackdrop(false); // the loaded route's paint returns exactly as it was
   renderDraft(); // draft is null: the overlay clears, the active route was never touched
 }
+/** @returns {void} */
 function openDoors() { crWarmCityLibrary(); if (!routeLoaded) { restoreBootChrome(); } else openRouteMenu(); showRmPane('rmCreatePane'); } // opening the doors starts the catalogue download, so it is in hand by the list tap
+/** @param {() => void} then @returns {void} */
 function askDiscard(then) { if (draft && draftStreets().length) crConfirm('Throw away this draft?', 'The ' + draftStreets().length + ' streets you picked will be lost.', then, { oneBtn: true }); else then(); }
+/** @returns {void} */
 function fitDraft() {
   if (!draft || !map) return;
   const bb = computeRouteBox(crFilteredRoads()); if (!bb) return; // the preview frames what will save (chosen sectors); an empty draft computes no box and fires no flight
@@ -1364,18 +1466,23 @@ onMapReady(() => map.on('moveend', () => { if (creating && crStage === 'pick' &&
 // the Prepare-this-area offer follows the zoom (it appears only at picking zoom) - never a silent download while merely panning
 $('crSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') crSearch(); });
 // search as you type (300 ms debounce, 3+ characters, one query per burst); Enter runs it immediately
-let crSearchTimer = null, crSearchSeq = 0;
+let /** @type {number|null} */ crSearchTimer = null, crSearchSeq = 0;
+/** @returns {void} */
 function crResetSearch() { // the search-close owner: clear the debounce, bump the sequence, hide the box; seats keep only their own extras
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crSearchSeq++;
   $('createResults').classList.remove('on');
 }
+/** @returns {void} */
 function crSyncClear() { $('crClear').classList.toggle('on', !!$('crSearchInput').value); } // the clear disc exists only while the input holds text
 // ---- intersection POI ---- a picked crossing's name in the bar and marker on the map, set and cleared together
 const CR_ISECT_SRC = 'crIsect';
+/** @type {{ lat: number, lon: number, name: string }|null} */
 let crIsectPoi = null; // { lat, lon, name } while the surface stands, else null
 let crIsectRaf = 0; // the pulse's frame handle; 0 = the pulse is not running
+/** @type {string|null} */
 let crIsectPushed = null; // the key the source holds ('lat,lon', '' for empty, null = unknown: a fresh source always takes a push)
+/** @returns {void} */
 function crIsectEnsure() { // the layers, (re)seated in the current style: a swap wipes them, so the styledata hook re-runs this
   if (!map || typeof map.addSource !== 'function') return;
   try {
@@ -1390,9 +1497,11 @@ function crIsectEnsure() { // the layers, (re)seated in the current style: a swa
     }
   } catch (e) { /* the style may still be loading - the styledata hook retries while creating */ }
 }
+/** @returns {void} */
 function crIsectHaloRest() { // the halo's rest frame (core-sized, invisible), set at every stop: no stale mid-pulse frame carries forward
   try { if (map && map.getLayer('crIsectHalo')) { map.setPaintProperty('crIsectHalo', 'circle-radius', 7); map.setPaintProperty('crIsectHalo', 'circle-opacity', 0); } } catch (e) {}
 }
+/** @returns {void} */
 function crIsectPulseStart() {
   crIsectPulseStop();
   if (!crIsectPoi) return;
@@ -1412,13 +1521,16 @@ function crIsectPulseStart() {
   };
   crIsectRaf = requestAnimationFrame(tick);
 }
+/** @returns {void} */
 function crIsectPulseStop() { if (crIsectRaf) { cancelAnimationFrame(crIsectRaf); crIsectRaf = 0; } }
+/** @param {number} lat @param {number} lon @param {string} name @returns {void} */
 function crIsectSet(lat, lon, name) { // the surface's ONE writer: state, bar text and marker land together or not at all
   crIsectPoi = { lat, lon, name };
   $('crSearchInput').value = name; crSyncClear(); // the FULL chosen name replaces the typed fragment, and the clear disc stands with it
   crIsectEnsure();
   crIsectPulseStart();
 }
+/** @returns {void} */
 function crIsectClear() { // the one teardown: state, pulse, marker and bar text die together; seats keep only their own extras
   crIsectPoi = null; crIsectPulseStop(); crIsectHaloRest();
   try { if (map && map.getSource(CR_ISECT_SRC)) { map.getSource(CR_ISECT_SRC).setData({ type: 'FeatureCollection', features: [] }); crIsectPushed = ''; } } catch (e) {}
@@ -1437,12 +1549,15 @@ $('crSearchInput').addEventListener('input', () => {
   if (q.length < 3) { crResetSearch(); return; }
   crSearchTimer = setTimeout(() => { crSearchTimer = null; crRunSearch(true); }, 300);
 });
+/** @returns {void} */
 function crSearch() { // Enter: cancel any pending debounce and run the typed query NOW
   if (crSearchTimer) { clearTimeout(crSearchTimer); crSearchTimer = null; }
   crRunSearch(false);
 }
 // the current-check convention: each family's guard is cr<Family>Current(its own inputs) - 'may this landing still write?'
+/** @param {number} seq @returns {boolean} */
 function crSearchCurrent(seq) { return seq === crSearchSeq; } // the street-search family's current-check: the sequence ALONE - no session, by design
+/** @param {boolean} [fromTyping] @param {boolean} [cont] @returns {void} */
 function crRunSearch(fromTyping, cont) {
   const q = $('crSearchInput').value.trim(); if (!q) return;
   const seq = ++crSearchSeq;
@@ -1450,6 +1565,7 @@ function crRunSearch(fromTyping, cont) {
   if (!crSearchCurrent(seq)) return; // synchronous now, so nothing supersedes mid-run: the check stands because every landing answers to its sequence
   crRenderRows(res, cont);
 }
+/** @returns {void} */
 function crRefreshSearch() { // coverage landing under an open search re-runs it; a dismissed search stays dismissed (its box never reopens)
   if (!creating) return;
   const box = $('createResults');
@@ -1458,6 +1574,7 @@ function crRefreshSearch() { // coverage landing under an open search re-runs it
   crRunSearch(false, true);
 }
 // the search is intersections only, answered entirely on-device: a road name names no place, a crossing is one
+/** @param {string} q @returns {any} */
 function crSearchResolve(q) { // -> { items, streets } for a render, or { hint } when the live filter yields nothing
   const pair = crIntersectionItem(q); // a fully resolving pair narrows to exactly its crossing (the 1.232 path, unchanged)
   if (pair) return { items: [pair], streets: new Set([pair.display_name.split(' & ')[0]]) };
@@ -1467,6 +1584,7 @@ function crSearchResolve(q) { // -> { items, streets } for a render, or { hint }
   // the hint is the whole answer on no match: it names the missing step, or teaches the intersection form
   return { hint: crCity ? 'No crossing found - try two streets, like Weston & Rutherford' : 'Choose a city first, then search an intersection' };
 }
+/** @param {string} frag @returns {string[]} */
 function crMatchFragment(frag) { // names a fragment can mean, best first: a prefix of the name, its short form, or any word
   if (!crCov || !crCov.byName) return [];
   const key = crNameKey(frag); if (!key) return [];
@@ -1482,6 +1600,7 @@ function crMatchFragment(frag) { // names a fragment can mean, best first: a pre
   scored.sort((a, b) => a.s - b.s || a.len - b.len || (a.nm < b.nm ? -1 : a.nm > b.nm ? 1 : 0));
   return scored.map(x => x.nm);
 }
+/** @param {string} name @returns {(pt: LatLng) => number} */
 function crAlongSorter(name) { // a crossing's sort key: projection on the street's main axis - a through road never doubles back against it
   const ways = (crCov && crCov.byName && crCov.byName[name]) || [];
   let n = 0, mx = 0, my = 0;
@@ -1495,6 +1614,7 @@ function crAlongSorter(name) { // a crossing's sort key: projection on the stree
   const ax = Math.cos(th), ay = Math.sin(th);
   return pt => (pt[1] - mx) * kx * ax + (pt[0] - my) * ky * ay;
 }
+/** @param {string} name @returns {any[]} */
 function crCrossingRows(name) { // every crossing of one street, ordered along the road, one row per cross street (the first stands)
   const xs = crCrossingsOf(name); if (!xs.length) return [];
   const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // the pair bound: a crossing outside the city is not offered (the extract's ways run past the boundary)
@@ -1504,6 +1624,7 @@ function crCrossingRows(name) { // every crossing of one street, ordered along t
   for (const x of sorted) { if (seen.has(x.other)) continue; seen.add(x.other); rows.push({ it: { lat: String(x.pt[0]), lon: String(x.pt[1]), display_name: name + ' & ' + x.other, address: {}, _isect: true }, other: x.other }); }
   return rows;
 }
+/** @param {string} frag @returns {{ items: any[], streets: Set<string> }} */
 function crFragmentStreetItems(frag) { // one fragment: crossings of every street it matches, grouped in closeness order; the list caps at 40
   const items = [], streets = new Set();
   for (const nm of crMatchFragment(frag)) {
@@ -1513,11 +1634,12 @@ function crFragmentStreetItems(frag) { // one fragment: crossings of every stree
   }
   return { items, streets };
 }
+/** @param {string} fa @param {string} fb @returns {{ items: any[], streets: Set<string> }} */
 function crFragmentPairItems(fa, fb) { // two fragments: crossings matching both sides, either orientation (the mirrored scan answers when the first names none)
   const A = crMatchFragment(fa), B = crMatchFragment(fb);
   if (!A.length || !B.length) return { items: [], streets: new Set() };
   const streets = new Set();
-  const scan = (fromNames, toSet) => {
+  const scan = /** @type {(fromNames: string[], toSet: Set<string>) => any[]} */ ((fromNames, toSet) => {
     const out = [];
     for (const nm of fromNames) {
       const rows = crCrossingRows(nm).filter(r => toSet.has(r.other)); if (!rows.length) continue;
@@ -1525,7 +1647,7 @@ function crFragmentPairItems(fa, fb) { // two fragments: crossings matching both
       for (const r of rows) { out.push(r.it); if (out.length >= 40) return out; }
     }
     return out;
-  };
+  });
   let items = scan(A, new Set(B));
   if (!items.length) items = scan(B, new Set(A));
   return { items, streets };
@@ -1537,11 +1659,14 @@ document.addEventListener('pointerdown', (e) => { // tapping outside dismisses i
   if (e.target && (box.contains(e.target) || $('createBar').contains(e.target))) return;
   crResetSearch(); // dismissing ends the search too (via crResetSearch): an un-invalidated landing would reopen the box over the tap-away
 }, true);
+/** @type {Map<string,{ el: AppElement, leaving: boolean, timer: number|null }>} */
 let crRowState = new Map(); // the results box's live rows, by row text -> { el, leaving, timer }: the populate animation's bookkeeping
+/** @type {{ streets: Set<string>, hint: boolean }|null} */
 let crRowCtx = null; // the last render's shape: a fresh populate is a new context; a typing re-populate continues the same streets
+/** @param {any} res @param {boolean} [cont] @returns {void} */
 function crRenderRows(res, cont) { // the render is a diff: entries fade in, leavers fade out in place, survivors keep nodes and never re-stagger
   const box = $('createResults');
-  const entries = res.hint ? [{ key: 'hint:' + res.hint, hint: res.hint }] : res.items.map(it => ({ key: it.display_name, it }));
+  const entries = /** @type {any[]} */ (res.hint ? [{ key: 'hint:' + res.hint, hint: res.hint }] : (/** @type {any[]} */ (res.items)).map(it => ({ key: it.display_name, it })));
   // fresh means a new context; a refresh (cont) is never fresh - the same search continuing as coverage lands
   const fresh = !cont && (!box.classList.contains('on') || !crRowCtx || crRowCtx.hint !== !!res.hint || (!res.hint && !crSharesStreet(crRowCtx.streets, res.streets)));
   const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1553,7 +1678,8 @@ function crRenderRows(res, cont) { // the render is a diff: entries fade in, lea
     else if (!st.leaving) { st.leaving = true; st.el.classList.remove('crRowIn'); void st.el.offsetWidth; st.el.classList.add('crRowOut'); st.timer = setTimeout(() => { st.el.remove(); crRowState.delete(key); }, 190); }
   }
   let anchor = box.firstChild;
-  const place = el => { if (el === anchor) anchor = el.nextSibling; else box.insertBefore(el, anchor); }; // survivors and entering rows take the list's order; leaving rows are stepped over and fade where they stand
+  const place = /** @type {(el: AppElement) => void} */ (el => { if (el === anchor) anchor = el.nextSibling;
+    else box.insertBefore(el, anchor); }); // survivors and entering rows take the list's order; leaving rows are stepped over and fade where they stand
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
     let st = crRowState.get(e.key);
@@ -1575,10 +1701,13 @@ function crRenderRows(res, cont) { // the render is a diff: entries fade in, lea
   box.classList.toggle('on', entries.length > 0);
   crRowCtx = res.hint ? { streets: new Set(), hint: true } : { streets: res.streets, hint: false };
 }
+/** @param {Set<string>|null|undefined} a @param {Set<string>|null|undefined} b @returns {boolean} */
 function crSharesStreet(a, b) { if (!a || !b) return false; for (const s of a) if (b.has(s)) return true; return false; }
+/** @param {string} text @returns {AppElement} */
 function crHintRowEl(text) { // this row is a message in the card, not a result: a plain div, readable, never tappable
   const d = document.createElement('div'); d.className = 'crHintRow'; d.textContent = text; return d;
 }
+/** @param {any} it @returns {AppElement} */
 function crResultRowEl(it) { // one row: the pin + the crossing's name; the name is the row text (no address tail here)
   const box = $('createResults');
   const b = document.createElement('button'); b.className = 'crResult'; // the row: the set's pin (its own teardrop, no chip behind it) + the name
@@ -1601,7 +1730,9 @@ function crResultRowEl(it) { // one row: the pin + the crossing's name; the name
   return b;
 }
 // ===== crossings ===== answers come from the extract itself (offline, never invented); junction semantics are crStreetParts', dedupe 15 m
+/** @type {{ stamp: string, cells: Map<string,any>, segs: Map<string,any>, cross: Map<string,any> }|null} */
 let crXIndexCache = null; // { stamp, cells, segs, cross } - rebuilt whenever crCovStamp() moves
+/** @param {LatLng} p @param {LatLng} a @param {LatLng} b @returns {{ pt: LatLng, d: number }} */
 function crSegProjM(p, a, b) { // p projected onto segment a-b, in metres: { pt, d }
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
   const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
@@ -1609,6 +1740,7 @@ function crSegProjM(p, a, b) { // p projected onto segment a-b, in metres: { pt,
   const qx = ax + t * dx, qy = ay + t * dy;
   return { pt: [qy / MLAT, qx / MLNG], d: Math.hypot(px - qx, py - qy) };
 }
+/** @param {LatLng} a @param {LatLng} b @param {LatLng} c @param {LatLng} d @returns {LatLng|null} */
 function crSegCrossPt(a, b, c, d) { // where segments a-b and c-d cross, or null; an endpoint counts (parallel pairs register via the vertex test)
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, cx = c[1] * MLNG, cy = c[0] * MLAT, dx = d[1] * MLNG, dy = d[0] * MLAT;
   const rx = bx - ax, ry = by - ay, sx = dx - cx, sy = dy - cy, den = rx * sy - ry * sx;
@@ -1618,6 +1750,7 @@ function crSegCrossPt(a, b, c, d) { // where segments a-b and c-d cross, or null
   const tc = t < 0 ? 0 : (t > 1 ? 1 : t);
   return [(ay + tc * ry) / MLAT, (ax + tc * rx) / MLNG];
 }
+/** @returns {{ stamp: string, cells: Map<string,any>, segs: Map<string,any>, cross: Map<string,any> }|null} */
 function crXIndex() { // a lazy segment grid over the whole extract (~220 m cells), keyed by the extract's own stamp
   if (!crCov || !crCov.byName || !Object.keys(crCov.byName).length) return null;
   const stamp = crCovStamp();
@@ -1636,11 +1769,12 @@ function crXIndex() { // a lazy segment grid over the whole extract (~220 m cell
   crXIndexCache = { stamp, cells, segs, cross: new Map() };
   return crXIndexCache;
 }
+/** @param {string} name @returns {{ other: string, pt: LatLng }[]} */
 function crCrossingsOf(name) { // [{ other, pt }] - every crossing of one street with the rest of the extract, cached per stamp
   const ix = crXIndex(); if (!ix || !ix.segs.has(name)) return [];
   const hit = ix.cross.get(name); if (hit) return hit;
   const CS = 220, byOther = new Map();
-  const add = (other, pt) => { let arr = byOther.get(other); if (!arr) { arr = []; byOther.set(other, arr); } for (const p of arr) if (distM(p, pt) <= 15) return; arr.push(pt); };
+  const add = /** @type {(other: string, pt: LatLng) => void} */ ((other, pt) => { let arr = byOther.get(other); if (!arr) { arr = []; byOther.set(other, arr); } for (const p of arr) if (distM(p, pt) <= 15) return; arr.push(pt); });
   const PAD = 4; // the window grows by the junction tolerance (4 m): a vertex within tolerance across a cell boundary still gathers
   for (const s of ix.segs.get(name)) {
     const a0 = Math.floor((Math.min(s[0][0], s[1][0]) - PAD / MLAT) * MLAT / CS), a1 = Math.floor((Math.max(s[0][0], s[1][0]) + PAD / MLAT) * MLAT / CS);
@@ -1656,13 +1790,14 @@ function crCrossingsOf(name) { // [{ other, pt }] - every crossing of one street
       }
     }
   }
-  const out = [];
+  const out = /** @type {{ other: string, pt: LatLng }[]} */ ([]);
   byOther.forEach((pts, other) => { for (const pt of pts) out.push({ other, pt }); });
   ix.cross.set(name, out);
   return out;
 }
+/** @param {LatLng[]} pts @param {number} r @returns {LatLng[]} */
 function crClusterPts(pts, r) { // one junction can print as several points (a divided road's two carriageways); the centroid of each cluster is the crossing
-  const used = new Array(pts.length).fill(false), out = [];
+  const used = new Array(pts.length).fill(false), out = /** @type {LatLng[]} */ ([]);
   for (let i = 0; i < pts.length; i++) {
     if (used[i]) continue; used[i] = true; let sx = pts[i][0], sy = pts[i][1], n = 1;
     for (let j = i + 1; j < pts.length; j++) if (!used[j] && distM(pts[i], pts[j]) <= r) { used[j] = true; sx += pts[j][0]; sy += pts[j][1]; n++; }
@@ -1670,7 +1805,7 @@ function crClusterPts(pts, r) { // one junction can print as several points (a d
   }
   return out;
 }
-const CR_ABBR = { rd: 'road',
+const CR_ABBR = /** @type {Record<string,string>} */ ({ rd: 'road',
   st: 'street',
   ave: 'avenue',
   av: 'avenue',
@@ -1686,20 +1821,23 @@ const CR_ABBR = { rd: 'road',
   trl: 'trail',
   pkwy: 'parkway',
   sq: 'square',
-  hwy: 'highway' };
+  hwy: 'highway' });
+/** @param {any} s @returns {string} */
 function crNameKey(s) { // a typed fragment and a pack name meet on one key: lower-case, dots off, a trailing abbreviation spelled out
   const parts = String(s || '').trim().toLowerCase().replace(/\./g, '').split(/\s+/).filter(Boolean);
   if (!parts.length) return '';
   if (CR_ABBR[parts[parts.length - 1]]) parts[parts.length - 1] = CR_ABBR[parts[parts.length - 1]];
   return parts.join(' ');
 }
+/** @type {{ stamp: string, map: Map<string,string[]>, stem: Map<string,string[]> }|null} */
 let crNameKeysCache = null; // { stamp, map, stem }: a fragment's key -> pack names, rebuilt when the stamp moves, never per keystroke
 const CR_DIR_TOKENS = ['east', 'west', 'north', 'south'];
+/** @returns {{ stamp: string, map: Map<string,string[]>, stem: Map<string,string[]> }} */
 function crNameKeys() { // key forms per street (full, short), plus trailing-directional stem forms (a stem needs a name before it)
   const stamp = crCovStamp();
   if (crNameKeysCache && crNameKeysCache.stamp === stamp) return crNameKeysCache;
   const map = new Map(), stem = new Map();
-  const put = (m, k, nm) => { if (!k) return; let arr = m.get(k); if (!arr) { arr = []; m.set(k, arr); } if (!arr.includes(nm)) arr.push(nm); };
+  const put = /** @type {(m: Map<string,string[]>, k: string, nm: string) => void} */ ((m, k, nm) => { if (!k) return; let arr = m.get(k); if (!arr) { arr = []; m.set(k, arr); } if (!arr.includes(nm)) arr.push(nm); });
   for (const nm of Object.keys(crCov.byName)) {
     for (const k of [crNameKey(nm), crNameKey(shortStreetName(nm))]) put(map, k, nm);
     const toks = String(nm).trim().split(/\s+/);
@@ -1711,6 +1849,7 @@ function crNameKeys() { // key forms per street (full, short), plus trailing-dir
   crNameKeysCache = { stamp, map, stem };
   return crNameKeysCache;
 }
+/** @param {string} part @returns {string[]} */
 function crMatchStreetName(part) { // exact names win: the stem map answers only on an exact miss, so a Bloor Street is never shadowed
   if (!crCov || !crCov.byName) return [];
   const key = crNameKey(part); if (!key) return [];
@@ -1718,20 +1857,23 @@ function crMatchStreetName(part) { // exact names win: the stem map answers only
   const hit = keys.map.get(key) || keys.stem.get(key);
   return hit ? hit.slice() : [];
 }
+/** @param {string} q @returns {string[]|null} */
 function crParseTwoStreets(q) { // separators 'and' / '&' / 'at' / ',' split a two-street query into [a, b]; anything else does not
   const m = /^\s*(.+?)\s*(?:,|&)\s*(.+?)\s*$/.exec(q) || /^\s*(.+?)\s+(?:and|at)\s+(.+?)\s*$/i.exec(q);
   if (!m) return null;
   const a = m[1].trim(), b = m[2].trim();
   return (a && b) ? [a, b] : null;
 }
+/** @param {string} part @returns {string[]} */
 function crStreetFamily(part) { // exact names plus their kin, exact first: the family answers only when the exact pair yields no crossing
   if (!crCov || !crCov.byName) return [];
   const key = crNameKey(part); if (!key) return [];
   const keys = crNameKeys();
-  const out = [];
+  const out = /** @type {string[]} */ ([]);
   for (const src of [keys.map.get(key), keys.stem.get(key)]) if (src) for (const n of src) if (!out.includes(n)) out.push(n);
   return out;
 }
+/** @param {string} q @returns {any} */
 function crIntersectionItem(q) { // piece 1: the crossing of two named streets, resolved from the extract alone - no network involved
   if (!crCov || !crCov.byName || !crCov.boxes.length) return null;
   const parts = crParseTwoStreets(q); if (!parts) return null;
@@ -1739,7 +1881,7 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   if (!As.length || !Bs.length) return null;
   const ctr = (typeof map !== 'undefined' && map) ? map.getCenter() : null; // several crossings of one pair: the one nearest the map centre wins - the search's standing map bias
   const cityBox = (crCity && crCity.bbox) ? crCity.bbox : null; // candidates are city-bounded before clustering: an inside+outside pair keeps its inside crossing; only-outside yields none
-  const scan = (aNames, bNames) => {
+  const scan = /** @type {(aNames: string[], bNames: string[]) => any} */ ((aNames, bNames) => {
     let best = null;
     for (const A of aNames) {
       const xs = crCrossingsOf(A); if (!xs.length) continue;
@@ -1752,7 +1894,7 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
       }
     }
     return best;
-  };
+  });
   let best = scan(As, Bs);
   if (!best) { // the pair may never touch: retry once with each side widened to its family before the network
     const fA = crStreetFamily(parts[0]), fB = crStreetFamily(parts[1]);
@@ -1762,14 +1904,19 @@ function crIntersectionItem(q) { // piece 1: the crossing of two named streets, 
   return { lat: String(best.pt[0]), lon: String(best.pt[1]), display_name: best.A + ' & ' + best.B, address: {}, _isect: true };
 }
 const CR_SUFFIX = /\s+(Drive|Court|Boulevard|Lane|Street|Avenue|Crescent|Road|Place|Ridge|Way|Terrace|Circle|Gate|Heights|Trail|Parkway)$/;
-const CR_ORDINALS = { '1st': 'First', '2nd': 'Second', '3rd': 'Third', '4th': 'Fourth', '5th': 'Fifth', '6th': 'Sixth', '7th': 'Seventh', '8th': 'Eighth', '9th': 'Ninth', '10th': 'Tenth', '11th': 'Eleventh', '12th': 'Twelfth' };
+const CR_ORDINALS = /** @type {Record<string,string>} */ ({ '1st': 'First', '2nd': 'Second', '3rd': 'Third',
+  '4th': 'Fourth', '5th': 'Fifth', '6th': 'Sixth', '7th': 'Seventh', '8th': 'Eighth', '9th': 'Ninth',
+  '10th': 'Tenth', '11th': 'Eleventh', '12th': 'Twelfth' });
+/** @param {string} osm @returns {string} */
 function shortStreetName(osm) { // the app's short-name convention (the sandbox's suffix rule; ordinal avenues spell out - 5th Avenue is Fifth)
   const m = /^(\d+(?:st|nd|rd|th))\s+Avenue$/i.exec(osm);
   if (m && CR_ORDINALS[m[1].toLowerCase()]) return CR_ORDINALS[m[1].toLowerCase()];
   const s = osm.replace(CR_SUFFIX, '');
   return s && s !== osm ? s : osm;
 }
+/** @param {LatLng[]} pts @returns {number} */
 function crLineLen(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += distM(pts[i - 1], pts[i]); return s; }
+/** @param {LatLng[][]} ways @returns {{ segments: LatLng[][], line: LatLng[], exact: boolean }[]} */
 function chainWays(ways) { // the stitch: greedy endpoint chaining at 1.5 m into runs; a bridged run stores as its stitched line
   const pool = ways.map(w => w.slice());
   const lens = pool.map(w => crLineLen(w)); // way lengths compute once: the seed scan re-reads them per run (re-walking points per scan was quadratic)
@@ -1799,6 +1946,7 @@ function chainWays(ways) { // the stitch: greedy endpoint chaining at 1.5 m into
   return runs;
 }
 const OVERPASS_URLS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']; // primary + fallback (both named in the stamped CSP's connect-src)
+/** @param {string} osmName @param {{ lat: number, lng: number }} lngLat @returns {Promise<void>} */
 async function pickStreet(osmName, lngLat) {
   if (!draft) return;
   const name = osmName; // the draft key IS the full map name; the short form appears only in display text
@@ -1855,6 +2003,7 @@ async function pickStreet(osmName, lngLat) {
   crWanted = { anchor: { lat: lngLat.lat, lng: lngLat.lng }, label: 'Prepare this area' }; // the offer names THIS tap's area, and the hint button prepares exactly there (CG-PF-09)
   crRenderHint();
 }
+/** @param {{ lat: number, lng: number }} lngLat @param {any} geom @returns {number} */
 function crFeatDistM(lngLat, geom) { // metres from tap to a feature line's nearest point: choice only (which street was meant), never stored
   if (!geom) return Infinity;
   const lines = geom.type === 'LineString' ? [geom.coordinates] : (geom.type === 'MultiLineString' ? geom.coordinates : []);
@@ -1875,6 +2024,7 @@ function crFeatDistM(lngLat, geom) { // metres from tap to a feature line's near
   }
   return best;
 }
+/** @param {{ lat: number, lng: number }} lngLat @param {LatLng[]} part @returns {number} */
 function crFeatDistPx(lngLat, part) { // pixels from tap to a part line's nearest point (projection): fallback is judged in its boxes' unit
   const pt = map.project([lngLat.lng, lngLat.lat]);
   let best = Infinity, prev = null;
@@ -1889,15 +2039,16 @@ function crFeatDistPx(lngLat, part) { // pixels from tap to a part line's neares
   }
   return best;
 }
+/** @param {any} e @returns {void} */
 function crMapTap(e) {
   if (!creating || crStage !== 'pick' || !map) return;
   if (crSectorSession.street) { if (!crSectorTap(e.lngLat)) crCancelSectors(); return; } // while trimming, taps speak only to the trimmed street: no sector resolved = tap-away, running crCancelSectors
   // a box query, not a pixel: tile geometry only chooses the street meant, and is never stored
-  const roadFeats = (half) => {
+  const roadFeats = /** @type {(half: number) => any[]} */ ((half) => {
     let feats = [];
     try { feats = map.queryRenderedFeatures([[e.point.x - half, e.point.y - half], [e.point.x + half, e.point.y + half]]) || []; } catch (err) {}
-    return feats.filter(x => x && x.sourceLayer === 'roads' && x.properties && typeof x.properties.name === 'string' && !!x.properties.name);
-  };
+    return (/** @type {any[]} */ (feats)).filter(x => x && x.sourceLayer === 'roads' && x.properties && typeof x.properties.name === 'string' && !!x.properties.name);
+  });
   let pick = null;
   for (const half of CR_TAP_BOXES) { // a finger's real tolerance first, one wider retry before giving up (the widths live at CR_TAP_BOXES)
     const named = roadFeats(half);
@@ -1925,7 +2076,7 @@ $('crSbDone').addEventListener('click', () => crCloseSectors()); // Done: back t
 $('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Deselect: the street leaves entirely through crRemoveStreet (the snapshot restore lives on the tap-away, crCancelSectors)
 (() => { // the tuck-away gesture: drag/flick the handle down, or tap it, to collapse; header buttons keep their taps
   const sheet = $('createSheet'), head = $('crPanelHead'); if (!sheet || !head) return; // the drag moves the SURFACE (the one card), not a face inside it
-  let pid = null, startY = 0, lastY = 0, samples = [], moved = false;
+  let /** @type {number|null} */ pid = null, startY = 0, lastY = 0, /** @type {{ t: number, y: number }[]} */ samples = [], moved = false;
   head.addEventListener('pointerdown', e => {
     if (pid !== null || e.target.closest('button')) return;
     pid = e.pointerId; startY = lastY = e.clientY; samples = [{ t: performance.now(), y: e.clientY }]; moved = false;
@@ -1939,7 +2090,7 @@ $('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Desel
     if (Math.abs(dy) > 4) { if (!moved) { moved = true; try { head.setPointerCapture(pid); } catch (err) {} } }
     if (moved && dy > 0) { sheet.style.transform = 'translateY(' + dy + 'px)'; e.preventDefault(); }
   });
-  const up = e => {
+  const up = /** @type {(e: any) => void} */ (e => {
     if (pid === null || (e && e.pointerId !== pid)) return;
     pid = null;
     if (!moved) { crCollapsePanel(0, 0); return; } // a tap on the handle/header tucks the panel away
@@ -1948,7 +2099,7 @@ $('crSbDeselect').addEventListener('click', () => crDeselectSectors()); // Desel
     const dt = now - s0.t; const vy = dt >= 30 ? (lastY - s0.y) / dt : 0; // px/ms, positive = downward (the sheets' release-velocity rule)
     if (dy > 70 || vy > 0.45) crCollapsePanel(dy, vy * 1000);
     else springSheet(sheet, dy, 0, vy * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => { sheet.style.transform = ''; });
-  };
+  });
   head.addEventListener('pointerup', up);
   head.addEventListener('pointercancel', up);
 })();

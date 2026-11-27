@@ -99,6 +99,12 @@ type Stretch = { line: LatLng[], cum: number[], total: number, parts: LatLng[][]
 /** All streets' stretch geometry by name. */
 type StretchMap = { [street: string]: Stretch };
 
+/** The draft geometry cache record (create-pick). */
+type CrGeomCache = { draft: CrDraft | null, roads: RoadsMap, gen: number, g: StretchMap };
+
+/** A street's sector record (create-pick, crStreetParts): a Stretch plus its coverage stamp. */
+type CrStreetRec = { line: LatLng[], cum: number[], total: number, parts: LatLng[][], runs: StretchRun[], covStamp: string };
+
 /** A route slot's storage keys as routeKeys builds them: every value is a full localStorage key (schema, Layout section). */
 type RouteKeys = { done: string, times: string, hist: string, notes: string, via: string, trail: string, cov: string, start: string, flip: string, sides: string, sess: string, pre: string, snap: string, mig: string, migfill: string, finclean: string, rundist: string, rundist2: string };
 
@@ -487,8 +493,6 @@ declare var glOk: boolean;
 /** app2.js: shows one Routes-menu pane by id. */
 declare function showRmPane(id: string): void;
 
-/** create-pick.js: the create flow's shared confirmation. */
-declare function crConfirm(title: string, msg: string, cb: () => void, labels?: any): void;
 
 /** app3.js: hides the shared confirmation pill. */
 declare function hideConfirm(): void;
@@ -512,26 +516,12 @@ declare var gpsFromRun: boolean;
 
 
 
-/** create-pick.js: the draft geometry cache shared by the create consumers. */
-declare function crDraftGeom(): any;
 
-/** create-pick.js: one street's chosen length in metres. */
-declare function crStreetChosenM(name: string, g: any): number;
 
-/** create-pick.js: restores the boot chrome after the create flow. */
-declare function restoreBootChrome(): void;
 
-/** create-pick.js: parks the boot chrome for the create flow. */
-declare function parkBootChrome(): void;
 
-/** create-pick.js: sets the create flow's stage. */
-declare function setCreateStage(stage: string): void;
 
-/** create-pick.js: the roads the save stores (chosen sectors only). */
-declare function crFilteredRoads(): RoadsMap;
 
-/** create-pick.js: leaves the create flow. */
-declare function exitCreate(): void;
 
 
 /** app2.js: formats a length in metres for display. */
@@ -572,32 +562,38 @@ declare var tilesOk: number;
 
 
 
-/** create-pick.js: re-renders the create hint line. */
-declare function crRenderHint(): void;
 
-/** create-pick.js: adds one resolved street to the draft. */
-declare function crAddStreet(name: string, segs: any): void;
 
-/** create-pick.js: adds one further run to a drafted street. */
-declare function crAddRun(name: string, segs: any): void;
 
-/** create-pick.js: projects a point onto a segment, in metres. */
-declare function crSegProjM(p: LatLng, a: LatLng, b: LatLng): { pt: LatLng, d: number };
 
-/** create-pick.js: a line's length in metres. */
-declare function crLineLen(pts: LatLng[]): number;
 
-/** create-pick.js: stitches ways into runs by endpoint chaining. */
-declare function chainWays(ways: LatLng[][]): { line: LatLng[], exact?: boolean, segments: LatLng[][] }[];
 
-/** create-pick.js: the Overpass endpoints, primary plus fallback. */
-declare var OVERPASS_URLS: string[];
 
-/** create-pick.js: refreshes the street search after an index rebuild. */
-declare function crRefreshSearch(): void;
+/** app2.js: springs a sheet between two positions. */
+declare function springSheet(sheet: AppElement, q0: number, qT: number, v0: number, apply: (q: number) => void, finish: () => void): void;
+
+/** app2.js: cancels a sheet's spring. */
+declare function cancelSheetSpring(sheet: AppElement): void;
+
+/** app2.js: builds one route-list row shell. */
+declare function routeRowShell(tag: string, name: string, sub: string | null, opts?: any): AppElement;
+
+/** app2.js: settles a menu list's edge fade. */
+declare function menuListFade(el: AppElement): void;
+
+/** app2.js: hides or restores the loaded route's backdrop paint. */
+declare function setRouteBackdrop(m: any, on: boolean, updatePois: () => void): void;
+
+/** app2.js: true when a restack re-exposed route paint. */
+declare function routeBackdropNeedsHide(m: any): boolean;
+
+
+/** app3.js: true while GPS follow is paused. */
+declare var followPaused: boolean;
+
 
 /** app2.js: wraps a liveness check into a land-if-current function (G-B owner). */
-declare function landIfCurrent(token: any, isCurrent: (g: any) => boolean): () => boolean;
+declare function landIfCurrent(token: any, isCurrent: (g: any) => boolean): (land?: () => void) => boolean;
 
 // ---- 3. Browser surface actually used by the checked parts ----
 
@@ -674,6 +670,14 @@ interface AppElement {
   querySelector(sel: string): AppElement;
   querySelectorAll(sel: string): { forEach(cb: (e: AppElement) => void): void };
   insertBefore(node: AppElement, ref: AppElement | null): void;
+  title: string;
+  disabled: boolean;
+  isConnected: boolean;
+  firstChild: AppElement | null;
+  nextSibling: AppElement | null;
+  _crItem?: any;
+  focus(): void;
+  setPointerCapture(id: number): void;
   scrollTop: number;
   replaceChildren(...nodes: any[]): void;
   append(...nodes: any[]): void;
@@ -691,6 +695,10 @@ interface AppComputedStyle {
   display: string;
   visibility: string;
   opacity: string;
+  borderRadius: string;
+  marginLeft: string;
+  marginRight: string;
+  marginBottom: string;
 }
 
 declare function getComputedStyle(el: any): AppComputedStyle;
@@ -857,6 +865,7 @@ declare var caches: {
 
 declare function fetch(url: string, options?: any): Promise<any>;
 declare var TextDecoder: any;
+declare var maplibregl: any;
 declare var TextEncoder: any;
 
 /** The abort surface the preload fetch timeout uses. */

@@ -849,6 +849,42 @@
     "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r9",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-pick.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "files": {
+    "parts/create-pick.js": "ca4f0ed4f24397e46bc73032c54fca6a15a617237fa8cc6453c9cceed963db19"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r10",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-pick.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "files": {
+    "parts/create-pick.js": "a5bfd76560e0c9459baa9f3ae11bd5f9215dd02b9fb6654a8f2fbe63ac117256"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r11",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-pick.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-pick.js"
+   ],
+   "files": {
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }
