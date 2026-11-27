@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "3a46bf215fc396b1bad267b0632864a235808e47955521c8e3a93958597c5c64",
+  "canonical_registry_sha256": "b045e3b81d134876be8012fde27623298bd333ed17afa506fda41e1cb641f163",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1633,
-   "included": 1603,
+   "canonical": 1634,
+   "included": 1604,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14282,6 +14282,15 @@
    "fix_id": "graft-a-machinery",
    "id": "ga-ci-wiring",
    "pattern": "ESLint (standard JS rules beside the bespoke scanners)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "docs/PROHIBITION-INVENTORY.md",
+   "fix": "G-A: the prohibition inventory records every standing prohibition as mechanically checked or as prose with the reason a check cannot establish it; deferrals are recorded decisions, never silent drops.",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-prohibition-inventory",
+   "pattern": "## Stays in prose",
    "type": "grep_present"
   }
  ]

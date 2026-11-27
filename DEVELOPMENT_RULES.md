@@ -426,3 +426,11 @@ sharded suite on `main` as the environment-drift audit.
   report; a suspicion is labelled a suspicion.
 - If a check cannot be run (environment, access), say so and name what would
   unblock it — do not route around the admission.
+
+## Gate diagnostics
+
+A refusal names what failed, its root cause, and the correct action.
+Keep cause + action short. Preserve diagnostics that already teach.
+Warnings ask for evidence; errors state what must change before retrying.
+Which standing rules are mechanical, and which stay prose and why, is
+recorded in docs/PROHIBITION-INVENTORY.md.
