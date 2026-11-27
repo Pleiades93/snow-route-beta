@@ -1013,6 +1013,8 @@ const HEAD_Q = 400;
 // course noise falls with speed: at rest the course is stale or absent, at speed it sharpens
 function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); }
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
+// one owner for map-frame <-> camera-frame conversion: the frames are named at every call
+function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) { return mapBearing !== undefined ? headDelta(cameraMapBearing, mapBearing) : cameraMapBearing + cameraBearing; }
 function updateHeading(hdg, speed, now) {
   // state is maintained whenever location is on, not only in a run; suspended, it freezes with the camera
   if (followPaused) return;
@@ -1052,18 +1054,18 @@ let lastHeadAt = 0;
 function headCam(now) {
   // no-map guard; the bearing spring zeroes whenever headCam is not the owner, so re-engages start from rest
   if (!map || watchId == null || followPaused || smHeading === null) { lastHeadAt = now; camBVel = 0; return; }
-  const cur = map.getBearing();
+  const cameraMapBearing = map.getBearing();
   // the camera reads theta + omega * h (the rate leads between fixes, capped at 1 s)
   const h = lastHeadFixPerf ? Math.min(1, Math.max(0, (performance.now() - lastHeadFixPerf) / 1000)) : 0;
   const tgt = smHeading + (headF ? headF.om : 0) * h;
-  const d = headDelta(cur, tgt);
+  const cameraBearing = convertBearingFrame(cameraMapBearing, { mapBearing: tgt });
   const dt = Math.min(100, Math.max(1, now - (lastHeadAt || now))) / 1000; lastHeadAt = now;
   // the rest threshold replaces the deadband: skip only when error and velocity are ~0, never parking mid-swing
-  if (Math.abs(d) < 0.02 && Math.abs(camBVel) < 0.5) return;
+  if (Math.abs(cameraBearing) < 0.02 && Math.abs(camBVel) < 0.5) return;
   // smoothTime 0.22 s (bearing step 10.18 -> 4.50 deg at parity); no slew cap - simulated and rejected
-  const r = camSmoothDampAngle(cur, tgt, camBVel, 0.22, dt);
-  camBVel = r[1];
-  map.jumpTo({ bearing: r[0] });
+  const [nextCameraBearing, velocity] = camSmoothDamp(0, cameraBearing, camBVel, 0.22, dt);
+  camBVel = velocity;
+  map.jumpTo({ bearing: convertBearingFrame(cameraMapBearing, { cameraBearing: nextCameraBearing }) });
 }
 // no-map tolerance as pushGps: a map-less finish must reach its transaction, not throw here
 function northUp() { smHeading = null; camBVel = 0; if (!map) return; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); }

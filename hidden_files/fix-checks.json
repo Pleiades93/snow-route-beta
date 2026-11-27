@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "87faf4bfbb1fffcdf81640a6bbb548ae194b4f8bb2a60e15b687142fa8fefcc9",
+  "canonical_registry_sha256": "a1c531c76c2605697ce9867fd45f668b6fdf4746d55fc2a8204e9d9a140d84c0",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1627,
-   "included": 1597,
+   "canonical": 1628,
+   "included": 1598,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -6176,7 +6176,7 @@
    "fix": "Beta 1.198 camera glide (PR #45, merge 7a6cc3c5): both exponential camera chases in parts/app3.js are replaced by critically-damped springs (camSmoothDamp / camSmoothDampAngle, the SmoothDamp form) \u2014 bearing spring smoothTime 0.22 s on the wrapped angle (target theta + omega*h from heading filter 2a unchanged), centre spring smoothTime 0.32 s on the camera centre in world metres (target dispShownPos() unchanged). The 0.5 px / 0.3 deg deadbands are rest thresholds (error AND spring velocity ~0); the render parking tests gained camSpringsRest() beside dispSettled(); spring velocities zero whenever the follow is not the camera's owner. The correction cap is RELATIVE: maxStep = (20 + lastFixSpd) * dt, lastFixSpd refreshed in acceptFix past every refusal return from the accepted fix's own Doppler speed (Codex P2 round 2: an absolute cap cannot track above 72 km/h \u2014 ~600 m behind in a minute at 30 m/s; the relative form tracks a steady 30 m/s at a bounded 9.4 m lag, and at rest it is exactly the studied 20 m/s). An explicit re-centre is exempt from the cap until the return closes under 25 m (camUncapped, set by resumeFollow; Codex P2 round 1: a capped 1 km re-centre crawls ~50 s; measured exempt return reaches under 1 m in 1.6 s from 100 m / 2.0 s from 1 km, zero overshoot). Acceptance on the session-2 replay through the shipped code: worst bearing step 10.18 -> 4.50 deg, smoothed centre jerk p95 1,021 -> 191 m/s^3, worst camera excess over the vehicle's own speed exactly 20.00 m/s, corner error vs theta at parity (11.11 vs 10.97 mean), centre lag 323 ms median stated. Proof: PR #45 gate all four contexts success (Tier B set 20/20 incl. drive163 15/15 and drive194 39/39), camera drives locally green (148 42/42, 126 15/15, 197 27/27, 195 15/15, 168 8/8), Codex zero findings on the final head 378ac2c2 after two adjudicated REAL P2 fixes. If a probe fails, the glide has regressed or been reverted \u2014 restore the shipped form and re-run the camera drives.",
    "fix_id": "camera-glide-1198",
    "id": "glide1198-bearing-spring",
-   "pattern": "camSmoothDampAngle(cur, tgt, camBVel, 0.22, dt)",
+   "pattern": "camSmoothDamp(0, cameraBearing, camBVel, 0.22, dt)",
    "type": "grep_present"
   },
   {
@@ -14228,6 +14228,15 @@
    "fix_id": "phase6-label-handover",
    "id": "phase6-p3-clone-coverage",
    "pattern": "P3b the crossing hands over",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app3.js",
+   "fix": "Phase 7 (bearing frame owner): map-frame <-> camera-frame conversion has one owner in app3.js - headCam converts its course target in and its jumpTo bearing out through convertBearingFrame, with the frames named at each call.",
+   "fix_id": "phase7-bearing-frame",
+   "id": "phase7-bearing-frame-owner",
+   "pattern": "function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) {",
    "type": "grep_present"
   }
  ]
