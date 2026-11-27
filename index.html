@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-8M8gG4T2tzX7CaH/TQWl54/+QRxS712X6ai9Iz/huWeikmjqs3i2qFjF3KMv8usg' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-iK5fczymKXGNKDhn5vfCBcRAZLwMNUCFeUabv9F3TJDxtjn3/xT18GI6gFMmzm2q' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1009,7 +1009,7 @@ html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::aft
 <div id="hud">
   <div id="warn"><strong>Not saving</strong><br><span>Storage is full or blocked</span></div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.301</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.302</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -8017,8 +8017,8 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.301', items: [
-    "Snow now falls on every menu screen"
+  v: 'Beta 1.302', items: [
+    "Snow mound no longer cut off at the right edge"
   ] }; // entries stay short: one plain line each (Beta 1.223 rule)
 
 /** @returns {void} */
@@ -11898,8 +11898,9 @@ async function saveDraftRoute() {
       grad.addColorStop(1, 'rgba(235,244,255,0.98)');
       ctx.beginPath();
       ctx.moveTo(0, H);
-      for (var x = 0; x <= W; x += 6) ctx.lineTo(x, H - groundHeightAt(x, amount));
-      ctx.lineTo(W, H);
+      var lastX = (Math.ceil(W / 6) + 1) * 6; // sample past the right edge so the canvas clips the wave there, never a closing chord
+      for (var x = 0; x <= lastX; x += 6) ctx.lineTo(x, H - groundHeightAt(x, amount));
+      ctx.lineTo(lastX, H);
       ctx.closePath();
       ctx.fillStyle = grad;
       ctx.globalAlpha = Math.min(1, amount * 1.4);

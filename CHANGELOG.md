@@ -1,5 +1,19 @@
 # Changelog
 
+## Beta 1.302 — 2026-11-27
+
+Snow mound edge fix (Andrew's live report, 2026-11-27: the snow mound at the bottom of the blue menus was cut
+on the right side, in the browser and the home-screen app alike). The bank's wavy top edge was drawn in steps
+across the screen and the shape was then closed with one straight line down to the bottom-right corner; at
+widths where the wave stands high and is still rising at the right edge (a 430-wide phone is one), that closing
+line sliced the crest off over the last few pixels. The paint now samples the wave one step past the right edge
+and closes the shape off-screen, so the screen clips the wave at the edge exactly as it does on the left. The
+wave's shape itself is unchanged - flakes land on the same ground as before. New drive229 pixel-scans the
+settled bank at 390, 393 and 430 wide and pins the edge profile; on the old paint it fails at 393 and 430.
+Plus 2 maintenance PRs since Beta 1.301.
+
+Editorial: this entry; What's New replaced with the fix line; the #ver label reads Beta 1.302.
+
 ## Beta 1.301 — 2026-11-26
 
 Snow on every menu (Andrew's live report, 2026-11-26: on a cold start the splash and the boot picker snowed, but

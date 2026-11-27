@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "1d0bc3a74267671772cecc81781735a70f58194642b86540b0b02166525cef94",
+  "canonical_registry_sha256": "11f9e26b54bc8439ef82ec19dab1d02356cccc81c46bc9fd5714b7f4546ed45c",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1649,
-   "included": 1619,
+   "canonical": 1652,
+   "included": 1622,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14425,6 +14425,33 @@
    "fix_id": "s1-finish-app3",
    "id": "s1finish-tsc-all-parts-green",
    "type": "command_exit0"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/brand-snow.js",
+   "fix": "MOUND-FIX (Beta 1.302, 2026-11-27): render() samples the ground profile one grid step past the right edge (lastX) so the canvas clips the wave there. If this fails, the sampling bound regressed to W and the closing chord can slice the crest again - restore the lastX bound.",
+   "fix_id": "mound-edge",
+   "id": "mound-edge-sample-past-edge",
+   "pattern": "var lastX = (Math.ceil(W / 6) + 1) * 6;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/brand-snow.js",
+   "fix": "MOUND-FIX (Beta 1.302, 2026-11-27): the closing chord lineTo(W, H) stays OUT of brand-snow.js - it sliced the bank's crest at the right edge. The path now closes at (lastX, H), off-canvas. If this fails, the chord is back - close off-canvas instead.",
+   "fix_id": "mound-edge",
+   "id": "mound-edge-no-closing-chord",
+   "pattern": "ctx.lineTo(W, H);",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/brand-snow.js",
+   "fix": "MOUND-FIX (Beta 1.302, 2026-11-27): groundHeightAt's two-sine formula is pinned because drive229 mirrors it to predict the edge profile. If this fails, the formula changed - update drive229's mirror in the same change (its centre cross-check against __snow.ground() also fails until you do).",
+   "fix_id": "mound-edge",
+   "id": "mound-edge-profile-formula",
+   "pattern": "return maxH * (0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4));",
+   "type": "grep_present"
   }
  ]
 }

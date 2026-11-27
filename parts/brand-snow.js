@@ -187,8 +187,9 @@
       grad.addColorStop(1, 'rgba(235,244,255,0.98)');
       ctx.beginPath();
       ctx.moveTo(0, H);
-      for (var x = 0; x <= W; x += 6) ctx.lineTo(x, H - groundHeightAt(x, amount));
-      ctx.lineTo(W, H);
+      var lastX = (Math.ceil(W / 6) + 1) * 6; // sample past the right edge so the canvas clips the wave there, never a closing chord
+      for (var x = 0; x <= lastX; x += 6) ctx.lineTo(x, H - groundHeightAt(x, amount));
+      ctx.lineTo(lastX, H);
       ctx.closePath();
       ctx.fillStyle = grad;
       ctx.globalAlpha = Math.min(1, amount * 1.4);
