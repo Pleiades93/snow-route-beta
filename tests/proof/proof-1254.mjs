@@ -107,7 +107,6 @@ check('10 (#10): packTileEnum exists and both views consume it; the enumeration 
 // ---------- R-05: every LS_GLOBAL value is documented ----------
 const lsg = slice(app1, 'const LS_GLOBAL', '};');
 const values = [...lsg.matchAll(/'((?:snowroute)[^']+)'/g)].map(m => m[1]);
-// the floor is 6 since S1-FINISH deleted the proven-dead prep key
 check('11 (R-05): LS_GLOBAL parsed (' + values.length + ' values) and every value appears in STORAGE-SCHEMA.md',
   values.length >= 6 && values.every(v => schema.includes(v)));
 check('12 (R-05): the dp entry documents its shape and terms',

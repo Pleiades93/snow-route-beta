@@ -18751,6 +18751,18 @@
    "red": "proof-1273 exits 1: 12 passed, 1 failed - case 1 (the gap ledger is declared) fires.",
    "green": "Mutation reverted (app3.js sha256 restored): proof-1273 passes 13/13 on the final tree.",
    "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "s1-finish-proof-1254-literals-r2",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "16ecc3dc6552469a11e69c5310f4fd6cc3cf8e77aee8c21c7b6acacbc5f1b4dc"
+   },
+   "mutation": "Same break as s1-finish-proof-1254-literals, re-observed on the current proof file (its history comment line removed per Codex P1 on PR #235): SAMPLES changed from Object.create(null) to a plain object literal in parts/app3.js.",
+   "red": "proof-1254 exits 1: 12 passed, 1 failed - case 3 (O-02) fires on the plain-object SAMPLES.",
+   "green": "Mutation reverted (app3.js sha256 restored): proof-1254 passes 13/13.",
+   "issued": "2026-11-27 s1-finish-app3"
   }
  ]
 }
