@@ -37,7 +37,7 @@ list naming a non-roster drive, a judging script missing from the
 receipts gate's judge list, a push carrying a drifted mirror,
 a parts push with no survivor list, a survivor naming a case
 its check does not carry, a survivor list pinned before the
-cut surface moved) fails.
+cut surface moved, an absence pin the tree falsifies) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -905,6 +905,25 @@ with tempfile.TemporaryDirectory() as td:
          "changed": [], "files": {}, "issued": "gate-fixtures"}]}))
     check("survivors: a no-cut record with no reason is invalid at verify",
           run_survivors_cli(reasonless, "verify", []), 1)
+    delt = survivors_tree(t / "deltree")
+    (delt / "parts" / "b.js").unlink()
+    check("survivors: a cut record pins a deleted parts path absent and issues",
+          issue_survivors(delt, "fixture-delete", [SURV_ROW],
+                          changed=("parts/a.js", "parts/b.js")), 0)
+    check("survivors: the gate passes on the deleted path the record pins absent",
+          run_survivors_cli(delt, "gate", ["--changed", "parts/b.js"]), 0)
+    w(delt / "parts" / "b.js", "B body back again\n")
+    check("survivors: an absence pin the tree falsifies is refused (the file is back)",
+          run_survivors_cli(delt, "gate", ["--changed", "parts/b.js"]), 1)
+    ncdel = survivors_tree(t / "ncdeltree")
+    (ncdel / "parts" / "b.js").unlink()
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-survivors.py"), "issue-no-cut",
+                           str(ncdel), "--id", "fixture-nodel", "--reason",
+                           "nothing cut", "--changed", "parts/b.js",
+                           "--issued", "gate-fixtures"],
+                          capture_output=True, text=True, timeout=120)
+    check("survivors: a no-cut record naming a missing path is refused (a deletion is a cut)",
+          proc.returncode, 1)
 
     # Push mode: the gate rides push.py's preflight like the census.
     # (The trees are census_tree's, judge and evidence branch-carried.)
@@ -1652,6 +1671,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 147
+total = 151
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

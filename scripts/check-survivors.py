@@ -31,7 +31,13 @@ ledger of round records, mirroring tests/sibling-census.json.
 A record pins the sha256 of every parts/ path it names, so it
 goes stale the moment the cut surface moves again, and
 scripts/push.py refuses a parts-changing push that no
-CURRENT record names. A round whose parts change removes,
+CURRENT record names. A path the cut DELETES (or ports away
+under a rename, whose old side the changed set still names)
+pins the sentinel "absent" instead: the record claims the
+file is intentionally gone, and the claim is falsified -
+STALE, re-issue - the moment the file stands in the tree
+again. A no-cut record may not pin an absence: a deletion
+is a cut, never a no-cut. A round whose parts change removes,
 ports and restructures nothing (a pure addition, line wraps,
 comment work) records a NO-CUT record with its reason
 instead, so the absence of a survivor list is a stated fact,
@@ -87,6 +93,7 @@ from pathlib import Path
 LEDGER_REL = "tests/survivor-lists.json"
 TOOL_REL = "scripts/check-survivors.py"
 ROW_FIELDS = ("behaviour", "check", "case", "observes")
+ABSENT = "absent"
 
 
 def sha256_file(path):
@@ -141,8 +148,9 @@ def record_problems(rec):
             problems.append("'files' must pin every changed parts path")
         else:
             for rel in changed:
-                if not _is_sha256(files.get(rel)):
-                    problems.append(f"'files' carries no sha256 pin for {rel}")
+                if not _is_sha256(files.get(rel)) and files.get(rel) != ABSENT:
+                    problems.append(f"'files' carries no pin (sha256 or "
+                                    f"absent) for {rel}")
     if rec["kind"] == "no-cut":
         if not str(rec.get("reason") or "").strip():
             problems.append("a no-cut record must state its reason")
@@ -169,14 +177,19 @@ def record_problems(rec):
 
 def record_state(root, rec):
     """CURRENT (well-formed, pins match, every named case found
-    in its check file), STALE (a pinned parts file moved),
-    BROKEN (a pinned file, a check file, or a named case is
-    gone), or INVALID (the record itself is incomplete)."""
+    in its check file), STALE (a pinned parts file moved, or a
+    path pinned absent stands in the tree again), BROKEN (a
+    pinned file, a check file, or a named case is gone), or
+    INVALID (the record itself is incomplete)."""
     if record_problems(rec):
         return "INVALID"
     root = Path(root)
     for rel, want in (rec.get("files") or {}).items():
         p = root / rel
+        if want == ABSENT:
+            if p.is_file():
+                return "STALE"
+            continue
         if not p.is_file():
             return "BROKEN"
         if sha256_file(p) != want:
@@ -242,12 +255,15 @@ def _write_ledger(root, data):
     f.write_text(json.dumps(data, indent=1) + "\n")
 
 
-def _pins(root, changed):
+def _pins(root, changed, allow_absent):
     pins = {}
     for rel in changed:
         p = Path(root) / rel
         if not p.is_file():
-            return None, f"changed path {rel} is not in the tree"
+            if not allow_absent:
+                return None, f"changed path {rel} is not in the tree"
+            pins[rel] = ABSENT
+            continue
         pins[rel] = sha256_file(p)
     return pins, None
 
@@ -292,7 +308,7 @@ def cmd_issue(root, args):
                   "in the named check, or the naming is vacuous")
             return 1
     changed = sorted(set(args.changed))
-    pins, err = _pins(root, changed)
+    pins, err = _pins(root, changed, allow_absent=True)
     if err:
         print("ISSUE REFUSED: " + err)
         return 1
@@ -306,8 +322,11 @@ def cmd_issue(root, args):
     data.setdefault("about", "")
     data["rounds"].append(rec)
     _write_ledger(root, data)
+    gone = [rel for rel in changed if pins[rel] == ABSENT]
     print(f"SURVIVOR LIST ISSUED: {args.id} - {len(rows)} survivor row(s), "
-          f"{len(changed)} parts path(s) pinned")
+          f"{len(changed)} parts path(s) pinned"
+          + (f"; pinned absent (deleted by the cut): {', '.join(gone)}"
+             if gone else ""))
     return 0
 
 
@@ -320,7 +339,7 @@ def cmd_issue_no_cut(root, args):
         print(f"ISSUE REFUSED: survivor id '{args.id}' already exists")
         return 1
     changed = sorted(set(args.changed or []))
-    pins, err = _pins(root, changed)
+    pins, err = _pins(root, changed, allow_absent=False)
     if err:
         print("ISSUE REFUSED: " + err)
         return 1

@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "80509ab9b44c75af2eebfae486d37ebf42152ac40a1aee90f404899808a26b15",
+  "canonical_registry_sha256": "d330e6eb6adac5be1b62956f00ead172e4649df09eed42ad8e1cf04f40a42861",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1606,
-   "included": 1576,
+   "canonical": 1607,
+   "included": 1577,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14039,6 +14039,15 @@
    "fix_id": "phase2-prove-it",
    "id": "phase2-drive125-crossfade-s7b",
    "pattern": "S7b the swap really crossfades",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/check-survivors.py",
+   "fix": "Phase 2 (Codex P2, PR #227): a cut record pins a deleted parts path with the ABSENT sentinel - the absence is a claim the gate falsifies if the file stands again, so removal and rename rounds can be certified.",
+   "fix_id": "phase2-prove-it",
+   "id": "phase2-survivors-absent-sentinel",
+   "pattern": "ABSENT = \"absent\"",
    "type": "grep_present"
   }
  ]

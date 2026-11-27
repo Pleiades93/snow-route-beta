@@ -19,5 +19,9 @@ is not complete while any survivor lacks a named check.
 verbatim, in the named check file, or the record cannot be issued
 and cannot certify a push. The record pins the parts files it
 names, so it is issued on the frozen tree, after the cut lands.
-A round whose parts change removes, ports and restructures
-nothing records `issue-no-cut` with its reason instead of a list.
+A parts file the cut deletes (or ports away under a rename)
+pins as absent instead of by hash: the record claims the file
+is intentionally gone, and the claim fails the moment the file
+stands in the tree again. A round whose parts change removes,
+ports and restructures nothing records `issue-no-cut` with its
+reason instead of a list.
