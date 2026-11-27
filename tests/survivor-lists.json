@@ -811,6 +811,30 @@
     "parts/create-save.js": "4514b06b458611c26b0740fedc279010ef709a0157df6f142e1a883a5ed14c83"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r6",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-cache.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-cache.js"
+   ],
+   "files": {
+    "parts/create-cache.js": "6e8cc255be7c4486c5e931dfd60e0a825ac584e7d2d330dcde44abf8c9a9894b"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r7",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-cache.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-cache.js"
+   ],
+   "files": {
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

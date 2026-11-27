@@ -22,6 +22,7 @@
     "../parts/app4.js",
     "../parts/create-packs.js",
     "../parts/app5.js",
-    "../parts/create-save.js"
+    "../parts/create-save.js",
+    "../parts/create-cache.js"
   ]
 }

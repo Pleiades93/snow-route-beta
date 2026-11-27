@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-HSCDAbmLXhYhbM0pFf1Vc037CrT8goBorXa+IFHI4x4/xXeF/tjZDwtfMniuvjG7' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-ktq1PHgmTa9fmLzHxKHEunOOutvTS7fqJhq9PVmuX15AOchKITxyvNM92IrOcRhT' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -8977,7 +8977,9 @@ const CR_IDB_NAME = 'snowroute-citycache', CR_IDB_STORE = 'cities';
 let crCacheNote = ''; // the disclosed cache state for the current city ('' = saving fine)
 let crCacheNoteCity = ''; // cache failure state binds to the city that earned it, never to whichever city is current when a write lands
 let crCacheNoteSession = -1; // binds to (city, session): a closed session's failure never mutes the live session's writes; the write always lands
+/** @type {Promise<any>} */
 let crCacheQueue = Promise.resolve(); // serializes cache read-modify-writes (parallel cell commits must not clobber each other)
+/** @returns {Promise<any>} */
 function crIdbOpen() {
   return new Promise(res => {
     try {
@@ -8990,19 +8992,21 @@ function crIdbOpen() {
     } catch (e) { res(null); }
   });
 }
+/** @param {string} name @returns {Promise<CrCacheRec|null>} */
 async function crIdbGet(name) {
   const db = await crIdbOpen(); if (!db) return null;
-  return new Promise(res => {
+  return /** @type {Promise<CrCacheRec|null>} */ (new Promise(res => {
     try {
       const rq = db.transaction(CR_IDB_STORE, 'readonly').objectStore(CR_IDB_STORE).get(name);
       rq.onsuccess = () => { const v = rq.result || null; try { db.close(); } catch (e) {} res(v); };
       rq.onerror = () => { try { db.close(); } catch (e) {} res(null); };
     } catch (e) { try { db.close(); } catch (e2) {} res(null); }
-  });
+  }));
 }
+/** @param {CrCacheRec} rec @returns {Promise<boolean>} */
 async function crIdbPut(rec) {
   const db = await crIdbOpen(); if (!db) return false;
-  return new Promise(res => {
+  return /** @type {Promise<boolean>} */ (new Promise(res => {
     try {
       const tx = db.transaction(CR_IDB_STORE, 'readwrite');
       tx.objectStore(CR_IDB_STORE).put(rec);
@@ -9010,19 +9014,21 @@ async function crIdbPut(rec) {
       tx.onerror = () => { try { db.close(); } catch (e) {} res(false); };
       tx.onabort = () => { try { db.close(); } catch (e) {} res(false); };
     } catch (e) { try { db.close(); } catch (e2) {} res(false); }
-  });
+  }));
 }
+/** @param {string} name @returns {Promise<void>} */
 async function crIdbDelete(name) {
   const db = await crIdbOpen(); if (!db) return;
-  return new Promise(res => {
+  return /** @type {Promise<void>} */ (new Promise(res => {
     try {
       const tx = db.transaction(CR_IDB_STORE, 'readwrite');
       tx.objectStore(CR_IDB_STORE).delete(name);
       tx.oncomplete = () => { try { db.close(); } catch (e) {} res(); };
       tx.onerror = () => { try { db.close(); } catch (e) {} res(); };
     } catch (e) { try { db.close(); } catch (e2) {} res(); }
-  });
+  }));
 }
+/** @param {string} cityName @param {number} sess @returns {void} */
 function crCacheDisclose(cityName, sess) { // the wording for cache failures (the session keeps working, the state is said), charged to the city whose write failed
   if (sess !== crSession) return; // a closed session's failure is dropped: recording it would charge the live session and suppress its writes
   if (crCacheNote && crCacheNoteCity === cityName && crCacheNoteSession === sess) return; // already disclosed for this city in this session: the state stands
@@ -9030,23 +9036,26 @@ function crCacheDisclose(cityName, sess) { // the wording for cache failures (th
   crCacheNote = 'Couldn’t save ' + cityName + ' on this phone, it will reload next time';
   crRenderHint();
 }
+/** @param {CrCacheRec|null} rec @param {RouteBox} bbox @param {string|null} ds @returns {boolean} */
 function crCacheRecFits(rec, bbox, ds) { // the one fit test: box and dataset identity must match this preparation; an unstated identity is no evidence of mismatch
   if (!rec) return false;
   if (rec.bbox && (rec.bbox.s !== bbox.s || rec.bbox.n !== bbox.n || rec.bbox.w !== bbox.w || rec.bbox.e !== bbox.e)) return false;
   if (ds && rec.ds && rec.ds !== ds) return false;
   return true;
 }
+/** @param {CrPackCity|null} pk @returns {string|null} */
 function crDatasetId(pk) { // the identity: a pack city's is its catalogue stamp, an unlisted city the live service's, an unanswered catalogue none
   if (pk) return 'pack:' + pk.slug + '@' + pk.gen;
   return crPackIndexKnown ? 'overpass' : null;
 }
+/** @param{string} cityName @param{RouteBox} bbox @param{number} totalCells @param{string} key @param{any[]} ways @param{string|null} ds @returns{Promise<any>} */
 function crCacheSaveCell(cityName, bbox, totalCells, key, ways, ds) { // write-through, serialized, one cell at a time; ds is captured with the call, never read from the live preparation
   const sess = crSession; // the commissioning session, captured with the call: suppression and disclosure bind to it; the write itself always lands
   crCacheQueue = crCacheQueue.then(async () => {
     if (crCacheNote && crCacheNoteCity === cityName && crCacheNoteSession === sess) return; // already refused or failed for this city in this session: stop writing; another failure never mutes this session
     let rec = await crIdbGet(cityName);
     if (!crCacheRecFits(rec, bbox, ds)) rec = null; // a record under another box or dataset is not this grid's cache: merging would certify coverage never downloaded here
-    if (!rec) rec = { cityName, bbox, cells: {}, savedAt: Date.now(), totalCells };
+    if (!rec) rec = /** @type {CrCacheRec} */ ({ cityName, bbox, cells: {}, savedAt: Date.now(), totalCells });
     rec.bbox = bbox; rec.totalCells = totalCells;
     if (ds) rec.ds = ds; // the record carries its dataset's identity; a fitting older record gains the stamp on its first write
     rec.cells[key] = { at: Date.now(), ways };
@@ -9058,6 +9067,7 @@ function crCacheSaveCell(cityName, bbox, totalCells, key, ways, ds) { // write-t
   }).catch(() => crCacheDisclose(cityName, sess));
   return crCacheQueue;
 }
+/** @param {RouteBox} bbox @returns {CrGridCell[]} */
 function crGridCellsFor(bbox) { // the ~4x4 km grid over the box (row-major, south-west first); the last row and column clamp to the edge
   const dLat = CR_CELL_KM * 1000 / MLAT, dLng = CR_CELL_KM * 1000 / MLNG;
   const rows = Math.max(1, Math.ceil((bbox.n - bbox.s) / dLat - 1e-9)), cols = Math.max(1, Math.ceil((bbox.e - bbox.w) / dLng - 1e-9));
@@ -9071,10 +9081,15 @@ function crGridCellsFor(bbox) { // the ~4x4 km grid over the box (row-major, sou
   return cells;
 }
 // the grid current-check under the one convention (at crSearchCurrent, create-pick.js); its true input is the grid object itself
+/** @param {CrGrid|null} g @returns {boolean} */
 function crGridCurrent(g) { return !!g && crGrid === g && creating && crSession === g.session && crCovGen === g.gen; }
+/** @returns {number} */
 function crGridDoneCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'done').length : 0; }
+/** @returns {number} */
 function crGridFailedCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'failed').length : 0; }
+/** @returns {number} */
 function crGridPendingCount() { return crGrid ? crGrid.cells.filter(c => c.state === 'pending' || c.state === 'fetching').length : 0; }
+/** @returns {string} */
 function crGridSettledState() { // a settled grid's honest state: all in ready, some in degraded (usable, resumable), none in failed or 'none'
   if (!crGrid) return crCov && crCov.boxes.length ? 'ready' : 'none';
   if (crGridPendingCount() > 0 && !crGrid.stopped) return 'preparing';
@@ -9082,6 +9097,7 @@ function crGridSettledState() { // a settled grid's honest state: all in ready, 
   if (crGrid.stopped) return 'degraded'; // stopped with parts missing, even zero landed, is resumable, not 'none': the Resume offer must exist
   return crGridDoneCount() > 0 ? 'degraded' : 'failed';
 }
+/** @param {string} why @returns {void} */
 function crGridStop(why) { // stop scheduling, abort the downloads in flight, KEEP every committed cell (amendment B)
   const g = crGrid; if (!g) return;
   g.stopped = why;
@@ -9090,6 +9106,7 @@ function crGridStop(why) { // stop scheduling, abort the downloads in flight, KE
   g.ops.clear(); g.active = 0;
   for (const c of g.cells) if (c.state === 'fetching') c.state = 'pending';
 }
+/** @param {CrGrid} g @returns {void} */
 function crGridFinish(g) {
   if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
   crSetPrepState(crGridSettledState());
@@ -9097,6 +9114,7 @@ function crGridFinish(g) {
   if (crPrepState === 'ready' || crPrepState === 'degraded') crSweepPending();
   crRenderHint();
 }
+/** @param {CrGrid} g @returns {void} */
 function crGridArmTicker(g) { // the grid's heartbeat, armed at preparation entry: it renders the readout and runs the progress watchdog below
   if (g.ticker) clearInterval(g.ticker);
   g.ticker = setInterval(() => {
@@ -9104,11 +9122,13 @@ function crGridArmTicker(g) { // the grid's heartbeat, armed at preparation entr
     else if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
   }, 1000);
 }
+/** @param {CrGrid} g @returns {void} */
 function crGridWatchdog(g) { // the watchdog: past CR_TIMING.stallMs since anything landed, force the loud landing instead of a percentage that never moves
   if (!g.isCurrent() || g.stopped || crPrepState !== 'preparing') return;
   if (Date.now() - (g.lastProgressAt || g.startedAt) < CR_TIMING.stallMs) return;
   crGridStall(g);
 }
+/** @param {CrGrid} g @returns {void} */
 function crGridStall(g) { // a stalled grid lands like a failed load: downloads aborted, unfinished cells failed, state settled honestly
   g.lastFail = g.lastFail || { ok: false, kind: 'unreachable' };
   for (const op of Array.from(g.ops)) crAbortOp(op);
@@ -9118,6 +9138,7 @@ function crGridStall(g) { // a stalled grid lands like a failed load: downloads 
   crCovGen++; // the stall orphans the generation, as Cancel does: in-flight callbacks land nowhere; resume re-adopts the grid
   crGridFinish(g);
 }
+/** @param {CrGrid} g @returns {void} */
 function crGridPump(g) { // at most CR_GRID_PARALLEL in flight; a failed cell retries once, then is marked failed while the rest continue
   if (!g.isCurrent() || g.stopped) return;
   while (g.active < CR_GRID_PARALLEL) {
@@ -9147,6 +9168,7 @@ function crGridPump(g) { // at most CR_GRID_PARALLEL in flight; a failed cell re
   }
   if (g.active === 0 && crGridPendingCount() === 0) crGridFinish(g);
 }
+/** @returns {void} */
 function crCityPrepare() { // load the picked city's whole extract: from the cache when saved, else the grid, resuming a saved partial
   if (!crCity || crCity.lat == null || !creating) return;
   const name = crCity.name;
@@ -9159,7 +9181,9 @@ function crCityPrepare() { // load the picked city's whole extract: from the cac
   crPackCtx = null; crPackNote = ''; // a new city's preparation re-decides its source (pack vs service) below
   const cells = crGridCellsFor(bbox);
   // lastProgressAt restarts at every landing; ds is the grid's dataset identity, set when the pack resolve lands
-  const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null };
+  const g = crGrid = /** @type {CrGrid} */ ({ name, bbox, cells, gen, session, startedAt: Date.now(),
+    lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null,
+    stopped: null, lastFail: null, ds: null });
   // Resume re-adopts this record with a new generation.
   g.isCurrent = landIfCurrent(g, crGridCurrent); crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
   crRenderHint();
@@ -9180,7 +9204,7 @@ function crCityPrepare() { // load the picked city's whole extract: from the cac
       for (const cell of g.cells) {
         const saved = rec.cells[cell.key];
         if (saved && Array.isArray(saved.ways)) {
-          const byId = Object.create(null); // a stored way id of '__proto__' lands as an entry here, not as the map's prototype
+          const byId = /** @type {Record<string,{name: string, pts: LatLng[]}>} */ (Object.create(null)); // a stored way id of '__proto__' lands as an entry here, not as the map's prototype
           // every stored triple passes the extract's own cleaning (crCleanStoredWay, create-citydata.js) before it may enter coverage
           for (const sw of saved.ways) { const w = crCleanStoredWay(sw); if (w) byId[w.id] = { name: w.name, pts: w.pts }; }
           if (!Object.keys(byId).length && saved.ways.length) continue; // a cell certifies on one validated way or a legitimately empty list; an all-corrupt list stays pending, fetched fresh
@@ -9198,6 +9222,7 @@ function crCityPrepare() { // load the picked city's whole extract: from the cac
     });
   });
 }
+/** @returns {void} */
 function crGridResume() { // the degraded/stopped remedy: fetch ONLY the missing cells (amendments A+B)
   const g = crGrid; if (!g || !creating) return;
   g.gen = ++crCovGen; // resuming adopts the grid into the live generation, or the pump would refuse it as obsolete and fetch nothing
