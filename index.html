@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-PZgXMqR6OoLu8+pnlIBTbdELvC00KZJKgyPydt7NTDIoxw2fEhVR2f3wnvMzxNRE' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-3+4rdvTX5VicJugwJnrY2pRQEWISC35Zh+bgJt9vBBUMO6vDbl0/f9qBhlUJT+Wo' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -5795,11 +5795,7 @@ const HEAD_Q = 400;
 function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); }
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
 // one owner for map-frame <-> camera-frame conversion: the frames are named at every call
-function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) {
-  return mapBearing !== undefined
-    ? headDelta(cameraMapBearing, mapBearing)
-    : cameraMapBearing + cameraBearing;
-}
+function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) { return mapBearing !== undefined ? headDelta(cameraMapBearing, mapBearing) : cameraMapBearing + cameraBearing; }
 function updateHeading(hdg, speed, now) {
   // state is maintained whenever location is on, not only in a run; suspended, it freezes with the camera
   if (followPaused) return;

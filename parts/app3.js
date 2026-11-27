@@ -1014,11 +1014,7 @@ const HEAD_Q = 400;
 function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); }
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
 // one owner for map-frame <-> camera-frame conversion: the frames are named at every call
-function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) {
-  return mapBearing !== undefined
-    ? headDelta(cameraMapBearing, mapBearing)
-    : cameraMapBearing + cameraBearing;
-}
+function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) { return mapBearing !== undefined ? headDelta(cameraMapBearing, mapBearing) : cameraMapBearing + cameraBearing; }
 function updateHeading(hdg, speed, now) {
   // state is maintained whenever location is on, not only in a run; suspended, it freezes with the camera
   if (followPaused) return;
