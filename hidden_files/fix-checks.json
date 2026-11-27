@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "a1c531c76c2605697ce9867fd45f668b6fdf4746d55fc2a8204e9d9a140d84c0",
+  "canonical_registry_sha256": "deb1993ee4975a8b7cf2085f171bb472f2509b2598100762eb89172f8b0b441d",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1628,
-   "included": 1598,
+   "canonical": 1629,
+   "included": 1599,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14237,6 +14237,15 @@
    "fix_id": "phase7-bearing-frame",
    "id": "phase7-bearing-frame-owner",
    "pattern": "function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "G-A (standards machinery): the parts scan owns the labelpts source contract - creation only in addRouteTitles, data rewrites only in glUnifyLabels (both parts/app2.js), removal refused anywhere.",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-scan-ownership",
+   "pattern": "function scanSourceOwnership(node, file, at) {",
    "type": "grep_present"
   }
  ]

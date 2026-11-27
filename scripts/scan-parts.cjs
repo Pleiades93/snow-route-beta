@@ -1,7 +1,7 @@
 'use strict';
 
-// Parts scan: the push path's two detectors over parts/ - ignored
-// write outcomes and new clones fail the push.
+// Parts scan: ignored write outcomes, new clones and labelpts
+// source-ownership violations fail the push and the gate.
 
 const { createHash } = require('node:crypto');
 const fs = require('node:fs');
@@ -16,6 +16,10 @@ const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/parts-clone
 const clones = new Map();
 const pairs = new Map();
 let failures = 0;
+let writeExemptions = 0;
+const cloneExemptions = new Map(baseline.exemptions
+  .filter(entry => entry.name?.trim() && entry.why?.trim())
+  .map(entry => [JSON.stringify([...entry.pair].sort()), entry.name]));
 
 function fail(message) {
   console.error(message);
@@ -58,12 +62,40 @@ function outcomeUsed(node) {
   return ts.isExpression(parent) && !ts.isCallExpression(parent) && outcomeUsed(parent);
 }
 
+function isMethodCall(node, name) {
+  return ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === name;
+}
+
+function namesLabelSource(node) {
+  return node && ts.isStringLiteralLike(node) && node.text === 'labelpts';
+}
+
+function scanSourceOwnership(node, file, at) {
+  const removes = isMethodCall(node, 'removeSource') && namesLabelSource(node.arguments[0]);
+  const adds = isMethodCall(node, 'addSource') && namesLabelSource(node.arguments[0]);
+  const receiver = ts.isPropertyAccessExpression(node.expression) && node.expression.expression;
+  const rewrites = isMethodCall(node, 'setData') && receiver &&
+    isMethodCall(receiver, 'getSource') && namesLabelSource(receiver.arguments[0]);
+  if (removes) {
+    fail(`${at}: labelpts is removed by removeSource. Keep the source; a route switch rewrites its data through glUnifyLabels.`);
+  } else if (adds || rewrites) {
+    const owner = adds ? 'addRouteTitles' : 'glUnifyLabels';
+    let parent = node.parent;
+    while (parent && !ts.isFunctionLike(parent)) parent = parent.parent;
+    if (file !== 'parts/app2.js' || !parent || !ts.isFunctionDeclaration(parent) || parent.name?.text !== owner) {
+      const action = adds ? 'Create' : 'Update';
+      fail(`${at}: labelpts ${adds ? 'creation' : 'update'} is outside app2.js/${owner}. ${action} it in ${owner}.`);
+    }
+  }
+}
+
 function scanJs(file, source) {
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const line = pos => tree.getLineAndCharacterOfPosition(pos).line + 1;
   if (tree.parseDiagnostics.length) {
     for (const error of tree.parseDiagnostics) {
-      fail(`${file}:${line(error.start)}: ${ts.flattenDiagnosticMessageText(error.messageText, ' ')}`);
+      fail(`${file}:${line(error.start)}: cannot scan JavaScript: ${ts.flattenDiagnosticMessageText(error.messageText, ' ')}. Fix the syntax and rerun.`);
     }
     return;
   }
@@ -71,13 +103,15 @@ function scanJs(file, source) {
   const scopeCounts = new Map();
   function visit(node, scope = file) {
     if (ts.isCallExpression(node)) {
+      scanSourceOwnership(node, file, `${file}:${line(node.getStart(tree))}`);
       const callee = ts.isPropertyAccessExpression(node.expression) ? node.expression.name : node.expression;
       const name = ts.isIdentifier(callee) && callee.text;
       if (/^(?:lsSet|txSet|upSet|upPut|save(?:[A-Z]\w*)?)$/.test(name)) {
         const start = node.getStart(tree);
         const why = source.slice(node.end).match(/^\s*\/\* write-safe: ([^\r\n]*?) \*\//)?.[1];
-        if (!outcomeUsed(node) && !(why && why.trim() && why.split(/\s+/).length <= 19)) {
-          fail(`${file}:${line(start)}: ${name} write outcome ignored. Test the result, return it, or assign it.`);
+        if (!outcomeUsed(node)) {
+          if (why && why.trim() && why.split(/\s+/).length <= 19) writeExemptions++;
+          else fail(`${file}:${line(start)}: ${name} write outcome ignored. Test the result, return it, or assign it.`);
         }
       }
     }
@@ -155,7 +189,7 @@ function scanJs(file, source) {
 
 function scanCss(file, source) {
   const style = /<style>([\s\S]*?)<\/style>/.exec(source);
-  if (!style) return fail(`${file}: missing style block`);
+  if (!style) return fail(`${file}: CSS scan cannot find a <style> block. Restore the block in head.html and rerun.`);
   const stack = [];
   const counts = new Map();
   const offset = style.index + '<style>'.length;
@@ -207,7 +241,7 @@ for (const name of fs.readdirSync(dir).sort()) {
 let baselineWritten = false;
 if (writeBaseline) {
   if (failures) {
-    console.error('baseline refused: the write rule fails on this tree');
+    console.error('baseline refused: the tree failed the checks above. Fix those failures before regenerating.');
     process.exitCode = 1;
   } else {
     baselineWritten = true;
@@ -221,12 +255,17 @@ if (writeBaseline) {
   }
 }
 
-const known = new Set([
-  ...baseline.pairs,
-  ...baseline.exemptions.filter(entry => entry.name?.trim() && entry.why?.trim()).map(entry => entry.pair),
-].map(pair => JSON.stringify([...pair].sort())));
+const known = new Set(baseline.pairs.map(pair => JSON.stringify([...pair].sort())));
+let exemptPairs = 0;
 for (const [pair, locations] of pairs) {
-  if (!baselineWritten && !known.has(pair)) fail(`Possible clone at ${locations.join(' and ')}: ${pair}`);
+  if (cloneExemptions.has(pair)) {
+    exemptPairs++;
+    console.log(`parts scan: clone exemption "${cloneExemptions.get(pair)}" at ${locations.join(' and ')}`);
+  } else if (!baselineWritten && !known.has(pair)) {
+    fail(`Possible clone at ${locations.join(' and ')}: ${pair} share a body. Use a shared helper or group the selectors.`);
+  }
 }
-if (!failures) console.log(`parts scan: PASS (${pairs.size} clone pairs checked)`);
+if (!failures) {
+  console.log(`parts scan: PASS (${pairs.size} clone pairs checked, ${exemptPairs} named clone exemptions, ${writeExemptions} write-safe exemptions, 0 source-ownership exemptions)`);
+}
 process.exitCode = failures ? 1 : 0;
