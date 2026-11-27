@@ -1,9 +1,6 @@
 'use strict';
 
-// Boundary scan: a write to a state from outside its owning part is
-// reported against the baseline in scripts/parts-boundary-baseline.json.
-// A state marked enforce in scripts/parts-boundary-owners.json refuses
-// NEW foreign writes (scan-parts turns those hits into failures).
+// Find writes to a state from outside its owning part; enforcement is per-state.
 
 const ts = require('typescript');
 
