@@ -19038,6 +19038,32 @@
    "red": "proof-1301 exit 1 under each of the 11 mutations on the unmodified tree AND on the split tree, each failing its named check (run-mutations.py: ALL BITES on both shapes)",
    "green": "proof-1301 on the unmodified tree: 10 passed, 0 failed (exit 0); on the split tree: 10 passed, 0 failed (exit 0)",
    "issued": "2026-11-27 s2r3-addgpslayers"
+  },
+  {
+   "id": "s2-addgpslayers-proof1301-r3",
+   "check": "tests/proof/proof-1301.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1301.mjs": "fceb6f0c328627ccbe6eb21749ead47769fa838fd5d64210017cb3bff2531bcd",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e"
+   },
+   "mutation": "parts/app2.js: 14-mutation set against addGpsLayers and its three extracted sections (source data non-empty; existing-source early return dropped; beam image guard dropped; beam pixelRatio 2->1; source seated under a different id; onRemove delete unguarded; compile diagnostic text changed; render no-fix guard dropped; projection lat/lng swapped; depth-mask restore dropped; onRemove invalidation dropped; ring fill colour changed; ring fill opacity zeroed; beam icon-size changed)",
+   "red": "proof-1301 exit 1 under each of the 14 mutations on the unmodified tree AND on the split tree, each failing its named check (run-mutations.py + run-mutations-unmod.py: ALL BITES on both shapes). The final three mutations are the Codex PR #241 finding's own experiments: on the r2 proof they passed 10/10 (the hole); on the strengthened proof each fails check 1",
+   "green": "strengthened proof-1301 on the unmodified tree: 10 passed, 0 failed (exit 0); on the split tree: 10 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r3-addgpslayers"
+  },
+  {
+   "id": "s2-addgpslayers-proof1301-r4",
+   "check": "tests/proof/proof-1301.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1301.mjs": "9d62734db9755aa7bae60f6e05ee2ac857ef92bdd445e6412e5ea32f2996060c",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e"
+   },
+   "mutation": "parts/app2.js: 14-mutation set against addGpsLayers and its three extracted sections (source data non-empty; existing-source early return dropped; beam image guard dropped; beam pixelRatio 2->1; source seated under a different id; onRemove delete unguarded; compile diagnostic text changed; render no-fix guard dropped; projection lat/lng swapped; depth-mask restore dropped; onRemove invalidation dropped; ring fill colour changed; ring fill opacity zeroed; beam icon-size changed)",
+   "red": "proof-1301 exit 1 under each of the 14 mutations on the unmodified tree AND on the split tree, each failing its named check (run-mutations.py + run-mutations-unmod.py: ALL BITES on both shapes, re-run on the final wrapped bytes). The final three mutations are the Codex PR #241 finding's own experiments: on the r2 proof they passed 10/10 (the hole); on the strengthened proof each fails check 1",
+   "green": "strengthened proof-1301 on the unmodified tree: 10 passed, 0 failed (exit 0); on the split tree: 10 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r3-addgpslayers"
   }
  ]
 }

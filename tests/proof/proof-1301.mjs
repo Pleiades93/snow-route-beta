@@ -40,7 +40,14 @@ install();
 check('empty GPS source and ImageData precede beam, ring, outline, and puck',
   equal(calls.map(args => args[0]), ['gps', '2d', 'beam-img', 'gps-beam', 'gps-ring', 'gps-ring-line', 'gps-puck-shader']) &&
   equal(calls[0][1], { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }) &&
-  equal(calls[1], ['2d', 0, 0, 4, 2]) && calls[2][1] === image && calls[2][2].pixelRatio === 2);
+  equal(calls[1], ['2d', 0, 0, 4, 2]) && calls[2][1] === image && calls[2][2].pixelRatio === 2 &&
+  equal(layers.slice(0, 3), [
+    { id: 'gps-beam', type: 'symbol', source: 'gps', filter: ['==', ['get', 'k'], 'beam'],
+      layout: { 'icon-image': 'beam-img', 'icon-size': 0.62, 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map',
+        'icon-pitch-alignment': 'map', 'icon-anchor': 'center', 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
+    { id: 'gps-ring', type: 'fill', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'fill-color': '#2c4ad2', 'fill-opacity': 0.12 } },
+    { id: 'gps-ring-line', type: 'line', source: 'gps', filter: ['==', ['get', 'k'], 'ring'], paint: { 'line-color': '#2c4ad2', 'line-width': 1.5, 'line-opacity': 0.5 } },
+  ]));
 check('existing source short-circuits all installation',
   (() => { const count = calls.length; install(); return calls.length === count; })());
 const puck = layers.at(-1);
