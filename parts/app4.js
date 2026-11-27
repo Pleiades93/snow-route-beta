@@ -4,7 +4,7 @@
 function fmtStamp(iso) { const d = /** @type {any} */ (new Date(iso)); return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + fmtClock(d); }
 function buildReport() {
   /** @param {Record<string,string>} m @returns {(a: string, b: string) => number} */
-  const byTime = m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || ''));
+  const byTime = /** @type {(m: Record<string, any>) => (a: string, b: string) => number} */ (m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || '')));
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
   const L = ['Snow Route: snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of ' + STREETNAMES.length]; // the total derives from the route's street list
   if (ts.length) {
@@ -84,7 +84,7 @@ const ENVELOPE = {
     if (writePending('trail') || writePending('aux') || writePending('sess') || writePending('fixlog')) return null; // the flush did not land - refuse the export rather than ship a valid-looking backup with stale trail/coverage inside
     const routes = /** @type {Record<string,BackupRoute>} */ ({});
     for (const p of ROUTE_PACKS) {
-      const rk = routeKeys(p.id); const data = /** @type {Record<string,any>} */ ({});
+      const rk = routeKeys(/** @type {string} */ (p.id)); const data = /** @type {Record<string,any>} */ ({});
       for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; const v = rawRead(key); if (v === RAW_READ_FAILED) return null; if (v != null) data[f] = v; }
       // lifecycle rides explicitly: a run asserts its start string, no run asserts start: null; the snapshot rides along
       const isActive = !!(activeRoute && p.id === activeRoute.id && routeLoaded);
@@ -98,7 +98,7 @@ const ENVELOPE = {
         const pv = validateSnap(parseJ(/** @type {string} */ (rawSnap), null), +startStr, packGeometry(p)); if (pv) snapObj = BOARD.snapshotObject(pv, +startStr); }
         if (snapObj) data.snap = JSON.stringify(snapObj);
       }
-      routes[p.id] = /** @type {BackupRoute} */ (data);
+      routes[/** @type {string} */ (p.id)] = /** @type {BackupRoute} */ (data);
     } // exports from the keys the route runs on: a legacy-fallback boot's fresh slot would emit an empty backup
     const night = rawRead(LS_GLOBAL.night); if (night === RAW_READ_FAILED) return null;
     const nightExp = rawRead(LS_GLOBAL.nightExp); if (nightExp === RAW_READ_FAILED) return null;
@@ -137,20 +137,20 @@ const ENVELOPE = {
     if (upStoreComplete) upsCarry = { ...userPackCache };
     else { upsCarry = {}; const badNames = [];
       for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue;
-      if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {});
-      if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
+      if (userPackCache[/** @type {string} */ (pk.id)]) { upsCarry[/** @type {string} */ (pk.id)] = userPackCache[/** @type {string} */ (pk.id)]; continue; } const v = normalizePack(pk, {});
+      if (v.ok) { v.pack.id = pk.id; upsCarry[/** @type {string} */ (pk.id)] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || /** @type {string} */ (pk.id)); } }
       if (badNames.length) recoveryDisclosure = badNames;
     }
     if (excluded.has(activeRoute.id)) return null; // the open route's definition cannot be carried: no honest recovery file exists, so the unavailable message is the truth
     const routes = /** @type {Record<string,BackupRoute>} */ ({}); routes[activeRoute.id] = /** @type {BackupRoute} */ (data);
     for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue;
-    const rk = routeKeys(pk.id);
+    const rk = routeKeys(/** @type {string} */ (pk.id));
     const d = /** @type {Record<string,any>} */ ({});
     for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
       // a non-active running route's snapshot rides too, validated on its geometry; a failed read leaves it out
       if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) {
       const pv = validateSnap(parseJ(/** @type {string} */ (rawSnap), null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } }
-      if (Object.keys(d).length) routes[pk.id] = /** @type {BackupRoute} */ (d); } // an untouched pack in a recovery file asserts idle like any complete backup
+      if (Object.keys(d).length) routes[/** @type {string} */ (pk.id)] = /** @type {BackupRoute} */ (d); } // an untouched pack in a recovery file asserts idle like any complete backup
     const o = /** @type {BackupV2} */ ({ app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes });
     if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // definitions ride recovery too: from the strict record read, or validated memory when unreadable
     { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = /** @type {string} */ (nt);
@@ -273,7 +273,7 @@ function mergeRestoreEntries(entries, allPacks) {
   };
   const fields = /** @type {('times'|'via'|'cov'|'notes')[]} */ (['times', 'via', 'cov', 'notes']);
   for (const pack of allPacks) {
-    const rk = routeKeys(pack.id);
+    const rk = routeKeys(/** @type {string} */ (pack.id));
     if (![...ROUTE_FIELDS, 'snap'].some(f => incoming.has(/** @type {Record<string,string>} */ (rk)[f]))) continue;
     if (pack.id === '5w' && read(rk.mig) === null && read(LEGACY_KEYS.sides) !== null) {
       // newer values can linger in legacy keys after an incomplete migration; a slot write would mask them
@@ -348,7 +348,7 @@ function mergeRestoreEntries(entries, allPacks) {
       const raw = read(rk.hist);
       const current = raw === null ? [] : decode(rk.hist, raw, Array.isArray);
       const backup = /** @type {any[]} */ (JSON.parse(incoming.get(rk.hist)));
-      const start = +(liveStart || merged.get(rk.start));
+      const start = +(liveStart || /** @type {string} */ (merged.get(rk.start)));
       const candidates = backup.filter(h => !(start && h && +h.runId === start));
       // Legacy entries match by fingerprint (histId); only exact duplicates skip.
       const additions = newEntries(current, candidates, histId);
@@ -447,7 +447,7 @@ function mergeRestoreEntries(entries, allPacks) {
           if (!entryMarked(backup, name)) {
             if (!times) times = parseJ(merged.get(rk.times) ?? read(rk.times), {});
             p[name] = stretch[name].parts.map(() => 3);
-            t[name] = stretch[name].parts.map(() => [times[name] || null, times[name] || null]);
+            t[name] = stretch[name].parts.map(() => [(/** @type {Record<string, any>} */ (times))[name] || null, (/** @type {Record<string, any>} */ (times))[name] || null]);
             sidesAdded = true;
             sidesDerived = true;
           }
@@ -577,7 +577,7 @@ const RESTORE = {
       catch (e) { return null; }
       const report = { snapDropped, droppedNames: countUnknownNames(parsed, allPacks), deadSkipped };
       if (!writes.length && !restoredPacks) return null;
-      const scope = allPacks.flatMap(p => [...slotKeys(p.id), routeKeys(p.id).finclean]);
+      const scope = allPacks.flatMap(p => [...slotKeys(/** @type {string} */ (p.id)), routeKeys(/** @type {string} */ (p.id)).finclean]);
       if (restoredPacks) scope.push(USERPACKS_KEY);
       scope.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, SETTINGS_KEY, LS.fixlog);
       return { entries: writes, restoredPacks, packPriors, scope, ...report };
@@ -606,7 +606,7 @@ const RESTORE = {
           const pack = { ...checked.pack, id: rid };
           if (index < 0) allPacks.push(pack); else allPacks[index] = pack;
         } else if (index < 0) {
-          additions[rid] = restoredPacks[rid];
+          additions[rid] = (/** @type {UserPacksRecord} */ (restoredPacks))[rid];
           packPriors[rid] = null;
           allPacks.push(additions[rid]);
         }
@@ -986,7 +986,7 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
     for (const k of Object.keys(PM)) PACE_ICONS[k] = `<img class="xico" data-k="${k}" src="${night ? PM[k].n : PM[k].d}">`;
   }
   $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre;
-  ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; });
+  ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[/** @type {string} */ ({ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id])]; });
   $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
   $('selNote').innerHTML = ICONS.note;
   stampNightBtn();
@@ -1004,7 +1004,7 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
 }
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre; // the re-centre button wears the standard crosshair glyph; the Locate tab keeps its navigation arrow, untouched
 // Backup and Update carry no tab icons anymore - they are text rows on the blue settings panes
-['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; });
+['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[/** @type {string} */ ({ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id])]; });
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
 renderIcons(); // this puts every host on the Glyph set (current theme, Locate state) before anything is tapped or painted
@@ -1059,7 +1059,7 @@ function bakAgeText() { // the Backup button's second line, from the export stam
   return days + ' days ago';
 }
 function renderBakAge() { const el = $('bakAge'); if (el) el.textContent = 'Last backup: ' + bakAgeText(); }
-/** @param {AppElement} el @param {boolean} on */
+/** @param {AppElement} el @param {boolean|undefined} on */
 function renderSwitch(el, on) { el.classList.toggle('on', !!on); el.setAttribute('aria-checked', on ? 'true' : 'false'); }
 // ---- Display and Sound ----
 function renderJob() {
@@ -1163,7 +1163,7 @@ async function packState() { // how much of the manifest is in the pack cache (r
   if (cached < 0) { const rec = parseJ(lsGet(LS.pre), null); cached = rec ? Math.min(total, rec.saved || 0) : 0; }
   const countsByRoute = ROUTE_PACKS.map(pk => { const sub = packTileUrls(pk); let c = 0; // a route's share against the same census (chrome belongs to none); on failure its stored record stands in
     if (haveSet) { for (const u of sub) { let href = u; try { href = new URL(u).href; } catch (e) {} if (haveSet.has(href)) c++; } }
-    else { const rec = parseJ(lsGet(routeKeys(pk.id).pre), null); c = rec ? Math.min(sub.size, rec.routeSaved || 0) : 0; }
+    else { const rec = parseJ(lsGet(routeKeys(/** @type {string} */ (pk.id)).pre), null); c = rec ? Math.min(sub.size, rec.routeSaved || 0) : 0; }
     return { id: pk.id, name: pk.name, total: sub.size, cached: c }; });
   return { total, cached, bytes, complete: total > 0 && cached >= total, countsByRoute };
 }
@@ -1188,7 +1188,10 @@ async function renderStatus(resetStat) {
   } // the active route's own share, named as its own - never the union wearing its name
   $('xPre').textContent = ps.complete ? 'Re-download' : 'Download';
   $('stDel').style.display = ps.cached > 0 ? '' : 'none';
-  if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null) || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(p.id).pre), null)).find(r => r && r.saved > 0) || null; $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements). Beta 1.170 (C-04): the record read falls back to ANY route's download record - through 1.169 it read only the active route's slot, so right after a route switch this line could say 'not downloaded yet' directly under a 'Downloaded' maps line for the pack another route had fetched
+  if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null)
+    || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(/** @type {string} */ (p.id)).pre), null)).find(r => r && r.saved > 0) || null;
+    $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.';
+    $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download; the record read falls back to ANY route's download record (Beta 1.170)
   // HEALTH - each row from a real signal at this moment:
   let storageOk = false;
   try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe');
@@ -1227,7 +1230,7 @@ $('stDel').addEventListener('click', async ev => {
       else gone = true; // no Cache Storage in this browser: no pack exists to delete
     } catch (e) { gone = false; }
     if (!gone) { showBanner('Offline maps not deleted', 'They are still on this device'); renderStatus(true); return; }
-    lsDel(PACKMIG_KEY); for (const p of ROUTE_PACKS) lsDel(routeKeys(p.id).pre); // every route's record goes with the pack; the browsing tile cache is a cache, not the pack
+    lsDel(PACKMIG_KEY); for (const p of ROUTE_PACKS) lsDel(routeKeys(/** @type {string} */ (p.id)).pre); // every route's record goes with the pack; the browsing tile cache is a cache, not the pack
     renderStatus(true);
   } finally { releaseDel(); }
 });

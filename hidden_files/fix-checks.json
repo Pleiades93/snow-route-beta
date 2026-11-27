@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "a9b046536afcb7d07ca7791efdcaa0960730991b3a0ebf528e5b91510c5e697b",
+  "canonical_registry_sha256": "c861ac071d8715cbb1b079f141cd61d3f9552233348be90a890f0f33d531a17a",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1640,
-   "included": 1610,
+   "canonical": 1643,
+   "included": 1613,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -3071,7 +3071,7 @@
    "file": "parts/app4.js",
    "fix": "On name collision the INCOMING pack wins (Beta 1.142, DA-01): restored packs replace built-ins of the same id in the merged list \u2014 the backup's version of a route is the one Andrew means to restore. SUPERSEDED for restore Beta 1.287 (issue #172, Andrew's 2026-11-23 merge ruling): the resident definition wins; an incoming definition lands only for a route with no resident definition in either home. This probe now pins the landing half.",
    "id": "beta-1142-da01-incoming-wins",
-   "pattern": "additions[rid] = restoredPacks[rid];",
+   "pattern": "additions[rid] = (/** @type {UserPacksRecord} */ (restoredPacks))[rid];",
    "type": "grep_present"
   },
   {
@@ -3780,7 +3780,7 @@
    "fix": "Beta 1.149 (Tranche 5, A1 pilot): CI runs the TypeScript checker over the pilot scope (parts/app1.js only) in build-and-test, right after Set up Node - npm ci in scripts/ then tsc -p tsconfig.json; a diagnostic fails the job. If this probe fails, the type-check gate was removed or renamed - restore the step. Re-pinned 2026-11-16 (Monday prune): the CI step name gained its tsconfig scope text; the step stands.",
    "fix_id": "tranche5-a1-tscheck-pilot",
    "id": "tranche5-a1-tscheck-ci-step",
-   "pattern": "Type check (scope in scripts/tsconfig.json - data.js, app1.js, engine.js, pmstyles.js; begun as the A1 pilot, Beta 1.149)",
+   "pattern": "Type check (all parts but app3.js; noImplicitAny on - scope in scripts/tsconfig.json)",
    "type": "grep_present"
   },
   {
@@ -6542,7 +6542,7 @@
    "fix": "mergeStrands dead-score fix (finding:mergestrands-score, 2026-11-14; judged round verdict NON-EMPTY geometry diff - edges/paint source only - Andrew approved shipping 2026-11-15), landed as maintenance PR #52, merge c755d2dc6294c01d6f55710c655a076f0afaef94 (no Beta bump; page still reads Beta 1.204): the mergeStrands winner object in parts/engine.js now stores its score, so score-2 exact joins beat score-1 junction bridges regardless of scan order (ties unchanged). engine.js joined the type check (scripts/tsconfig.json include, assembly order) with truthful JSDoc annotations - with the annotations and without the fix, tsc's sole engine error is the defect (TS2741 'score' missing); with the fix the expanded set is at zero. Pinning proof tests/proof/proof-mergestrands-score.mjs runs in build-and-test (fails on the unfixed engine, passes fixed). If a probe fails, the named piece has regressed or been reverted - restore the shipped form.",
    "fix_id": "mergestrands-score",
    "id": "mergestrands-tsc-step-scope",
-   "pattern": "data.js, app1.js, engine.js, pmstyles.js",
+   "pattern": "all parts but app3.js",
    "type": "grep_present"
   },
   {
@@ -14346,6 +14346,32 @@
    "id": "gb-fixtures",
    "pattern": "boundary fixtures:",
    "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/tsconfig.snc.json",
+   "fix": "S1 stage 4: the strict-null program exists and turns strictNullChecks on over the main tsconfig. If this fails, the SNC gate lost its config - restore scripts/tsconfig.snc.json (extends ./tsconfig.json, strictNullChecks true, no include override).",
+   "fix_id": "s1-type-safety",
+   "id": "s1-snc-config-present",
+   "pattern": "\"strictNullChecks\":true",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": ".github/workflows/checks.yml",
+   "fix": "S1 stage 4: CI runs the strict-null gate (scripts/check-snc.py) in the cheap-checks job. If this fails, the SNC step was dropped from checks.yml - restore it next to the Type check step.",
+   "fix_id": "s1-type-safety",
+   "id": "s1-snc-ci-step",
+   "pattern": "check-snc.py",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "command": "cd . && python3 scripts/check-snc.py .",
+   "fix": "S1 stage 4: the strict-null gate is green - the storage files (app4, create-packs, app5, create-save) carry zero strictNullChecks errors and the global backlog is at or under its cap. If this fails, a storage file regressed or the backlog grew; burn it annotation-only or record the finding.",
+   "fix_id": "s1-type-safety",
+   "id": "s1-snc-gate-green",
+   "type": "command_exit0"
   }
  ]
 }

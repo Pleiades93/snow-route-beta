@@ -785,9 +785,9 @@ declare function isNaN(number: any): boolean;
 declare var DeviceOrientationEvent: { requestPermission?: () => Promise<string> };
 
 declare function setTimeout(fn: (...args: any[]) => void, ms?: number): number;
-declare function clearTimeout(id: number): void;
+declare function clearTimeout(id: number | null | undefined): void;
 declare function setInterval(fn: (...args: any[]) => void, ms?: number): number;
-declare function clearInterval(id: number): void;
+declare function clearInterval(id: number | null | undefined): void;
 
 /** The IndexedDB request surface the store helpers use: a result plus the four handler slots. */
 interface AppIdbRequest {

@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-wKewbUyvlkZbkEl+ZnQXs0CGtLz7J/11eRYfha0VilTTr/zNDKruNHM+ZWs2dU4c' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-H72LdaQannL9tANvLkUYcFdYBBZ5V+OeQZS8++yR6FabI58xPV+fpTF2pT9wtZFf' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -6648,7 +6648,7 @@ $('centreBtn').addEventListener('click', ev => { if (!tapGuard('centreBtn', ev))
 function fmtStamp(iso) { const d = /** @type {any} */ (new Date(iso)); return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + fmtClock(d); }
 function buildReport() {
   /** @param {Record<string,string>} m @returns {(a: string, b: string) => number} */
-  const byTime = m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || ''));
+  const byTime = /** @type {(m: Record<string, any>) => (a: string, b: string) => number} */ (m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || '')));
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
   const L = ['Snow Route: snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of ' + STREETNAMES.length]; // the total derives from the route's street list
   if (ts.length) {
@@ -6728,7 +6728,7 @@ const ENVELOPE = {
     if (writePending('trail') || writePending('aux') || writePending('sess') || writePending('fixlog')) return null; // the flush did not land - refuse the export rather than ship a valid-looking backup with stale trail/coverage inside
     const routes = /** @type {Record<string,BackupRoute>} */ ({});
     for (const p of ROUTE_PACKS) {
-      const rk = routeKeys(p.id); const data = /** @type {Record<string,any>} */ ({});
+      const rk = routeKeys(/** @type {string} */ (p.id)); const data = /** @type {Record<string,any>} */ ({});
       for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; const v = rawRead(key); if (v === RAW_READ_FAILED) return null; if (v != null) data[f] = v; }
       // lifecycle rides explicitly: a run asserts its start string, no run asserts start: null; the snapshot rides along
       const isActive = !!(activeRoute && p.id === activeRoute.id && routeLoaded);
@@ -6742,7 +6742,7 @@ const ENVELOPE = {
         const pv = validateSnap(parseJ(/** @type {string} */ (rawSnap), null), +startStr, packGeometry(p)); if (pv) snapObj = BOARD.snapshotObject(pv, +startStr); }
         if (snapObj) data.snap = JSON.stringify(snapObj);
       }
-      routes[p.id] = /** @type {BackupRoute} */ (data);
+      routes[/** @type {string} */ (p.id)] = /** @type {BackupRoute} */ (data);
     } // exports from the keys the route runs on: a legacy-fallback boot's fresh slot would emit an empty backup
     const night = rawRead(LS_GLOBAL.night); if (night === RAW_READ_FAILED) return null;
     const nightExp = rawRead(LS_GLOBAL.nightExp); if (nightExp === RAW_READ_FAILED) return null;
@@ -6781,20 +6781,20 @@ const ENVELOPE = {
     if (upStoreComplete) upsCarry = { ...userPackCache };
     else { upsCarry = {}; const badNames = [];
       for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue;
-      if (userPackCache[pk.id]) { upsCarry[pk.id] = userPackCache[pk.id]; continue; } const v = normalizePack(pk, {});
-      if (v.ok) { v.pack.id = pk.id; upsCarry[pk.id] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || pk.id); } }
+      if (userPackCache[/** @type {string} */ (pk.id)]) { upsCarry[/** @type {string} */ (pk.id)] = userPackCache[/** @type {string} */ (pk.id)]; continue; } const v = normalizePack(pk, {});
+      if (v.ok) { v.pack.id = pk.id; upsCarry[/** @type {string} */ (pk.id)] = v.pack; } else { excluded.add(pk.id); badNames.push(pk.name || /** @type {string} */ (pk.id)); } }
       if (badNames.length) recoveryDisclosure = badNames;
     }
     if (excluded.has(activeRoute.id)) return null; // the open route's definition cannot be carried: no honest recovery file exists, so the unavailable message is the truth
     const routes = /** @type {Record<string,BackupRoute>} */ ({}); routes[activeRoute.id] = /** @type {BackupRoute} */ (data);
     for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue;
-    const rk = routeKeys(pk.id);
+    const rk = routeKeys(/** @type {string} */ (pk.id));
     const d = /** @type {Record<string,any>} */ ({});
     for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
       // a non-active running route's snapshot rides too, validated on its geometry; a failed read leaves it out
       if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) {
       const pv = validateSnap(parseJ(/** @type {string} */ (rawSnap), null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } }
-      if (Object.keys(d).length) routes[pk.id] = /** @type {BackupRoute} */ (d); } // an untouched pack in a recovery file asserts idle like any complete backup
+      if (Object.keys(d).length) routes[/** @type {string} */ (pk.id)] = /** @type {BackupRoute} */ (d); } // an untouched pack in a recovery file asserts idle like any complete backup
     const o = /** @type {BackupV2} */ ({ app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes });
     if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // definitions ride recovery too: from the strict record read, or validated memory when unreadable
     { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = /** @type {string} */ (nt);
@@ -6917,7 +6917,7 @@ function mergeRestoreEntries(entries, allPacks) {
   };
   const fields = /** @type {('times'|'via'|'cov'|'notes')[]} */ (['times', 'via', 'cov', 'notes']);
   for (const pack of allPacks) {
-    const rk = routeKeys(pack.id);
+    const rk = routeKeys(/** @type {string} */ (pack.id));
     if (![...ROUTE_FIELDS, 'snap'].some(f => incoming.has(/** @type {Record<string,string>} */ (rk)[f]))) continue;
     if (pack.id === '5w' && read(rk.mig) === null && read(LEGACY_KEYS.sides) !== null) {
       // newer values can linger in legacy keys after an incomplete migration; a slot write would mask them
@@ -6992,7 +6992,7 @@ function mergeRestoreEntries(entries, allPacks) {
       const raw = read(rk.hist);
       const current = raw === null ? [] : decode(rk.hist, raw, Array.isArray);
       const backup = /** @type {any[]} */ (JSON.parse(incoming.get(rk.hist)));
-      const start = +(liveStart || merged.get(rk.start));
+      const start = +(liveStart || /** @type {string} */ (merged.get(rk.start)));
       const candidates = backup.filter(h => !(start && h && +h.runId === start));
       // Legacy entries match by fingerprint (histId); only exact duplicates skip.
       const additions = newEntries(current, candidates, histId);
@@ -7091,7 +7091,7 @@ function mergeRestoreEntries(entries, allPacks) {
           if (!entryMarked(backup, name)) {
             if (!times) times = parseJ(merged.get(rk.times) ?? read(rk.times), {});
             p[name] = stretch[name].parts.map(() => 3);
-            t[name] = stretch[name].parts.map(() => [times[name] || null, times[name] || null]);
+            t[name] = stretch[name].parts.map(() => [(/** @type {Record<string, any>} */ (times))[name] || null, (/** @type {Record<string, any>} */ (times))[name] || null]);
             sidesAdded = true;
             sidesDerived = true;
           }
@@ -7221,7 +7221,7 @@ const RESTORE = {
       catch (e) { return null; }
       const report = { snapDropped, droppedNames: countUnknownNames(parsed, allPacks), deadSkipped };
       if (!writes.length && !restoredPacks) return null;
-      const scope = allPacks.flatMap(p => [...slotKeys(p.id), routeKeys(p.id).finclean]);
+      const scope = allPacks.flatMap(p => [...slotKeys(/** @type {string} */ (p.id)), routeKeys(/** @type {string} */ (p.id)).finclean]);
       if (restoredPacks) scope.push(USERPACKS_KEY);
       scope.push(LS_GLOBAL.night, LS_GLOBAL.nightExp, SETTINGS_KEY, LS.fixlog);
       return { entries: writes, restoredPacks, packPriors, scope, ...report };
@@ -7250,7 +7250,7 @@ const RESTORE = {
           const pack = { ...checked.pack, id: rid };
           if (index < 0) allPacks.push(pack); else allPacks[index] = pack;
         } else if (index < 0) {
-          additions[rid] = restoredPacks[rid];
+          additions[rid] = (/** @type {UserPacksRecord} */ (restoredPacks))[rid];
           packPriors[rid] = null;
           allPacks.push(additions[rid]);
         }
@@ -7630,7 +7630,7 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
     for (const k of Object.keys(PM)) PACE_ICONS[k] = `<img class="xico" data-k="${k}" src="${night ? PM[k].n : PM[k].d}">`;
   }
   $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre;
-  ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; });
+  ['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[/** @type {string} */ ({ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id])]; });
   $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
   $('selNote').innerHTML = ICONS.note;
   stampNightBtn();
@@ -7648,7 +7648,7 @@ function renderIcons() { // re-mints ICONS from the active pack (theme + Locate 
 }
 $('streetsBtn').innerHTML = ICONS.streets; $('paceBtn').innerHTML = ICONS.pace; $('centreBtn').innerHTML = ICONS.centre; // the re-centre button wears the standard crosshair glyph; the Locate tab keeps its navigation arrow, untouched
 // Backup and Update carry no tab icons anymore - they are text rows on the blue settings panes
-['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[{ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id]]; });
+['homeBtn', 'gpsBtn', 'clearBtn', 'routesBtn'].forEach(id => { $(id).querySelector('.tabIco').innerHTML = ICONS[/** @type {string} */ ({ homeBtn: 'home', gpsBtn: 'gps', clearBtn: 'clear', routesBtn: 'routes' }[id])]; });
 $('setBtn').querySelector('.tabIco').innerHTML = ICONS.gear;
 $('selNote').innerHTML = ICONS.note;
 renderIcons(); // this puts every host on the Glyph set (current theme, Locate state) before anything is tapped or painted
@@ -7703,7 +7703,7 @@ function bakAgeText() { // the Backup button's second line, from the export stam
   return days + ' days ago';
 }
 function renderBakAge() { const el = $('bakAge'); if (el) el.textContent = 'Last backup: ' + bakAgeText(); }
-/** @param {AppElement} el @param {boolean} on */
+/** @param {AppElement} el @param {boolean|undefined} on */
 function renderSwitch(el, on) { el.classList.toggle('on', !!on); el.setAttribute('aria-checked', on ? 'true' : 'false'); }
 // ---- Display and Sound ----
 function renderJob() {
@@ -7807,7 +7807,7 @@ async function packState() { // how much of the manifest is in the pack cache (r
   if (cached < 0) { const rec = parseJ(lsGet(LS.pre), null); cached = rec ? Math.min(total, rec.saved || 0) : 0; }
   const countsByRoute = ROUTE_PACKS.map(pk => { const sub = packTileUrls(pk); let c = 0; // a route's share against the same census (chrome belongs to none); on failure its stored record stands in
     if (haveSet) { for (const u of sub) { let href = u; try { href = new URL(u).href; } catch (e) {} if (haveSet.has(href)) c++; } }
-    else { const rec = parseJ(lsGet(routeKeys(pk.id).pre), null); c = rec ? Math.min(sub.size, rec.routeSaved || 0) : 0; }
+    else { const rec = parseJ(lsGet(routeKeys(/** @type {string} */ (pk.id)).pre), null); c = rec ? Math.min(sub.size, rec.routeSaved || 0) : 0; }
     return { id: pk.id, name: pk.name, total: sub.size, cached: c }; });
   return { total, cached, bytes, complete: total > 0 && cached >= total, countsByRoute };
 }
@@ -7832,7 +7832,10 @@ async function renderStatus(resetStat) {
   } // the active route's own share, named as its own - never the union wearing its name
   $('xPre').textContent = ps.complete ? 'Re-download' : 'Download';
   $('stDel').style.display = ps.cached > 0 ? '' : 'none';
-  if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null) || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(p.id).pre), null)).find(r => r && r.saved > 0) || null; $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.'; $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download - landing on Status with none running starts them clean (the 1.87 reset, re-homed with the elements). Beta 1.170 (C-04): the record read falls back to ANY route's download record - through 1.169 it read only the active route's slot, so right after a route switch this line could say 'not downloaded yet' directly under a 'Downloaded' maps line for the pack another route had fetched
+  if (resetStat && !preloadRunning) { const rec = parseJ(lsGet(LS.pre), null)
+    || ROUTE_PACKS.map(p => parseJ(lsGet(routeKeys(/** @type {string} */ (p.id)).pre), null)).find(r => r && r.saved > 0) || null;
+    $('xPreStat').textContent = rec ? 'Offline maps downloaded ' + new Date(rec.at).toLocaleDateString() + ' (' + rec.saved + ' files)' : 'Offline maps not downloaded yet. Download for offline use.';
+    $('xPreBar').classList.remove('on'); $('xPreFill').style.width = '0%'; } // the bar/stat belong to a live download; the record read falls back to ANY route's download record (Beta 1.170)
   // HEALTH - each row from a real signal at this moment:
   let storageOk = false;
   try { storageOk = lsSet('snowroute.v2.healthprobe', '1') && lsGet('snowroute.v2.healthprobe') === '1'; lsDel('snowroute.v2.healthprobe');
@@ -7871,7 +7874,7 @@ $('stDel').addEventListener('click', async ev => {
       else gone = true; // no Cache Storage in this browser: no pack exists to delete
     } catch (e) { gone = false; }
     if (!gone) { showBanner('Offline maps not deleted', 'They are still on this device'); renderStatus(true); return; }
-    lsDel(PACKMIG_KEY); for (const p of ROUTE_PACKS) lsDel(routeKeys(p.id).pre); // every route's record goes with the pack; the browsing tile cache is a cache, not the pack
+    lsDel(PACKMIG_KEY); for (const p of ROUTE_PACKS) lsDel(routeKeys(/** @type {string} */ (p.id)).pre); // every route's record goes with the pack; the browsing tile cache is a cache, not the pack
     renderStatus(true);
   } finally { releaseDel(); }
 });
@@ -8022,15 +8025,15 @@ const PACKMIG_CENSUS_KEY = 'snowroute.v5.packmigcensus'; // the partial-pack rec
 /** @type {Promise<any>} */
 let packWriteChain = Promise.resolve();
 /** @returns {Promise<() => void>} */
-async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let release;
+async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let /** @type {(() => void)|undefined} */ release;
 const held = new Promise(res => { release = /** @type {() => void} */ (res); });
 /** @type {(() => void)|undefined} */
 let acquired;
 const acq = new Promise(res => { acquired = /** @type {() => void} */ (res); }); let lockFailed = false;
-const done = navigator.locks.request('snowroute-pack-write', async () => { acquired(); await held; });
-done.catch(() => { lockFailed = true; acquired(); }); await acq; if (!lockFailed) return release; }
-let release; const held = new Promise(res => { release = /** @type {() => void} */ (res); });
-const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return release; } // the pack writers' turn: a Web Lock where offered, else the in-page chain; held for the whole run
+const done = navigator.locks.request('snowroute-pack-write', async () => { (/** @type {() => void} */ (acquired))(); await held; });
+done.catch(() => { lockFailed = true; (/** @type {() => void} */ (acquired))(); }); await acq; if (!lockFailed) return /** @type {() => void} */ (release); }
+let /** @type {(() => void)|undefined} */ release; const held = new Promise(res => { release = /** @type {() => void} */ (res); });
+const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return /** @type {() => void} */ (release); } // the pack writers' turn: a Web Lock where offered, else the in-page chain; held for the whole run
 /** @param {string[]} list @returns {string} */
 function packMigFingerprint(list) { // the flag is a fingerprint of the manifest it certifies: a changed list means the full pass runs again
   let h = 0; const s = list.join('\n');
@@ -8041,7 +8044,7 @@ function packMigFingerprint(list) { // the flag is a fingerprint of the manifest
 function packCensusFingerprint(urls) { return packMigFingerprint([...urls].sort()); } // a stored pack's key-set fingerprint: the manifest fingerprint of the sorted set, so set equality is one string compare
 /** @returns {boolean} */
 function anyPreloadRecord() { // ever downloaded under any route? Every route's own record is the test; the active route's alone misses others
-  return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(p.id).pre), null));
+  return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(/** @type {string} */ (p.id)).pre), null));
 }
 /** @returns {Promise<any>} */
 async function migratePack() { let migRelease = () => {}; // the move, honestly: only manifest entries migrate, strays are pruned, and the flag sets only after verification
@@ -8100,7 +8103,7 @@ async function migratePack() { let migRelease = () => {}; // the move, honestly:
 // migratePack() runs from create.js after mergeUserPacks (here the manifest would miss created packs); offsets follow the live report while typing
 let fullH = 0;
 /** @returns {boolean} */
-const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+const inStandalone = () => !!(window.navigator.standalone || ((/** @type {any} */ (window)).matchMedia && matchMedia('(display-mode: standalone)').matches));
 /** @returns {void} */
 function syncViewport() {
   try {
@@ -8179,7 +8182,7 @@ function ensureFieldVisible() { // a covered field surfaces locally (list scroll
 // while open, a material resize re-runs the visibility check (layout frozen; only the local scroll/shift re-evaluates)
 if (window.visualViewport) window.visualViewport.addEventListener('resize', () => {
   if (!document.body.classList.contains('kb') || kbInSettle) return;
-  const h = window.visualViewport.height;
+  const h = (/** @type {any} */ (window.visualViewport)).height;
   if (kbVisH >= 0 && Math.abs(h - kbVisH) > 4) ensureFieldVisible();
 });
 /** @returns {void} */
@@ -8262,7 +8265,7 @@ function introToRoute() { // a pick opens wide and flies in slowly as the splash
   const liGen = loadInGen; // this intro's pick generation: a newer pick during the dwell retires the flight (the timeout checks it)
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
   const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); map.jumpTo({ pitch: 45 }); } catch (e) {} }; // the no-flight fallback lands on the same tilted default instantly: flat fit first, tilt at its centre/zoom
-  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit settles the camera in one pass - no flight, no mid-flight placement
+  if (!map.cameraForBounds || ((/** @type {any} */ (window)).matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit settles the camera in one pass - no flight, no mid-flight placement
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above
@@ -8526,7 +8529,7 @@ function computeBoundaryEnds(roads, allStreets) {
         }
         if (!crossings.length) continue; // no crossing: not a boundary end - computeDeadEnds below decides dead end (record) or pick end (none)
         let minBehind = Infinity; for (const c of crossings) if (c.behind < minBehind) minBehind = c.behind;
-        const street0 = crossings.find(c => c.behind === minBehind).street; // the boundary street is the closest crossing's
+        const street0 = (/** @type {{ street: string, behind: number, pt: any }} */ (crossings.find(c => c.behind === minBehind))).street; // the boundary street is the closest crossing's
         let joinBehind = minBehind; // the join is the street's furthest-back crossing near the end (its first centreline); the cluster bound excludes unrelated crossings
         for (const c of crossings) if (c.street === street0 && c.behind <= minBehind + 20 && c.behind > joinBehind) joinBehind = c.behind;
         const join = atD(atStart ? joinBehind : total - joinBehind);
@@ -8630,16 +8633,17 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
     return { roads: out };
   };
   const rc = cleanRoads(raw.roads, 'roads'); if (rc.error) return bad(rc.error);
-  if (!Object.keys(rc.roads).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
+  if (!Object.keys(/** @type {RoadsMap} */ (rc.roads)).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
   let reference = /** @type {RoadsMap} */ ({});
-  if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = fc.roads; for (const nm of Object.keys(reference)) if (rc.roads[nm]) delete reference[nm]; }
+  if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = /** @type {RoadsMap} */ (fc.roads);
+    for (const nm of Object.keys(reference)) if ((/** @type {RoadsMap} */ (rc.roads))[nm]) delete reference[nm]; }
   const primariesIn = raw.primaries; // the one key, no aliases: an older 'main'/'mains' field normalizes to empty primaries, streets intact, never rejected
   const primaries = /** @type {string[]} */ ([]);
   if (primariesIn !== undefined) {
     if (!Array.isArray(primariesIn)) return bad('the primaries list is the wrong shape');
-    for (const m of primariesIn) if (typeof m === 'string' && rc.roads[m] && !primaries.includes(m)) primaries.push(m);
+    for (const m of primariesIn) if (typeof m === 'string' && (/** @type {RoadsMap} */ (rc.roads))[m] && !primaries.includes(m)) primaries.push(m);
   }
-  const tileSet = new Set(Object.keys(rc.roads));
+  const tileSet = new Set(Object.keys(/** @type {RoadsMap} */ (rc.roads)));
   if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
   if (opts.tileNames) for (const t of opts.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
   let box = null;
@@ -8650,7 +8654,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   const ends = /** @type {Record<string,number[][]>} */ ({}); // boundary records clean leniently: four in-range coordinates on a real road survive; the rest drop, never a rejection
   if (raw.ends && typeof raw.ends === 'object' && !Array.isArray(raw.ends)) {
     for (const nm of Object.keys(raw.ends)) {
-      if (!rc.roads[nm] || !Array.isArray(raw.ends[nm])) continue;
+      if (!(/** @type {RoadsMap} */ (rc.roads))[nm] || !Array.isArray(raw.ends[nm])) continue;
       const list = [];
       for (const r of raw.ends[nm]) {
         if (!Array.isArray(r) || r.length < 4) continue;
@@ -8680,7 +8684,7 @@ function mergeUserPacks() { // boot: shipped + created packs; a created pack win
   }
 }
 // the tombstone applies BEFORE the created-pack merge: a created pack must never be hidden by a shipped pack's tombstone
-const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1); }
+const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(/** @type {string} */ (ROUTE_PACKS[i].id))) ROUTE_PACKS.splice(i, 1); }
 mergeUserPacks(); // the legacy half of boot: the app is fully usable on legacy data before the store read lands
 window.__userPacksReady = initUserPacks(); // the store half + drain, exposed for the battery; fire-and-forget, an incomplete drain reruns next boot
 window.__userPacksStatus = () => upStatus;
@@ -11534,7 +11538,8 @@ async function saveDraftRoute() {
     } catch (e) { return {}; }
   })();
   // the save stores chosen sectors only: the draft keeps whole streets, the pack never sees unchosen ends
-  const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] });
+  const v = normalizePack({ name, area, primaries: [...(/** @type {CrDraft} */ (draft)).primaries], roads, reference: {}, ends },
+    { tileNames: [...Object.values((/** @type {CrDraft} */ (draft)).osmNames), ...((/** @type {CrDraft} */ (draft)).tileNames || [])] });
   if (!v.ok) { showBanner('Route not saved', (/** @type {{ok: false, error: string}} */ (v)).error); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
   if (!(await upPut(pack.id, pack))) { showBanner('Route not saved'); return; } // one route's verified write: no whole-record rewrite remains to erase another route; a failure refuses this route only
@@ -11556,7 +11561,10 @@ async function saveDraftRoute() {
   const sp = $('splash'); if (!sp) return;
   const t0 = Date.now(); let gone = false;
   const finish = () => { if (gone) return; gone = true; clearInterval(iv); sp.remove(); const bl = $('brandLayer'); if (bl) bl.classList.add('off'); /* Beta 1.155: the title's layer is parked with the menu (through 1.154 the title rode inside the menu and parked as its child); unloadRouteToBoot revives it */ document.documentElement.classList.remove('boot'); /* Beta 1.85: the splash is gone - the root frame returns to the app's own colour (the html.boot rule) */ const rm = $('routeMenu'); if (rm) { rm.classList.add('notrans'); rm.classList.remove('boot', 'show', 'bye'); void rm.offsetWidth; rm.classList.remove('notrans'); } /* Beta 1.178: the 1.165 pill-wait gate (rmMain's .hold/.go classes) retired with the cut - no held state exists to strip at a pick any more */ }; // Beta 1.78: park the menu below the screen without animating the swap
-  const arm = () => { const wait = Math.max(0, (((window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) ? 1900 : 2700) - (Date.now() - t0)); setTimeout(() => { crWarmCityLibrary(); /* Beta 1.130: Andrew's own suggestion, adjudicated to the catalogue ONLY - the packs/index.json download fires in this deferred boot slot (the menu-arming moment: first tiles are in or the 6 s escape has passed, the splash floor has run (Beta 1.160: 2700 ms on the animated path - arm() flips at the Option-3 sequence's 2.7 s mark, after the block's 1.25 s fade-in and the hold (Beta 1.163: the arrivals are the original SEPARATE ones again, per Andrew's correction of 1.162 - the icon fades in at 1.25 s and the title slides in at 1.5 s, the animations back on the children inside #brandBlock exactly as through 1.161; 1.162's shared block fade stood for one release; the floor itself is unchanged); under reduced motion nothing animates, so the floor stays 1900 ms exactly as through 1.159), so it never competes with first paint), and a cold open has the catalogue in hand before Create is ever opened. The city PACK FILES stay on-demand per city - 6.5 MB of gzip across the library is not boot work. The cached promise keeps it to one fetch per session; the gate/menu warm calls remain as no-op re-triggers */ if (!gone) { const __bl = $('brandLayer'); if (__bl) __bl.classList.add('cut'); /* Beta 1.178 (Andrew, 2026-11-12 - he picked variant A, 'Cut', from the intro-transition demo): at this moment - the splash sequence complete - the brand DISAPPEARS INSTANTLY: #brandLayer.cut is display:none (head.html), a hard cut with no fade, no drift and no scale, and the doors menu stands SOLO from here on - no icon and no title on the main pane or any other, in any later state of the session: .cut is never removed (finish() still parks the layer with .off at a pick, and unloadRouteToBoot's clearing of .off/.bye leaves .cut standing, so the return to the picker is solo too; a fresh load replays the splash and cuts again here). Under reduced motion the same cut applies on the unchanged 1900ms floor - an instant disappearance is this transition's motion-safe form. RETIRED with the cut: the 1.162-1.164 FLIP (the block's 1.3s flight to the calc(35.49% - 209.42px) landing pose; the pose rules are removed from head.html) and the 1.165 pill-wait gate (rmMain's .hold/.go, the flight watch and its fallbacks - no flight remains to clear the pills' path; the pills fade in on the pane's own .35s fade as .show lands below). The snow is NOT coupled to the brand block: the canvas lives in #splash and its engine (brand-snow.js) keys the scene off .bye/.off, never .cut, so the menu's falling snow runs exactly as before until a pick ends the scene. */ sp.classList.add('menu'); $('routeMenu').classList.add('show'); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state also ends HERE, when the menu arms - the still-to-live handover window (the unsettled first frames the chrome-absence protects) is long past by the gate's splash-floor minimum, and the opaque menu covers the chrome while it paints beneath. Every later state (a post-reload session at the menu, the pick, a direct load) must find a functional shell; the pick/loadRoute/finish removals stay as backstops */ } }, wait); };
+  const arm = () => { const wait = Math.max(0, ((((/** @type {any} */ (window)).matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) ? 1900 : 2700) - (Date.now() - t0));
+    setTimeout(() => { crWarmCityLibrary(); /* Beta 1.130: the catalogue download fires in this deferred boot slot, before Create ever opens */
+      if (!gone) { const __bl = $('brandLayer'); if (__bl) __bl.classList.add('cut'); /* Beta 1.178: at the splash floor the brand cuts instantly (display:none) and never returns */
+        sp.classList.add('menu'); $('routeMenu').classList.add('show'); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state also ends here, when the menu arms */ } }, wait); };
   const iv = setInterval(() => {
     if (!map && Date.now() - t0 > 4000) __bootTail();
     if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }

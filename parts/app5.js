@@ -139,15 +139,15 @@ const PACKMIG_CENSUS_KEY = 'snowroute.v5.packmigcensus'; // the partial-pack rec
 /** @type {Promise<any>} */
 let packWriteChain = Promise.resolve();
 /** @returns {Promise<() => void>} */
-async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let release;
+async function takePackWriteTurn() { if (navigator.locks && navigator.locks.request) { let /** @type {(() => void)|undefined} */ release;
 const held = new Promise(res => { release = /** @type {() => void} */ (res); });
 /** @type {(() => void)|undefined} */
 let acquired;
 const acq = new Promise(res => { acquired = /** @type {() => void} */ (res); }); let lockFailed = false;
-const done = navigator.locks.request('snowroute-pack-write', async () => { acquired(); await held; });
-done.catch(() => { lockFailed = true; acquired(); }); await acq; if (!lockFailed) return release; }
-let release; const held = new Promise(res => { release = /** @type {() => void} */ (res); });
-const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return release; } // the pack writers' turn: a Web Lock where offered, else the in-page chain; held for the whole run
+const done = navigator.locks.request('snowroute-pack-write', async () => { (/** @type {() => void} */ (acquired))(); await held; });
+done.catch(() => { lockFailed = true; (/** @type {() => void} */ (acquired))(); }); await acq; if (!lockFailed) return /** @type {() => void} */ (release); }
+let /** @type {(() => void)|undefined} */ release; const held = new Promise(res => { release = /** @type {() => void} */ (res); });
+const prev = packWriteChain; packWriteChain = prev.then(() => held); await prev; return /** @type {() => void} */ (release); } // the pack writers' turn: a Web Lock where offered, else the in-page chain; held for the whole run
 /** @param {string[]} list @returns {string} */
 function packMigFingerprint(list) { // the flag is a fingerprint of the manifest it certifies: a changed list means the full pass runs again
   let h = 0; const s = list.join('\n');
@@ -158,7 +158,7 @@ function packMigFingerprint(list) { // the flag is a fingerprint of the manifest
 function packCensusFingerprint(urls) { return packMigFingerprint([...urls].sort()); } // a stored pack's key-set fingerprint: the manifest fingerprint of the sorted set, so set equality is one string compare
 /** @returns {boolean} */
 function anyPreloadRecord() { // ever downloaded under any route? Every route's own record is the test; the active route's alone misses others
-  return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(p.id).pre), null));
+  return ROUTE_PACKS.some(p => !!parseJ(lsGet(routeKeys(/** @type {string} */ (p.id)).pre), null));
 }
 /** @returns {Promise<any>} */
 async function migratePack() { let migRelease = () => {}; // the move, honestly: only manifest entries migrate, strays are pruned, and the flag sets only after verification
@@ -217,7 +217,7 @@ async function migratePack() { let migRelease = () => {}; // the move, honestly:
 // migratePack() runs from create.js after mergeUserPacks (here the manifest would miss created packs); offsets follow the live report while typing
 let fullH = 0;
 /** @returns {boolean} */
-const inStandalone = () => !!(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+const inStandalone = () => !!(window.navigator.standalone || ((/** @type {any} */ (window)).matchMedia && matchMedia('(display-mode: standalone)').matches));
 /** @returns {void} */
 function syncViewport() {
   try {
@@ -296,7 +296,7 @@ function ensureFieldVisible() { // a covered field surfaces locally (list scroll
 // while open, a material resize re-runs the visibility check (layout frozen; only the local scroll/shift re-evaluates)
 if (window.visualViewport) window.visualViewport.addEventListener('resize', () => {
   if (!document.body.classList.contains('kb') || kbInSettle) return;
-  const h = window.visualViewport.height;
+  const h = (/** @type {any} */ (window.visualViewport)).height;
   if (kbVisH >= 0 && Math.abs(h - kbVisH) > 4) ensureFieldVisible();
 });
 /** @returns {void} */
@@ -379,7 +379,7 @@ function introToRoute() { // a pick opens wide and flies in slowly as the splash
   const liGen = loadInGen; // this intro's pick generation: a newer pick during the dwell retires the flight (the timeout checks it)
   const b = [[routeBox.w, routeBox.s], [routeBox.e, routeBox.n]];
   const fit0 = () => { try { map.fitBounds(b, { padding: 28, animate: false }); map.jumpTo({ pitch: 45 }); } catch (e) {} }; // the no-flight fallback lands on the same tilted default instantly: flat fit first, tilt at its centre/zoom
-  if (!map.cameraForBounds || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit settles the camera in one pass - no flight, no mid-flight placement
+  if (!map.cameraForBounds || ((/** @type {any} */ (window)).matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { fit0(); return; } // the instant fit settles the camera in one pass - no flight, no mid-flight placement
   let fit = null; try { fit = map.cameraForBounds(b, { padding: 28 }); } catch (e) {}
   if (!fit || !fit.center || typeof fit.zoom !== 'number') { fit0(); return; } // same instant-fit settle as above
   try { map.jumpTo({ center: fit.center, zoom: Math.max(8, fit.zoom - 3) }); } catch (e) { fit0(); return; } // same instant-fit settle as above

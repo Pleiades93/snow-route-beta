@@ -26,6 +26,8 @@ Stage 3c (app2 joins the type check): same verdict, no update
 needed.
 Stage 3d (whatsnew and brand-snow join the type check): same
 verdict, no update needed.
+Stage 4 (strict-null gate wired for the storage files): same
+verdict, no update needed.
 
 ## The snow rule (one rule, app-wide)
 

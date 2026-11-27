@@ -160,7 +160,7 @@ function computeBoundaryEnds(roads, allStreets) {
         }
         if (!crossings.length) continue; // no crossing: not a boundary end - computeDeadEnds below decides dead end (record) or pick end (none)
         let minBehind = Infinity; for (const c of crossings) if (c.behind < minBehind) minBehind = c.behind;
-        const street0 = crossings.find(c => c.behind === minBehind).street; // the boundary street is the closest crossing's
+        const street0 = (/** @type {{ street: string, behind: number, pt: any }} */ (crossings.find(c => c.behind === minBehind))).street; // the boundary street is the closest crossing's
         let joinBehind = minBehind; // the join is the street's furthest-back crossing near the end (its first centreline); the cluster bound excludes unrelated crossings
         for (const c of crossings) if (c.street === street0 && c.behind <= minBehind + 20 && c.behind > joinBehind) joinBehind = c.behind;
         const join = atD(atStart ? joinBehind : total - joinBehind);
@@ -264,16 +264,17 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
     return { roads: out };
   };
   const rc = cleanRoads(raw.roads, 'roads'); if (rc.error) return bad(rc.error);
-  if (!Object.keys(rc.roads).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
+  if (!Object.keys(/** @type {RoadsMap} */ (rc.roads)).length) return bad(opts.draft ? 'the draft has no streets' : 'the route has no streets');
   let reference = /** @type {RoadsMap} */ ({});
-  if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = fc.roads; for (const nm of Object.keys(reference)) if (rc.roads[nm]) delete reference[nm]; }
+  if (raw.reference !== undefined) { const fc = cleanRoads(raw.reference, 'reference features'); if (fc.error) return bad(fc.error); reference = /** @type {RoadsMap} */ (fc.roads);
+    for (const nm of Object.keys(reference)) if ((/** @type {RoadsMap} */ (rc.roads))[nm]) delete reference[nm]; }
   const primariesIn = raw.primaries; // the one key, no aliases: an older 'main'/'mains' field normalizes to empty primaries, streets intact, never rejected
   const primaries = /** @type {string[]} */ ([]);
   if (primariesIn !== undefined) {
     if (!Array.isArray(primariesIn)) return bad('the primaries list is the wrong shape');
-    for (const m of primariesIn) if (typeof m === 'string' && rc.roads[m] && !primaries.includes(m)) primaries.push(m);
+    for (const m of primariesIn) if (typeof m === 'string' && (/** @type {RoadsMap} */ (rc.roads))[m] && !primaries.includes(m)) primaries.push(m);
   }
-  const tileSet = new Set(Object.keys(rc.roads));
+  const tileSet = new Set(Object.keys(/** @type {RoadsMap} */ (rc.roads)));
   if (Array.isArray(raw.tileNames)) for (const t of raw.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
   if (opts.tileNames) for (const t of opts.tileNames) if (typeof t === 'string' && t && t.length <= PACK_TILENAME_MAX && tileSet.size < PACK_TILENAMES_MAX) tileSet.add(t);
   let box = null;
@@ -284,7 +285,7 @@ function normalizePack(raw, opts) { // -> { ok: true, pack } | { ok: false, erro
   const ends = /** @type {Record<string,number[][]>} */ ({}); // boundary records clean leniently: four in-range coordinates on a real road survive; the rest drop, never a rejection
   if (raw.ends && typeof raw.ends === 'object' && !Array.isArray(raw.ends)) {
     for (const nm of Object.keys(raw.ends)) {
-      if (!rc.roads[nm] || !Array.isArray(raw.ends[nm])) continue;
+      if (!(/** @type {RoadsMap} */ (rc.roads))[nm] || !Array.isArray(raw.ends[nm])) continue;
       const list = [];
       for (const r of raw.ends[nm]) {
         if (!Array.isArray(r) || r.length < 4) continue;
@@ -314,7 +315,7 @@ function mergeUserPacks() { // boot: shipped + created packs; a created pack win
   }
 }
 // the tombstone applies BEFORE the created-pack merge: a created pack must never be hidden by a shipped pack's tombstone
-const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(ROUTE_PACKS[i].id)) ROUTE_PACKS.splice(i, 1); }
+const shippedDead = loadShippedDeleted(); for (let i = ROUTE_PACKS.length - 1; i >= 0; i--) { if (shippedDead.includes(/** @type {string} */ (ROUTE_PACKS[i].id))) ROUTE_PACKS.splice(i, 1); }
 mergeUserPacks(); // the legacy half of boot: the app is fully usable on legacy data before the store read lands
 window.__userPacksReady = initUserPacks(); // the store half + drain, exposed for the battery; fire-and-forget, an incomplete drain reruns next boot
 window.__userPacksStatus = () => upStatus;

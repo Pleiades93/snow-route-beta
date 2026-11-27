@@ -18360,6 +18360,43 @@
    "red": "The base workflow runs the parts scan but no boundary fixture step, and JUDGE_PATHS does not name scripts/scan-boundaries.cjs: a boundary verdict change could land with no fixture run in CI and no receipt.",
    "green": "The current workflow carries the boundary scanner fixtures step after the parts scan; JUDGE_PATHS names scripts/scan-boundaries.cjs; the mirrors gate's judges family PASSes with the addition. Re-issue of gb-boundary-wiring-r3: the pinned scanners changed in the second review round (replace coverage; baseline-writer ordering); the workflow file is unchanged.",
    "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "s1-typecheck-scope",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "8b53f0d082e1d8a6f209ed7efffe831af778b8f775687a941a9cba96e3e8fde3"
+   },
+   "mutation": "Appended an unannotated function (implicit-any parameter) to parts/whatsnew.js, a part the widened tsconfig now covers.",
+   "red": "tsc -p scripts/tsconfig.json reported 1 error (TS7006) and the step would fail.",
+   "green": "Probe removed: tsc -p scripts/tsconfig.json exits 0 on the clean tree.",
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-snc-gate",
+   "check": "scripts/check-snc.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-snc.py": "56245af20f4aac00e0bbc7375cbe9f656021ae4557c5caf97525021819f48ee9",
+    "scripts/tsconfig.snc.json": "efac42a857280e490b96ea18f5aa784e51f9dcd79cbba7bf674e009ca6be8efd"
+   },
+   "mutation": "Appended a possibly-null dereference (a string|null local read for .length) to parts/app4.js, a storage file the gate proves clean.",
+   "red": "check-snc.py exited 1: SNC GATE FAIL naming parts/app4.js TS18047.",
+   "green": "Probe removed: check-snc.py exits 0 - storage files clean, global backlog 196 of cap 196.",
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-judge-paths-receipts",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "d37e50d7000f4fd4b3559771bf53798de93e46d19cd6e8b94dfd92328f6f7e85"
+   },
+   "mutation": "Appended a comment line to scripts/check-snc.py, a file pinned by receipt s1-snc-gate, after check-snc.py was named in JUDGE_PATHS.",
+   "red": "check-receipts.py verify reported s1-snc-gate STALE.",
+   "green": "Comment removed: check-receipts.py verify reports s1-snc-gate CURRENT again.",
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }
