@@ -751,6 +751,42 @@
     "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r2",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/, whitespace splits in app5. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-packs.js",
+    "parts/data.js"
+   ],
+   "files": {
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "22ed475cb426f4c6ecf7502abbaebe91957eeca2f0bb00a11ebf8160c456ec74",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r3",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/, whitespace splits in app5. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/create-packs.js",
+    "parts/data.js"
+   ],
+   "files": {
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "0ed746438758d76da70f9669c87861645adf25d0ec1ce860bdba975b7d353a90",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

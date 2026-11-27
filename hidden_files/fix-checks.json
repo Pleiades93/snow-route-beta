@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "2d12a1469a07f10993097441045d451efde09434e84407bd040980ef6362f897",
+  "canonical_registry_sha256": "edfa9ff8381d1389462a9ccdce852c66265258ec2c3ea5a0e12ce1526d5b9ce1",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -643,7 +643,7 @@
    "file": "parts/app4.js",
    "fix": "The backup envelope stays format v2 ({app, v: 2, at, routes}) \u2014 restores judge files by it; a silent shape change strands every backup Andrew has saved.",
    "id": "beta-backup-v2-shape",
-   "pattern": "const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };",
+   "pattern": "const o = /** @type {BackupV2} */ ({ app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes });",
    "type": "grep_present"
   },
   {
@@ -1991,7 +1991,7 @@
    "file": "parts/app4.js",
    "fix": "The chime sound table exists (CHIME_SOUNDS, Beta 1.111): the completion chime's sounds are data in one table, not scattered literals.",
    "id": "beta-1111-chime-sounds",
-   "pattern": "const CHIME_SOUNDS = {",
+   "pattern": "const CHIME_SOUNDS = /** @type {Record<string,{name:string,desc:string}>} */ ({",
    "type": "grep_present"
   },
   {
@@ -2209,7 +2209,7 @@
    "file": "parts/data.js",
    "fix": "Route packs LIVE IN data.js (ROUTE_PACKS, Beta 1.117 F1): pack data is a data file's job \u2014 geometry and packs were eval-time code before separation.",
    "id": "sep-packs-live-in-data",
-   "pattern": "const ROUTE_PACKS = [{",
+   "pattern": "const ROUTE_PACKS = /** @type {RoutePack[]} */ ([{",
    "type": "grep_present"
   },
   {
@@ -2882,7 +2882,7 @@
    "file": "parts/create-packs.js",
    "fix": "normalizePack walks the ONE PACK_FIELDS list (Beta 1.131): which fields a pack may carry is a single list shared by create, restore and save \u2014 a field known to one path and not another is a field restore silently drops.",
    "id": "packfields-1131-normalize-walks-list",
-   "pattern": "for (const f of PACK_FIELDS) { if (f in cleaned) pack[f] = cleaned[f];",
+   "pattern": "for (const f of PACK_FIELDS) { if (f in cleaned) pack[/** @type {keyof RoutePack} */ (f)] = cleaned[f];",
    "type": "grep_present"
   },
   {
@@ -4421,7 +4421,7 @@
    "fix": "Every backup carries the Settings toggles (Beta 1.166): backupObj reads the settings record with the same strictness as the night pair and attaches it additively as the envelope's settings field - old backups without it leave device settings untouched, and a failed settings read fails the whole export, never a silent drop.",
    "fix_id": "beta-1166-storage",
    "id": "backup-settings-field",
-   "pattern": "o.settings = stg;",
+   "pattern": "o.settings = /** @type {string} */ (stg);",
    "type": "grep_present"
   },
   {
@@ -6754,7 +6754,7 @@
    "fix": "Primaries storage completion (PR #65, merge cc0fd6796e97a105d136e24fed3fca66f756d742; rollback: revert the merge -> 70dd4572). Andrew's override (2026-11-15) of the Beta 1.205 persisted-field exception: the stored route-pack field is 'primaries' ONLY - no 'main'/'mains' aliases anywhere. These probes REPLACE primaries1205-stored-field-translation and primaries1205-normalizepack-aliases, which pinned the retired exception (buildGeometry translating pack.main; normalizePack accepting three keys). [Re-pinned 2026-11-20 by correct-phase3-a: Beta 1.259 added the 'ends' field to the writer's cleaned pack object - the pin follows it; the primaries claim is unchanged.]",
    "fix_id": "primaries-rename-1205",
    "id": "primaries1205-writer-primaries",
-   "pattern": "const cleaned = { name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference, ends };",
+   "pattern": "const cleaned = /** @type {Record<string,any>} */ ({ name, area, primaries, spot: {}, tileNames: [...tileSet], box, roads: rc.roads, reference, ends });",
    "type": "grep_present"
   },
   {
@@ -8974,7 +8974,7 @@
    "fix": "Beta 1.227 (PR #105, merge 8a62af4c). The create bar's Glyph Neue payloads live in the create-specific map.",
    "fix_id": "search-bar-1227",
    "id": "searchbar1227-glyph-map",
-   "pattern": "const GLYPH_CREATE = {",
+   "pattern": "const GLYPH_CREATE = /** @type {Record<string,{d:string,n:string}>} */ ({",
    "type": "grep_present"
   },
   {
@@ -12725,7 +12725,7 @@
    "id": "arch8-restore-doorway",
    "type": "grep_present",
    "file": "parts/app4.js",
-   "pattern": "function restoreBackup(parsed) { const planned = RESTORE.plan(parsed);",
+   "pattern": "function restoreBackup(parsed) { const planned = /** @type {Promise<any>} */ (RESTORE.plan(parsed));",
    "fix": "Architecture #8 (Beta 1.280): restoreBackup dispatches plan -> execute with NO intervening await of its own - a synchronously produced plan executes in the same tick, preserving the one-flow restore's suspension contract (it suspended only at the created-route store reads; the restore drives read the outcome toast synchronously). If this probe fails, check whether an unconditional await crept back into the doorway.",
    "added": "2026-11-23",
    "fix_id": "arch8-restore-1280"

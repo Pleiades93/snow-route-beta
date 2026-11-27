@@ -9,6 +9,9 @@ surface.
 S1 type-safety round (2026-11-27): parts/ changed by JSDoc
 annotation only - no surface, element or behaviour changed. Map
 reviewed against the change; no update needed.
+Stage 2a (app4, create-packs join the type check; data and app5
+touched by a cast and whitespace only): same verdict, no update
+needed.
 
 ## The snow rule (one rule, app-wide)
 

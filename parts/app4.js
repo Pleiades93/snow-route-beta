@@ -1,7 +1,9 @@
 
 // ===== EXPORT / BACKUP / RESTORE (production showX model: one panel, four modes) =====
-function fmtStamp(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + fmtClock(d); }
+/** @param {string} iso @returns {string} */
+function fmtStamp(iso) { const d = /** @type {any} */ (new Date(iso)); return isNaN(d) ? '' : d.toLocaleDateString() + ' ' + fmtClock(d); }
 function buildReport() {
+  /** @param {Record<string,string>} m @returns {(a: string, b: string) => number} */
   const byTime = m => (a, b) => String(m[a] || '').localeCompare(String(m[b] || ''));
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
   const L = ['Snow Route: snow log', 'Exported: ' + fmtStamp(new Date().toISOString()), 'Completed: ' + doneSet.size + ' of ' + STREETNAMES.length]; // the total derives from the route's street list
@@ -24,11 +26,13 @@ function buildReport() {
   return L.join('\n');
 }
 function buildGpx() { // segmentation (gap rule, session-start splits, the marker walk) lives in trailSegments (app1); this consumer only renders GPX tracks
+  /** @param {TrailPoint} p @returns {string} */
   const pt = p => '<trkpt lat="' + p[0] + '" lon="' + p[1] + '"><time>' + new Date(p[2] * 1000).toISOString() + '</time></trkpt>\n';
   return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Snow Route Beta"><trk><name>Snow Route trail</name><trkseg>\n' + trailSegments(trail,
     trailSessions).map(seg => seg.map(pt).join('')).join('</trkseg><trkseg>\n') + '</trkseg></trk></gpx>';
 }
 let xMode = 'menu';
+/** @param {string} mode */
 function showX(mode) { // the backup pane is a menu tree, not a form; Backup (JSON)'s save prompt IS the share
   xMode = mode;
   const menu = mode === 'menu', restore = mode === 'restore', text = mode === 'text';
@@ -51,33 +55,36 @@ $('xImpText').addEventListener('click', () => showX('text'));
 $('xImpFile').addEventListener('click', () => $('xFile').click());
 $('xFile').addEventListener('change', async () => { const f = $('xFile').files && $('xFile').files[0]; $('xFile').value = ''; if (!f) return; let t = ''; try { t = await f.text(); } catch (e) { return; } $('xText').value = t;
 doRestore(); }); // Import JSON: the picked file feeds the SAME restore path as pasted text - one validator, one verdict, no second door to keep honest
+/** @param {Blob} blob @param {string} name */
 function dl(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
+/** @param {RoutePack} pack @returns {SnapshotGeometry} */
 function packGeometry(pack) { // a pack's geometry built purely from its own data (the live builders, no live state touched)
   const roads = (pack && pack.roads) || {};
   const names = Object.keys(roads);
   const stretch = computeStretches(roads);
   return { names, set: new Set(names), stretch, samples: samplesFor(stretch, names) };
 }
+/** @param {boolean} [strict] @returns {Snap|null|undefined} */
 function snapForExport(strict) { // the route's snapshot, normalized (memory, else validated storage); strict reads return undefined on failure, never silent null
   if (!runStart) return null;
   if (runSnap) return BOARD.snapshotObject(runSnap, runStart); // Arch-2: the snapshot-object shape is the board module's one construction
   let rawSnap = null;
   if (strict) { const rs = rawRead(LS.snap); if (rs === RAW_READ_FAILED) return undefined; rawSnap = rs; } // through the shared rawRead - the strict failure mode (undefined) is unchanged
   else rawSnap = lsGet(LS.snap);
-  const pv = validateSnap(parseJ(rawSnap, null), runStart);
+  const pv = validateSnap(parseJ(/** @type {string} */ (rawSnap), null), runStart);
   return pv ? BOARD.snapshotObject(pv, runStart) : null;
 }
 // the envelope's one owner: strict reads storage raw and refuses on failure; recovery reads live memory, best-effort
 const ENVELOPE = {
   // format v2 (routes carry their own slots); reads stay raw: a failed read fails the whole export
-  /** @returns {object|null} */ strict() {
+  /** @returns {BackupV2|null} */ strict() {
     PERSIST.flush(true); // flush the buffered trail/coverage first - a backup must not lag the work it claims to hold
     // reconcile only when a save failed: memory is ahead, and a raw export would ship the old board
     if (routeLoaded && writePending('primary')) { const okPrim = saveAll().ok; if (!okPrim) return null; }
     if (writePending('trail') || writePending('aux') || writePending('sess') || writePending('fixlog')) return null; // the flush did not land - refuse the export rather than ship a valid-looking backup with stale trail/coverage inside
-    const routes = {};
+    const routes = /** @type {Record<string,BackupRoute>} */ ({});
     for (const p of ROUTE_PACKS) {
-      const rk = routeKeys(p.id); const data = {};
+      const rk = routeKeys(p.id); const data = /** @type {Record<string,any>} */ ({});
       for (const f of ROUTE_FIELDS) { const key = (activeRoute && p.id === activeRoute.id && LS[f] !== rk[f]) ? LS[f] : rk[f]; const v = rawRead(key); if (v === RAW_READ_FAILED) return null; if (v != null) data[f] = v; }
       // lifecycle rides explicitly: a run asserts its start string, no run asserts start: null; the snapshot rides along
       const isActive = !!(activeRoute && p.id === activeRoute.id && routeLoaded);
@@ -87,26 +94,27 @@ const ENVELOPE = {
         let snapObj = null;
         if (isActive) { snapObj = snapForExport(true); if (snapObj === undefined) return null; } // a snapshot read failure fails the whole export (B04 discipline) - never a valid-looking backup missing the snapshot
         // a non-active pack's snapshot validates against ITS OWN geometry
-        else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null; const pv = validateSnap(parseJ(rawSnap, null), +startStr, packGeometry(p)); if (pv) snapObj = BOARD.snapshotObject(pv, +startStr); }
+        else { const rawSnap = rawRead(rk.snap); if (rawSnap === RAW_READ_FAILED) return null;
+        const pv = validateSnap(parseJ(/** @type {string} */ (rawSnap), null), +startStr, packGeometry(p)); if (pv) snapObj = BOARD.snapshotObject(pv, +startStr); }
         if (snapObj) data.snap = JSON.stringify(snapObj);
       }
-      routes[p.id] = data;
+      routes[p.id] = /** @type {BackupRoute} */ (data);
     } // exports from the keys the route runs on: a legacy-fallback boot's fresh slot would emit an empty backup
     const night = rawRead(LS_GLOBAL.night); if (night === RAW_READ_FAILED) return null;
     const nightExp = rawRead(LS_GLOBAL.nightExp); if (nightExp === RAW_READ_FAILED) return null;
-    const o = { app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes };
+    const o = /** @type {BackupV2} */ ({ app: 'snowroute-backup', v: 2, at: new Date().toISOString(), routes });
     if (!upStoreComplete) return null; // created-route definitions ride from the verified store picture; a failed store read refuses the export outright
     if (Object.keys(userPackCache).length) o.userpacks = { ...userPackCache }; // created routes are Andrew's data - their definitions ride every backup
-    if (night != null) o.night = night;
-    if (nightExp != null) o.nightExp = nightExp; // the icon-pack choice no longer rides (one set: Glyph); the theme override and its expiry travel together
-    const stg = rawRead(SETTINGS_KEY); if (stg === RAW_READ_FAILED) return null; if (stg != null) o.settings = stg; // the Settings toggles ride every backup too, read with the same strictness as the night pair
-    const fx = rawRead(LS.fixlog); if (fx === RAW_READ_FAILED) return null; if (fx != null) o.fixlog = fx; // the fix log rides every backup too (same strictness) - it is the log's ONLY channel off the device
+    if (night != null) o.night = /** @type {string} */ (night);
+    if (nightExp != null) o.nightExp = /** @type {string} */ (nightExp); // the icon-pack choice no longer rides (one set: Glyph); the theme override and its expiry travel together
+    const stg = rawRead(SETTINGS_KEY); if (stg === RAW_READ_FAILED) return null; if (stg != null) o.settings = /** @type {string} */ (stg); // the Settings toggles ride every backup too, read with the same strictness as the night pair
+    const fx = rawRead(LS.fixlog); if (fx === RAW_READ_FAILED) return null; if (fx != null) o.fixlog = /** @type {string} */ (fx); // the fix log rides every backup too (same strictness) - it is the log's ONLY channel off the device
     return o;
   },
   // the recovery backup: in-memory state serialized directly - the exit for marks a refusing normal backup would strand
-  /** @returns {object|null} */ recovery() {
+  /** @returns {BackupV2|null} */ recovery() {
     if (!routeLoaded || !activeRoute) return null;
-    const data = {};
+    const data = /** @type {Record<string,any>} */ ({});
     const ser = BOARD.serialiseLive(); // Arch-2: the live board's stored strings come from the board module
     data.sides = ser.sides;
     data.done = ser.done;
@@ -125,7 +133,7 @@ const ENVELOPE = {
     { const fl = rawRead(routeKeys(activeRoute.id).flip); if (fl !== RAW_READ_FAILED && fl != null) data.flip = fl; } // a read that fails simply leaves the field out (the recovery export's best-effort mode)
     // definitions settle first: as stored, or re-validated from memory when unreadable (progress without one is rejected elsewhere)
     recoveryDisclosure = null;
-    let upsCarry = null; const excluded = new Set();
+    let upsCarry = /** @type {UserPacksRecord|null} */ (null); const excluded = new Set();
     if (upStoreComplete) upsCarry = { ...userPackCache };
     else { upsCarry = {}; const badNames = [];
       for (const pk of ROUTE_PACKS) { if (SHIPPED_PACK_IDS.has(pk.id)) continue;
@@ -134,17 +142,19 @@ const ENVELOPE = {
       if (badNames.length) recoveryDisclosure = badNames;
     }
     if (excluded.has(activeRoute.id)) return null; // the open route's definition cannot be carried: no honest recovery file exists, so the unavailable message is the truth
-    const routes = {}; routes[activeRoute.id] = data;
+    const routes = /** @type {Record<string,BackupRoute>} */ ({}); routes[activeRoute.id] = /** @type {BackupRoute} */ (data);
     for (const pk of ROUTE_PACKS) { if (pk.id === activeRoute.id || excluded.has(pk.id)) continue;
     const rk = routeKeys(pk.id);
-    const d = {};
+    const d = /** @type {Record<string,any>} */ ({});
     for (const f of ROUTE_FIELDS) { const v = rawRead(rk[f]); if (v !== RAW_READ_FAILED && v != null) d[f] = v; } if (d.start === undefined) d.start = null;
       // a non-active running route's snapshot rides too, validated on its geometry; a failed read leaves it out
-      if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) { const pv = validateSnap(parseJ(rawSnap, null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } }
-      if (Object.keys(d).length) routes[pk.id] = d; } // an untouched pack in a recovery file asserts idle like any complete backup
-    const o = { app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes };
+      if (d.start) { const rawSnap = rawRead(rk.snap); if (rawSnap !== RAW_READ_FAILED && rawSnap != null) {
+      const pv = validateSnap(parseJ(/** @type {string} */ (rawSnap), null), +d.start, packGeometry(pk)); if (pv) d.snap = BOARD.serialiseSnap(pv, +d.start); } }
+      if (Object.keys(d).length) routes[pk.id] = /** @type {BackupRoute} */ (d); } // an untouched pack in a recovery file asserts idle like any complete backup
+    const o = /** @type {BackupV2} */ ({ app: 'snowroute-backup', v: 2, recovery: true, at: new Date().toISOString(), routes });
     if (upsCarry && Object.keys(upsCarry).length) o.userpacks = upsCarry; // definitions ride recovery too: from the strict record read, or validated memory when unreadable
-    { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = nt; const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = ne; } }
+    { const nt = rawRead(LS_GLOBAL.night); if (nt !== RAW_READ_FAILED) { if (nt != null) o.night = /** @type {string} */ (nt);
+    const ne = rawRead(LS_GLOBAL.nightExp); if (ne !== RAW_READ_FAILED && ne != null) o.nightExp = /** @type {string} */ (ne); } }
 
     o.settings = JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound }); // the Settings toggles ride recovery too - from the LIVE settings object, in exactly the record shape saveSettings writes
     if (fixLog.length) o.fixlog = JSON.stringify(fixLogEncodeSessions(fixLog)); // the fix log rides recovery too, from the live log, in exactly saveFixLog's record shape (e3 form)
@@ -153,7 +163,7 @@ const ENVELOPE = {
 };
 function backupObj() { return ENVELOPE.strict(); } // the doorway - the strict policy is ENVELOPE.strict (above)
 function buildBackup() { const o = backupObj(); return o ? JSON.stringify(o, null, 1) : null; }
-let recoveryDisclosure = null; // Routes excluded from the last recovery build.
+let recoveryDisclosure = /** @type {string[]|null} */ (null); // Routes excluded from the last recovery build.
 function recoveryObj() { return ENVELOPE.recovery(); } // the doorway - the recovery policy is ENVELOPE.recovery (above)
 function buildRecovery() { const o = recoveryObj(); return o ? JSON.stringify(o, null, 1) : null; }
 // downloadBackup follows the one-button rule: a build failure is the recovery fallback, never a dead-end refusal
@@ -164,11 +174,16 @@ function clearTrailAll() { // the clearing stays as a callable piece (guard, sto
   if (okTrailClr && okSessClr) { markClean('trail'); PERSIST.noteWrite('trail'); } // the trail window is PERSIST's - the stamp goes through its doorway, not a foreign write
   else if (!okTrailClr) markDirty('trail');
 }
+/** @param {any} parsed @param {RoutePack[]} [packs] @returns {number} */
 function countUnknownNames(parsed, packs = ROUTE_PACKS) { // unknown-name count: from the RAW backup, each name once, judged per route against its own pack's streets
   const bad = new Set();
+  /** @param {string} id @returns {Set<string>} */
   const setFor = id => { const p = packs.find(x => x.id === id); return p ? new Set(Object.keys(p.roads || {})) : new Set(); }; // use the definition that will govern the destination, including newly added routes
+  /** @param {any} data @param {Set<string>} set */
   const scanData = (data, set) => {
+    /** @param {any} n */
     const noteName = n => { if (typeof n === 'string' && !set.has(n)) bad.add(n); };
+    /** @param {any} o */
     const fromObj = o => { if (o && typeof o === 'object' && !Array.isArray(o)) for (const k of Object.keys(o)) noteName(k); };
     if (!data || typeof data !== 'object') return;
     const done = parseJ(data.done, null); if (Array.isArray(done)) { for (const n of done) noteName(n); } else fromObj(done);
@@ -179,11 +194,12 @@ function countUnknownNames(parsed, packs = ROUTE_PACKS) { // unknown-name count:
     const hist = parseJ(data.hist, null); if (Array.isArray(hist)) for (const h of hist) { if (h && typeof h === 'object') { if (Array.isArray(h.items)) { for (const n of h.items) noteName(n); } else fromObj(h.items); } }
   };
   if (parsed.v === 2 && parsed.routes && typeof parsed.routes === 'object') { for (const id of Object.keys(parsed.routes)) scanData(parsed.routes[id], setFor(id)); }
-  else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = {};
-  for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[LEGACY_KEYS[f]] != null) lf[f] = parsed.data[LEGACY_KEYS[f]]; } scanData(lf, setFor('5w'));
+  else if (parsed.v === 1 && parsed.data && typeof parsed.data === 'object') { const lf = /** @type {Record<string,any>} */ ({});
+  for (const f of Object.keys(LEGACY_KEYS)) { if (parsed.data[/** @type {Record<string,string>} */ (LEGACY_KEYS)[f]] != null) lf[f] = parsed.data[/** @type {Record<string,string>} */ (LEGACY_KEYS)[f]]; } scanData(lf, setFor('5w'));
   }
   return bad.size;
 }
+/** @param {any} raw @returns {string|null} */
 function canonicalSettings(raw) { // the one settings validator: the loader's rules applied and re-serialized canonically; unknown values fall back, never refuse
   if (typeof raw !== 'string') return null;
   let p; try { p = JSON.parse(raw); } catch (e) { return null; }
@@ -192,6 +208,7 @@ function canonicalSettings(raw) { // the one settings validator: the loader's ru
     chime: typeof p.chime === 'boolean' ? p.chime : SETTINGS_DEF.chime,
     chimeSound: CHIME_KEYS.includes(p.chimeSound) ? p.chimeSound : SETTINGS_DEF.chimeSound });
 }
+/** @param {any} raw @returns {string|null} */
 function canonicalFixLog(raw) { // the fixlog validator: loader rules, canonical e3 re-encode, both caps; refusal data is retained, never silently lost
   if (typeof raw !== 'string') return null;
   const parsed = parseJ(raw, null);
@@ -213,29 +230,38 @@ function canonicalFixLog(raw) { // the fixlog validator: loader rules, canonical
   return out;
 }
 // merge against raw resident records; unchanged records keep their exact strings; unmergeable shapes fail closed
+/** @param {[string,string][]} entries @param {RoutePack[]} allPacks @returns {[string,string|null][]} */
 function mergeRestoreEntries(entries, allPacks) {
+  /** @param {any} o @param {string} k @returns {boolean} */
   const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-  const incoming = new Map(entries);
-  const merged = new Map();
+  const incoming = /** @type {Map<string,any>} */ (new Map(entries));
+  const merged = /** @type {Map<string,string|null>} */ (new Map());
+  /** @param {string} key @returns {string|null} */
   const read = key => {
     const raw = rawRead(key);
     if (raw === RAW_READ_FAILED) throw new Error(key);
-    return raw;
+    return /** @type {string|null} */ (raw);
   };
+  /** @param {any} v @returns {boolean} */
   const object = v => v && typeof v === 'object' && !Array.isArray(v);
+  /** @param {string} key @param {string|null} raw @param {(v: any) => boolean} accepts @returns {any} */
   const decode = (key, raw, accepts) => {
     const value = parseJ(raw, null);
     if (!accepts(value)) throw new Error(key);
     return value;
   };
+  /** @param {any} entry @returns {string|null} */
   const noteId = entry => entry && typeof entry.k === 'string'
     ? JSON.stringify([entry.k, entry.at, own(entry, 'text'), entry.text]) : null;
+  /** @param {any} entry @returns {string|null} */
   const cleanId = entry => entry && typeof entry.at === 'string' && Number.isFinite(Date.parse(entry.at))
     && entry.items && typeof entry.items === 'object' && Number.isFinite(entry.runId) && entry.runId > 0
     ? JSON.stringify([entry.at, entry.runId]) : null;
   // a no-ID legacy entry is identified by its full stamped data
+  /** @param {any} entry @returns {string|null} */
   const histId = entry => cleanId(entry) ?? (entry && typeof entry === 'object' && typeof entry.at === 'string'
     && Number.isFinite(Date.parse(entry.at)) ? 'legacy:' + upCanon(entry) : null);
+  /** @param {any[]} current @param {any[]} backup @param {(entry: any) => string|null} identity @returns {any[]} */
   const newEntries = (current, backup, identity) => {
     const seen = new Set(current.map(identity));
     return backup.filter(entry => {
@@ -245,16 +271,17 @@ function mergeRestoreEntries(entries, allPacks) {
       return true;
     });
   };
-  const fields = ['times', 'via', 'cov', 'notes'];
+  const fields = /** @type {('times'|'via'|'cov'|'notes')[]} */ (['times', 'via', 'cov', 'notes']);
   for (const pack of allPacks) {
     const rk = routeKeys(pack.id);
-    if (![...ROUTE_FIELDS, 'snap'].some(f => incoming.has(rk[f]))) continue;
+    if (![...ROUTE_FIELDS, 'snap'].some(f => incoming.has(/** @type {Record<string,string>} */ (rk)[f]))) continue;
     if (pack.id === '5w' && read(rk.mig) === null && read(LEGACY_KEYS.sides) !== null) {
       // newer values can linger in legacy keys after an incomplete migration; a slot write would mask them
       throw new Error('Route 5W migration pending');
     }
     const liveStart = read(rk.start);
-    const cleanTrail = raw => JSON.parse(raw).filter(q => Array.isArray(q) && q.length === 3
+    /** @param {string} raw @returns {any[]} */
+    const cleanTrail = raw => /** @type {any[]} */ (JSON.parse(raw)).filter(q => Array.isArray(q) && q.length === 3
       && q.every(Number.isFinite) && q[2] >= 946684800 && q[2] <= 4102444800
       && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180);
 
@@ -274,15 +301,16 @@ function mergeRestoreEntries(entries, allPacks) {
         const resSides = parseJ(read(rk.sides), null);
         const resP = resSides && typeof resSides === 'object' ? (resSides.p || resSides) : null;
         const resDoneRaw = parseJ(read(rk.done), []);
+        /** @param {any} v @returns {boolean} */
         const marked = v => v === 1 || v === 2 || v === 3;
         const hasProgress = (Array.isArray(resDoneRaw) && resDoneRaw.length > 0)
           || (resP && Object.values(resP).some(a => Array.isArray(a) && a.some(marked)));
         if (snapObj && snapObj.pieces && hasProgress) {
           const G = packGeometry(pack);
           const resT = (resSides && resSides.t) || {};
-          const pieces = {}, pieceTimes = {};
+          const pieces = /** @type {Record<string,any>} */ ({}), pieceTimes = /** @type {Record<string,any>} */ ({});
           for (const n of G.names) {
-            const sp = snapObj.pieces[n] || [], st = snapObj.pieceTimes[n] || [];
+            const sp = /** @type {any[]} */ (snapObj.pieces[n] || []), st = /** @type {any[]} */ (snapObj.pieceTimes[n] || []);
             const rp = (resP && resP[n]) || [], rt = sanitizePieceTimes(resT[n], G.stretch[n].parts.length);
             pieces[n] = sp.map((v, i) => (marked(rp[i]) ? rp[i] : v));
             pieceTimes[n] = sp.map((v, i) => (marked(rp[i]) ? rt[i] : (st[i] || [null, null])));
@@ -300,13 +328,13 @@ function mergeRestoreEntries(entries, allPacks) {
           incoming.set(rk.snap, BOARD.serialiseSnap({ pieces, pieceTimes, done, times, via, cov }, start));
         }
       }
-      const current = cluster.map(f => read(rk[f]));
+      const current = cluster.map(f => read(/** @type {Record<string,string>} */ (rk)[f]));
       // A finished archive with this run stamp makes boot reconciliation
       // interpret the imported start as an interrupted finish.
       if (!(Array.isArray(hist) && hist.some(h => h && +h.runId === start))
-        && cluster.every((f, i) => current[i] === null || current[i] === incoming.get(rk[f]))) {
+        && cluster.every((f, i) => current[i] === null || current[i] === incoming.get(/** @type {Record<string,string>} */ (rk)[f]))) {
         for (const [i, f] of cluster.entries()) {
-          if (current[i] === null && incoming.has(rk[f])) merged.set(rk[f], incoming.get(rk[f]));
+          if (current[i] === null && incoming.has(/** @type {Record<string,string>} */ (rk)[f])) merged.set(/** @type {Record<string,string>} */ (rk)[f], incoming.get(/** @type {Record<string,string>} */ (rk)[f]));
         }
       }
     }
@@ -319,14 +347,14 @@ function mergeRestoreEntries(entries, allPacks) {
     if (incoming.has(rk.hist)) {
       const raw = read(rk.hist);
       const current = raw === null ? [] : decode(rk.hist, raw, Array.isArray);
-      const backup = JSON.parse(incoming.get(rk.hist));
+      const backup = /** @type {any[]} */ (JSON.parse(incoming.get(rk.hist)));
       const start = +(liveStart || merged.get(rk.start));
       const candidates = backup.filter(h => !(start && h && +h.runId === start));
       // Legacy entries match by fingerprint (histId); only exact duplicates skip.
       const additions = newEntries(current, candidates, histId);
       if (additions.length || (raw === null && !backup.length)) {
         // HIST consumes chronological order, reconciling from the raw tail: insert in time order, residents stay in place
-        const result = [];
+        const result = /** @type {any[]} */ ([]);
         if (current.length) additions.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
         let next = 0;
         for (const h of current) {
@@ -344,6 +372,7 @@ function mergeRestoreEntries(entries, allPacks) {
       const current = raw === null ? {} : decode(key, raw, object);
       const backup = JSON.parse(incoming.get(key));
       // The text note is a singleton per street: a backup version never joins a resident one.
+      /** @param {any[]} list @param {boolean} resident @returns {any[]} */
       const noteGuard = (list, resident) => {
         let taken = resident;
         return list.filter(e => { if (e && e.k === 'note') { if (taken) return false; taken = true; } return true; });
@@ -360,7 +389,7 @@ function mergeRestoreEntries(entries, allPacks) {
       if (raw === null) {
         if (f === 'notes') {
           let dropped = false;
-          const guardedObj = {};
+          const guardedObj = /** @type {Record<string,any>} */ ({});
           for (const [n, v] of Object.entries(backup)) { const g = Array.isArray(v) ? noteGuard(v, false) : v; if (Array.isArray(v) && g.length !== v.length) dropped = true; guardedObj[n] = g; }
           merged.set(key, dropped ? JSON.stringify(guardedObj) : incoming.get(key));
         } else merged.set(key, incoming.get(key));
@@ -370,6 +399,7 @@ function mergeRestoreEntries(entries, allPacks) {
 
     if (incoming.has(rk.done) || incoming.has(rk.sides)) {
       const rawSides = read(rk.sides);
+      /** @param {string|null} raw @param {boolean} resident @returns {{p:any,t:any,wrapped:boolean,raw:any}} */
       const split = (raw, resident) => {
         const v = decode(rk.sides, raw, object);
         if (!v.p) return { p: v, t: {}, wrapped: false, raw: v };
@@ -378,6 +408,7 @@ function mergeRestoreEntries(entries, allPacks) {
       };
       const empty = { p: {}, t: {}, wrapped: true, raw: {} };
       const current = rawSides === null ? empty : split(rawSides, true);
+      /** @param {{p: any, t: any}} side @param {string} name @returns {boolean} */
       const hasSide = (side, name) => own(side.p, name) || own(side.t, name);
       const hasBackupSides = incoming.has(rk.sides);
       const backup = hasBackupSides ? split(incoming.get(rk.sides), false) : empty;
@@ -388,6 +419,7 @@ function mergeRestoreEntries(entries, allPacks) {
       const done = new Set(currentDone);
 
       // An entry with no marks and no stamps is saver filler, not a record.
+      /** @param {any} side @param {string} name @returns {boolean} */
       const entryMarked = (side, name) => {
         const bp = side.p[name], bt = side.t[name];
         return (Array.isArray(bp) && bp.some(v => v))
@@ -403,6 +435,7 @@ function mergeRestoreEntries(entries, allPacks) {
       }
       if (incoming.has(rk.done)) {
         const { set, stretch } = packGeometry(pack);
+        /** @type {Record<string,any>|undefined} */
         let times;
         const added = [];
         const backupDone = JSON.parse(incoming.get(rk.done));
@@ -431,7 +464,7 @@ function mergeRestoreEntries(entries, allPacks) {
 
     // The outstanding finish cleanup could erase merged notes/coverage at
     // boot. Discharge only an armed obligation for a slot actually changed.
-    if ([...ROUTE_FIELDS, 'snap'].some(f => merged.has(rk[f])) && read(rk.finclean) !== null) merged.set(rk.finclean, null);
+    if ([...ROUTE_FIELDS, 'snap'].some(f => merged.has(/** @type {Record<string,string>} */ (rk)[f])) && read(rk.finclean) !== null) merged.set(rk.finclean, null);
   }
 
   if (incoming.has(SETTINGS_KEY)) {
@@ -458,10 +491,11 @@ function mergeRestoreEntries(entries, allPacks) {
 }
 // two halves: the planner validates and writes nothing; the coordinator transacts (fence, snapshot, writes, rollback, commit, report)
 const RESTORE = {
-  /** @param {*} parsed @returns {object|Promise<object|null>|null} */ plan(parsed) {
+  /** @param {*} parsed @returns {any} */ plan(parsed) {
     if (!parsed || parsed.app !== 'snowroute-backup') { return null; }
-    const FIELD_SHAPES = { done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' };
-    const entries = []; // validated backup candidates, before merge
+    const FIELD_SHAPES = /** @type {Record<string,string>} */ ({ done: 'arr', times: 'obj', hist: 'arr', notes: 'obj', via: 'obj', trail: 'arr', cov: 'obj', sides: 'obj', sess: 'arr' });
+    const entries = /** @type {[string,any][]} */ ([]); // validated backup candidates, before merge
+    /** @param {string} targetKey @param {string} field @param {any} v @param {string} label @param {Set<string>|null} [nameSet] @returns {boolean} */
     const pushField = (targetKey, field, v, label, nameSet) => {
       if (typeof v !== 'string') { return false; }
       if (field === 'start') { // the start validates semantically (epoch-ms digits, the loader's band): a crafted '1' once became a phantom run
@@ -482,8 +516,8 @@ const RESTORE = {
       entries.push([targetKey, v]); return true;
     };
     let snapDropped = false;
-    const deadSkipped = [];
-    let restoredPacks = null; // the created-route definitions this backup carries, validated before anything is written
+    const deadSkipped = /** @type {string[]} */ ([]);
+    let restoredPacks = /** @type {UserPacksRecord|null} */ (null); // the created-route definitions this backup carries, validated before anything is written
     let allPacks = ROUTE_PACKS; // the routes this restore knows about: the runtime list, plus restoredPacks once validated
     if (parsed.v === 2) {
       if (!parsed.routes || typeof parsed.routes !== 'object' || Array.isArray(parsed.routes)) { return null; }
@@ -498,7 +532,7 @@ const RESTORE = {
         }
       }
     }
-    let packPriors = null;
+    let packPriors = /** @type {Record<string,any>|null} */ (null);
     const finishPlan = () => {
       if (parsed.v === 2) {
         for (const id of Object.keys(parsed.routes)) {
@@ -550,7 +584,7 @@ const RESTORE = {
     };
     const packIds = Object.keys(restoredPacks || {});
     if (packIds.length) return (async () => {
-      const stored = {};
+      const stored = /** @type {Record<string,any>} */ ({});
       for (const rid of packIds) {
         const cur = await upGet(rid);
         if (cur === UP_READ_FAILED) { return null; }
@@ -558,7 +592,7 @@ const RESTORE = {
       }
       const legacy = readUserPacks();
       if (legacy === null) { return null; }
-      const additions = {};
+      const additions = /** @type {UserPacksRecord} */ ({});
       packPriors = {};
       allPacks = ROUTE_PACKS.slice();
       for (const rid of packIds) {
@@ -583,12 +617,12 @@ const RESTORE = {
     restoredPacks = null;
     return finishPlan();
   },
-  /** @param {object} plan @returns {Promise<void>} */ async execute(plan) {
-    const entries = plan.entries, restoredPacks = plan.restoredPacks, packPriors = plan.packPriors, SCOPE = plan.scope;
+  /** @param {any} plan @returns {Promise<void>} */ async execute(plan) {
+    const entries = plan.entries, restoredPacks = plan.restoredPacks, packPriors = plan.packPriors, SCOPE = /** @type {string[]} */ (plan.scope);
     PERSIST.fenceUp(); // the fence rises before the snapshot: a flush landing unfenced writes records rollback would silently discard
     // failure exits end here: fence down, flags re-armed - fenced work lives only in memory until flushed
     const restoreFenceDown = () => { PERSIST.fenceDown(); markDirty('trail'); markDirty('sess'); markDirty('aux'); markDirty('primary'); markDirty('fixlog'); };
-    const snap = {}; let snapOk = true;
+    const snap = /** @type {Record<string,any>} */ ({}); let snapOk = true;
     for (const k of SCOPE) { const v = rawRead(k); if (v === RAW_READ_FAILED) snapOk = false; else snap[k] = v; }
     if (!snapOk) { restoreFenceDown(); return; }
     const rollback = () => { // the restore-all rollback on the verified primitives - every scoped key put back (or removed) and read back
@@ -596,7 +630,7 @@ const RESTORE = {
       for (const k of SCOPE) { const r = snap[k] === null ? txDel(k) : txSet(k, snap[k]); if (!r.ok) okBack = false; }
       return okBack;
     };
-    const packsWritten = [];
+    const packsWritten = /** @type {string[]} */ ([]);
     const rollbackPacks = async () => { // undo only verified store transactions owned by this restore, including inserts whose read-back failed
       let okBack = true;
       for (const rid of packsWritten) { const r = packPriors[rid] === null ? await upDel(rid) : await upPut(rid, packPriors[rid]); if (!r) okBack = false; }
@@ -642,7 +676,11 @@ const RESTORE = {
     setTimeout(() => location.reload(), 600);
   },
 };
-function restoreBackup(parsed) { const planned = RESTORE.plan(parsed); if (!planned) return Promise.resolve(); if (typeof planned.then === 'function') return planned.then(plan => (plan ? RESTORE.execute(plan) : undefined)); return RESTORE.execute(planned); } // Beta 1.280: the doorway - RESTORE.plan validates and plans, RESTORE.execute transacts (above). The dispatch adds NO suspension of its own: a plan the planner produced synchronously is executed in the same tick, exactly as the one-flow restore ran (the RESTORE header carries the contract). Production doRestore semantics, unchanged: validate EVERYTHING before writing; snapshot; write + verify each; verified rollback on any failure.
+/** @param {any} parsed @returns {Promise<void>} */
+function restoreBackup(parsed) { const planned = /** @type {Promise<any>} */ (RESTORE.plan(parsed));
+if (!planned) return Promise.resolve();
+if (typeof planned.then === 'function') return planned.then(plan => (plan ? RESTORE.execute(plan) : undefined));
+return RESTORE.execute(planned); } // the doorway: plan validates, execute transacts; a synchronous plan executes in the same tick
 let restoreInFlight = false; // single-flight: a second tap or file pick mid-restore must not start a competing restore
 function doRestore() {
   if (restoreInFlight) return;
@@ -654,9 +692,11 @@ function doRestore() {
 $('xImp').addEventListener('click', () => doRestore());
 
 // ===== PRELOAD (offline route maps) =====
+/** @param {number} lng @param {number} lat @param {number} z @returns {number[]} */
 function tileNums(lng, lat, z) { const n = 2 ** z; const x = Math.floor((lng + 180) / 360 * n); const la = lat * Math.PI / 180; const y = Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n); return [x, y]; }
 let preloadRunning = false; // single-flight - a second tap while a download runs starts no competing job
 const OFFLINE_PACK_CAP_BYTES = 250 * 1024 * 1024; // the pack's disclosed budget (250 MB), the cap's one home: preload and Status both weigh against it
+/** @param {number} n @returns {string} */
 function fmtStoreSize(n) { // sizes in plain form (whole KB/MB, one decimal GB); unmeasured formats as nothing, never invented
   if (!(n >= 0)) return '';
   if (n < 1024) return n + ' B';
@@ -664,6 +704,7 @@ function fmtStoreSize(n) { // sizes in plain form (whole KB/MB, one decimal GB);
   if (n < 1024 * 1024 * 1024) return Math.round(n / (1024 * 1024)) + ' MB';
   return (n / (1024 * 1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' GB';
 }
+/** @param {any} src @param {RoutePack} pk @param {number} budget @returns {{urls:string[],budget:number}} */
 function packTileEnum(src, pk, budget) { // the one tile enumeration per (source, pack): zoom policy, span budgeting and z15 margins live here only
   const urls = [];
   const maxz = Math.min(14, src.maxzoom || 14);
@@ -687,6 +728,7 @@ function packTileEnum(src, pk, budget) { // the one tile enumeration per (source
   if (span15 <= budget) { budget -= Math.max(0, span15); for (let x = cx0; x <= cx1; x++) for (let y = cy1; y <= cy0; y++) for (const t of src.tiles) urls.push(t.replace('{z}', 15).replace('{x}', x).replace('{y}', y)); } } }
   return { urls, budget };
 }
+/** @param {RoutePack} pk @returns {Set<string>} */
 function packTileUrls(pk) { // one pack's tiles (its area z8-14 plus its z15 core); sprites and glyphs belong to no route
   // the enumeration is budgeted (PACK_TILES_MAX per pack, spans counted before looping): a worldwide box means ~356.8M iterations
   const urls = new Set();
@@ -702,8 +744,9 @@ function packTileUrls(pk) { // one pack's tiles (its area z8-14 plus its z15 cor
   }
   return urls;
 }
+/** @returns {string[]} */
 function preloadUrlList() { // the set: the union over every known pack, from pack data only, identical before any route is chosen
-  const urls = new Set();
+  const urls = /** @type {Set<string>} */ (new Set());
   const budgets = new Map(); // the budget travels in a Map keyed by the pack (the nesting is style > source > pack)
   for (const key of ['day', 'night']) {
     const stj = GL_STYLES[key]; // the styles are embedded objects (pmstyles.js) - already in the shell, nothing to fetch
@@ -765,6 +808,7 @@ const list = preloadUrlList();
     packSizes.delete(req.url);
     } } catch (e) {} } } } catch (e) {} } // the prune runs only under the pruneProven gate computed above the manifest: an unproven registration read preserves the cache whole
     // a retry fetches only census-missing entries; a complete pack's press stays the full refresh
+    /** @param {string} u @returns {string} */
     const hrefOf = u => { try { return new URL(u).href; } catch (e) { return u; } };
     const missing = list.filter(u => !packSizes.has(hrefOf(u)));
     const targets = missing.length ? missing : list;
@@ -777,6 +821,7 @@ const list = preloadUrlList();
     bar.classList.add('on'); paint();
     const sweep = setInterval(() => { if (shown < done) { shown = Math.min(done, shown + Math.max(1, Math.ceil((done - shown) / 5))); paint(); } }, 30);
     // cache 'reload': a download must not be answered from the pack being refreshed (the worker honours it)
+    /** @param {string} u @returns {Promise<void>} */
     const preFetch = async (u) => { if (capHit) return; const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 30000); try { const res = await fetch(u, { mode: 'cors', signal: ctl.signal, cache: 'reload' }); if (res && res.ok && packCache) { let sz = -1; try { sz = (await res.clone().blob()).size; } catch (e) { sz = -1; } // Beta 1.183 (storage audit §3 item 4): the write is WEIGHED before it lands - a file that would carry the pack over OFFLINE_PACK_CAP_BYTES is refused and stops the download (capHit ends the workers below), so the pack can never grow past the cap through this, its only, write path; a GROWING file's extra bytes are RESERVED in packBytes synchronously before the write is awaited, so the five workers cannot all pass the check against the same stale total (Codex P2, PR #21), a failed write releases its reservation, and a SHRINKING replacement reserves nothing and frees its bytes only after its write succeeds - freeing them earlier would let another worker spend headroom that a failed shrink silently takes back; a file whose size cannot be read is stored unweighed rather than lost
         let href = u; try { href = new URL(u).href; } catch (e) {}
         if (sz >= 0) { const prevSz = packSizes.get(href) || 0;
@@ -810,10 +855,12 @@ const list = preloadUrlList();
 
 // ===== UPDATE CHECK =====
 let updState = ''; // state: '' unchecked this session, 'ok' current, 'avail' newer served - in-memory on purpose, never stale
-let storagePersist = null; // the persist() answer, recorded: true exempt, false refused, null no answer; read at pane open, never persisted
+let storagePersist = /** @type {boolean|null} */ (null); // the persist() answer, recorded: true exempt, false refused, null no answer; read at pane open, never persisted
 // the version ordering the update check compares by - two numeric components, nothing else parses
+/** @param {any} s @returns {number[]|null} */
 function parseVerLabel(s) { const m = typeof s === 'string' ? s.trim().match(/^Beta (\d+)\.(\d+)$/) : null; return m ? [Number(m[1]), Number(m[2])] : null; }
 // the one version probe: the worker answers updprobe from the network itself, never its cached shell
+/** @param {any} [signal] @returns {Promise<string|null>} */
 async function probeServedVer(signal) {
   const r = await fetch(location.pathname + '?updprobe=1&v=' + Date.now(), { cache: 'no-store', signal });
   if (!r.ok) return null;
@@ -845,7 +892,7 @@ $('updBtn').addEventListener('click', async ev => {
 try { if (/(^|[?&])updnav=/.test(location.search)) window.history.replaceState(null, '', location.pathname); } catch (e) {}
 
 // ===== FAN / NIGHT / FLIP / HOME =====
-const ICONS = { // the mint table ships empty: renderIcons fills it from the active pack at boot, before first paint
+const ICONS = /** @type {{[key:string]:string}} */ ({ // the mint table ships empty: renderIcons fills it from the active pack at boot, before first paint
   streets: '', /* the straight-on road: a straight slab with centre dashes (Andrew's pick) */
   pace: '',
   routes: '', /* the route-path glyph for the Routes tab (Andrew's pick) */
@@ -862,9 +909,9 @@ const ICONS = { // the mint table ships empty: renderIcons fills it from the act
   pin: '', /* the Streets row jump-to pin */
   note: '', /* the note glyph for rows and the selection pop-up */
   exp: ''
-};
+});
 // Glyph Neue: Icons8 silhouettes filled through each PNG's alpha mask (near-black by day, white at night)
-const GLYPH_ICONS = {
+const GLYPH_ICONS = /** @type {Record<string,{d:string,n:string}>} */ ({
   gps: { d: 'data:image/webp;base64,@@GLYPH:icons-gps-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-gps-n@@' },
   routes: { d: 'data:image/webp;base64,@@GLYPH:icons-routes-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-routes-n@@' },
   home: { d: 'data:image/webp;base64,@@GLYPH:icons-home-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-home-n@@' },
@@ -875,24 +922,24 @@ const GLYPH_ICONS = {
   moon: { d: 'data:image/webp;base64,@@GLYPH:icons-moon-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-moon-n@@' },
   sun: { d: 'data:image/webp;base64,@@GLYPH:icons-sun-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-sun-n@@' },
   centre: { d: 'data:image/webp;base64,@@GLYPH:icons-centre-d@@', n: 'data:image/webp;base64,@@GLYPH:icons-centre-n@@' }
-};
-const GLYPH_GPS_STATES = { vd: 'data:image/webp;base64,@@GLYPH:gps-states-vd@@', vn: 'data:image/webp;base64,@@GLYPH:gps-states-vn@@',
-  rd: 'data:image/webp;base64,@@GLYPH:gps-states-rd@@', rn: 'data:image/webp;base64,@@GLYPH:gps-states-rn@@' };
+});
+const GLYPH_GPS_STATES = /** @type {Record<string,string>} */ ({ vd: 'data:image/webp;base64,@@GLYPH:gps-states-vd@@', vn: 'data:image/webp;base64,@@GLYPH:gps-states-vn@@',
+  rd: 'data:image/webp;base64,@@GLYPH:gps-states-rd@@', rn: 'data:image/webp;base64,@@GLYPH:gps-states-rn@@' });
 // the Glyph extras: the same alpha-mask fills, for pin/note and the seven Pace stat glyphs
-const GLYPH_EXTRAS = {
+const GLYPH_EXTRAS = /** @type {Record<string,{d:string,n:string}>} */ ({
   pin: { d: 'data:image/webp;base64,@@GLYPH:extras-pin-d@@', n: 'data:image/webp;base64,@@GLYPH:extras-pin-n@@' },
   note: { d: 'data:image/webp;base64,@@GLYPH:extras-note-d@@', n: 'data:image/webp;base64,@@GLYPH:extras-note-n@@' }
-};
+});
 // the create search bar's glyphs (same alpha-fill treatment); the results marker is the set's own pin, not here
-const GLYPH_CREATE = {
+const GLYPH_CREATE = /** @type {Record<string,{d:string,n:string}>} */ ({
   search: { d: 'data:image/webp;base64,@@GLYPH:create-search-d@@',
     n: 'data:image/webp;base64,@@GLYPH:create-search-n@@' },
   cancel: { d: 'data:image/webp;base64,@@GLYPH:create-cancel-d@@',
     n: 'data:image/webp;base64,@@GLYPH:create-cancel-n@@' },
   back: { d: 'data:image/webp;base64,@@GLYPH:create-back-d@@',
     n: 'data:image/webp;base64,@@GLYPH:create-back-n@@' }
-};
-const GLYPH_PACE_ICONS = {
+});
+const GLYPH_PACE_ICONS = /** @type {Record<string,{d:string,n:string}>} */ ({
   clock: { d: 'data:image/webp;base64,@@GLYPH:pace-clock-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-clock-n@@' },
   road: { d: 'data:image/webp;base64,@@GLYPH:pace-road-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-road-n@@' },
   flag: { d: 'data:image/webp;base64,@@GLYPH:pace-flag-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-flag-n@@' },
@@ -900,18 +947,20 @@ const GLYPH_PACE_ICONS = {
   cal: { d: 'data:image/webp;base64,@@GLYPH:pace-cal-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-cal-n@@' },
   gauge: { d: 'data:image/webp;base64,@@GLYPH:pace-gauge-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-gauge-n@@' },
   trail: { d: 'data:image/webp;base64,@@GLYPH:pace-trail-d@@', n: 'data:image/webp;base64,@@GLYPH:pace-trail-n@@' }
-};
-const GLYPH_X = { corner: 'data:image/webp;base64,@@GLYPH:x-corner@@',
-  bottom: 'data:image/webp;base64,@@GLYPH:x-bottom@@' }; // One ✕ image, two placements; mask-position picks the placement.
+});
+const GLYPH_X = /** @type {Record<string,string>} */ ({ corner: 'data:image/webp;base64,@@GLYPH:x-corner@@',
+  bottom: 'data:image/webp;base64,@@GLYPH:x-bottom@@' }); // One ✕ image, two placements; mask-position picks the placement.
 // ===== THE ICON SET ===== Glyph Neue is the one set: ten icons, Locate faces, extras, Pace glyphs
 const MASK_PACKS = { // one row stands: the Glyph set's artwork maps, read by renderIcons from here
   glyph: { icons: GLYPH_ICONS, states: GLYPH_GPS_STATES, extras: GLYPH_EXTRAS, pace: GLYPH_PACE_ICONS, x: GLYPH_X }
 };
-const PACK_WRAP = { gps: 'T', routes: 'T', home: 'T', clear: 'T', gear: 'T', streets: 'D', pace: 'D', moon: 'D', sun: 'D', centre: 'D' }; // the 1.217 wrapper boxes: T = the tab 24px box, D = the dock 27px box
-const GLYPH_MENU = { // two white faces live on the menus in both themes: the Back disc and the route's disc check
-  back: 'data:image/webp;base64,@@GLYPH:menu-back@@', check: 'data:image/webp;base64,@@GLYPH:menu-check@@' };
+const PACK_WRAP = /** @type {Record<string,string>} */ ({ gps: 'T', routes: 'T', home: 'T', clear: 'T', gear: 'T', streets: 'D', pace: 'D',
+  moon: 'D', sun: 'D', centre: 'D' }); // the 1.217 wrapper boxes: T = the tab 24px box, D = the dock 27px box
+const GLYPH_MENU = /** @type {Record<string,string>} */ ({ // two white faces live on the menus in both themes: the Back disc and the route's disc check
+  back: 'data:image/webp;base64,@@GLYPH:menu-back@@', check: 'data:image/webp;base64,@@GLYPH:menu-check@@' });
 function nightBtnHTML() { // both glyphs stacked: the moon wears its day art, the sun its night art; the theme shows one (recipe 09)
   const MAP = MASK_PACKS.glyph.icons;
+  /** @param {string} k @param {string} u @returns {string} */
   const wrap = (k, u) => `<span class="pwrap${PACK_WRAP[k]}"><img class="pico" data-k="${k}" src="${u}"></span>`;
   return `<span class="nbIco nbMoon">${wrap('moon', MAP.moon.d)}</span><span class="nbIco nbSun">${wrap('sun', MAP.sun.n)}</span>`;
 }
@@ -963,6 +1012,7 @@ renderIcons(); // this puts every host on the Glyph set (current theme, Locate s
 $('setBtn').addEventListener('click', ev => { if (!tapGuard('setBtn', ev)) return; showSetPane('setMainPane'); $('setVer').textContent = $('ver').textContent; $('setMenu').classList.add('open'); });
 const SET_PANES = ['setMainPane', 'setStatusPane', 'setJobPane', 'setChimePane', 'setBackupPane', 'setAboutPane'];
 // Backup landing re-renders the debug switch from the runtime flag; main landing refreshes the last-backup line
+/** @param {string} id */
 function showSetPane(id) { for (const p of SET_PANES) $(p).classList.toggle('on', p === id); if (id === 'setMainPane') renderBakAge(); if (id === 'setBackupPane') renderSwitch($('swFixLog'), fixLogIsEnabled()); }
 $('setClose').addEventListener('click', () => $('setMenu').classList.remove('open'));
 $('setBack').addEventListener('click', () => { const onBackup = $('setBackupPane').classList.contains('on'); if (onBackup && xMode === 'text') showX('restore'); else if (onBackup && xMode === 'restore') showX('menu'); else showSetPane('setMainPane'); }); // Beta 1.89: one Back walks the backup tree up a level at a time; from the backup menu it lands on the settings main pane. Beta 1.170 (Carbon fix round Phase 2, C-06): the xMode walk belongs to the BACKUP pane alone - through 1.169 it ran wherever Back was pressed, so with xMode left at 'text'/'restore' by an earlier Backup visit, Back on any other Settings pane reset the hidden Backup view instead of returning to the main pane.
@@ -980,9 +1030,11 @@ async function shareBackup() { // one tap backs up and asks where to save (file 
   if (navigator.share) { try { await navigator.share({ text: b }); noteExported(); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   dl(new Blob([b], { type: 'application/json' }), 'snowroute-backup.json'); noteExported();
 }
+/** @param {boolean} viaFallback */
 async function shareRecovery(viaFallback) {
   const b = buildRecovery();
   if (!b) { return; }
+  /** @param {string} how */
   const backupHandedOff = how => { // the fallback banner names what actually happened: shared, or downloaded
     noteExported();
     if (viaFallback) showBanner('Backup not saved', 'A recovery backup was ' + how + ' instead');
@@ -999,14 +1051,15 @@ function bakAgeText() { // the Backup button's second line, from the export stam
   const st = parseJ(lsGet(LS.exp), null);
   const at = st && +st.exportedAt;
   if (!at || !isFinite(at)) return 'never';
-  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
-  const d1 = new Date(at); d1.setHours(0, 0, 0, 0);
+  const d0 = /** @type {any} */ (new Date()); d0.setHours(0, 0, 0, 0);
+  const d1 = /** @type {any} */ (new Date(at)); d1.setHours(0, 0, 0, 0);
   const days = Math.round((d0 - d1) / 86400000);
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   return days + ' days ago';
 }
 function renderBakAge() { const el = $('bakAge'); if (el) el.textContent = 'Last backup: ' + bakAgeText(); }
+/** @param {AppElement} el @param {boolean} on */
 function renderSwitch(el, on) { el.classList.toggle('on', !!on); el.setAttribute('aria-checked', on ? 'true' : 'false'); }
 // ---- Display and Sound ----
 function renderJob() {
@@ -1023,15 +1076,16 @@ $('jobBtn').addEventListener('click', () => { renderJob(); showSetPane('setJobPa
 $('jobBack').addEventListener('click', () => showSetPane('setMainPane'));
 
 // ---- Done chime: WebAudio-synthesized sounds (no files) ----
-const CHIME_SOUNDS = {
+const CHIME_SOUNDS = /** @type {Record<string,{name:string,desc:string}>} */ ({
   bell: { name: 'Classic Bell', desc: 'Single soft bell tone' },
   two: { name: 'Two-Tone', desc: 'Two notes, up' },
   rising: { name: 'Rising Notes', desc: 'Three notes climbing' },
   pop: { name: 'Soft Pop', desc: 'Short, quiet blip' },
   melody: { name: 'Chime Melody', desc: 'Four-note finish melody' }
-};
-let AC = null; // one shared AudioContext, created/resumed only inside user-gesture handlers (a preview tap, a marking tap)
+});
+let AC = /** @type {any} */ (null); // one shared AudioContext, created/resumed only inside user-gesture handlers (a preview tap, a marking tap)
 function acNow() { try { const ACtor = window.AudioContext || window.webkitAudioContext; if (!ACtor) return null; if (!AC) AC = new ACtor(); if (AC.state === 'suspended') AC.resume(); return AC; } catch (e) { return null; } }
+/** @param{any} ac @param{number} freq @param{number} t0 @param{number} dur @param{string} type @param{number} vol @param{number} [slideTo] */
 function toneAt(ac, freq, t0, dur, type, vol, slideTo) {
   const o = ac.createOscillator(), g = ac.createGain();
   o.type = type; o.frequency.setValueAtTime(freq, t0);
@@ -1042,16 +1096,17 @@ function toneAt(ac, freq, t0, dur, type, vol, slideTo) {
   o.connect(g); g.connect(ac.destination);
   o.start(t0); o.stop(t0 + dur + 0.05);
 }
+/** @param {string} key @param {number} [times] */
 function playChime(key, times) { // FULLY guarded: an audio failure can never break marking - sound is decoration
   try {
     const ac = acNow(); if (!ac) return;
-    const seqs = {
+    const seqs = /** @type {Record<string,(a: any, t: number) => number>} */ ({
       bell: (a, t) => { toneAt(a, 1568, t, 0.9, 'sine', 0.22); toneAt(a, 3136, t, 0.45, 'sine', 0.06); return 0.95; }, // a single soft bell: fundamental + a quiet harmonic, ~0.9 s decay
       two: (a, t) => { toneAt(a, 1319, t, 0.11, 'sine', 0.2); toneAt(a, 1760, t + 0.12, 0.16, 'sine', 0.2); return 0.32; },
       rising: (a, t) => { [1047, 1319, 1569].forEach((f, i) => toneAt(a, f, t + i * 0.11, 0.14, 'sine', 0.2)); return 0.4; },
       pop: (a, t) => { toneAt(a, 330, t, 0.07, 'triangle', 0.25, 170); return 0.1; }, // one short low blip with a quick pitch fall
       melody: (a, t) => { [1047, 1319, 1569, 2093].forEach((f, i) => toneAt(a, f, t + i * 0.12, 0.18, 'sine', 0.2)); return 0.6; }
-    };
+    });
     const fn = seqs[key] || seqs.two;
     let t = ac.currentTime + 0.01;
     const n = Math.max(1, times || 1);
@@ -1112,12 +1167,14 @@ async function packState() { // how much of the manifest is in the pack cache (r
     return { id: pk.id, name: pk.name, total: sub.size, cached: c }; });
   return { total, cached, bytes, complete: total > 0 && cached >= total, countsByRoute };
 }
+/** @param {string} icoId @param {string} valId @param {string} state @param {string} text */
 function setHealth(icoId, valId, state, text) { // 'ok' green tick / 'warn' amber / 'idle' neutral dash: an unknown state is never painted green
   const ico = $(icoId);
   ico.textContent = state === 'ok' ? '✓' : state === 'warn' ? '⚠' : '–';
   ico.className = 'm-chk' + (state === 'warn' ? ' warn' : state === 'idle' ? ' idle' : '');
   $(valId).textContent = '– ' + text;
 }
+/** @param {boolean} resetStat @returns {Promise<void>} */
 async function renderStatus(resetStat) {
   const ps = await packState();
   const multiRoute = ROUTE_PACKS.length > 1; // the counts are the union over every route: the label says so when more than one route exists

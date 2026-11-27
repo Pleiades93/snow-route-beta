@@ -18,6 +18,8 @@
     "../parts/app1.js",
     "../parts/engine.js",
     "../parts/pmstyles.js",
-    "app1-types.d.ts"
+    "app1-types.d.ts",
+    "../parts/app4.js",
+    "../parts/create-packs.js"
   ]
 }
