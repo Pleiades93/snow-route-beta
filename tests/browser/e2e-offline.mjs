@@ -229,7 +229,7 @@ netOff = false;
 // responses throttled, a PARTIAL count is verified on disk, the page dies, and
 // the resume must restore the full PRELOAD MANIFEST (897 files) and lose nothing the interrupted download had already stored. (Since Beta 1.94 baseKeys IS the manifest exactly - the pack has its own cache; through 1.93 the census ran 899 with 2 opportunistic glyph fetches mixed in. E15b asserts this same contract shape.)
 const waitPartial = async () => { let n = 0; const t0 = Date.now(); while (Date.now() - t0 < 300000) { n = (await keysOf()).length; if (n >= 600) break; await sleep(700); } return n; };
-await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
+await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); return true; })()`);
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial = await waitPartial();
@@ -248,7 +248,7 @@ ok('E12b the resumed download restores the full preload set (897) and loses noth
 // E15 (audit C01-T4): a dead-network BURST mid-download. The app's per-file
 // failure handling skips what it cannot fetch and reports the short count
 // honestly; a clean re-run must then restore the exact full set.
-await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
+await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); return true; })()`);
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial15 = await waitPartial();
@@ -271,7 +271,7 @@ ok('E15b the re-run restores the full preload set and loses nothing | rerun ' + 
 // genuinely incomplete, relaunches on the SAME persisted profile, and the
 // resumed download must restore the full set - the saved maps and the app's
 // state have to survive a process kill, not just a reload.
-await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); try { localStorage.removeItem('snowroute.prep.v1'); } catch (e) {} return true; })()`);
+await ev2(`(async () => { await caches.delete('snowroute-tiles-v1'); await caches.delete('snowroute-offline-v1'); return true; })()`);
 tileDelayMs = 150;
 await ev2(`document.getElementById('xPre').click()`);
 const partial16 = await waitPartial();

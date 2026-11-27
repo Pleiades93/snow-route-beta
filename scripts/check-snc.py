@@ -8,7 +8,7 @@ from pathlib import Path
 
 FILE_DIAG = re.compile(r"\(\d+,\d+\): error TS\d+")
 
-STORAGE = {"app4.js", "create-packs.js", "app5.js", "create-save.js"}
+STORAGE = {"app4.js", "create-packs.js", "app3.js", "app5.js", "create-save.js"}
 # The global strict-null backlog measured at wiring time
 # (2026-11-27); the gate fails above it.
 CEILING = 196

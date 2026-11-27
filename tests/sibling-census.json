@@ -62954,6 +62954,334 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-finish-app3",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "_fxEncodeEntry",
+     "_fxEncEntry",
+     "_fxDecEntry",
+     "fixLogEncodeSessions",
+     "fixLogDecodeSessions",
+     "LS_GLOBAL",
+     "dispShownPos"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:_fxDecEntry:parts/app3.js:fixes",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxDecEntry() is called from fixes in parts/app3.js",
+     "status": "covered",
+     "note": "Annotated by the banked patch (JSDoc + casts) with zero runtime change - AST-identical to the reconciled expected file modulo JSDoc/cast parens; decode behaviour pinned by proof-fixlog-runv-guard-b02 round-trip lines (13/13 PASS)."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:_fxMeasure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from _fxMeasure in parts/app3.js",
+     "status": "covered",
+     "note": "Live encoder unchanged at runtime (AST-identical modulo casts); byte-identity + round trip proven by proof-fixlog-runv-guard-b02, whose extraction now anchors on fixLogEncodeSessions and slices through _fxEncEntry."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:a",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from a in parts/app3.js",
+     "status": "covered",
+     "note": "fixLogOut's re-measure call; same encoder, same proof coverage as the _fxMeasure row."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:f",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from f in parts/app3.js",
+     "status": "covered",
+     "note": "acceptFix's measure call; same encoder, same proof coverage as the _fxMeasure row."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:fixLogEncodeSessions",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from fixLogEncodeSessions in parts/app3.js",
+     "status": "covered",
+     "note": "The session encoder itself; byte-identity is asserted over exactly this path by proof-fixlog-runv-guard-b02 (13/13 PASS on the final tree)."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:fixLogRaw",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from fixLogRaw in parts/app3.js",
+     "status": "covered",
+     "note": "Same encoder, same proof coverage as the _fxMeasure row."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:fixLogTrim",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from fixLogTrim in parts/app3.js",
+     "status": "covered",
+     "note": "Trim re-measures the new head via _fxEncEntry; its account reads got annotation-only casts this round; same proof coverage."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app2.js:sh",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from sh in parts/app2.js",
+     "status": "covered",
+     "note": "Puck layer render(): the two SNC diagnostics this round's honest dispShownPos return type surfaced here were burned with casts under the method's own dispPos guard (render returns early when !dispPos); SNC global set byte-identical to base."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:feats",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from feats in parts/app3.js",
+     "status": "covered",
+     "note": "pushGps feature building: casts added under the beam/ring branches' dispPos guards; app3 SNC count zero."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:followCam",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from followCam in parts/app3.js",
+     "status": "covered",
+     "note": "Cast at the tgt read; followCam returns early when !dispPos, and dispShownPos falls back to dispPos. App3 SNC count zero."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:pushGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from pushGps in parts/app3.js",
+     "status": "covered",
+     "note": "Same sites as the feats row (pushGps builds the feature set); casts under dispPos guards, app3 SNC zero."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:renderTick",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from renderTick in parts/app3.js",
+     "status": "covered",
+     "note": "The project/key reads at renderTick: casts under its if (dispPos) / dispPos ? guards; app3 SNC zero."
+    },
+    {
+     "id": "caller:fixLogDecodeSessions:parts/app3.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogDecodeSessions() is called from top-level in parts/app3.js",
+     "status": "covered",
+     "note": "Boot decode of the stored fixlog; decoder annotated by the patch, AST-identical, round-trip proven by the fixlog proof."
+    },
+    {
+     "id": "caller:fixLogDecodeSessions:parts/app4.js:canonicalFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogDecodeSessions() is called from canonicalFixLog in parts/app4.js",
+     "status": "covered",
+     "note": "Backup canonicalisation decodes through the same annotated decoder; backup/restore drives (drive121/drive171 survivors) cover the path in CI."
+    },
+    {
+     "id": "caller:fixLogEncodeSessions:parts/app3.js:saveFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogEncodeSessions() is called from saveFixLog in parts/app3.js",
+     "status": "covered",
+     "note": "The save path; byte-identity over this encoder is the fixlog proof's core assertion (13/13 PASS)."
+    },
+    {
+     "id": "caller:fixLogEncodeSessions:parts/app4.js:canonicalFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogEncodeSessions() is called from canonicalFixLog in parts/app4.js",
+     "status": "covered",
+     "note": "Backup canonicalisation encodes through the same proven encoder; byte-identity proof covers it."
+    },
+    {
+     "id": "caller:fixLogEncodeSessions:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogEncodeSessions() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "Same encoder as the saveFixLog row; proof coverage identical."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "118db35d173956fef37b60bda6039aeb97fecd459df9246597294e40ae20bce9",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "parts/brand-snow.js": "2813303842a1243a7fc4fc0c076e3f237e7af1896d9b5ba26c6971addc919a14",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "s1-finish-app3-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "_fxEncodeEntry",
+     "_fxEncEntry",
+     "_fxDecEntry",
+     "fixLogEncodeSessions",
+     "fixLogDecodeSessions",
+     "LS_GLOBAL",
+     "dispShownPos"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:_fxDecEntry:parts/app3.js:fixes",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxDecEntry() is called from fixes in parts/app3.js",
+     "status": "covered",
+     "note": "Annotated by the banked patch (JSDoc + casts) with zero runtime change - AST-identical to the reconciled expected file modulo JSDoc/cast parens; decode behaviour pinned by proof-fixlog-runv-guard-b02 round-trip lines (13/13 PASS)."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:_fxMeasure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from _fxMeasure in parts/app3.js",
+     "status": "covered",
+     "note": "Live encoder unchanged at runtime (AST-identical modulo casts); byte-identity + round trip proven by proof-fixlog-runv-guard-b02, whose extraction now anchors on fixLogEncodeSessions and slices through _fxEncEntry."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:a",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from a in parts/app3.js",
+     "status": "covered",
+     "note": "fixLogOut's re-measure call; same encoder, same proof coverage as the _fxMeasure row."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:f",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from f in parts/app3.js",
+     "status": "covered",
+     "note": "acceptFix's measure call; same encoder, same proof coverage as the _fxMeasure row."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:fixLogEncodeSessions",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from fixLogEncodeSessions in parts/app3.js",
+     "status": "covered",
+     "note": "The session encoder itself; byte-identity is asserted over exactly this path by proof-fixlog-runv-guard-b02 (13/13 PASS on the final tree)."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:fixLogRaw",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from fixLogRaw in parts/app3.js",
+     "status": "covered",
+     "note": "Same encoder, same proof coverage as the _fxMeasure row."
+    },
+    {
+     "id": "caller:_fxEncEntry:parts/app3.js:fixLogTrim",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - _fxEncEntry() is called from fixLogTrim in parts/app3.js",
+     "status": "covered",
+     "note": "Trim re-measures the new head via _fxEncEntry; its account reads got annotation-only casts this round; same proof coverage."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app2.js:sh",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from sh in parts/app2.js",
+     "status": "covered",
+     "note": "Puck layer render(): the two SNC diagnostics this round's honest dispShownPos return type surfaced here were burned with casts under the method's own dispPos guard (render returns early when !dispPos); SNC global set byte-identical to base."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:feats",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from feats in parts/app3.js",
+     "status": "covered",
+     "note": "pushGps feature building: casts added under the beam/ring branches' dispPos guards; app3 SNC count zero."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:followCam",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from followCam in parts/app3.js",
+     "status": "covered",
+     "note": "Cast at the tgt read; followCam returns early when !dispPos, and dispShownPos falls back to dispPos. App3 SNC count zero."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:pushGps",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from pushGps in parts/app3.js",
+     "status": "covered",
+     "note": "Same sites as the feats row (pushGps builds the feature set); casts under dispPos guards, app3 SNC zero."
+    },
+    {
+     "id": "caller:dispShownPos:parts/app3.js:renderTick",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - dispShownPos() is called from renderTick in parts/app3.js",
+     "status": "covered",
+     "note": "The project/key reads at renderTick: casts under its if (dispPos) / dispPos ? guards; app3 SNC zero."
+    },
+    {
+     "id": "caller:fixLogDecodeSessions:parts/app3.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogDecodeSessions() is called from top-level in parts/app3.js",
+     "status": "covered",
+     "note": "Boot decode of the stored fixlog; decoder annotated by the patch, AST-identical, round-trip proven by the fixlog proof."
+    },
+    {
+     "id": "caller:fixLogDecodeSessions:parts/app4.js:canonicalFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogDecodeSessions() is called from canonicalFixLog in parts/app4.js",
+     "status": "covered",
+     "note": "Backup canonicalisation decodes through the same annotated decoder; backup/restore drives (drive121/drive171 survivors) cover the path in CI."
+    },
+    {
+     "id": "caller:fixLogEncodeSessions:parts/app3.js:saveFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogEncodeSessions() is called from saveFixLog in parts/app3.js",
+     "status": "covered",
+     "note": "The save path; byte-identity over this encoder is the fixlog proof's core assertion (13/13 PASS)."
+    },
+    {
+     "id": "caller:fixLogEncodeSessions:parts/app4.js:canonicalFixLog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogEncodeSessions() is called from canonicalFixLog in parts/app4.js",
+     "status": "covered",
+     "note": "Backup canonicalisation encodes through the same proven encoder; byte-identity proof covers it."
+    },
+    {
+     "id": "caller:fixLogEncodeSessions:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - fixLogEncodeSessions() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "Same encoder as the saveFixLog row; proof coverage identical."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "fac28d166656f385fa5b8c167a067eac7f1a4790f0e9bcde2b32e57ac8a2e9c6",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "parts/brand-snow.js": "2813303842a1243a7fc4fc0c076e3f237e7af1896d9b5ba26c6971addc919a14",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s1-finish-app3 (r2: re-issued after PR-limits line wraps; rows and marks carried)"
   }
  ]
 }

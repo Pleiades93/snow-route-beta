@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "b7a1dbf7af5fb3e2cc0b5277c9e73ae7f09761542d07c8fe1da073848a5ac429",
+  "canonical_registry_sha256": "1d0bc3a74267671772cecc81781735a70f58194642b86540b0b02166525cef94",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1643,
-   "included": 1613,
+   "canonical": 1649,
+   "included": 1619,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -2116,9 +2116,9 @@
   {
    "added": "2026-11-05",
    "file": "parts/app3.js",
-   "fix": "Follow SUSPENDS on pointer-down (Beta 1.115): touching the map hands control to the finger \u2014 a camera that keeps following while being dragged fights the user.",
+   "fix": "Follow SUSPENDS on pointer-down (Beta 1.115): touching the map hands control to the finger \u2014 a camera that keeps following while being dragged fights the user. Re-pinned 2026-11-27 (S1-FINISH): the pinned handler line gained a JSDoc cast when app3 was annotated; the suspend behaviour is unchanged.",
    "id": "beta-1115-follow-suspends-on-pointer",
-   "pattern": "c.addEventListener('pointerdown', e => { if (!press) { press = { x: e.clientX, y: e.clientY, id: e.pointerId };",
+   "pattern": "c.addEventListener('pointerdown', /** @type {(e: any) => void} */ (e => { if (!press) { press = { x: e.clientX, y: e.clientY, id: e.pointerId };",
    "type": "grep_present"
   },
   {
@@ -3173,9 +3173,9 @@
   {
    "added": "2026-11-07",
    "file": "parts/app3.js",
-   "fix": "Coverage sampling uses a MONOTONIC cursor per run (DN-3): the sample walk never rewinds within a run \u2014 a rewinding cursor double-counts coverage at run joints.",
+   "fix": "Coverage sampling uses a MONOTONIC cursor per run (DN-3): the sample walk never rewinds within a run \u2014 a rewinding cursor double-counts coverage at run joints. Re-pinned 2026-11-27 (S1-FINISH): the pinned sampling line was wrapped for the PR line limit; the probe now pins the cursor-advance literal itself.",
    "id": "dn3-samples-monotonic-cursor",
-   "pattern": "const L = run.line, cum = run.cum; let i = 1; for (let d = 0; d <= run.total",
+   "pattern": "while (i < cum.length - 1 && cum[i] < d) i++;",
    "type": "grep_present"
   },
   {
@@ -3777,10 +3777,10 @@
   {
    "added": "2026-11-08",
    "file": ".github/workflows/checks.yml",
-   "fix": "Beta 1.149 (Tranche 5, A1 pilot): CI runs the TypeScript checker over the pilot scope (parts/app1.js only) in build-and-test, right after Set up Node - npm ci in scripts/ then tsc -p tsconfig.json; a diagnostic fails the job. If this probe fails, the type-check gate was removed or renamed - restore the step. Re-pinned 2026-11-16 (Monday prune): the CI step name gained its tsconfig scope text; the step stands.",
+   "fix": "Beta 1.149 (Tranche 5, A1 pilot): CI runs the TypeScript checker over the pilot scope (parts/app1.js only) in build-and-test, right after Set up Node - npm ci in scripts/ then tsc -p tsconfig.json; a diagnostic fails the job. If this probe fails, the type-check gate was removed or renamed - restore the step. Re-pinned 2026-11-16 (Monday prune): the CI step name gained its tsconfig scope text; the step stands. Re-pinned 2026-11-27 (S1-FINISH): app3.js joined the program, so the step name now reads 'all 16 parts'; the step stands.",
    "fix_id": "tranche5-a1-tscheck-pilot",
    "id": "tranche5-a1-tscheck-ci-step",
-   "pattern": "Type check (all parts but app3.js; noImplicitAny on - scope in scripts/tsconfig.json)",
+   "pattern": "Type check (all 16 parts; noImplicitAny on - scope in scripts/tsconfig.json)",
    "type": "grep_present"
   },
   {
@@ -5356,11 +5356,11 @@
   },
   {
    "added": "2026-11-13",
-   "file": "scripts/app1-types.d.ts",
-   "fix": "Beta 1.186 storage fix round (PR #25, merge 0c66e05fe5fe): the three adjudicated storage findings closed - P2 run-distance undercount, C-01 sess/trail marker mismatch, P1 restore write-fence race - plus the gate-round corrections (Codex F1 adopt-before-bank, F2 primary re-arm, F3 drop-don't-clear). If a probe fails, that fix has regressed or been reverted in the source - restore the fixed form and re-run drive169/drive187.",
+   "file": "parts/app3.js",
+   "fix": "Beta 1.186 storage fix round (PR #25, merge 0c66e05fe5fe): the three adjudicated storage findings closed - P2 run-distance undercount, C-01 sess/trail marker mismatch, P1 restore write-fence race - plus the gate-round corrections (Codex F1 adopt-before-bank, F2 primary re-arm, F3 drop-don't-clear). If a probe fails, that fix has regressed or been reverted in the source - restore the fixed form and re-run drive169/drive187. Re-pinned 2026-11-27 (S1-FINISH): the section-2 mirror this probe pinned was retired when app3.js joined the type check; the probe now pins persistRunDist's own annotated definition in parts/app3.js.",
    "fix_id": "storage-fix-round-1186",
    "id": "storage1186-a1-persistrundist-declared",
-   "pattern": "declare function persistRunDist(force?: boolean): void;",
+   "pattern": "function persistRunDist(force) { RUNDIST.bank(force); }",
    "type": "grep_present"
   },
   {
@@ -6038,19 +6038,19 @@
   {
    "added": "2026-11-14",
    "file": "parts/app2.js",
-   "fix": "Beta 1.194: the puck shader layer projects the RENDERED point, so the puck sits truly still while the hold is engaged.",
+   "fix": "Beta 1.194: the puck shader layer projects the RENDERED point, so the puck sits truly still while the hold is engaged. Re-pinned 2026-11-27 (S1-FINISH): the pinned line gained JSDoc casts in the strict-null burn (the render method's own dispPos guard makes the point non-null); the rendered-point behaviour is unchanged.",
    "fix_id": "heading-filter-2a",
    "id": "hold1194-puck-rendered-point",
-   "pattern": "const pt = map.project([dispShownPos()[1], dispShownPos()[0]]);",
+   "pattern": "const pt = map.project([/** @type {number[]} */ (dispShownPos())[1], /** @type {number[]} */ (dispShownPos())[0]]);",
    "type": "grep_present"
   },
   {
    "added": "2026-11-14",
    "file": "parts/app3.js",
-   "fix": "Beta 1.194: followCam targets the rendered point - while the hold is engaged the camera rests with the puck instead of creeping after the display track. Re-pinned 2026-11-16 (Monday prune): the follow camera still consumes the rendered position via dispShownPos(); current shipped literal.",
+   "fix": "Beta 1.194: followCam targets the rendered point - while the hold is engaged the camera rests with the puck instead of creeping after the display track. Re-pinned 2026-11-16 (Monday prune): the follow camera still consumes the rendered position via dispShownPos(); current shipped literal. Re-pinned 2026-11-27 (S1-FINISH): the pinned line gained a JSDoc cast when app3 was annotated; the rendered-point behaviour is unchanged.",
    "fix_id": "heading-filter-2a",
    "id": "hold1194-follow-rendered-point",
-   "pattern": "const tgt = dispShownPos(); const tx = tgt[1] * MLNG, ty = tgt[0] * MLAT;",
+   "pattern": "const tgt = /** @type {number[]} */ (dispShownPos()); const tx = tgt[1] * MLNG, ty = tgt[0] * MLAT;",
    "type": "grep_present"
   },
   {
@@ -6539,10 +6539,10 @@
   {
    "added": "2026-11-15",
    "file": ".github/workflows/checks.yml",
-   "fix": "mergeStrands dead-score fix (finding:mergestrands-score, 2026-11-14; judged round verdict NON-EMPTY geometry diff - edges/paint source only - Andrew approved shipping 2026-11-15), landed as maintenance PR #52, merge c755d2dc6294c01d6f55710c655a076f0afaef94 (no Beta bump; page still reads Beta 1.204): the mergeStrands winner object in parts/engine.js now stores its score, so score-2 exact joins beat score-1 junction bridges regardless of scan order (ties unchanged). engine.js joined the type check (scripts/tsconfig.json include, assembly order) with truthful JSDoc annotations - with the annotations and without the fix, tsc's sole engine error is the defect (TS2741 'score' missing); with the fix the expanded set is at zero. Pinning proof tests/proof/proof-mergestrands-score.mjs runs in build-and-test (fails on the unfixed engine, passes fixed). If a probe fails, the named piece has regressed or been reverted - restore the shipped form.",
+   "fix": "mergeStrands dead-score fix (finding:mergestrands-score, 2026-11-14; judged round verdict NON-EMPTY geometry diff - edges/paint source only - Andrew approved shipping 2026-11-15), landed as maintenance PR #52, merge c755d2dc6294c01d6f55710c655a076f0afaef94 (no Beta bump; page still reads Beta 1.204): the mergeStrands winner object in parts/engine.js now stores its score, so score-2 exact joins beat score-1 junction bridges regardless of scan order (ties unchanged). engine.js joined the type check (scripts/tsconfig.json include, assembly order) with truthful JSDoc annotations - with the annotations and without the fix, tsc's sole engine error is the defect (TS2741 'score' missing); with the fix the expanded set is at zero. Pinning proof tests/proof/proof-mergestrands-score.mjs runs in build-and-test (fails on the unfixed engine, passes fixed). If a probe fails, the named piece has regressed or been reverted - restore the shipped form. Re-pinned 2026-11-27 (S1-FINISH): the pinned step-scope text now reads 'all 16 parts' - app3.js joined the type check; the mergeStrands fix itself is unchanged.",
    "fix_id": "mergestrands-score",
    "id": "mergestrands-tsc-step-scope",
-   "pattern": "all parts but app3.js",
+   "pattern": "all 16 parts",
    "type": "grep_present"
   },
   {
@@ -7302,10 +7302,10 @@
   {
    "added": "2026-11-15",
    "file": "parts/app3.js",
-   "fix": "Denylist fix round (PR #79, merge 8343246d0cd01e94437e13e947cb2fdae5f21833; rollback: revert the merge -> 90d90fdc). From the 2026-11-15 Carbon sweep re-run denylist assessment (finding A-05, graded REAL, LOW; Andrew approved fixing the 2 real ones). Defect: loadRouteState's history sanitizer stripped streets absent from the current pack in place, and saveHistory / saveAll / finishRun's archive write then persisted the stripped view - a load-time strip became a permanent write, contradicting the codebase's own rule (dropPhantom: a load-time strip is a view, never a write). Fix: the sanitizer runs as one indexed pass (same predicates, same view) recording a snapshot (histRawList / histRawView); the four writers persist historyForWrite(...) so strip-dropped raw entries ride back verbatim, survivors are written in raw form, user deletions still delete, finishes still append; dropPhantom pops the snapshot in step; unloadRouteToBoot clears it via resetHistorySnapshot(). No stored-data format change. (Re-pinned 2026-11-22 by arch2-1272, Beta 1.272, architecture programme #2: the guarded code moved into the HIST history repository; the invariant is unchanged.)",
+   "fix": "Denylist fix round (PR #79, merge 8343246d0cd01e94437e13e947cb2fdae5f21833; rollback: revert the merge -> 90d90fdc). From the 2026-11-15 Carbon sweep re-run denylist assessment (finding A-05, graded REAL, LOW; Andrew approved fixing the 2 real ones). Defect: loadRouteState's history sanitizer stripped streets absent from the current pack in place, and saveHistory / saveAll / finishRun's archive write then persisted the stripped view - a load-time strip became a permanent write, contradicting the codebase's own rule (dropPhantom: a load-time strip is a view, never a write). Fix: the sanitizer runs as one indexed pass (same predicates, same view) recording a snapshot (histRawList / histRawView); the four writers persist historyForWrite(...) so strip-dropped raw entries ride back verbatim, survivors are written in raw form, user deletions still delete, finishes still append; dropPhantom pops the snapshot in step; unloadRouteToBoot clears it via resetHistorySnapshot(). No stored-data format change. (Re-pinned 2026-11-22 by arch2-1272, Beta 1.272, architecture programme #2: the guarded code moved into the HIST history repository; the invariant is unchanged.) Re-pinned 2026-11-27 (S1-FINISH): the pinned call gained a JSDoc cast when app3 was annotated; the finish-write invariant is unchanged.",
    "fix_id": "rerun-denylist-b02-a05",
    "id": "rerun-denylist-a05-finish-write",
-   "pattern": "HIST.serialise(newHist)",
+   "pattern": "HIST.serialise(/** @type {HistoryEntry[]} */ (newHist))",
    "type": "grep_present"
   },
   {
@@ -11192,10 +11192,10 @@
   {
    "added": "2026-11-20",
    "file": "parts/app3.js",
-   "fix": "O-04: one shared in-flight wake-lock request (Beta 1.254)",
+   "fix": "O-04: one shared in-flight wake-lock request (Beta 1.254) Re-pinned 2026-11-27 (S1-FINISH): the pinned declaration gained JSDoc types when app3 was annotated; the shared in-flight request is unchanged.",
    "fix_id": "audit-r5-batch",
    "id": "auditr5-wakepending",
-   "pattern": "let wakeLock = null, wakePending = null;",
+   "pattern": "let wakeLock = /** @type {WakeLockSentinel|null} */ (null), wakePending = /** @type {Promise<void>|null} */ (null);",
    "type": "grep_present"
   },
   {
@@ -14368,9 +14368,62 @@
   {
    "added": "2026-11-27",
    "command": "cd . && (test -x scripts/node_modules/.bin/tsc || (cd scripts && npm ci)) && python3 scripts/check-snc.py .",
-   "fix": "S1 stage 4: the strict-null gate is green - the storage files (app4, create-packs, app5, create-save) carry zero strictNullChecks errors and the global backlog is at or under its cap. If this fails, a storage file regressed or the backlog grew; burn it annotation-only or record the finding.",
+   "fix": "S1 stage 4: the strict-null gate is green - the storage files (app4, create-packs, app3, app5, create-save) carry zero strictNullChecks errors and the global backlog is at or under its cap. If this fails, a storage file regressed or the backlog grew; burn it annotation-only or record the finding. app3 joined the storage set in S1-FINISH (2026-11-27) at zero errors, the measured backlog unchanged at 196 of cap 196.",
    "fix_id": "s1-type-safety",
    "id": "s1-snc-gate-green",
+   "type": "command_exit0"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/tsconfig.json",
+   "fix": "S1-FINISH (2026-11-27): scripts/tsconfig.json includes parts/app3.js, so the base type check covers all 16 parts. If this fails, app3 fell out of the program - restore the include line.",
+   "fix_id": "s1-finish-app3",
+   "id": "s1finish-tsconfig-includes-app3",
+   "pattern": "\"../parts/app3.js\",",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-snc.py",
+   "fix": "S1-FINISH (2026-11-27): scripts/check-snc.py's STORAGE set includes app3.js, so the strict-null gate holds the fixlog file to zero diagnostics. If this fails, app3 left the storage set - restore it.",
+   "fix_id": "s1-finish-app3",
+   "id": "s1finish-snc-storage-app3",
+   "pattern": "\"create-packs.js\", \"app3.js\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app3.js",
+   "fix": "S1-FINISH (2026-11-27): _fxEncodeEntry, the never-called second fixlog encoder (its helper _fxScalar was defined nowhere), is deleted from parts/app3.js. If this fails, the dead function is back - remove it; the live encoder is _fxEncEntry.",
+   "fix_id": "s1-finish-app3",
+   "id": "s1finish-fxencodeentry-absent",
+   "pattern": "_fxEncodeEntry",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app1.js",
+   "fix": "S1-FINISH (2026-11-27): LS_GLOBAL.prep ('snowroute.prep.v1') is deleted from parts/app1.js - no code ever read or wrote the key. If this fails, the dead declaration is back - remove it; the key stays documented as historical in STORAGE-SCHEMA.md.",
+   "fix_id": "s1-finish-app3",
+   "id": "s1finish-prep-key-absent",
+   "pattern": "snowroute.prep.v1",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-27",
+   "file": ".github/workflows/checks.yml",
+   "fix": "S1-FINISH (2026-11-27): the CI Type check step name states the completed scope, 'all 16 parts'. If this fails, the step was renamed or dropped - restore the step and its name.",
+   "fix_id": "s1-finish-app3",
+   "id": "s1finish-typecheck-step-name",
+   "pattern": "Type check (all 16 parts; noImplicitAny on - scope in scripts/tsconfig.json)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "command": "cd ./scripts && (test -x node_modules/.bin/tsc || npm ci) && ./node_modules/.bin/tsc -p tsconfig.json",
+   "fix": "S1-FINISH (2026-11-27): the base type check (all 16 parts, noImplicitAny) exits 0. If this fails, a part regressed or an annotation was stripped - restore zero errors annotation-only.",
+   "fix_id": "s1-finish-app3",
+   "id": "s1finish-tsc-all-parts-green",
    "type": "command_exit0"
   }
  ]

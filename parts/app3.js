@@ -13,9 +13,9 @@ const CLEAN = {
   /** @param {HistoryEntry} h @returns {{count: number, durMs: number, start: number}|null} */ dur(h) {
     const items = (h && h.items) || {};
     const ks = Object.keys(items).filter(n => STREETSET.has(n) && items[n]);
-    const ts = ks.map(n => Date.parse(items[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
+    const ts = ks.map(n => Date.parse(/** @type {string} */ (items[n]))).filter(t => !isNaN(t)).sort((a, b) => a - b);
     if (!ts.length) return null;
-    const stA = Date.parse(h.startedAt);
+    const stA = Date.parse(/** @type {string} */ (h.startedAt));
     const start = (!isNaN(stA) && stA <= ts[0]) ? stA : ts[0];
     return { count: this.count(h), durMs: ts[ts.length - 1] - start, start }; // the DURATION spans the timestamped streets (a span needs moments), but the COUNT is cleanCount: null-timestamped streets included
   },
@@ -36,11 +36,11 @@ const CLEAN = {
     return null;
   },
   // the summary projection: the read of a clean for the Pace surfaces; no renderer re-derives its figures
-  /** @param {HistoryEntry} h @returns {object} */ summary(h) {
+  /** @param {HistoryEntry} h @returns {CleanSummary} */ summary(h) {
     return { count: this.count(h), dur: this.dur(h), workM: this.workM(h), paceKm: this.paceKm(h) };
   },
   // the detail projection: everything openClean renders, derived here; the renderer formats and builds DOM, interpreting no evidence
-  /** @param {HistoryEntry} h @returns {object} */ detail(h) {
+  /** @param {HistoryEntry} h @returns {CleanDetail} */ detail(h) {
     const dur = this.dur(h);
     const workM = this.workM(h);
     const elapsedMs = dur ? Date.parse(h.at) - dur.start : NaN; // the interval from start to the Finish tap: one label once covered two intervals, skewing 15.8%
@@ -63,29 +63,42 @@ const CLEAN = {
     // issue #180: the Array.isArray guard - an inherited member ('constructor') is not a notes array
     return { count: this.count(h), dur, workM, paceKm: this.paceKm(h), elapsedMs, paceRate, streets, notedOnly };
   },
-  /** @param {Array} entries @returns {string[]} */ noteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); },
+  /** @param {any[]} entries @returns {string[]} */
+  noteLines(entries) { return (Array.isArray(entries) ? entries : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : ((FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : ''))); },
 };
+/** @returns {HistoryEntry|null} */
 function refRun() { return CLEAN.ref(); }
+/** @param {HistoryEntry} h @returns {number} */
 function cleanCount(h) { return CLEAN.count(h); }
+/** @param {HistoryEntry} h @returns {number} */
 function cleanWorkM(h) { return CLEAN.workM(h); }
+/** @param {number} workM @param {number} startMs @param {number} endMs @param {number} minH @returns {number|null} */
 function workRateMh(workM, startMs, endMs, minH) { const h = (endMs - startMs) / 3600000; return (workM > 0 && h > minH) ? workM / h : null; } // NaN inputs fail the comparisons and yield null
+/** @param {number} r @returns {string} */
 function fmtRate(r) { return (r / 1000).toFixed(1) + ' km of sides/hr'; }
 const DAY3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // 'Tue, Nov 10' - the redesign date form for saved-clean rows and the detail header
+/** @param {string} iso @returns {string} */
 function fmtDate3(iso) { const d = new Date(iso); if (isNaN(d)) return ''; return DAY3[d.getDay()] + ', ' + MON3[d.getMonth()] + ' ' + d.getDate(); }
 // colon duration for the redesign stat cells and rows (1:24, 2:41) - presentation only; fmtDur keeps every surface
+/** @param {number} ms @returns {string} */
 function fmtHM(ms) { if (ms == null || isNaN(ms) || ms < 0) return '–'; const m = Math.round(ms / 60000); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); }
 // '8:56' - minutes:seconds per ROAD km
+/** @param {number|null} msPerKm @returns {string|null} */
 function fmtPaceKm(msPerKm) { if (msPerKm == null || isNaN(msPerKm) || !isFinite(msPerKm) || msPerKm <= 0) return null; const s = Math.round(msPerKm / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+/** @param {HistoryEntry} h @returns {string|null} */
 function cleanPaceKm(h) { return CLEAN.paceKm(h); }
 // Progress-by-group sums: a completed street counts 1, any side done counts a half, else 0
+/** @param {boolean} wantPrimary @returns {{sum: number, cnt: number}} */
 function groupProgress(wantPrimary) {
   let sum = 0, cnt = 0;
   for (const n of STREETNAMES) { if (PRIMARIES.has(n) === wantPrimary) { cnt++; sum += streetComplete(n) ? 1 : (streetHalf(n) ? 0.5 : 0); } }
   return { sum, cnt };
 }
+/** @param {number} v @returns {string} */
 function fmtCnt(v) { return v % 1 ? v.toFixed(1) : String(v); }
 // the Pace stat mint table ships EMPTY: renderIcons (app4) fills every entry from the ACTIVE pack at boot
+/** @type {Record<string,string>} */
 const PACE_ICONS = {
   clock: '',
   road: '',
@@ -96,7 +109,9 @@ const PACE_ICONS = {
   trail: ''
 };
 // data-ic lets renderIcons re-stamp a rendered cell in place on a pack switch
+/** @param {string} ic @param {string} v @param {string} l @returns {string} */
 function statCell(ic, v, l) { return '<div class="cell"><span class="ic" data-ic="' + ic + '">' + PACE_ICONS[ic] + '</span><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
+/** @param {string} name @param {{sum: number, cnt: number}} g @returns {string} */
 function groupBar(name, g) {
   const pct = g.cnt ? (g.sum / g.cnt * 100) : 0;
   return '<div class="gbar"><div class="gb-top"><span class="gb-n">' +
@@ -110,6 +125,7 @@ function groupBar(name, g) {
     '%"></div><div class="gb-half"></div></div></div>';
 }
 // pace is a work rate (side-metres/hour, cumulative off the stamps): interleaving cannot distort a cumulative rate
+/** @returns {{rateMh: number|null, refRateMh: number|null, live: boolean, etaTxt: string, etaClock: string, ref: HistoryEntry|null}} */
 function paceInfo() {
   const ref = CLEAN.ref();
   const refRateMh = ref ? CLEAN.refRateMh(ref) : null;
@@ -123,6 +139,7 @@ function paceInfo() {
   // etaClock is additive - the redesign ETA cell reads the done-at clock alone; etaTxt and statsLine are untouched
   return { rateMh, refRateMh, live, etaTxt, etaClock, ref };
 }
+/** @returns {string} */
 function statsLine() {
   const p = paceInfo();
   const bits = [];
@@ -132,16 +149,20 @@ function statsLine() {
   return bits.join(' · ');
 }
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** @param {string} iso @returns {string} */
 function fmtWhen(iso) { const d = new Date(iso);
 if (isNaN(d)) return '';
 const n = new Date();
 const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 return same ? fmtClock(d) : MON3[d.getMonth()] + ' ' + d.getDate() + ', ' + fmtClock(d);
 }
+/** @param {string} iso @returns {string} */
 function fmtAgo(iso) { const t = Date.parse(iso); if (isNaN(t)) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + (m % 60) + ' m ago'; }
+/** @param {HistoryEntry} h @returns {{count: number, durMs: number, start: number}|null} */
 function histDur(h) { return CLEAN.dur(h); }
 let histOpen = false;
 // the redesign: This run grid, verdict banner, Progress by group, Saved cleans, all on the same live data
+/** @returns {void} */
 function renderPace() {
   const p = paceInfo();
   const ref = p.ref;
@@ -194,6 +215,7 @@ function renderPace() {
   const c = $('paceCancel'); if (c) c.addEventListener('click', () => { askCancelStart(); });
   $('pacePad').querySelectorAll('.histRow').forEach(r => r.addEventListener('click', () => openClean(+r.dataset.i)));
 }
+/** @returns {void} */
 function showPaceMain() { // the Pace sheet main view - header + pace content visible, the clean detail hidden
   const cv = $('cleanView'); if (cv) { cv.style.display = 'none'; cv.classList.add('hidden'); }
   const ph = $('paceHead'); if (ph) ph.style.display = '';
@@ -202,13 +224,17 @@ function showPaceMain() { // the Pace sheet main view - header + pace content vi
   cleanDelArmedAt = NaN;
 }
 // showPaceMain first - an open left on the clean detail returns to the Pace main view
+/** @returns {void} */
 function openPace() { deselect(); closeSheets(); SHEETS.open($('pacePanel'), () => { showPaceMain(); renderPace(); }); }
+/** @returns {void} */
 function closePace() { SHEETS.close($('pacePanel')); } // same animated close as every sheet
 
 // ===== CLEAN DETAIL ===== one archived clean in the list sheet: totals, streets in mark order, notes, two-tap delete
 const CLEAN_DEL_MIN_ARM_MS = 700;
-let cleanIdx = null, cleanDelArmed = false, cleanDelTimer = 0, cleanDelArmedAt = NaN;
+let cleanIdx = /** @type {number|null} */ (null), cleanDelArmed = false, cleanDelTimer = 0, cleanDelArmedAt = NaN;
+/** @param {any[]} entries @returns {string[]} */
 function cleanNoteLines(entries) { return CLEAN.noteLines(entries); }
+/** @param {number} i @returns {void} */
 function openClean(i) {
   const h = history[i];
   if (!h) return;
@@ -310,7 +336,7 @@ function openClean(i) {
     }
     if (!Number.isFinite(timestamp) || !(timestamp - cleanDelArmedAt >= CLEAN_DEL_MIN_ARM_MS)) return;
     clearTimeout(cleanDelTimer);
-    HIST.deleteAt(cleanIdx);
+    HIST.deleteAt(/** @type {number} */ (cleanIdx));
     const okDel = HIST.save();
     backToCleans();
     if (!okDel) showBanner('Delete not saved', 'The clean may come back on reload');
@@ -320,11 +346,13 @@ function openClean(i) {
   SHEETS.open($('pacePanel'), null, true);
   cv.scrollTop = 0;
 }
+/** @returns {void} */
 function backToCleans() {
   closeClean();
   histOpen = true;
   openPace();
 }
+/** @returns {void} */
 function closeClean() {
   cleanIdx = null;
   showPaceMain();
@@ -333,7 +361,8 @@ function closeClean() {
 
 // ===== RUN LIFECYCLE =====
 // wakePending is the one in-flight request, shared by overlapping callers: two locks minted together orphaned the first
-let wakeLock = null, wakePending = null;
+let wakeLock = /** @type {WakeLockSentinel|null} */ (null), wakePending = /** @type {Promise<void>|null} */ (null);
+/** @returns {Promise<void>} */
 async function syncWake() {
   // the want: a run with the awake toggle, or a live offline download. Recomputed after the request await
   const wantNow = () => document.visibilityState === 'visible' && ((!!runStart && settings.awake) || preloadRunning);
@@ -357,16 +386,19 @@ async function syncWake() {
   } catch (e) { /* wake lock is best-effort */ }
 }
 document.addEventListener('visibilitychange', syncWake);
+/** @returns {StorageOutcome} */
 function noteSessionStart() { const s = Math.floor(runStart / 1000); if (trailSessions[trailSessions.length - 1] !== s) { trailSessions.push(s); if (saveSess().ok) return storeOk(); markDirty('sess'); return storeFail('sess', true); } return storeOk(); } // Beta 1.71 (audit B02): record the session boundary the moment the clean starts - a resumed run adds no new marker, because its Start already recorded one. Beta 1.73 (audit C04): the save result is RETURNED and a failure arms the PERSIST.flush retry - 1.71 dropped it, so a failed marker write was silent and a reload could join two cleans in the GPX export
 // the board as it was at Start: Cancel restores it, erasing only what the run itself recorded
+/** @type {Snap|null} */
 let runSnap = null;
 // the pre-Start board is persisted too (LS.snap): a reloaded Cancel restores it exactly, unlike the journal
+/** @returns {StorageOutcome} */
 function saveSnap() {
   if (!runSnap || !runStart) { markClean('snap'); return storeOk(); }
   const ok = lsSet(LS.snap, BOARD.serialiseSnap(runSnap, runStart)); // Arch-2: the snapshot string is the board module's one construction
   if (ok) markClean('snap'); else markDirty('snap'); return ok ? storeOk() : storeFail('snap', true);
 }
-const gpsGapRuns = new Map(); // runs whose GPS watch went silent mid-clean, by start key; buildSnap stamps the archive
+const gpsGapRuns = /** @type {Map<string,number>} */ (new Map()); // runs whose GPS watch went silent mid-clean, by start key; buildSnap stamps the archive
 // the run's transitions have ONE owner, RUN: each transition keeps its old order; the doorway functions keep their names
 const RUN = {
   // the identity half: board captured, run stamped, counter opened; startClean keeps the saves around it
@@ -390,11 +422,13 @@ const RUN = {
 };
 // startClean carries the Start fence: the trail windows to the new run here, so pre-Start points are evicted at Start
 // Start is a hard exit: the shown point is back on the true position before the first fix
+/** @returns {void} */
 function startClean() { snapReset();
   RUN.begin(); const trailAtStart = trail.length; trail = trailWindow(trail, runStart); if (trail.length !== trailAtStart) markDirty('trail');
   saveSnap() /* write-safe: the writer arms its own retry flag on failure */; noteSessionStart(); const okStart = saveAllWarned(); startGps(true); updateCount(); syncWake();
   if (!okStart.ok) showBanner('This clean is not saving', 'Storage problem - keep a backup of your marks'); checkStale(); } // the clean still starts; the marker and snapshot saves ride silently
 // Cancel start erases everything the run recorded and stores nothing: only Finish keeps history
+/** @returns {void} */
 function cancelStart() {
   const wasRunGps = gpsFromRun;
   const startSec = runStart ? Math.floor(runStart / 1000) : 0;
@@ -423,7 +457,9 @@ function cancelStart() {
 }
 $('startBtn').addEventListener('click', ev => { if (!tapGuard('startBtn', ev)) return; startClean(); });
 // CLEAR: the header button beside Pace wipes every mark, time and coverage (the run is untouched); the tap asks first
+/** @returns {boolean} */
 function boardHasMarks() { return doneSet.size > 0 || STREETNAMES.some(n => pieces[n].some(v => v !== 0)) || Object.keys(coveredIdx).length > 0; }
+/** @returns {void} */
 function clearAllMarks() {
   const any = boardHasMarks();
   if (!any) { return; }
@@ -433,6 +469,7 @@ function clearAllMarks() {
 }
 $('clearBtn').addEventListener('click', ev => { if (!tapGuard('clearBtn', ev)) return; if (boardHasMarks()) askClearAll(); });
 // the Clear ask: the shared confirmation, bound to its route; the wipe is clearAllMarks, unchanged
+/** @returns {void} */
 function askClearAll() {
   const forRoute = activeRoute ? activeRoute.id : null;
   showConfirm({ title: 'Clear all marks?',
@@ -469,7 +506,7 @@ $('finYes').addEventListener('click', ev => {
   if (finished && finished.gpsGap) showBanner('GPS gap in this clean', 'Part of this clean was not tracked', 'gps'); // after the finish fully completes: the save is never obstructed
 });
 // THE shared confirmation surface (#confirmPill): one reusable surface, buttons only; the backdrop is focus, never a tap target
-let confirmDangerCb = null;
+let confirmDangerCb = /** @type {(() => void)|null} */ (null);
 /** @param {{title: string, sub: string, keep: string, danger: string, onDanger: function(): void}} o @returns {void} */
 function showConfirm(o) {
   const p = $('confirmPill');
@@ -483,6 +520,7 @@ function showConfirm(o) {
 $('cfKeep').addEventListener('click', hideConfirm);
 $('cfDanger').addEventListener('click', () => { const f = confirmDangerCb; hideConfirm(); if (f) f(); });
 /** @returns {void} */ function askCancelStart() { const forRoute = activeRoute ? activeRoute.id : null; const forRun = runStart; showConfirm({ title: 'Cancel this run?', sub: 'All progress will be lost.', keep: 'Keep going', danger: 'Yes, cancel', onDanger: () => { if (runStart === forRun && (activeRoute ? activeRoute.id : null) === forRoute) { cancelStart(); closeSheets(); } } }); } // Beta 1.255: THE cancel-start ask - every entry point (the Pace sheet's button, the dock's button) routes through this one function, so the confirmation and its route+run binding can never cover one door and miss the other (gate round 3, Codex P2: the dock's #cancelStartBtn still discarded in one tap)
+/** @param {number} sinceMs @returns {number} */
 function trailKm(sinceMs) {
   // timestamps are whole seconds: compare at the same precision, or a mid-second start discards the first segment
   const sinceSec = Math.floor(sinceMs / 1000);
@@ -496,8 +534,8 @@ function trailKm(sinceMs) {
 }
 // ===== RUN DISTANCE COUNTER ===== accumulates at record time; every recovery candidate is a lower bound, so max() never overstates
 const RUNDIST = {
-  cur: { run: 0, m: 0, end: null },
-  wrote: { run: 0, m: 0, end: null },
+  cur: /** @type {RunDistRec} */ ({ run: 0, m: 0, end: null }),
+  wrote: /** @type {RunDistRec} */ ({ run: 0, m: 0, end: null }),
   mirrorWrote: '',
   // a fresh counter record, banked forced (an instant reload resumes this run); mirrorWrote is deliberately not reset
   /** @returns {void} */ begin() {
@@ -556,12 +594,14 @@ const RUNDIST = {
 /** @param {boolean} [force] @returns {void} */ function persistRunDist(force) { RUNDIST.bank(force); }
 /** @returns {void} */ function bankRunDistMirror() { RUNDIST.flushMirror(); }
 // a fingerprint of the geometry as cleaned (names + side-metres, FNV-1a): later edits are detectable against it
+/** @returns {string} */
 function geoFingerprint() {
   let fp = 2166136261 >>> 0; const str = STREETNAMES.map(n => n + ':' + (STRETCH[n] ? STRETCH[n].total.toFixed(1) : '0')).join('|');
   for (let i = 0; i < str.length; i++) { fp ^= str.charCodeAt(i); fp = Math.imul(fp, 16777619) >>> 0; }
   return ('0000000' + fp.toString(16)).slice(-8);
 }
 // archive shape: items a street->time map; km the counter's total (trailKm fallback); no GPS path is baked
+/** @returns {ArchiveSnap|null} */
 function buildSnap() {
   if (!doneSet.size && !Object.keys(notes).length) return null;
   const ts = [...doneSet].map(n => Date.parse(doneTimes[n])).filter(t => !isNaN(t)).sort((a, b) => a - b);
@@ -569,13 +609,13 @@ function buildSnap() {
   const startMs = (runStart && ts.length && runStart <= ts[0]) ? runStart : (ts.length ? ts[0] : (runStart || null));
   // the counter is the distance source: RUNDIST.distance adopts before reading, null for an unseen run
   const rdM = RUNDIST.distance();
-  const snap = { at: new Date().toISOString(),
+  const snap = /** @type {ArchiveSnap} */ ({ at: new Date().toISOString(),
     items: {},
     via: { ...doneVia },
     notes: JSON.parse(JSON.stringify(notes)),
     sides: BOARD.sidesCopy(),
     km: startMs ? +(((rdM != null) ? rdM / 1000 : trailKm(startMs))).toFixed(1) : 0,
-    startedAt: startMs ? new Date(startMs).toISOString() : null };
+    startedAt: startMs ? new Date(startMs).toISOString() : null });
   doneSet.forEach(n => { snap.items[n] = doneTimes[n] || null; });
   // the run's figures bake into the entry (cleanWorkM prefers them): workM sums stamps inside [Start, Finish] only
 
@@ -587,6 +627,7 @@ function buildSnap() {
 
   return snap;
 }
+/** @returns {ArchiveSnap|null|undefined} */
 function finishRun() {
   northUp();
   const snap = buildSnap();
@@ -606,7 +647,7 @@ function finishRun() {
   // the cleanup obligation is the transaction's first step, so every prefix carries it; the post-commit saveAll discharges it
   fSteps.push({ name: 'finclean', write: () => txSet(LS.finclean, JSON.stringify({ run: runStart || 0, at: finishAt })), undo: () => txDel(LS.finclean) });
   // the archive write and its rollback write the merge (HIST.serialise), never the bare view
-  if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, HIST.serialise(newHist)), undo: () => txSet(LS.hist, HIST.serialise(prevHist)) });
+  if (archiving) fSteps.push({ name: 'archive', write: () => txSet(LS.hist, HIST.serialise(/** @type {HistoryEntry[]} */ (newHist))), undo: () => txSet(LS.hist, HIST.serialise(prevHist)) });
   fSteps.push({ name: 'sides', write: () => txSet(LS.sides, JSON.stringify(cleared)), undo: () => prevSidesRaw === null ? txDel(LS.sides) : txSet(LS.sides, prevSidesRaw) });
   if (runStart) fSteps.push({ name: 'start', write: () => txDel(LS.start), undo: () => txSet(LS.start, String(runStart)) });
   const fTx = runTx(fSteps);
@@ -618,7 +659,7 @@ function finishRun() {
   }
   // the teardown is the owner's (RUN.end): the counter bakes into the archive; copies and trail window go too
   RUN.end(); trail = []; markDirty('trail');
-  if (archiving) HIST.replaceView(newHist);
+  if (archiving) HIST.replaceView(/** @type {HistoryEntry[]} */ (newHist));
   BOARD.zeroMarks(); notes = {}; // Arch-2: the board half of this reset is the module's in-place zero (the run identity zeroed with RUN.end above)
   // no line to force-draw any more; the window itself was cleared with the counter records above
   stopGps(); deselect();
@@ -629,8 +670,10 @@ function finishRun() {
   onFinishFeedback();
   return archiving ? snap : null;
 }
+/** @returns {void} */
 function performReset() { finishRun(); } // production's name for the finish action (the test battery calls it directly)
 // the stale-clean ask (run over 12 hours) lives on the pill; the danger seat runs Finish's click
+/** @returns {void} */
 function checkStale() {
   if (!(runStart && (Date.now() - runStart > 12 * 3600000))) return;
   const forRun = runStart;
@@ -638,9 +681,12 @@ function checkStale() {
 }
 
 // ===== NOTES (production model: notes[street] = [{k:'note', at, text} | {k: flag kind, at}]) =====
-const FLAGS = { car: 'Car blocking', hazard: 'Hazard', missed: 'Missed spot', salt: 'Needs salt' };
+const FLAGS = /** @type {Record<string,string>} */ ({ car: 'Car blocking', hazard: 'Hazard', missed: 'Missed spot', salt: 'Needs salt' });
+/** @param {string} n @returns {NoteEntry|undefined} */
 function noteEntry(n) { return (Array.isArray(notes[n]) ? notes[n] : []).find(f => f.k === 'note'); }
+/** @param {string} n @returns {string} */
 function noteTextOf(n) { const e = noteEntry(n); return e && typeof e.text === 'string' ? e.text : ''; }
+/** @param {string} n @param {string} txt @returns {StorageOutcome} */
 function setNoteText(n, txt) {
   const t = (txt || '').trim();
   const arr = Array.isArray(notes[n]) ? notes[n].slice() : [];
@@ -651,8 +697,10 @@ function setNoteText(n, txt) {
   if (arr.length) notes[n] = arr; else delete notes[n];
   return saveAllWarned(); // callers announce from the result - the storage-outcome object
 }
+/** @param {string} n @returns {string} */
 function flagText(n) { return (Array.isArray(notes[n]) ? notes[n] : []).map(f => f.k === 'note' ? ('📝 ' + (f.text || '')) : (FLAGS[f.k] || f.k) + (f.at ? ' ' + fmtClock(new Date(f.at)) : '')).join('; '); }
-let noteFor = null;
+let noteFor = /** @type {string|null} */ (null);
+/** @param {string} name @returns {void} */
 function openNote(name) { noteFor = name; $('noteTitle').textContent = 'Note: ' + name; $('noteText').value = noteTextOf(name); showSurface($('noteModal')); }
 $('noteNo').addEventListener('click', () => hideSurface($('noteModal')));
 $('noteYes').addEventListener('click', () => {
@@ -663,36 +711,49 @@ $('noteYes').addEventListener('click', () => {
 
 // ===== GPS (checklist SS7) =====
 // lastFixTs is the last accepted fix's OWN timestamp - a callback carrying an older one is stale
-let watchId = null, watchGen = 0, gpsFromRun = false, gpsPos = null, dispPos = null, lastFixAt = 0, watchStartedAt = 0, lastFixTs = 0, lastFixSpd = 0, lastGood = null, spdTimer = 0, offRouteArmed = true, followPaused = false, staleWatchTimer = 0; // Beta 1.198: lastFixSpd = the last ACCEPTED fix's own speed (m/s) — followCam's correction cap is relative to it (see the cap's comment there)
+let watchId = /** @type {number|null} */ (null), watchGen = 0, gpsFromRun = false, gpsPos = /** @type {number[]|null} */ (null),
+  dispPos = /** @type {number[]|null} */ (null), lastFixAt = 0, watchStartedAt = 0, lastFixTs = 0, lastFixSpd = 0,
+  lastGood = /** @type {{ll: number[], at: number}|null} */ (null), spdTimer = 0, offRouteArmed = true, followPaused = false,
+  staleWatchTimer = 0; // lastFixSpd = the last ACCEPTED fix's own speed (m/s) - followCam's correction cap is relative to it
 // null-prototype like ROADS - buildSamples refills it by Object.assign from street-name keys
-const SAMPLES = Object.create(null);
+const SAMPLES = /** @type {Record<string,LatLng[]>} */ (Object.create(null));
 // samples as a pure function of a stretch set: buildSamples refills SAMPLES; app4 builds packs' from it
+/** @param {StretchMap} stretch @param {string[]} names @returns {Record<string,LatLng[]>} */
 function samplesFor(stretch, names) {
   // filled by street-name assignment - a plain object would lose a '__proto__' street to its prototype
-  const out = Object.create(null);
-  for (const n of names) { const pts = []; for (const run of stretch[n].runs) { const L = run.line, cum = run.cum; let i = 1; for (let d = 0; d <= run.total; d += COV_SAMPLE_M) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span; pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } } out[n] = pts; } // Beta 1.144 (Package C, DA-02/C1): samples are taken PER RUN - a disconnected street's later runs are covered streets too, and coverage must be able to suggest them. The 1.135 hoisted cursor resets per run (each run's distances rise monotonically on their own); a single-run street produces the identical sample list. // Beta 1.135 (programme D): the segment cursor i is hoisted out of the sample loop - sample distances rise monotonically, so a sample's segment never lies before the previous sample's, and the pre-1.135 per-sample restart re-walked the line from its start every 15 m (18,449 cursor-condition checks on Route 5W; the hoisted cursor advances at most once per segment). The samples produced are identical (the 1.135 fixture harness compares them byte-for-byte).
+  const out = /** @type {Record<string,LatLng[]>} */ (Object.create(null));
+  // samples are taken per run, with the segment cursor hoisted: sample distances rise monotonically
+  for (const n of names) { const pts = []; for (const run of stretch[n].runs) { const L = run.line, cum = run.cum; let i = 1;
+    for (let d = 0; d <= run.total; d += COV_SAMPLE_M) { while (i < cum.length - 1 && cum[i] < d) i++; const span = cum[i] - cum[i - 1] || 1, t = (d - cum[i - 1]) / span;
+      pts.push([L[i - 1][0] + (L[i][0] - L[i - 1][0]) * t, L[i - 1][1] + (L[i][1] - L[i - 1][1]) * t]); } }
+    out[n] = /** @type {LatLng[]} */ (pts); }
   return out;
 }
 // the generation bump invalidates coverFix's per-street sample boxes - the samples they were measured from just changed
+/** @returns {void} */
 function buildSamples() { const built = samplesFor(STRETCH, STREETNAMES); for (const k of Object.keys(SAMPLES)) delete SAMPLES[k]; Object.assign(SAMPLES, built); covSamplesGen++; }
 // (the coverage-index sanitizer lives in loadRouteState, app1: state loads on route pick, not at eval)
 
 // the reset is the transition owner's (RUN.switchReset) - this doorway keeps the published handle app5 resolves
+/** @returns {void} */
 function resetNotesHistorySession() { RUN.switchReset(); }
+/** @returns {void} */
 function pushGps() {
   const src = map && map.getSource('gps'); if (!src) return;
-  const feats = [];
+  const feats = /** @type {any[]} */ ([]);
   // the facing beam: a point carrying the facing; the gps-beam layer paints the gradient fan along it
   if (dispPos && watchId != null && facingDeg != null) {
     // painted rot is beamDeg (smoothed per frame); facingDeg is the heading of record
-    feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round((beamDeg != null ? beamDeg : facingDeg) * 10) / 10 }, geometry: { type: 'Point', coordinates: [dispShownPos()[1], dispShownPos()[0]] } });
+    feats.push({ type: 'Feature', properties: { k: 'beam', rot: Math.round((beamDeg != null ? beamDeg : facingDeg) * 10) / 10 },
+      geometry: { type: 'Point', coordinates: [/** @type {number[]} */ (dispShownPos())[1], /** @type {number[]} */ (dispShownPos())[0]] } });
   }
   if (dispPos) {
     // the puck is no feature: the shader layer draws it in screen space off dispPos each frame
 
     if (gpsAccM > 0) { const ring = [];
     const R = gpsAccM;
-    for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2; ring.push([dispShownPos()[1] + (R * Math.sin(th)) / MLNG, dispShownPos()[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature',
+    for (let a = 0; a <= 28; a++) { const th = a / 28 * Math.PI * 2;
+      ring.push([/** @type {number[]} */ (dispShownPos())[1] + (R * Math.sin(th)) / MLNG, /** @type {number[]} */ (dispShownPos())[0] + (R * Math.cos(th)) / MLAT]); } feats.push({ type: 'Feature',
       properties: { k: 'ring' },
       geometry: { type: 'Polygon', coordinates: [ring] } });
     }
@@ -705,19 +766,26 @@ let gpsAccM = 0;
 let renderRaf = 0, renderPump = 0, lastFrameAt = 0, lastCamAt = 0, lastPushKey = '';
 // the display coasts on the predicted track; corrections decay via dispOff over ~0.3 s (display-only)
 let dispOff = [0, 0], lastDispAt = 0;
+/** @returns {boolean} */
 function dispSettled() { return Math.abs(dispOff[0]) < 0.05 && Math.abs(dispOff[1]) < 0.05; }
 // standing still, the puck twitches: the fix is display-only: once settled, the rendered point freezes until the vehicle really moves
+/** @type {number[]|null} */
 let dispHoldPt = null; // the held [lat, lng] while engaged, else null
 // raw position at engagement: exits judge raw travel (at rest it moves <0.4 m in any window)
+/** @type {number[]|null} */
 let dispHoldRaw = null;
+/** @type {number[]|null} */
 let dispHoldPrev = null; // dispPos at the prior fix - the display-step basis the engage test reads
-let dispHoldSteps = []; // the last 3 display steps (m)
+let dispHoldSteps = /** @type {number[]} */ ([]); // the last 3 display steps (m)
 let dispHoldN = 0; // fixes the state machine has seen (the engage test needs three real steps behind it)
 let dispHoldLow = 0, dispHoldFast = 0, dispHoldFar = 0; // consecutive-fix counters: slow (engage), >= 0.5 m/s and raw-displaced (exit)
 // the rendered: hold point, else snap blend, else display track (hold and snap use disjoint speed bands)
+/** @returns {number[]|null} */
 function dispShownPos() { return dispHoldPt || snapBlendPt() || dispPos; }
+/** @returns {void} */
 function dispHoldReset() { dispHoldPt = null; dispHoldRaw = null; dispHoldPrev = null; dispHoldSteps = []; dispHoldN = 0; dispHoldLow = 0; dispHoldFast = 0; dispHoldFar = 0; }
 // fed once per accepted fix, when fixLogOut reads dispPos - the basis the simulation was proven on
+/** @param {number|null} speed @param {number[]} ll @returns {void} */
 function dispHoldFix(speed, ll) {
   const dp = dispPos;
   const step = (dp && dispHoldPrev) ? distM(dispHoldPrev, dp) : 0;
@@ -752,26 +820,34 @@ const SNAP_FAR_M = 10; // evidence timeout: fixes farther than this from the hel
 const SNAP_FAR_N = 5;
 // the point eases between truth and centreline over ~this long, both ways: blends, never a teleport
 const SNAP_BLEND_S = 0.8;
+/** @type {SnapPoly|null} */
 let snapHeld = null; // the held road: { name, pts } - ONE polyline (one street run of the index), or null
+/** @type {{poly: SnapPoly, n: number}|null} */
 let snapRival = null; // the switch challenger: { poly, n } - the rival polyline and its consecutive margin wins
 let snapFar = 0; // consecutive fixes farther than SNAP_FAR_M from the held road (the evidence timeout's counter)
 // the blend weight (0 = true point, 1 = centreline), advanced per frame toward the held state
 let snapW = 0;
 // the outgoing target, kept on a mid-blend release: the point the weight reproduces the rendered point from
+/** @type {number[]|null} */
 let snapOutPt = null;
 // what a road change eases from: the blend's origin while the weight re-rises toward the new projection
+/** @type {number[]|null} */
 let snapAnchor = null;
 // the timeout-rejected polyline: not re-takable while fixes land beyond SNAP_FAR_M (the hysteresis stops a timeout loop)
+/** @type {SnapPoly|null} */
 let snapReject = null;
 let snapSegHint = 0; // the held line's segment the last projection landed on (the per-frame projection searches outward from here)
 let snapFixN = 0; // fixes the matcher has processed (the acceptance drive's denominator guard)
 // a release captures its target before the hold clears, weight-normalized: storing the rendered point would double-apply the weight
+/** @returns {void} */
 function snapDropHold() {
   if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) snapOutPt = [dispPos[0] + (cur[0] - dispPos[0]) / snapW, dispPos[1] + (cur[1] - dispPos[1]) / snapW]; }
   snapHeld = null; snapRival = null; snapFar = 0; snapSegHint = 0; snapAnchor = null;
 }
 // the snap retires (watch stop, Start Clean): no blend-out - state is gone before the next frame
+/** @returns {void} */
 function snapReset() { snapDropHold(); snapW = 0; snapOutPt = null; snapAnchor = null; snapReject = null; }
+/** @param {number[]} p @param {number[]} a @param {number[]} b @returns {{d: number, pt: number[]}} */
 function ptSegProj(p, a, b) { // ptSegM's twin (app1) that also returns the projected point, in [lat, lng]
   const ax = a[1] * MLNG, ay = a[0] * MLAT, bx = b[1] * MLNG, by = b[0] * MLAT, px = p[1] * MLNG, py = p[0] * MLAT;
   const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
@@ -780,6 +856,7 @@ function ptSegProj(p, a, b) { // ptSegM's twin (app1) that also returns the proj
   return { d: Math.hypot(px - qx, py - qy), pt: [qy / MLAT, qx / MLNG] };
 }
 // ll's nearest point on the road, or null; the search widens only at the window's edge
+/** @param {number[]} ll @returns {number[]|null} */
 function snapProject(ll) {
   if (!snapHeld) return null;
   const pts = snapHeld.pts; if (!pts || pts.length < 2) return null;
@@ -787,11 +864,13 @@ function snapProject(ll) {
   for (;;) {
     let best = null;
     for (let i = lo; i <= hi; i++) { const q = ptSegProj(ll, pts[i], pts[i + 1]); if (!best || q.d < best.d) best = { d: q.d, pt: q.pt, i }; }
-    if ((best.i > lo && best.i < hi) || (lo === 0 && hi === pts.length - 2)) { snapSegHint = best.i; return best.pt; }
+    if ((/** @type {{d: number, pt: number[], i: number}} */ (best).i > lo && /** @type {{d: number, pt: number[], i: number}} */ (best).i < hi)
+      || (lo === 0 && hi === pts.length - 2)) { snapSegHint = /** @type {{d: number, pt: number[], i: number}} */ (best).i; return /** @type {{d: number, pt: number[], i: number}} */ (best).pt; }
     lo = Math.max(0, lo - 16); hi = Math.min(pts.length - 2, hi + 16);
   }
 }
 // the snapped rendering at the weight, or null; during a release it is the captured outgoing target
+/** @returns {number[]|null} */
 function snapBlendPt() {
   if (!dispPos || snapW <= 0.001) return null;
   const pr = snapHeld ? snapProject(dispPos) : snapOutPt; if (!pr) return null;
@@ -800,25 +879,30 @@ function snapBlendPt() {
   return [org[0] + (pr[0] - org[0]) * snapW, org[1] + (pr[1] - org[1]) * snapW];
 }
 // road changes funnel here: the hint seeds from the search's segment (a 0 hint accepts far minima)
+/** @param {SnapPoly} poly @param {number} seg @returns {void} */
 function snapTakeHold(poly, seg) {
   if (snapW > 0.001 && dispPos) { const cur = snapBlendPt(); if (cur) { snapAnchor = cur; snapW = 0; } }
   snapHeld = poly; snapSegHint = seg; snapFar = 0; snapRival = null; snapOutPt = null; snapReject = null;
 }
 // ---- the road index: the active route's lines + one shipped city pack, segment-gridded ----
 // the catalogue once loaded ([{ slug, name, bbox }]); null before, [] when the library failed to load
+/** @type {SnapCatEntry[]|null} */
 let snapCat = null;
 let snapCatKicked = false; // the catalogue request has been fired
+/** @type {SnapGeo|null} */
 let snapGeo = null; // { key, polys: [{ name, pts }], grid: Map<'gx:gy', flat [polyIdx, segIdx, ...]> } - the index the matcher reads
 let snapGeoBusy = false; // an async pack build is in flight
 // the last failed build (60 s cooldown: a pack retries at most once a minute, never per fix)
 let snapGeoFailSlug = '', snapGeoFailAt = 0;
 // a 3x3 lookup covers >= 60 m, past every decision distance: one ring is a complete search
 const SNAP_CELL_M = 60;
+/** @returns {SnapPoly[]} */
 function snapRoutePolys() { const out = [];
 for (const n of Object.keys(STRETCH)) { const st = STRETCH[n]; if (!st || !st.runs) continue; for (const r of st.runs) if (r.line && r.line.length > 1) out.push({ name: n, pts: r.line }); } return out;
 }
+/** @param {SnapPoly[]} polys @param {string} key @returns {SnapGeo} */
 function snapBuildIndex(polys, key) {
-  const grid = new Map();
+  const grid = /** @type {Map<string,number[]>} */ (new Map());
   for (let pi = 0;
   pi < polys.length;
   pi++) { const pts = polys[pi].pts;
@@ -829,10 +913,12 @@ function snapBuildIndex(polys, key) {
   for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) { const k = gx + ':' + gy; let arr = grid.get(k); if (!arr) { arr = []; grid.set(k, arr); } arr.push(pi, i); } } }
   return { key, polys, grid };
 }
+/** @param {number[]} ll @returns {string|null} */
 function snapSlugFor(ll) { if (!snapCat) return null;
 for (const c of snapCat) { if (c && Array.isArray(c.bbox) && c.bbox.length === 4 && ll[0] >= c.bbox[0] && ll[0] <= c.bbox[2] && ll[1] >= c.bbox[1] && ll[1] <= c.bbox[3]) return c.slug; } return '';
 }
 // make the index match ll's area (async, never blocking): in flight the route-only index serves; installs drop holds
+/** @param {number[]} ll @returns {void} */
 function snapGeoEnsure(ll) {
   if (!snapCat && !snapCatKicked) { snapCatKicked = true; crPackIndexLoad().then(cs => { snapCat = cs || []; }, () => { snapCat = []; }); }
   const routeKey = (typeof activeRoute !== 'undefined' && activeRoute && activeRoute.id) || '';
@@ -854,10 +940,11 @@ function snapGeoEnsure(ll) {
   }, () => { snapGeoBusy = false; snapGeoFailSlug = slug; snapGeoFailAt = Date.now(); if (!snapGeo) snapGeo = snapBuildIndex(snapRoutePolys(), routeKey + '|~'); });
 }
 // the nearest polyline ({ poly, d, seg } or null): seg seeds every hold take
+/** @param {number[]} ll @returns {{poly: SnapPoly, d: number, seg: number}|null} */
 function snapNearest(ll) {
   if (!snapGeo) return null;
   const cx = Math.floor(ll[1] * MLNG / SNAP_CELL_M), cy = Math.floor(ll[0] * MLAT / SNAP_CELL_M);
-  const best = new Map();
+  const best = /** @type {Map<number,{d: number, seg: number}>} */ (new Map());
   for (let gx = cx - 1;
   gx <= cx + 1;
   gx++) for (let gy = cy - 1;
@@ -874,8 +961,10 @@ function snapNearest(ll) {
   let bp = null, bd = Infinity, bs = 0; for (const [pi, b] of best) if (b.d < bd) { bd = b.d; bp = snapGeo.polys[pi]; bs = b.seg; }
   return bp ? { poly: bp, d: bd, seg: bs } : null;
 }
-function snapHeldDist(ll) { let bd = Infinity; const pts = snapHeld.pts; for (let i = 0; i < pts.length - 1; i++) { const d = ptSegM(ll, pts[i], pts[i + 1]); if (d < bd) bd = d; } return bd; }
+/** @param {number[]} ll @returns {number} */
+function snapHeldDist(ll) { let bd = Infinity; const pts = /** @type {{pts: number[][]}} */ (snapHeld).pts; for (let i = 0; i < pts.length - 1; i++) { const d = ptSegM(ll, pts[i], pts[i + 1]); if (d < bd) bd = d; } return bd; }
 // fed per fix beside dispHoldFix: the state machine on the fix, plus the accuracy gate and timeout
+/** @param {number|null} speed @param {number} acc @param {number[]} ll @returns {void} */
 function snapFix(speed, acc, ll) {
   snapFixN++;
   // a clean is a hard exit: snapping is impossible throughout, and startClean reset the snap at the tap
@@ -902,6 +991,7 @@ function snapFix(speed, acc, ll) {
     if (snapRival.n >= SNAP_SWITCH_N) snapTakeHold(near.poly, near.seg);
   } else snapRival = null;
 }
+/** @param {number} now @returns {void} */
 function renderTick(now) {
   // the predicted track at this frame: between fixes it advances on estimated velocity, so the dot flows
   const pred = kfPredict();
@@ -918,14 +1008,15 @@ function renderTick(now) {
   // the camera state joins the push key, bucketed: every projection input is in it, so any change re-pushes
   let camKey = '';
   if (map) { camKey = Math.round(map.getZoom() * 4) / 4 + ',' + Math.round(map.getBearing() * 2) / 2 + ',' + Math.round(map.getPitch() / 2) * 2 + ',' + map.getCanvas().clientWidth + 'x' + map.getCanvas().clientHeight;
-  if (dispPos) { const pp = map.project([dispShownPos()[1], dispShownPos()[0]]);
+  if (dispPos) { const pp = map.project([/** @type {number[]} */ (dispShownPos())[1], /** @type {number[]} */ (dispShownPos())[0]]);
   camKey += ',' + Math.round(pp.x / 16) + ':' + Math.round(pp.y / 16);
   } } // the puck's projected position is the RENDERED point (dispShownPos), so a held puck never re-pushes unseen frames
   // the key carries the painted beam rot: the spring repaints through this gate, stopping when it rests
-  const key = dispPos ? dispShownPos()[0] + ',' + dispShownPos()[1] + ',' + (beamDeg != null ? Math.round(beamDeg * 10) / 10 : facingDeg) + ',' + gpsAccM + ',' + camKey : '';
+  const key = dispPos ? /** @type {number[]} */ (dispShownPos())[0] + ',' + /** @type {number[]} */ (dispShownPos())[1] + ',' + (beamDeg != null ? Math.round(beamDeg * 10) / 10 : facingDeg) + ',' + gpsAccM + ',' + camKey : '';
   if (key !== lastPushKey) { lastPushKey = key; pushGps(); } // redraw the dot/ring/beam only when something actually moved - the old timers rebuilt it on every tick regardless
   beamTick(now); followCam(now); headCam(now); syncCentreBtn();
 }
+/** @param {number} now @returns {void} */
 function renderLoop(now) {
   lastFrameAt = now;
   renderTick(now);
@@ -933,6 +1024,7 @@ function renderLoop(now) {
   if (watchId == null && dispSettled() && camSpringsRest()) { renderRaf = 0; return; }
   renderRaf = requestAnimationFrame(renderLoop);
 }
+/** @returns {void} */
 function startRenderLoop() { if (!renderRaf) { lastCamAt = lastFrameAt = performance.now(); renderRaf = requestAnimationFrame(renderLoop); } if (!renderPump) renderPump = setInterval(() => { if ((watchId != null || !dispSettled()) && performance.now() - lastFrameAt > 100) renderTick(performance.now()); if (watchId == null && dispSettled() && camSpringsRest() && !renderRaf) { clearInterval(renderPump); renderPump = 0; } }, 100); } // the pump is a starvation fallback only: a browser that is not painting (headless, occluded) delivers no animation frames, and the GPS state must still advance - on a painting phone it never fires; it parks itself when nothing is left to render
 // the camera glide: both chases are critically-damped springs carrying velocity between frames, so a stepped target lands soft, never abrupt-then-settle
 // the spring's velocity, carried between frames; zeroed whenever the follow is not the owner, so re-engages rest-start
@@ -941,6 +1033,7 @@ let camBVel = 0; // the bearing spring's velocity state (deg/s), same rule
 // a traverse suspends the cap while error exceeds 25 m: capped, a 1 km gap crawls ~50 s
 let camUncapped = false;
 // one spring step, [value, velocity]: the overshoot guard pins the value, leaving the velocity as computed
+/** @param {number} cur @param {number} tgt @param {number} vel @param {number} smoothTime @param {number} dt @returns {number[]} */
 function camSmoothDamp(cur, tgt, vel, smoothTime, dt) {
   const omega = 2 / smoothTime, x = omega * dt;
   const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
@@ -952,12 +1045,15 @@ function camSmoothDamp(cur, tgt, vel, smoothTime, dt) {
   return [out, nvel];
 }
 // the spring runs in delta space (0 = at cur), so the 360/0 seam never exists inside it
+/** @param {number} cur @param {number} tgt @param {number} vel @param {number} smoothTime @param {number} dt @returns {number[]} */
 function camSmoothDampAngle(cur, tgt, vel, smoothTime, dt) {
   const r = camSmoothDamp(0, headDelta(cur, tgt), vel, smoothTime, dt);
   return [cur + r[0], r[1]];
 }
 // the parking test: at rest when neither spring carries meaningful velocity, so the loop never parks mid-glide
+/** @returns {boolean} */
 function camSpringsRest() { return Math.hypot(camVel[0], camVel[1]) < 0.25 && Math.abs(camBVel) < 0.5; }
+/** @param {number} now @returns {void} */
 function followCam(now) {
   // the no-map guard: unguarded, getCanvas() threw on a fix in the map-failure world before the fix could record
   if (!map || !dispPos || followPaused || watchId == null) { lastCamAt = now; camVel = [0, 0]; camUncapped = false; return; }
@@ -965,7 +1061,7 @@ function followCam(now) {
   // the spring works in world metres (zoom-independent); the centre reads fresh per frame, absorbing outside moves
   const c = map.getCenter(); const cx = c.lng * MLNG, cy = c.lat * MLAT;
   // the target is the rendered point: while held, the camera rests with the puck, not the track
-  const tgt = dispShownPos(); const tx = tgt[1] * MLNG, ty = tgt[0] * MLAT;
+  const tgt = /** @type {number[]} */ (dispShownPos()); const tx = tgt[1] * MLNG, ty = tgt[0] * MLAT;
   const err = Math.hypot(tx - cx, ty - cy);
   // the exemption engages on the error, however the gap arose: the cap governs corrections (<= 25 m) only
   if (err > 25) camUncapped = true;
@@ -983,17 +1079,19 @@ function followCam(now) {
   map.jumpTo({ center: [nx / MLNG, ny / MLAT] });
 }
 // the re-centre button exists only while suspended (location on, position known, follow yielded); re-synced every tick
+/** @returns {void} */
 function syncCentreBtn() { const b = $('centreBtn'); if (b) b.classList.toggle('hidden', !(watchId != null && followPaused && !!dispPos)); }
 // re-engage from rest: the spring is the ease back (no snap), cap-exempt until under 25 m
+/** @returns {void} */
 function resumeFollow() { if (watchId == null || !followPaused) return; followPaused = false; camVel = [0, 0]; camBVel = 0; camUncapped = true; syncCentreBtn(); startRenderLoop(); }
 onMapReady(() => map.on('dragstart', () => { followPaused = true; syncCentreBtn(); }));
 // follow suspension also listens to the pointer stream: followCam's per-frame panBy eats the drag gesture, so dragstart almost never fires
 // the press itself suspends (map movable from the first pixel); the >10 px rule remains as backstop
 
-onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - the ONE pointer that pressed the canvas
+onMapReady(() => { const c = map.getCanvas(); let press = /** @type {{x: number, y: number, id: number}|null} */ (null); // {x, y, id} - the ONE pointer that pressed the canvas
   // multi-touch policy: only the arming pointer can suspend the follow; a second pointerdown never re-arms and its moves never count
   // the press takes the camera (no 10 px toll); the re-centre button lights in the same instant
-  c.addEventListener('pointerdown', e => { if (!press) { press = { x: e.clientX, y: e.clientY, id: e.pointerId }; if (watchId != null && !followPaused) { followPaused = true; syncCentreBtn(); } } });
+  c.addEventListener('pointerdown', /** @type {(e: any) => void} */ (e => { if (!press) { press = { x: e.clientX, y: e.clientY, id: e.pointerId }; if (watchId != null && !followPaused) { followPaused = true; syncCentreBtn(); } } }));
   window.addEventListener('pointermove', e => { if (press && e.pointerId === press.id && !followPaused && (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10)) { followPaused = true; syncCentreBtn(); } });
   window.addEventListener('pointerup', e => { if (press && e.pointerId === press.id) press = null; });
   window.addEventListener('pointercancel', e => { if (press && e.pointerId === press.id) press = null; });
@@ -1001,20 +1099,26 @@ onMapReady(() => { const c = map.getCanvas(); let press = null; // {x, y, id} - 
 // HEADING-UP (Andrew): whenever location is on and the camera follows, run or not, the map rotates
 
 // course-up: his heading points up, smoothed around the circle; under ~1 m/s the map holds its last bearing
+/** @type {number|null} */
 let smHeading = null;
 // when the prior fix landed: the heading path is sized by the time between fixes, not fix count
 let lastHeadFixAt = 0;
 // the performance-clock twin of lastHeadFixAt - headCam's camera lead is measured on the frame clock
 let lastHeadFixPerf = 0;
 // the filter state beside smHeading (theta stays there): {om turn rate, p00..p11 covariance, gate last gated innovation}
+/** @type {HeadFilter|null} */
 let headF = null;
 // 2a's process noise (deg^2/s^3), the replay-proven configuration; the mandated fallback on guard failure is q = 100
 const HEAD_Q = 400;
 // course noise falls with speed: at rest the course is stale or absent, at speed it sharpens
+/** @param {number} v @returns {number} */
 function headSigma(v) { return 6 + 18 / Math.max(v, 0.5); }
+/** @param {number} a @param {number} b @returns {number} */
 function headDelta(a, b) { return ((((b - a + 180) % 360) + 360) % 360) - 180; }
 // one owner for map-frame <-> camera-frame conversion: the frames are named at every call
-function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) { return mapBearing !== undefined ? headDelta(cameraMapBearing, mapBearing) : cameraMapBearing + cameraBearing; }
+/** @param {number} cameraMapBearing @param {{mapBearing?: number, cameraBearing?: number}} frame @returns {number} */
+function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) { return mapBearing !== undefined ? headDelta(cameraMapBearing, mapBearing) : cameraMapBearing + /** @type {number} */ (cameraBearing); }
+/** @param {number|null} hdg @param {number|null} speed @param {number} now @returns {void} */
 function updateHeading(hdg, speed, now) {
   // state is maintained whenever location is on, not only in a run; suspended, it freezes with the camera
   if (followPaused) return;
@@ -1051,6 +1155,7 @@ function updateHeading(hdg, speed, now) {
 }
 // heading-up applies per render tick with the pan: an easeTo would be cancelled by the next panBy, starving the rotation
 let lastHeadAt = 0;
+/** @param {number} now @returns {void} */
 function headCam(now) {
   // no-map guard; the bearing spring zeroes whenever headCam is not the owner, so re-engages start from rest
   if (!map || watchId == null || followPaused || smHeading === null) { lastHeadAt = now; camBVel = 0; return; }
@@ -1068,10 +1173,13 @@ function headCam(now) {
   map.jumpTo({ bearing: convertBearingFrame(cameraMapBearing, { cameraBearing: nextCameraBearing }) });
 }
 // no-map tolerance as pushGps: a map-less finish must reach its transaction, not throw here
+/** @returns {void} */
 function northUp() { smHeading = null; camBVel = 0; if (!map) return; if (Math.abs(map.getBearing()) > 0.5) map.easeTo({ bearing: 0, duration: 400 }); }
 // ===== POSITION FILTER ===== a Kalman filter (position plus velocity) weighing fixes by accuracy: wander discounted, steady motion tracked
+/** @type {KfState|null} */
 let kf = null; // {ox, oy, at, x:{p,v,a,b,c}, y:{...}} - a/b/c are the axis covariance terms
 const KF_Q = 0.5; // process noise: how much real acceleration to expect between fixes
+/** @param {number} z @param {KfAxis} ax @param {number} dt @param {number} R @returns {void} */
 function kfAxis(z, ax, dt, R) {
   ax.p += ax.v * dt; // predict: coast on the estimated velocity
   const a = ax.a + 2 * dt * ax.b + dt * dt * ax.c + KF_Q * dt ** 4 / 4;
@@ -1081,6 +1189,7 @@ function kfAxis(z, ax, dt, R) {
   ax.p += K0 * y; ax.v += K1 * y;
   ax.a = (1 - K0) * a; ax.b = (1 - K0) * b; ax.c = c - K1 * b;
 }
+/** @param {number[]} ll @param {number} acc @param {number} now @returns {{est: number[], snap: boolean}} */
 function kfUpdate(ll, acc, now) {
   const zx = ll[1] * MLNG, zy = ll[0] * MLAT, R = Math.max(acc, 5) ** 2;
   if (kf) {
@@ -1095,11 +1204,13 @@ function kfUpdate(ll, acc, now) {
   return { est, snap: false };
 }
 // the estimate extrapolated along its own velocity, capped at 2.5 s: between fixes the dot coasts instead of freezing
+/** @returns {number[]|null} */
 function kfPredict() { if (!kf) return null; const h = Math.min(Math.max((performance.now() - kf.atF) / 1000, 0), 2.5); return [(kf.oy + kf.y.p + kf.y.v * h) / MLAT, (kf.ox + kf.x.p + kf.x.v * h) / MLNG]; }
 // ===== FACING ===== one funnel for every facing source, smoothed around the circle so the beam never snaps
-let facingDeg = null, lastCourseAt = 0, compassOn = false;
+let facingDeg = /** @type {number|null} */ (null), lastCourseAt = 0, compassOn = false;
 // beamDeg is the beam's RENDERED angle: a spring chases facingDeg every frame, so turns sweep continuously and land at rest
-let beamDeg = null, beamVel = 0, lastBeamAt = 0;
+let beamDeg = /** @type {number|null} */ (null), beamVel = 0, lastBeamAt = 0;
+/** @param {number} now @returns {void} */
 function beamTick(now) {
   if (facingDeg == null) { beamDeg = null; beamVel = 0; lastBeamAt = now; return; }
   if (beamDeg == null) { beamDeg = facingDeg; beamVel = 0; lastBeamAt = now; return; } // first sighting: start on the heading, never sweep to it
@@ -1108,6 +1219,7 @@ function beamTick(now) {
   const r = camSmoothDampAngle(beamDeg, facingDeg, beamVel, 0.22, dt);
   beamDeg = ((r[0] % 360) + 360) % 360; beamVel = r[1];
 }
+/** @param {number} deg @param {number} [w] @returns {void} */
 function setFacing(deg, w) {
   if (typeof deg !== 'number' || isNaN(deg)) return;
   const before = facingDeg;
@@ -1115,7 +1227,8 @@ function setFacing(deg, w) {
   if (watchId != null && dispPos && (before === null || Math.abs(headDelta(before, facingDeg)) > 1.5)) pushGps();
 }
 // the orientation handler is a stable reference so stopGps can remove it (a per-start closure never was)
-let compassHandler = null, compassGen = 0;
+let compassHandler = /** @type {((e: any) => void)|null} */ (null), compassGen = 0;
+/** @returns {void} */
 function startCompass() {
   if (compassOn) return;
   if (!compassHandler) compassHandler = e => {
@@ -1126,43 +1239,60 @@ function startCompass() {
     setFacing(deg, 0.25);
   };
   const gen = compassGen;
-  const listen = () => { if (gen !== compassGen) return; compassOn = true; window.addEventListener('deviceorientationabsolute', compassHandler, true); window.addEventListener('deviceorientation', compassHandler, true); };
+  const listen = () => { if (gen !== compassGen) return; compassOn = true;
+    window.addEventListener('deviceorientationabsolute', /** @type {(e: any) => void} */ (compassHandler), true); window.addEventListener('deviceorientation', /** @type {(e: any) => void} */ (compassHandler), true); };
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') listen(); }).catch(() => {});
   else listen();
 }
+/** @returns {void} */
 function stopCompass() { compassGen++; if (compassHandler) { window.removeEventListener('deviceorientationabsolute', compassHandler, true); window.removeEventListener('deviceorientation', compassHandler, true); } compassOn = false; }
 // ===== RAW FIX LOG ===== every fix captured before any gate, raw beside filtered; on-device, inside his backup, nowhere else
-let fixLog = [], fixLogSession = null, fixLogCount = 0;
+let fixLog = /** @type {FixLogSession[]} */ ([]), fixLogSession = /** @type {FixLogSession|null} */ (null), fixLogCount = 0;
 // records only while this flag is on: runtime-only, off at boot, never stored; the gate is fixLogRaw
 let fixLogEnabled = false;
+/** @returns {boolean} */
 function fixLogIsEnabled() { return fixLogEnabled; }
 // flipping off stops recording at the next fix without closing the session or touching the stored log
+/** @param {boolean} on @returns {void} */
 function fixLogSetEnabled(on) { fixLogEnabled = !!on; }
 // ===== the fix log's form (e3): a lossless packed encoding at the storage boundary; decoder accepts e3 and plain records
 const _fxDv = new DataView(new ArrayBuffer(8));
+/** @param {number} x @returns {bigint} */
 function _fxBits(x) { _fxDv.setFloat64(0, x); return _fxDv.getBigInt64(0); }
+/** @param {bigint} b @returns {number} */
 function _fxUnbits(b) { _fxDv.setBigInt64(0, b); return _fxDv.getFloat64(0); }
+/** @param {number} x @returns {bigint} */
 function _fxUBits(x) { _fxDv.setFloat64(0, x); return _fxDv.getBigUint64(0); }
+/** @param {bigint} b @returns {number} */
 function _fxUUnbits(b) { _fxDv.setBigUint64(0, b & 0xFFFFFFFFFFFFFFFFn); return _fxDv.getFloat64(0); }
+/** @param {any} x @returns {x is number} */
 function _fxFin(x) { return typeof x === 'number' && isFinite(x); }
+/** @param {any} v @returns {v is number} */
 function _fxMuExact(v) { return _fxFin(v) && Math.round(v * 1e6) / 1e6 === v; } // an output position survives micro-degree delta encoding exactly
+/** @param {any} v @returns {v is number} */
 function _fxHtExact(v) { return _fxFin(v) && Math.round(v * 10) / 10 === v; } // an output heading survives tenths delta encoding exactly
 const _FX_LIM = 1n << 53n;
+/** @param {number} a @param {number} b @returns {bigint|null} */
 function _fxDelta(a, b) { // the signed difference of two doubles' bit patterns, or null when it cannot ride exactly
   let d = _fxUBits(a) - _fxUBits(b);
   if (d > (1n << 63n)) d -= (1n << 64n); else if (d < -(1n << 63n)) d += (1n << 64n);
   return (d <= _FX_LIM && d >= -_FX_LIM) ? d : null;
 }
+/** @returns {FxWriter} */
 function _FxWriter() { return { b: [], u8(v) { this.b.push(v & 255); }, uv(v) { while (v > 127n) { this.b.push(Number(v & 127n) | 128); v >>= 7n; } this.b.push(Number(v)); }, sv(n) { this.uv(n >= 0n ? n * 2n : -n * 2n - 1n); } }; }
+/** @param {number[]} bytes @returns {FxReader} */
 function _FxReader(bytes) { return { b: bytes,
   i: 0,
   u8() { if (this.i >= this.b.length) throw new Error('fx eof'); return this.b[this.i++]; },
   uv() { let v = 0n, s = 0n; for (;;) { const c = this.u8(); v |= BigInt(c & 127) << s; if (!(c & 128)) return v; s += 7n; if (s > 70n) throw new Error('fx varint'); } },
   sv() { const u = this.uv(); return (u & 1n) === 0n ? u / 2n : -(u + 1n) / 2n; } };
 }
+/** @param {number[]} bytes @returns {string} */
 function _fxPack7(bytes) { let out = '', acc = 0, nb = 0; for (let i = 0; i < bytes.length; i++) { acc = (acc << 8) | bytes[i]; nb += 8; while (nb >= 7) { nb -= 7; out += String.fromCharCode(0x100 + ((acc >> nb) & 127)); } acc &= (1 << nb) - 1; } if (nb > 0) out += String.fromCharCode(0x100 + ((acc << (7 - nb)) & 127)); return out; }
+/** @param {string} f @param {number} nbytes @returns {number[]} */
 function _fxUnpack7(f, nbytes) { const bytes = []; let acc = 0, nb = 0; for (let i = 0; i < f.length; i++) { const v = f.charCodeAt(i) - 0x100; if (v < 0 || v > 127) throw new Error('fx pack char'); acc = (acc << 7) | v; nb += 7; while (nb >= 8) { nb -= 8; bytes.push((acc >> nb) & 255); } acc &= (1 << nb) - 1; if (bytes.length > nbytes) throw new Error('fx pack overflow'); } if (bytes.length !== nbytes) throw new Error('fx pack length'); return bytes; }
 // the delta state an entry leaves for the next entry's encoding (nulls where a field cannot anchor)
+/** @param {FixLogEntry} e @returns {FxState} */
 function _fxState(e) {
   return { ts: _fxFin(e[0]) ? e[0] : null,
     latB: _fxFin(e[1]) ? _fxUBits(e[1]) : null,
@@ -1173,12 +1303,14 @@ function _fxState(e) {
     out: Array.isArray(e[6]) ? e[6] : null,
     run: _fxFin(e[7]) ? e[7] : 0 };
 }
+/** @param {FxWriter} w @param {number|null} v @param {bigint|null|undefined} prevB @returns {void} */
 function _fxScalarW(w, v, prevB) { // one raw leaf (acc/spd/hdg): null tag, bit-pattern delta, or absolute pattern
   if (!_fxFin(v)) { w.u8(0); return; }
   const p = _fxUBits(v);
   if (prevB !== null && prevB !== undefined) { const d = _fxDelta(v, _fxUUnbits(prevB)); if (d !== null) { w.u8(1); w.sv(d); return; } }
   w.u8(2); w.uv(p);
 }
+/** @param {FxReader} r @param {bigint|null|undefined} prevB @returns {number|null} */
 function _fxScalarR(r, prevB) {
   const t = r.u8();
   if (t === 0) return null;
@@ -1187,18 +1319,20 @@ function _fxScalarR(r, prevB) {
   throw new Error('fx scalar tag');
 }
 // append an entry's bytes, returning the state the next chains from: the one encoder all follow
+/** @param {FxWriter} w @param {FixLogEntry} e @param {FxState|null} st @returns {FxState} */
 function _fxEncEntry(w, e, st) {
   const out = Array.isArray(e[6]) ? e[6] : null;
   let key = !st || st.latB === null || st.lngB === null || !_fxFin(e[1]) || !_fxFin(e[2]) || !Number.isInteger(e[0]) || !Number.isInteger(st.ts);
   let dLat = null, dLng = null;
-  if (!key) { dLat = _fxDelta(e[1], _fxUUnbits(st.latB)); dLng = _fxDelta(e[2], _fxUUnbits(st.lngB)); if (dLat === null || dLng === null) key = true; }
+  if (!key) { dLat = _fxDelta(/** @type {number} */ (e[1]), _fxUUnbits(/** @type {bigint} */ (/** @type {FxState} */ (st).latB)));
+    dLng = _fxDelta(/** @type {number} */ (e[2]), _fxUUnbits(/** @type {bigint} */ (/** @type {FxState} */ (st).lngB))); if (dLat === null || dLng === null) key = true; }
   // a backwards timestamp cannot ride the unsigned gap varint - the entry keyframes instead
-  if (!key && e[0] < st.ts) key = true;
+  if (!key && /** @type {number} */ (e[0]) < /** @type {number} */ (/** @type {FxState} */ (st).ts)) key = true;
   let outFull = false;
   if (out) {
     outFull = key || !st || !st.out;
     if (!outFull) {
-      const p = st.out;
+      const p = /** @type {(number|null)[]} */ (/** @type {FxState} */ (st).out);
       for (let k = 0; k < 4 && !outFull; k++) if (!_fxMuExact(out[k]) || !_fxMuExact(p[k])) outFull = true;
       if (!outFull && (out[4] === null || out[4] === undefined) !== (p[4] === null || p[4] === undefined)) outFull = true;
       if (!outFull && out[4] !== null && out[4] !== undefined && (!_fxHtExact(out[4]) || !_fxHtExact(p[4]))) outFull = true;
@@ -1213,29 +1347,30 @@ function _fxEncEntry(w, e, st) {
     if (_fxFin(e[0])) { w.u8(1); w.uv(_fxUBits(e[0])); } else w.u8(0);
     if (_fxFin(e[1])) { w.u8(1); w.uv(_fxUBits(e[1])); } else w.u8(0);
     if (_fxFin(e[2])) { w.u8(1); w.uv(_fxUBits(e[2])); } else w.u8(0);
-  } else { w.uv(BigInt(e[0] - st.ts)); w.sv(dLat); w.sv(dLng); }
+  } else { w.uv(BigInt(/** @type {number} */ (e[0]) - /** @type {number} */ (/** @type {FxState} */ (st).ts))); w.sv(/** @type {bigint} */ (dLat)); w.sv(/** @type {bigint} */ (dLng)); }
   _fxScalarW(w, e[3], st ? st.accB : null); _fxScalarW(w, e[4], st ? st.spdB : null); _fxScalarW(w, e[5], st ? st.hdgB : null);
   if (out) {
     if (outFull) {
       const p = out;
       if (_fxMuExact(p[0]) && _fxMuExact(p[1]) && _fxMuExact(p[2]) && _fxMuExact(p[3]) && (p[4] === null || p[4] === undefined || _fxHtExact(p[4]))) {
         w.u8(0);
-        for (let k = 0; k < 4; k++) w.sv(BigInt(Math.round(p[k] * 1e6)));
+        for (let k = 0; k < 4; k++) w.sv(BigInt(Math.round(/** @type {number} */ (p[k]) * 1e6)));
         if (p[4] === null || p[4] === undefined) w.u8(0); else { w.u8(1); w.sv(BigInt(Math.round(p[4] * 10))); }
       } else {
         w.u8(1);
-        for (let k = 0; k < 4; k++) { if (_fxFin(p[k])) { w.u8(1); w.uv(_fxUBits(p[k])); } else w.u8(0); }
+        for (let k = 0; k < 4; k++) { if (_fxFin(p[k])) { w.u8(1); w.uv(_fxUBits(/** @type {number} */ (p[k]))); } else w.u8(0); }
         if (_fxFin(p[4])) { w.u8(1); w.uv(_fxUBits(p[4])); } else w.u8(0);
       }
     } else {
-      const p = st.out;
-      for (let k = 0; k < 4; k++) w.sv(BigInt(Math.round(out[k] * 1e6) - Math.round(p[k] * 1e6)));
-      if (out[4] === null || out[4] === undefined) w.u8(0); else { w.u8(1); w.sv(BigInt(Math.round(out[4] * 10) - Math.round(p[4] * 10))); }
+      const p = /** @type {(number|null)[]} */ (/** @type {FxState} */ (st).out);
+      for (let k = 0; k < 4; k++) w.sv(BigInt(Math.round(/** @type {number} */ (out[k]) * 1e6) - Math.round(/** @type {number} */ (p[k]) * 1e6)));
+      if (out[4] === null || out[4] === undefined) w.u8(0); else { w.u8(1); w.sv(BigInt(Math.round(/** @type {number} */ (out[4]) * 10) - Math.round(/** @type {number} */ (p[4]) * 10))); }
     }
   }
   if (runCh) w.uv(BigInt(runV));
   return _fxState(e);
 }
+/** @param {FxReader} r @param {FxState|null} st @returns {{e: FixLogEntry, st: FxState}} */
 function _fxDecEntry(r, st) { // read one entry back to its absolute in-memory form; throws on any structural fault (the caller ends the session there)
   const fl = r.u8(), key = !!(fl & 1), hasOut = !!(fl & 2), outFull = !!(fl & 4), runCh = !!(fl & 8);
   let ts, lat, lng;
@@ -1245,12 +1380,12 @@ function _fxDecEntry(r, st) { // read one entry back to its absolute in-memory f
     lng = r.u8() === 1 ? _fxUUnbits(r.uv()) : null;
   } else {
     if (!st || st.latB === null || st.lngB === null || !Number.isInteger(st.ts)) throw new Error('fx delta base');
-    ts = st.ts + Number(r.uv());
+    ts = /** @type {number} */ (st.ts) + Number(r.uv());
     lat = _fxUUnbits(st.latB + r.sv());
     lng = _fxUUnbits(st.lngB + r.sv());
   }
   const acc = _fxScalarR(r, st ? st.accB : null), spd = _fxScalarR(r, st ? st.spdB : null), hdg = _fxScalarR(r, st ? st.hdgB : null);
-  let out = null;
+  let out = /** @type {[number|null, number|null, number|null, number|null, number|null]|null} */ (null);
   if (hasOut) {
     if (outFull) {
       const t = r.u8();
@@ -1260,50 +1395,33 @@ function _fxDecEntry(r, st) { // read one entry back to its absolute in-memory f
     } else {
       if (!st || !st.out) throw new Error('fx out base');
       const p = st.out; out = [0, 0, 0, 0, null];
-      for (let k = 0; k < 4; k++) out[k] = (Math.round(p[k] * 1e6) + Number(r.sv())) / 1e6;
-      out[4] = r.u8() === 1 ? (Math.round(p[4] * 10) + Number(r.sv())) / 10 : null;
+      for (let k = 0; k < 4; k++) out[k] = (Math.round(/** @type {number} */ (p[k]) * 1e6) + Number(r.sv())) / 1e6;
+      out[4] = r.u8() === 1 ? (Math.round(/** @type {number} */ (p[4]) * 10) + Number(r.sv())) / 10 : null;
     }
   }
   const run = runCh ? Number(r.uv()) : (st ? st.run : 0);
-  const e = [ts, lat, lng, acc, spd, hdg, out, run];
+  const e = /** @type {FixLogEntry} */ ([ts, lat, lng, acc, spd, hdg, /** @type {[number|null, number|null, number|null, number|null, number|null]|null} */ (out), run]);
   return { e, st: _fxState(e) };
 }
-function _fxEncodeEntry(e, prev) {
-  const key = ['K', e[0], e[1], e[2], _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), e[6], Number.isFinite(e[7]) ? e[7] : 0];
-  if (!prev) return key;
-  const dTs = (typeof e[0] === 'number' && typeof prev[0] === 'number') ? e[0] - prev[0] : NaN;
-  if (!Number.isInteger(dTs)) return key; // an unanchored or fractional timestamp cannot delta — the entry keyframes
-  if (typeof e[1] !== 'number' || typeof prev[1] !== 'number' || !isFinite(e[1]) || !isFinite(prev[1]) || typeof e[2] !== 'number' || typeof prev[2] !== 'number' || !isFinite(e[2]) || !isFinite(prev[2])) return key;
-  // a refused (null / non-finite) coordinate on either side keyframes
-  const dLat = _fxBits(e[1]) - _fxBits(prev[1]), dLng = _fxBits(e[2]) - _fxBits(prev[2]), LIM = 9007199254740991n;
-  if (dLat > LIM || dLat < -LIM || dLng > LIM || dLng < -LIM) return key;
-  let outSlot = null;
-  if (e[6]) {
-    outSlot = ['F', e[6][0], e[6][1], e[6][2], e[6][3], e[6][4]];
-    const p = prev[6];
-    if (p && _fxMuExact(e[6][0]) && _fxMuExact(e[6][1]) && _fxMuExact(e[6][2]) && _fxMuExact(e[6][3]) && _fxMuExact(p[0]) && _fxMuExact(p[1]) && _fxMuExact(p[2]) && _fxMuExact(p[3])) {
-      const d = [Math.round(e[6][0] * 1e6) - Math.round(p[0] * 1e6), Math.round(e[6][1] * 1e6) - Math.round(p[1] * 1e6), Math.round(e[6][2] * 1e6) - Math.round(p[2] * 1e6), Math.round(e[6][3] * 1e6) - Math.round(p[3] * 1e6)];
-      if (e[6][4] === null || e[6][4] === undefined) outSlot = ['D', d[0], d[1], d[2], d[3], 'n'];
-      else if (_fxHtExact(e[6][4]) && _fxHtExact(p[4])) outSlot = ['D', d[0], d[1], d[2], d[3], Math.round(e[6][4] * 10) - Math.round(p[4] * 10)];
-    }
-  }
-  return [dTs, Number(dLat), Number(dLng), _fxScalar(e[3]), _fxScalar(e[4]), _fxScalar(e[5]), outSlot, e[7] === prev[7] ? null : (Number.isFinite(e[7]) ? e[7] : 0)];
-}
+/** @param {FixLogSession[]} sessions @returns {FixLogRecord} */
 function fixLogEncodeSessions(sessions) { return { e: 3,
   s: sessions.map(s => { const w = _FxWriter(); let st = null; for (const e of s.f) st = _fxEncEntry(w, e, st); return { v: s.v, t0: s.t0, n: s.f.length, b: w.b.length, f: _fxPack7(w.b) }; }) };
 }
 // any stored or backup value -> the absolute sessions, through the one lens; a non-log decodes to []
+/** @param {any} parsed @returns {FixLogSession[]} */
 function fixLogDecodeSessions(parsed) {
+  /** @param {any} x @returns {number|null} */
   const numOrNull = x => (typeof x === 'number' && isFinite(x)) ? x : null;
-  const sessions = [];
+  const sessions = /** @type {FixLogSession[]} */ ([]);
+  /** @param {any} s @param {FixLogEntry[]} fixes @returns {void} */
   const pushS = (s, fixes) => { if (fixes.length) sessions.push({ v: typeof s.v === 'string' ? s.v : '', t0: Number.isFinite(s.t0) ? s.t0 : 0, f: fixes }); };
   if (Array.isArray(parsed)) { // the v1 form: absolute entries, the 1.189 lens verbatim
     for (const s of parsed) {
       if (!s || typeof s !== 'object' || Array.isArray(s) || !Array.isArray(s.f)) continue;
-      const fixes = [];
+      const fixes = /** @type {FixLogEntry[]} */ ([]);
       for (const e of s.f) {
         if (!Array.isArray(e) || e.length < 6) continue;
-        const out = (Array.isArray(e[6]) && e[6].length === 5) ? e[6].map(numOrNull) : null;
+        const out = (Array.isArray(e[6]) && e[6].length === 5) ? /** @type {[number|null, number|null, number|null, number|null, number|null]} */ (e[6].map(numOrNull)) : null;
         fixes.push([numOrNull(e[0]), numOrNull(e[1]), numOrNull(e[2]), numOrNull(e[3]), numOrNull(e[4]), numOrNull(e[5]), out, Number.isFinite(e[7]) ? e[7] : 0]);
       }
       pushS(s, fixes);
@@ -1313,7 +1431,7 @@ function fixLogDecodeSessions(parsed) {
   if (parsed && typeof parsed === 'object' && parsed.e === 3 && Array.isArray(parsed.s)) {
     for (const s of parsed.s) {
       if (!s || typeof s !== 'object' || Array.isArray(s) || typeof s.f !== 'string' || !Number.isInteger(s.n) || s.n < 0 || !Number.isInteger(s.b) || s.b < 0) continue;
-      const fixes = [];
+      const fixes = /** @type {FixLogEntry[]} */ ([]);
       try {
         const r = _FxReader(_fxUnpack7(s.f, s.b));
         let st = null;
@@ -1327,14 +1445,16 @@ function fixLogDecodeSessions(parsed) {
   return sessions;
 }
 // the account lives in a WeakMap, never on the session object, so sessions keep their shape for readers
-const _fxAcct = new WeakMap();
+const _fxAcct = /** @type {WeakMap<FixLogSession,{b: number, bl: number[]}>} */ (new WeakMap());
 // (re)build the account by running the encoder into a scratch writer: it can never drift from storage
+/** @param {FixLogSession} s @returns {void} */
 function _fxMeasure(s) {
   const w = _FxWriter(); let st = null; const bl = [];
   for (const e of s.f) { const before = w.b.length; st = _fxEncEntry(w, e, st); bl.push(w.b.length - before); }
   _fxAcct.set(s, { b: w.b.length, bl });
 }
 // the record's estimated length from the byte accounts (7 bits per character plus shells), deliberately rounded up
+/** @returns {number} */
 function fixLogEstChars() {
   let t = 48;
   for (const s of fixLog) { const a = _fxAcct.get(s); t += 80 + Math.ceil((a ? a.b : 0) * 8 / 7); }
@@ -1345,19 +1465,23 @@ for (const s of fixLog) { fixLogCount += s.f.length; _fxMeasure(s); } } catch (e
 fixLogCount = 0;
 } // a damaged log record costs the debug history, never the boot
 // the caps (at open and every append): oldest sessions evict whole; a lone over-cap session head-trims, newest surviving
+/** @returns {void} */
 function fixLogTrim() {
   // a session that arrived without its byte account is measured before any cap is judged on it
   for (const s of fixLog) if (!_fxAcct.has(s)) _fxMeasure(s);
   while (fixLogCount > FIXLOG_MAX && fixLog.length) {
     const s = fixLog[0];
-    if (fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop); const a = _fxAcct.get(s); const rb = a.bl.splice(0, drop); let rs = 0; for (const x of rb) rs += x; a.b = Math.max(0, a.b - rs); if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop; } break; } // a LONE session is head-trimmed, live or not (at boot there is no live session, and evicting a whole log for a hair over a cap would be the tail eating the dog); with several sessions the oldest still goes whole. The new head's account entry is RE-MEASURED in its keyframe form, never bumped by an allowance: an allowance the per-entry lengths never repay would accumulate on every trim and inflate the estimate until the character cap ate the log (Codex P2, PR #31)
+    // a LONE session is head-trimmed, live or not; the new head is re-measured in keyframe form, never allowance-bumped
+    if (fixLog.length === 1) { const drop = s.f.length - FIXLOG_MAX; if (drop > 0) { s.f.splice(0, drop);
+      const a = /** @type {{b: number, bl: number[]}} */ (_fxAcct.get(s)); const rb = a.bl.splice(0, drop); let rs = 0; for (const x of rb) rs += x; a.b = Math.max(0, a.b - rs);
+      if (s.f.length) { const w = _FxWriter(); _fxEncEntry(w, s.f[0], null); a.b += w.b.length - (a.bl[0] || 0); a.bl[0] = w.b.length; } else a.b = 0; fixLogCount -= drop; } break; }
     fixLogCount -= s.f.length; fixLog.shift();
   }
   while (fixLogEstChars() > FIXLOG_MAX_CHARS && fixLog.length) {
     const s = fixLog[0];
     if (fixLog.length === 1) {
       if (!s.f.length) break;
-      const a = _fxAcct.get(s);
+      const a = /** @type {{b: number, bl: number[]}} */ (_fxAcct.get(s));
       // one drop per trim, walked 128 characters past the excess: under the cap in a single pass
       let drop = 0, rs = 0; const excess = fixLogEstChars() - FIXLOG_MAX_CHARS + 128;
       // the drop judges the aggregate packed size (as fixLogEstChars reads it): per-entry ceilings over-count and stop short
@@ -1375,6 +1499,7 @@ function fixLogTrim() {
   }
 }
 fixLogTrim(); // a log written under a larger cap (or planted) is bounded at load too
+/** @returns {void} */
 function fixLogOpen() { if (!fixLogEnabled) return;
 try { fixLogSession = { v: ($('ver') ? $('ver').textContent.trim() : ''), t0: Date.now(), f: [] };
 _fxAcct.set(fixLogSession, { b: 0, bl: [] });
@@ -1384,14 +1509,16 @@ markDirty('fixlog');
 } catch (e) { fixLogSession = null;
 } }
 // the fix, before any gate: returns the live entry for fixLogOut or null, faults silent to GPS
+/** @param {GeolocationPosition} pos @returns {FixLogEntry|null} */
 function fixLogRaw(pos) {
   try {
     if (!fixLogEnabled) return null; // THE gate - off means the fix is never recorded and the log's storage is never touched
     // the switch may have been flipped on mid-watch: open the session now, so recording starts with THIS fix
     if (!fixLogSession) fixLogOpen();
     if (!fixLogSession) return null;
-    const c = pos.coords || {};
-    const e = [typeof pos.timestamp === 'number' ? pos.timestamp : null, c.latitude, c.longitude, c.accuracy != null ? c.accuracy : null, c.speed != null ? c.speed : null, c.heading != null ? c.heading : null, null, runStart || 0];
+    const c = /** @type {GeolocationCoordinates} */ (pos.coords || {});
+    const e = /** @type {FixLogEntry} */ ([typeof pos.timestamp === 'number' ? pos.timestamp : null, c.latitude, c.longitude,
+      c.accuracy != null ? c.accuracy : null, c.speed != null ? c.speed : null, c.heading != null ? c.heading : null, null, runStart || 0]);
     const f = fixLogSession.f, w = _FxWriter();
     _fxEncEntry(w, e, f.length ? _fxState(f[f.length - 1]) : null); // measure the entry through the one encoder, so its byte account is exact
     let a = _fxAcct.get(fixLogSession); if (!a) { a = { b: 0, bl: [] }; _fxAcct.set(fixLogSession, a); }
@@ -1400,13 +1527,15 @@ function fixLogRaw(pos) {
   } catch (err) { return null; }
 }
 // the same fix after the estimator: gpsPos is the filtered position, dispPos the display's, smHeading the course
+/** @param {FixLogEntry|null} e @returns {void} */
 function fixLogOut(e) {
   try {
     if (!e) return;
-    e[6] = [+gpsPos[0].toFixed(6), +gpsPos[1].toFixed(6), dispPos ? +dispPos[0].toFixed(6) : null, dispPos ? +dispPos[1].toFixed(6) : null, smHeading != null ? Math.round(smHeading * 10) / 10 : null];
+    e[6] = [+/** @type {number[]} */ (gpsPos)[0].toFixed(6), +/** @type {number[]} */ (gpsPos)[1].toFixed(6),
+      dispPos ? +dispPos[0].toFixed(6) : null, dispPos ? +dispPos[1].toFixed(6) : null, smHeading != null ? Math.round(smHeading * 10) / 10 : null];
     const a = fixLogSession ? _fxAcct.get(fixLogSession) : null;
     if (a) { // the output grew the entry: re-measure it and correct the byte account
-      const f = fixLogSession.f; let idx = f.length - 1;
+      const f = /** @type {FixLogSession} */ (fixLogSession).f; let idx = f.length - 1;
       if (f[idx] !== e) idx = f.lastIndexOf(e);
       if (idx >= 0 && a.bl[idx] !== undefined) { const w = _FxWriter(); _fxEncEntry(w, e, idx > 0 ? _fxState(f[idx - 1]) : null); a.b += w.b.length - a.bl[idx]; a.bl[idx] = w.b.length; }
     }
@@ -1415,10 +1544,12 @@ function fixLogOut(e) {
   } catch (err) {}
 }
 // the tail flushes on cadence; the no-session return is load-bearing: off must never mark the log dirty
+/** @returns {void} */
 function fixLogClose() { if (!fixLogSession) return; fixLogSession = null; markDirty('fixlog'); }
 // the record lands in e3 form (the codec note at the loader); in-memory sessions stay absolute
 /** @returns {StorageOutcome} */ function saveFixLog() { const ok = lsSet(LS.fixlog, JSON.stringify(fixLogEncodeSessions(fixLog))); return ok ? storeOk() : storeFail('fixlog', true); }
 let spdShown = '0'; // the readout's standing value: slots double a digit mid-swap, so the DOM is never the source
+/** @param {string} txt @returns {void} */
 function setSpdNum(txt) { // the readout settles digit by digit instead of snapping (recipe 36)
   const el = $('spdNum'); if (!el || txt === spdShown) return;
   const prev = spdShown; spdShown = txt;
@@ -1440,6 +1571,7 @@ function setSpdNum(txt) { // the readout settles digit by digit instead of snapp
   el.classList.add('animating');
   el._subtleT = setTimeout(() => { el._subtleT = 0; el.classList.remove('animating'); el.textContent = txt; }, 470); // the slots collapse to plain text once the swap lands
 }
+/** @param {GeolocationPosition} pos @returns {void} */
 function acceptFix(pos) {
   // the fix is logged BEFORE every gate below - a refused fix is recorded as delivered, with no estimator output
   const fxEnt = fixLogRaw(pos);
@@ -1485,7 +1617,7 @@ function acceptFix(pos) {
     // a stopped fix records nothing; coverage still runs, and the next fix measures from the last recorded point
     const stillFix = typeof speed === 'number' && speed >= 0 && speed < GPS_STILL_MPS;
     if (!stillFix) {
-      const newPt = [+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)];
+      const newPt = /** @type {TrailPoint} */ ([+sm[0].toFixed(6), +sm[1].toFixed(6), Math.floor(now / 1000)]);
       // the counter's half is the owner's (RUNDIST.record); the trail append stays in acceptFix, eviction following it
       RUNDIST.record(newPt);
       trail.push(newPt);
@@ -1499,7 +1631,8 @@ function acceptFix(pos) {
 }
 // coverage caches: per-street Sets persist across fixes and samples are boxed once, so a fix distance-tests streets it can reach
 
-let covSetsFor = null, covSets = {}, covBoxesFor = -1, covBoxes = {}, covSamplesGen = 0;
+let covSetsFor = /** @type {object|null} */ (null), covSets = /** @type {Record<string,Set<number>>} */ ({}), covBoxesFor = -1, covBoxes = /** @type {Record<string,number[]>} */ ({}), covSamplesGen = 0;
+/** @param {number[]} ll @returns {void} */
 function coverFix(ll) {
   if (covSetsFor !== coveredIdx) { covSets = {}; for (const n of Object.keys(coveredIdx)) covSets[n] = new Set(coveredIdx[n]); covSetsFor = coveredIdx; }
   if (covBoxesFor !== covSamplesGen) { covBoxes = {};
@@ -1524,11 +1657,14 @@ function coverFix(ll) {
 
 let weakToastAt = 0;
 // the Status GPS row's amber state: set by a permission denial (code 1), cleared by any accepted fix
+/** @type {boolean} */
 let gpsDenied = false;
+/** @param {GeolocationError} e @returns {void} */
 function gpsError(e) {
   if (e && e.code === 1) { gpsDenied = true; showBanner('Location is off', 'Allow location for this site in your browser settings'); stopGps(); return; }
   if (Date.now() - weakToastAt > 60000) { weakToastAt = Date.now(); showBanner('GPS signal weak', 'Still trying - marks may be off until it improves'); }
 }
+/** @param {boolean} [fromRun] @param {boolean} [restart] @returns {void} */
 function startGps(fromRun, restart) {
   // a view-only reused for a clean must flip Locate to recording (the sync sits below this return)
   if (watchId != null) { if (fromRun) { gpsFromRun = true; $('gpsBtn').classList.add('on'); $('gpsBtn').classList.toggle('rec', true); renderIcons(); } return; }
@@ -1557,6 +1693,7 @@ function startGps(fromRun, restart) {
   // the speed gate is the watch: it appears with location on, reading 0 until a fix prices speed
   setSpdNum('0'); $('spdPill').classList.remove('hidden');
 }
+/** @param {boolean} [silent] @returns {void} */
 function stopGps(silent) {
   watchGen++; // invalidate any callback still queued from this watcher
   fixLogClose(); // the log session ends with the watch

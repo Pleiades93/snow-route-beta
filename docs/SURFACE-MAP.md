@@ -28,6 +28,11 @@ Stage 3d (whatsnew and brand-snow join the type check): same
 verdict, no update needed.
 Stage 4 (strict-null gate wired for the storage files): same
 verdict, no update needed.
+S1-FINISH (app3 joins the type check and the strict-null storage
+set): parts/ changed by JSDoc annotation plus two proven-dead
+declarations deleted (app3's _fxEncodeEntry, app1's LS_GLOBAL.prep
+key) - no surface, element or behaviour changed. Same verdict, no
+update needed.
 
 ## The snow rule (one rule, app-wide)
 

@@ -33,7 +33,7 @@ import vm from 'node:vm';
 
 const src = readFileSync('parts/app3.js', 'utf8');
 const startAt = src.indexOf('const _fxDv = new DataView');
-const endAt = src.indexOf('function _fxEncodeEntry(e, prev)');
+const endAt = src.indexOf('function fixLogEncodeSessions(sessions)');
 if (startAt < 0 || endAt < 0 || endAt <= startAt) throw new Error('fixlog codec block anchors not found in parts/app3.js');
 const block = src.slice(startAt, endAt) + '\n;globalThis.__fx = { _FxWriter, _FxReader, _fxEncEntry, _fxDecEntry };';
 if (!block.includes('function _fxEncEntry') || !block.includes('function _fxDecEntry')) {

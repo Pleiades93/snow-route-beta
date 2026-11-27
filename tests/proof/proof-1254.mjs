@@ -50,12 +50,12 @@ check('3 (O-02): every street-name-keyed container on the load path is null-prot
   && app1.includes('const STRETCH = Object.create(null);')
   && app1.includes('const out = Object.create(null);')
   && app1.includes('const runsOf = Object.create(null), totals = Object.create(null);')
-  && app3.includes('const SAMPLES = Object.create(null);')
-  && app3.includes('const out = Object.create(null);'));
+  && app3.includes('const SAMPLES = /** @type {Record<string,LatLng[]>} */ (Object.create(null));')
+  && app3.includes('const out = /** @type {Record<string,LatLng[]>} */ (Object.create(null));'));
 
 // ---------- O-04: one in-flight wake-lock request ----------
 check('4 (O-04): syncWake shares one pending request and awaits it',
-  app3.includes('let wakeLock = null, wakePending = null;')
+  app3.includes('let wakeLock = /** @type {WakeLockSentinel|null} */ (null), wakePending = /** @type {Promise<void>|null} */ (null);')
   && app3.includes('if (!wakePending) {')
   && app3.includes('await wakePending;'));
 
@@ -108,7 +108,7 @@ check('10 (#10): packTileEnum exists and both views consume it; the enumeration 
 const lsg = slice(app1, 'const LS_GLOBAL', '};');
 const values = [...lsg.matchAll(/'((?:snowroute)[^']+)'/g)].map(m => m[1]);
 check('11 (R-05): LS_GLOBAL parsed (' + values.length + ' values) and every value appears in STORAGE-SCHEMA.md',
-  values.length >= 7 && values.every(v => schema.includes(v)));
+  values.length >= 6 && values.every(v => schema.includes(v)));
 check('12 (R-05): the dp entry documents its shape and terms',
   schema.includes('`snowroute.v1.dp`') && schema.includes('`{t, at}`') && schema.includes('reads as tier 0'));
 
