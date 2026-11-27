@@ -708,44 +708,28 @@ function springSheet(sheet, q0, qT, v0, apply, finish) {
   };
   sheet._spring = requestAnimationFrame(step);
 }
-// the sheet lifecycle owner: opening, detents, gesture settlement, interruption and terminal cleanup for both sheets
-const SHEETS = (() => {
+const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture settlement, interruption and terminal cleanup for both sheets
   function clearHeight(sheet) { sheet.style.height = ''; sheet.style.maxHeight = ''; }
-  function open(sheet, prepare, { keepHeight = false } = {}) {
-    if (!keepHeight) clearHeight(sheet);
-    if (prepare) prepare();
-    sheet.classList.add('open');
+  function open(sheet, prepare, keepHeight) { if (!keepHeight) clearHeight(sheet); if (prepare) prepare(); sheet.classList.add('open'); }
+  function setFull(sheet, full) { if (full) { sheet.classList.add('full'); sheet.style.maxHeight = 'none'; sheet.style.height = sheetFullH(vvHeight()) + 'px'; } else { sheet.classList.remove('full'); clearHeight(sheet); } }
+  function close(sheet) { // the close animates: freeze the height for the whole slide-down, clear it only when the motion ends
+    cancelSheetSpring(sheet);
+    if (sheet.id === 'sheet') collapseNoteEditor(); // the editor resets BEFORE the height is measured
+    if (!sheet.classList.contains('open')) { sheet.classList.remove('full'); sheet.classList.remove('dragging'); return; }
+    sheet.style.height = sheet.offsetHeight + 'px'; sheet.style.maxHeight = 'none'; sheet.style.transform = '';
+    sheet.classList.remove('open'); sheet.classList.remove('full'); sheet.classList.remove('snapping'); sheet.classList.remove('dragging'); // the base (closing) transition and curve own the motion from here
+    setTimeout(() => { if (!sheet.classList.contains('open')) clearHeight(sheet); }, 480);
   }
-  function setFull(sheet, full) {
-    if (full) { sheet.classList.add('full'); sheet.style.maxHeight = 'none'; sheet.style.height = sheetFullH(vvHeight()) + 'px'; }
-    else { sheet.classList.remove('full'); clearHeight(sheet); }
-  }
-  function resetNoteEditor(sheet) { if (sheet.id === 'sheet') collapseNoteEditor(); } // an animated close of the Streets sheet resets an open note editor
-  function close(sheet, height, velocity) {
-    const fromGesture = velocity !== undefined;
-    if (fromGesture) sheet.classList.remove('full');
-    else {
-      cancelSheetSpring(sheet);
-      resetNoteEditor(sheet); // the editor resets BEFORE the height is measured
-      if (!sheet.classList.contains('open')) { sheet.classList.remove('full'); sheet.classList.remove('dragging'); return; }
-      height = sheet.offsetHeight;
-    }
-    sheet.style.height = height + 'px'; sheet.style.maxHeight = 'none'; // the close animates: freeze the height for the whole slide-down
-    const land = () => {
+  function closeGesture(sheet, height, velocity) { // spring the sheet off the bottom edge at the finger's speed, then land closed
+    sheet.classList.remove('full');
+    sheet.style.height = height + 'px'; sheet.style.maxHeight = 'none';
+    springSheet(sheet, 0, height * 1.05 + 8, -velocity * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => {
       sheet.classList.remove('open');
-      if (fromGesture) {
-        clearHeight(sheet); sheet.style.transform = '';
-        resetNoteEditor(sheet); // a drag/flick close lands here: the note-editor reset rides both close funnels
-        // the close lands under .dragging: closed state settles first; .dragging lifts two frames later, unanimated
-        requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
-      } else {
-        sheet.classList.remove('full'); sheet.classList.remove('snapping'); sheet.classList.remove('dragging'); // the base (closing) transition and curve own the motion from here
-        setTimeout(() => { if (!sheet.classList.contains('open')) clearHeight(sheet); }, 480);
-      }
-    };
-    if (fromGesture) { // spring the sheet off the bottom edge at the finger's speed, then land closed
-      springSheet(sheet, 0, height * 1.05 + 8, -velocity * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, land);
-    } else { sheet.style.transform = ''; land(); }
+      clearHeight(sheet); sheet.style.transform = '';
+      if (sheet.id === 'sheet') collapseNoteEditor(); // a drag/flick close lands here, not in close: the note-editor reset rides both close funnels
+      // the close lands under .dragging: closed state settles first; .dragging lifts two frames later, unanimated
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
+    });
   }
   function closeAll() { document.querySelectorAll('.sheet').forEach(sheet => close(sheet)); } // every sheet by class, present and future: no hand-kept list to fall behind a new menu
   // the drag/flick zone is the empty top strip (handle + title row): content below is pure scrolling
@@ -829,18 +813,16 @@ const SHEETS = (() => {
         });
       };
       if (flick > 0) { settleStop(sheetFullH(vh)); return; }
-      if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else close(sheet, h, v); return; }
-      if (h < defH * 0.55) { close(sheet, h, v); return; }
+      if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else closeGesture(sheet, h, v); return; }
+      if (h < defH * 0.55) { closeGesture(sheet, h, v); return; }
       if (h > (defH + sheetFullH(vh)) / 2) { settleStop(sheetFullH(vh)); return; }
       settleStop(naturalH);
     };
     sheet.addEventListener('pointerup', end);
     sheet.addEventListener('pointercancel', end);
   }
-  makeSheetDraggable($('sheet'));
-  makeSheetDraggable($('pacePanel'));
-  return { open, close, closeAll, setFull };
-})();
+  [$('sheet'), $('pacePanel')].forEach(makeSheetDraggable);
+  return { open, close, closeAll, setFull }; })();
 function closeSheets() { SHEETS.closeAll(); }
 // one route surface (boot splash and Routes tab share it); the loaded-route marker is a tab-mode-only signal
 function routeRowShell(tag, name, sub, opts) { // the one builder: every row builds here (one place to drift); text via textContent, never markup

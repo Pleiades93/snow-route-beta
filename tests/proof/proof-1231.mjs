@@ -45,7 +45,7 @@ check('3a: springSheet stands with its closed form and omega', app2.includes('co
 check('3b: the spring lands exactly and is hard-capped', app2.includes('(Math.abs(q - qT) < 0.7 && Math.abs(vel) < 15) || t > 1'));
 check('3c: both settle paths start the spring at the release velocity', app2.includes('springSheet(sheet, h, targetH, v * 1000') && app2.includes('springSheet(sheet, 0, height * 1.05 + 8, -velocity * 1000'));
 check('3d: a close cancels a running spring first', (() => {
-  const i = app2.indexOf('function close(sheet, height, velocity)');
+  const i = app2.indexOf('function close(sheet)');
   const seg = i < 0 ? '' : app2.slice(i, i + 700);
   const cancel = seg.indexOf('cancelSheetSpring(sheet);');
   const guard = seg.indexOf("if (!sheet.classList.contains('open'))");

@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "1bf4d01c6fc1be70ab129ebd695fc1a06134f8fcf22dfff97448a1525c807478",
+  "canonical_registry_sha256": "991198e1d73ea883d995ec5dee34f3c452fff8e8de83fa738276968b437e7d25",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -14080,10 +14080,10 @@
   {
    "added": "2026-11-26",
    "file": "parts/app3.js",
-   "fix": "Phase 3: opening a saved clean's detail goes through the sheet owner with keepHeight, so the detail keeps the height the Pace sheet already holds (the shipped behaviour) instead of snapping to a stop.",
+   "fix": "Phase 3: opening a saved clean's detail goes through the sheet owner with the keep-height flag, so the detail keeps the height the Pace sheet already holds (the shipped behaviour) instead of snapping to a stop.",
    "fix_id": "phase3-sheet-owner",
    "id": "phase3-openclean-keeps-height",
-   "pattern": "SHEETS.open($('pacePanel'), null, { keepHeight: true });",
+   "pattern": "SHEETS.open($('pacePanel'), null, true);",
    "type": "grep_present"
   }
  ]

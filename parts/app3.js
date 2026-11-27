@@ -317,7 +317,7 @@ function openClean(i) {
     updateCount();
   };
   cv.appendChild(del);
-  SHEETS.open($('pacePanel'), null, { keepHeight: true });
+  SHEETS.open($('pacePanel'), null, true);
   cv.scrollTop = 0;
 }
 function backToCleans() {
