@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "deb1993ee4975a8b7cf2085f171bb472f2509b2598100762eb89172f8b0b441d",
+  "canonical_registry_sha256": "988bae55d3fc80c779ad26d5fc07a1aace39ece16dcc4dc33de0f71f99e8a460",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1629,
-   "included": 1599,
+   "canonical": 1630,
+   "included": 1600,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14246,6 +14246,15 @@
    "fix_id": "graft-a-machinery",
    "id": "ga-scan-ownership",
    "pattern": "function scanSourceOwnership(node, file, at) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-pr-limits.py",
+   "fix": "G-A: the PR limits judge flags a touched comment stating a prohibition (never / must / only ... may) as a warning quoting it and asking where its check is; converted rules block, prose warns.",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-prohibition-warning",
+   "pattern": "where is its check?",
    "type": "grep_present"
   }
  ]

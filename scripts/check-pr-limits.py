@@ -49,7 +49,7 @@ LARGE_LABEL = "large-change"
 # Root files that exist today; a new one edits this list in the same change.
 ROOT_ALLOWLIST = {
     ".gitignore", "AGENTS.md", "CHANGELOG.md", "DEVELOPMENT_RULES.md",
-    "README.md", "apple-touch-icon.png", "favicon.svg", "flags.js",
+    "README.md", "apple-touch-icon.png", "eslint.config.js", "favicon.svg", "flags.js",
     "icon-1024.png", "icon-16.png", "icon-192.png", "icon-32.png",
     "icon-512.png", "icon-maskable-512.png", "index.html",
     "manifest.json", "splash-artwork-512.png", "sw.js",
@@ -75,11 +75,12 @@ def line_errors(path, text):
     errs = []
     if len(text) > LINE_CHAR_LIMIT:
         errs.append(f"{path}: added line of {len(text)} chars "
-                    f"(limit {LINE_CHAR_LIMIT})")
+                    f"(limit {LINE_CHAR_LIMIT}). Wrap or shorten the line.")
     words = comment_words(path, text)
     if words is not None and words > COMMENT_WORD_LIMIT:
         errs.append(f"{path}: added comment line of {words} "
-                    f"words (limit {COMMENT_WORD_LIMIT})")
+                    f"words (limit {COMMENT_WORD_LIMIT}). "
+                    "Keep the reason and trim the comment.")
     return errs
 
 
@@ -269,7 +270,7 @@ def _merge_spans(text, found):
         yield block[:3]
 
 
-def changed_line_errors(path, old_text, new_text, added, deletions):
+def changed_line_errors(path, old_text, new_text, added, deletions, warnings=None):
     """Judge added lines and full comments intersecting the diff."""
     lines = new_text.splitlines()
     errors = [err for i in sorted(added) for err in line_errors(path, lines[i])]
@@ -328,6 +329,11 @@ def changed_line_errors(path, old_text, new_text, added, deletions):
     for first, last, body in comment_spans(path, new_text):
         if not any(i in touched for i in range(first, last + 1)):
             continue
+        if warnings is not None and re.search(
+                r"\b(?:never|must|only\b[^.\n]*\bmay)\b", body, re.I):
+            quote = " ".join(body.split())
+            warnings.append(f'{path}:{first + 1}: prohibition/obligation "{quote}"'
+                            " - where is its check? Name the mechanical check or a named exemption.")
         words = len(body.split())
         if words <= COMMENT_WORD_LIMIT:
             continue
@@ -335,7 +341,8 @@ def changed_line_errors(path, old_text, new_text, added, deletions):
                 and (comment_words(path, lines[first]) or 0) > COMMENT_WORD_LIMIT):
             continue
         errors.append(f"{path}:{first + 1}: touched comment of {words} "
-                      f"words (limit {COMMENT_WORD_LIMIT})")
+                      f"words (limit {COMMENT_WORD_LIMIT}). "
+                      "Keep the reason and trim the comment.")
     return errors
 
 
@@ -343,7 +350,8 @@ def root_file_error(path):
     """The new-root-file rule, shared with push.py's gate."""
     if "/" not in path and path not in ROOT_ALLOWLIST:
         return (f"new root file {path} is not in the "
-                "allowlist - root files are deliberate")
+                "allowlist. Move it to an existing directory or add "
+                "it to ROOT_ALLOWLIST if it belongs at the root.")
     return None
 
 
@@ -352,8 +360,8 @@ def size_error(desc, product, labels):
     if product > SIZE_LIMIT and LARGE_LABEL not in labels:
         return (f"{desc} adds {product} product lines "
                 f"(limit {SIZE_LIMIT}) without the {LARGE_LABEL} "
-                "label - the label is applied by Andrew or the "
-                "lead, never by the change's author")
+                "label. Reduce the commit's scope or ask Andrew or "
+                "the lead to apply the label.")
     return None
 
 
@@ -381,7 +389,8 @@ def git(root, *args):
                           capture_output=True, text=True, timeout=600)
     if proc.returncode != 0:
         raise SystemExit(f"pr-limits: git {' '.join(args)} failed: "
-                         f"{proc.stderr.strip()}")
+                         f"{proc.stderr.strip()}. "
+                         "Fix the Git error above and rerun.")
     return proc.stdout
 
 
@@ -435,7 +444,8 @@ def ensure_ancestry(root, base):
     if diff and all(len(real_parents(root, sha)) >= 2
                     for sha in commits):
         raise SystemExit("pr-limits: PR ancestry unavailable - "
-                         "refusing to judge blind")
+                         "the diff has no reviewable non-merge commit. "
+                         "Fetch the PR head and base history, then rerun.")
     return commits
 
 
@@ -543,7 +553,7 @@ def main():
                                 capture_output=True).returncode == 0
         old_text = git(root, "show", f"{args.base}:{path}") if exists else ""
         new_text = git(root, "show", f"HEAD:{path}")
-        errors.extend(changed_line_errors(path, old_text, new_text, added, deletions))
+        errors.extend(changed_line_errors(path, old_text, new_text, added, deletions, warnings))
 
     out = git(root, "diff", "--name-status", "--no-renames",
               f"{args.base}..HEAD")
