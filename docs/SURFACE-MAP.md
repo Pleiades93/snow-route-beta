@@ -39,6 +39,13 @@ and closes off-canvas, so the crest is no longer sliced at the
 edge. No surface, element or snow status changed; the wave
 profile itself is byte-identical. Map reviewed; no update
 needed beyond this note.
+PINCH-FIX (Beta 1.303, 2026-11-27): page pinch-zoom is now
+blocked at the gesture level on every surface except the map
+(a document-level handler in app5.js), and the splash carries
+touch-action: none. No surface, element or snow status
+changed - the guard changes what a two-finger gesture does,
+not what any surface shows. Map reviewed; no update needed
+beyond this note.
 
 ## The snow rule (one rule, app-wide)
 

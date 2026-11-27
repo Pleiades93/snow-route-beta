@@ -18802,6 +18802,34 @@
    "red": "final drive229 on base d55052df: right-edge profile FAILS at 393 and at 430 (2 false checks); passes at 390; bottom-row and mirror-guard checks pass at all widths",
    "green": "final drive229 on the fixed tree: 9/9 PASS",
    "issued": "2026-11-27 mound-fix"
+  },
+  {
+   "id": "pinch-guard-drive230",
+   "check": "tests/browser/drive230.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive230.mjs": "38ce4f928195b6c54b8791a7a8badb4fdb4f4dd7687a7f0cfa644976b40b555f",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/head.html": "a85bc5416ab3763d5919d31a6f342c9fd1279c03a55f4a5586446446ee2cac80"
+   },
+   "mutation": "the shipped defect itself: base tree f8b7aafa, which has no gesture-level defence - Safari ignores the viewport meta's no-zoom instruction in browser tabs and no gesturestart/gesturechange handler exists anywhere in parts/",
+   "red": "drive230 on base f8b7aafa (drive file only, final bytes): 25 checks, exactly 9 FAIL - '#splash touch-action is none', gesturestart+gesturechange 'is stopped' on #splash, #routeMenu and #setMenu, gesturestart on the dock, gesturestart on the sheet body; the map-exemption checks and every scroll survivor PASS on base. Reproduced three times (twice before, once after the check labels were made literal)",
+   "green": "drive230 on the fixed tree: 25/25 PASS, reproduced three times including on the final drive bytes and via the full local gate set",
+   "issued": "2026-11-27 pinch-fix"
+  },
+  {
+   "id": "pinch-guard-drive230-r2",
+   "check": "tests/browser/drive230.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive230.mjs": "5dee071adc8e11a3bb19369f6dfcb06c2d7cf5feb682f6cfbda787ad11f0f0a6",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/head.html": "a85bc5416ab3763d5919d31a6f342c9fd1279c03a55f4a5586446446ee2cac80"
+   },
+   "mutation": "the shipped defect itself: base tree f8b7aafa, which has no gesture-level defence - Safari ignores the viewport meta's no-zoom instruction in browser tabs and no gesturestart/gesturechange handler exists anywhere in parts/. Supersedes pinch-guard-drive230 (the drive's comments were trimmed for the PR limits judge; assertions unchanged, both directions re-run on the final bytes)",
+   "red": "drive230 on base f8b7aafa (drive file only, final bytes): 25 checks, exactly 9 FAIL - '#splash touch-action is none', gesturestart+gesturechange 'is stopped' on #splash, #routeMenu and #setMenu, gesturestart on the dock, gesturestart on the sheet body; the map-exemption checks and every scroll survivor PASS on base",
+   "green": "drive230 on the fixed tree, final bytes: 25/25 PASS (also 25/25 via the full local gate set on the pre-trim bytes, assertions identical)",
+   "issued": "2026-11-27 pinch-fix"
   }
  ]
 }

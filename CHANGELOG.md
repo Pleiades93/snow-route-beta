@@ -1,5 +1,18 @@
 # Changelog
 
+## Beta 1.303 — 2026-11-27
+
+Pinch fix (Andrew's live report, 2026-11-27: in phone Safari the blue menus could be pinch-zoomed, and
+zooming broke the layout and showed the map at the edges). Safari ignores the page's no-zoom instruction in
+browser tabs - it honours it only in the home-screen app - and the app had no second line of defence. The app
+now stops the pinch at the gesture level on every surface except the map itself, where pinch belongs to the
+map; the splash also refuses touch gestures outright, as the one full-screen surface that never scrolls.
+Menus, sheets and lists keep scrolling exactly as before. New drive230 proves the pinch is stopped on the
+splash, both menus, the sheet and the dock, that the map stays exempt, and that the city list, the sheet and
+the Settings menu still scroll. Plus 0 maintenance PRs since Beta 1.302.
+
+Editorial: this entry; What's New replaced with the fix line; the #ver label reads Beta 1.303.
+
 ## Beta 1.302 — 2026-11-27
 
 Snow mound edge fix (Andrew's live report, 2026-11-27: the snow mound at the bottom of the blue menus was cut

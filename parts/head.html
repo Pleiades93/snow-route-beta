@@ -620,7 +620,7 @@
     to { visibility: hidden; transform: translateY(-130%); opacity: 0; } }
   #map { transition: transform .45s ease-in-out; }
 /* ===== SPLASH ===== the brand arrives and holds while the map loads behind it, then dissolves into the app */
-#splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; touch-action: none; }
 #splashBg { position: absolute; inset: -70px 0; background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* overshoots the screen 70px top and bottom, so no sliver of the app shows while the screen size settles */
 /* no will-change here: nothing transforms the icon. The title's slide starts at 1s, after the still-to-live handover */
 /* present from the first frame but not painted: the stills are blue, so nothing vanishes or doubles at the handover */
