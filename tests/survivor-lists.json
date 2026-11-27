@@ -985,6 +985,42 @@
     "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r19",
+   "kind": "no-cut",
+   "reason": "Whole-PR record for the CI gate: the S1 round is annotation-only across all thirteen changed parts files. Nothing cut, moved or changed; every file AST-identical to base (RECORD).",
+   "changed": [
+    "parts/app1.js",
+    "parts/app2.js",
+    "parts/app4.js",
+    "parts/app5.js",
+    "parts/brand-snow.js",
+    "parts/create-cache.js",
+    "parts/create-citydata.js",
+    "parts/create-fetch.js",
+    "parts/create-packs.js",
+    "parts/create-pick.js",
+    "parts/create-save.js",
+    "parts/data.js",
+    "parts/engine.js"
+   ],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/app2.js": "0a8799df7e167d680317c4b1be80ed0642e8887d230278c9abf9eb585634a8b3",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "parts/brand-snow.js": "2813303842a1243a7fc4fc0c076e3f237e7af1896d9b5ba26c6971addc919a14",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }
