@@ -1,0 +1,1712 @@
+{
+  "version": 2,
+  "mode": "report-only; states marked enforce refuse NEW foreign writes",
+  "snapshot": "3897062c",
+  "complete": false,
+  "states": [
+    {
+      "id": "snow-scene",
+      "kind": "body-class",
+      "key": "snow-scene",
+      "owner": "parts/brand-snow.js",
+      "recognition": [
+        {
+          "call": "^document\\.body\\.classList\\.(?:add|remove|toggle|replace)$",
+          "classArguments": true
+        }
+      ],
+      "description": "Body class `snow-scene`",
+      "enforce": true
+    },
+    {
+      "id": "trailSessions",
+      "kind": "binding",
+      "key": "trailSessions",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `trailSessions`",
+      "recognition": [
+        {
+          "target": "^trailSessions(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "runStart",
+      "kind": "binding",
+      "key": "runStart",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `runStart`",
+      "recognition": [
+        {
+          "target": "^runStart(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "trail",
+      "kind": "binding",
+      "key": "trail",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `trail`",
+      "recognition": [
+        {
+          "target": "^trail(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "notes",
+      "kind": "binding",
+      "key": "notes",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `notes`",
+      "recognition": [
+        {
+          "target": "^notes(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "coveredIdx",
+      "kind": "binding",
+      "key": "coveredIdx",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `coveredIdx`",
+      "recognition": [
+        {
+          "target": "^coveredIdx(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "userPackCache",
+      "kind": "binding",
+      "key": "userPackCache",
+      "owner": "parts/create-packs.js",
+      "description": "Runtime binding or container `userPackCache`",
+      "recognition": [
+        {
+          "target": "^userPackCache(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "kind": "binding",
+      "key": "settings",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `settings`",
+      "recognition": [
+        {
+          "target": "^settings(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "activeRoute",
+      "kind": "binding",
+      "key": "activeRoute",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `activeRoute`",
+      "recognition": [
+        {
+          "target": "^activeRoute(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "routeLoaded",
+      "kind": "binding",
+      "key": "routeLoaded",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `routeLoaded`",
+      "recognition": [
+        {
+          "target": "^routeLoaded(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "gpsFromRun",
+      "kind": "binding",
+      "key": "gpsFromRun",
+      "owner": "parts/app3.js",
+      "description": "Runtime binding or container `gpsFromRun`",
+      "recognition": [
+        {
+          "target": "^gpsFromRun(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "LS",
+      "kind": "binding",
+      "key": "LS",
+      "owner": "parts/app1.js",
+      "description": "Runtime binding or container `LS`",
+      "recognition": [
+        {
+          "target": "^LS(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "ROUTE_PACKS",
+      "kind": "binding",
+      "key": "ROUTE_PACKS",
+      "owner": "parts/data.js",
+      "description": "Runtime binding or container `ROUTE_PACKS`",
+      "recognition": [
+        {
+          "target": "^ROUTE_PACKS(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "crPackLoads",
+      "kind": "binding",
+      "key": "crPackLoads",
+      "owner": "parts/create-citydata.js",
+      "description": "Runtime binding or container `crPackLoads`",
+      "recognition": [
+        {
+          "target": "^crPackLoads(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "crPrep",
+      "kind": "binding",
+      "key": "crPrep",
+      "owner": "parts/create-citydata.js",
+      "description": "Runtime binding or container `crPrep`",
+      "recognition": [
+        {
+          "target": "^crPrep(?:[.\\[].*)?$",
+          "binding": true,
+          "declaration": "parts/create-fetch.js"
+        }
+      ]
+    },
+    {
+      "id": "crPackCtx",
+      "kind": "binding",
+      "key": "crPackCtx",
+      "owner": "parts/create-citydata.js",
+      "description": "Runtime binding or container `crPackCtx`",
+      "recognition": [
+        {
+          "target": "^crPackCtx(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "crPackNote",
+      "kind": "binding",
+      "key": "crPackNote",
+      "owner": "parts/create-citydata.js",
+      "description": "Runtime binding or container `crPackNote`",
+      "recognition": [
+        {
+          "target": "^crPackNote(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "crGrid",
+      "kind": "binding",
+      "key": "crGrid",
+      "owner": "parts/create-cache.js",
+      "description": "Runtime binding or container `crGrid`",
+      "recognition": [
+        {
+          "target": "^crGrid(?:[.\\[].*)?$",
+          "binding": true,
+          "declaration": "parts/create-fetch.js"
+        }
+      ]
+    },
+    {
+      "id": "draft",
+      "kind": "binding",
+      "key": "draft",
+      "owner": "parts/create-pick.js",
+      "description": "Runtime binding or container `draft`",
+      "recognition": [
+        {
+          "target": "^draft(?:[.\\[].*)?$",
+          "binding": true,
+          "declaration": "parts/create-fetch.js"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "followPaused",
+      "kind": "binding",
+      "key": "followPaused",
+      "owner": "parts/app3.js",
+      "description": "Runtime binding or container `followPaused`",
+      "recognition": [
+        {
+          "target": "^followPaused(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "crCacheNote",
+      "kind": "binding",
+      "key": "crCacheNote",
+      "owner": "parts/create-cache.js",
+      "description": "Runtime binding or container `crCacheNote`",
+      "recognition": [
+        {
+          "target": "^crCacheNote(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "crCacheNoteCity",
+      "kind": "binding",
+      "key": "crCacheNoteCity",
+      "owner": "parts/create-cache.js",
+      "description": "Runtime binding or container `crCacheNoteCity`",
+      "recognition": [
+        {
+          "target": "^crCacheNoteCity(?:[.\\[].*)?$",
+          "binding": true
+        }
+      ]
+    },
+    {
+      "id": "storage-done",
+      "kind": "storage",
+      "key": "done",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v2` (`done`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.done|routeKeys\\([^)]*\\)\\.done|[\"']snowroute\\.5w\\.v2[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-times",
+      "kind": "storage",
+      "key": "times",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v2.times` (`times`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.times|routeKeys\\([^)]*\\)\\.times|[\"']snowroute\\.5w\\.v2\\.times[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-hist",
+      "kind": "storage",
+      "key": "hist",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v2.history` (`hist`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.hist|routeKeys\\([^)]*\\)\\.hist|[\"']snowroute\\.5w\\.v2\\.history[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-notes",
+      "kind": "storage",
+      "key": "notes",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v4.notes` (`notes`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.notes|routeKeys\\([^)]*\\)\\.notes|[\"']snowroute\\.5w\\.v4\\.notes[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-via",
+      "kind": "storage",
+      "key": "via",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v4.via` (`via`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.via|routeKeys\\([^)]*\\)\\.via|[\"']snowroute\\.5w\\.v4\\.via[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-trail",
+      "kind": "storage",
+      "key": "trail",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v4.trail` (`trail`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.trail|routeKeys\\([^)]*\\)\\.trail|[\"']snowroute\\.5w\\.v4\\.trail[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-cov",
+      "kind": "storage",
+      "key": "cov",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v4.cov` (`cov`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.cov|routeKeys\\([^)]*\\)\\.cov|[\"']snowroute\\.5w\\.v4\\.cov[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-start",
+      "kind": "storage",
+      "key": "start",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v5.start` (`start`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.start|routeKeys\\([^)]*\\)\\.start|[\"']snowroute\\.5w\\.v5\\.start[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-flip",
+      "kind": "storage",
+      "key": "flip",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v5.flip` (`flip`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.flip|routeKeys\\([^)]*\\)\\.flip|[\"']snowroute\\.5w\\.v5\\.flip[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-sides",
+      "kind": "storage",
+      "key": "sides",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v5.sides` (`sides`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.sides|routeKeys\\([^)]*\\)\\.sides|[\"']snowroute\\.5w\\.v5\\.sides[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-sess",
+      "kind": "storage",
+      "key": "sess",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v5.sess` (`sess`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.sess|routeKeys\\([^)]*\\)\\.sess|[\"']snowroute\\.5w\\.v5\\.sess[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-pre",
+      "kind": "storage",
+      "key": "pre",
+      "owner": "parts/app4.js",
+      "description": "Route slot `snowroute.<id>.v5.preload` (`pre`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.pre|routeKeys\\([^)]*\\)\\.pre|[\"']snowroute\\.5w\\.v5\\.preload[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        }
+      ]
+    },
+    {
+      "id": "storage-snap",
+      "kind": "storage",
+      "key": "snap",
+      "owner": "parts/app3.js",
+      "description": "Route slot `snowroute.<id>.v5.snap` (`snap`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.snap|routeKeys\\([^)]*\\)\\.snap|[\"']snowroute\\.5w\\.v5\\.snap[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-mig",
+      "kind": "storage",
+      "key": "mig",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v2.migrated` (`mig`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.mig|routeKeys\\([^)]*\\)\\.mig|[\"']snowroute\\.5w\\.v2\\.migrated[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        }
+      ]
+    },
+    {
+      "id": "storage-migfill",
+      "kind": "storage",
+      "key": "migfill",
+      "owner": "parts/app1.js",
+      "description": "Route slot `snowroute.<id>.v2.migfill` (`migfill`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.migfill|routeKeys\\([^)]*\\)\\.migfill|[\"']snowroute\\.5w\\.v2\\.migfill[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        }
+      ]
+    },
+    {
+      "id": "storage-rundist",
+      "kind": "storage",
+      "key": "rundist",
+      "owner": "parts/app3.js",
+      "description": "Route slot `snowroute.<id>.v5.rundist` (`rundist`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.rundist|routeKeys\\([^)]*\\)\\.rundist|[\"']snowroute\\.5w\\.v5\\.rundist[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        }
+      ]
+    },
+    {
+      "id": "storage-rundist2",
+      "kind": "storage",
+      "key": "rundist2",
+      "owner": "parts/app3.js",
+      "description": "Route slot `snowroute.<id>.v5.rundist2` (`rundist2`)",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|rk)\\.rundist2|routeKeys\\([^)]*\\)\\.rundist2|[\"']snowroute\\.5w\\.v5\\.rundist2[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "deleteRoute"
+        }
+      ]
+    },
+    {
+      "id": "storage-night",
+      "kind": "storage",
+      "key": "night",
+      "owner": "parts/app1.js",
+      "description": "LocalStorage `snowroute.v2.night`",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|LS_GLOBAL)\\.night|[\"']snowroute\\.v2\\.night[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        }
+      ]
+    },
+    {
+      "id": "storage-nightExp",
+      "kind": "storage",
+      "key": "nightExp",
+      "owner": "parts/app1.js",
+      "description": "LocalStorage `snowroute.v2.nightExp`",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|LS_GLOBAL)\\.nightExp|[\"']snowroute\\.v2\\.nightExp[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        }
+      ]
+    },
+    {
+      "id": "storage-fixlog",
+      "kind": "storage",
+      "key": "fixlog",
+      "owner": "parts/app3.js",
+      "description": "LocalStorage `snowroute.v1.fixlog`",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^(?:LS|LS_GLOBAL)\\.fixlog|[\"']snowroute\\.v1\\.fixlog[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        }
+      ]
+    },
+    {
+      "id": "storage-settings",
+      "kind": "storage",
+      "key": "settings",
+      "owner": "parts/app1.js",
+      "description": "LocalStorage `snowroute.v2.settings`",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^SETTINGS_KEY|[\"']snowroute\\.v2\\.settings[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        },
+        {
+          "call": "^txSet$",
+          "arg": "^k$",
+          "fn": "execute"
+        }
+      ]
+    },
+    {
+      "id": "storage-userpacks",
+      "kind": "storage",
+      "key": "userpacks",
+      "owner": "parts/create-packs.js",
+      "description": "LocalStorage `snowroute.v2.userpacks`",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^USERPACKS_KEY|[\"']snowroute\\.v2\\.userpacks[\"']$"
+        },
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^k$",
+          "fn": "rollback"
+        }
+      ]
+    },
+    {
+      "id": "storage-packmig",
+      "kind": "storage",
+      "key": "packmig",
+      "owner": "parts/app5.js",
+      "description": "LocalStorage `snowroute.v5.packmig`",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^PACKMIG_KEY|[\"']snowroute\\.v5\\.packmig[\"']$"
+        }
+      ]
+    },
+    {
+      "id": "storage-userpack-idb",
+      "kind": "storage",
+      "key": "userpack-idb",
+      "owner": "parts/create-packs.js",
+      "description": "IndexedDB `snowroute-userdata/packs[id]`",
+      "recognition": [
+        {
+          "call": "^upPut|upDel|upSet$"
+        },
+        {
+          "call": "^store\\.add$",
+          "arg": "^pack$"
+        }
+      ]
+    },
+    {
+      "id": "gps-rec",
+      "kind": "dom",
+      "key": "#gpsBtn.rec",
+      "owner": "parts/app3.js",
+      "description": "Locate recording class",
+      "recognition": [
+        {
+          "call": "^\\$\\(['\\\"]gpsBtn['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
+          "arg": "^[\"']rec[\"']$"
+        }
+      ]
+    },
+    {
+      "id": "route-menu-open",
+      "kind": "dom",
+      "key": "#routeMenu.open/tab",
+      "owner": "parts/app2.js",
+      "description": "Route menu open/tab classes",
+      "recognition": [
+        {
+          "call": "^rm\\.classList\\.(?:add|remove|toggle|replace)$",
+          "arg": "^['\\\"](?:open|tab)['\\\"]$",
+          "fn": "unloadRouteToBoot"
+        }
+      ]
+    },
+    {
+      "id": "splash-visibility",
+      "kind": "dom",
+      "key": "#splash.style.visibility",
+      "owner": "parts/create-save.js",
+      "description": "Intro splash visibility and lifecycle",
+      "recognition": [
+        {
+          "target": "^sp\\.style\\.visibility$",
+          "fn": "parkBootChrome"
+        },
+        {
+          "target": "^sp\\.style\\.visibility$",
+          "fn": "restoreBootChrome"
+        }
+      ]
+    },
+    {
+      "id": "brand-off",
+      "kind": "dom",
+      "key": "#brandLayer.off/bye",
+      "owner": "parts/create-save.js",
+      "description": "Intro brand off/bye classes",
+      "recognition": [
+        {
+          "call": "^bl\\.classList\\.remove$",
+          "arg": "^[\"']off[\"']$",
+          "fn": "unloadRouteToBoot"
+        },
+        {
+          "call": "^bl\\.classList\\.remove$",
+          "arg": "^[\"']bye[\"']$",
+          "fn": "unloadRouteToBoot",
+          "index": 1
+        }
+      ]
+    },
+    {
+      "id": "city-list-arrow",
+      "kind": "dom",
+      "key": "#crCityArrow.gone/hide",
+      "owner": "parts/create-pick.js",
+      "description": "City picker scroll arrow classes",
+      "recognition": [
+        {
+          "call": "^a\\.classList\\.toggle$",
+          "arg": "^['\\\"](?:gone|hide)['\\\"]$",
+          "fn": "menuListFade"
+        }
+      ]
+    },
+    {
+      "id": "gps-source",
+      "kind": "map-source",
+      "key": "gps",
+      "owner": "parts/app2.js",
+      "description": "MapLibre GeoJSON source `gps`",
+      "recognition": [
+        {
+          "call": "^src\\.setData$",
+          "fn": "pushGps"
+        },
+        {
+          "call": "^map\\.getSource\\(['\\\"]gps['\\\"]\\)\\.setData$"
+        }
+      ]
+    },
+    {
+      "id": "route-stack-visibility",
+      "kind": "map-layer",
+      "key": "GLP.layers.stack:visibility",
+      "owner": "parts/app2.js",
+      "description": "MapLibre route-stack visibility, including title and route POI layers (hide/restore owned by setRouteBackdrop; literal stack-layer layout writes recognized in any function)",
+      "recognition": [
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^pair\\[0\\]$",
+          "fn": "crSetBackdrop"
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"']visibility[\"']$",
+          "fn": "crSetBackdrop",
+          "index": 1
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^pair\\[0\\]$",
+          "fn": "setRouteBackdrop"
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"']visibility[\"']$",
+          "fn": "setRouteBackdrop",
+          "index": 1
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"'](?:t1-casing|t1-casingb|t1-surface|t1-band|t1-fill|fade-casing|fade-surf-y|fade-surf-r|fade-band-g|fade-fill-g)[\"']$",
+          "index": 0
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"'](?:t1-sel|t1-selband|t1-selfill|selfade-y|selfade-r|selfade-g|selfade-fill|sel-core-s|sel-core-b|hit)[\"']$",
+          "index": 0
+        },
+        {
+          "call": "^(?:map|GLM|m)\\.setLayoutProperty$",
+          "arg": "^[\"'](?:routepoi-ring|routepoi-dot|routepoi-txt|streetnamespt[1-4]|sel-glow[1-5]-[sb])[\"']$",
+          "index": 0
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "map-pixel-ratio",
+      "kind": "canvas",
+      "key": "map.pixelRatio",
+      "owner": "parts/app1.js",
+      "description": "Map canvas pixel ratio controlled by the device profile",
+      "recognition": [
+        {
+          "call": "^map\\.setPixelRatio$"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "map-listeners",
+      "kind": "map",
+      "key": "map event listeners",
+      "owner": "parts/app2.js",
+      "description": "MapLibre listener registration on the shared map",
+      "recognition": [
+        {
+          "call": "^map\\.(?:on|off|once)$"
+        }
+      ]
+    },
+    {
+      "id": "pace-sheet-lifecycle",
+      "kind": "dom",
+      "key": "#pacePanel.open/height/maxHeight",
+      "owner": "parts/app2.js",
+      "description": "Pace sheet lifecycle classes and detent geometry",
+      "recognition": [
+        {
+          "target": "^\\$\\(['\\\"]pacePanel['\\\"]\\)\\.style\\.(?:height|maxHeight)$"
+        },
+        {
+          "call": "^\\$\\(['\\\"]pacePanel['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
+          "arg": "^[\"']open[\"']$"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "streets-sheet-scroll",
+      "kind": "dom",
+      "key": "#sheetBody.scrollTop",
+      "owner": "parts/app2.js",
+      "description": "Streets sheet body scroll offset",
+      "recognition": [
+        {
+          "target": "^sb\\.scrollTop$",
+          "fn": "ensureFieldVisible"
+        }
+      ]
+    },
+    {
+      "id": "brand-parked",
+      "kind": "dom",
+      "key": "#brandLayer.parked",
+      "owner": "parts/create-pick.js",
+      "description": "Create-from-boot parking class",
+      "recognition": [
+        {
+          "call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
+          "arg": "^[\"']parked[\"']$"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "html-boot",
+      "kind": "dom",
+      "key": "html.boot",
+      "owner": "parts/create-save.js",
+      "description": "Root intro class",
+      "recognition": [
+        {
+          "call": "^document\\.documentElement\\.classList\\.(?:add|remove|toggle|replace)$",
+          "arg": "^[\"']boot[\"']$"
+        }
+      ]
+    },
+    {
+      "id": "route-title-label-source",
+      "kind": "map-source",
+      "key": "labelpts",
+      "owner": "parts/app2.js",
+      "description": "MapLibre route title source `labelpts` (created in addRouteTitles, updated in glUnifyLabels)",
+      "recognition": [
+        {
+          "call": "^(?:map|GLM)\\.getSource\\(['\\\"]labelpts['\\\"]\\)\\.setData$"
+        },
+        {
+          "call": "^(?:map|GLM)\\.(?:addSource|removeSource)$",
+          "arg": "^[\"']labelpts[\"']$"
+        }
+      ],
+      "enforcedBy": "the scan-parts source-ownership rule (same scanner, receiver-agnostic)"
+    },
+    {
+      "id": "offline-pack-cache",
+      "kind": "cache",
+      "key": "snowroute-offline-v1",
+      "owner": "parts/app4.js",
+      "description": "Explicit offline route-pack cache",
+      "recognition": [
+        {
+          "call": "^oc\\.(?:put|delete)$",
+          "fn": "migratePack"
+        }
+      ]
+    },
+    {
+      "id": "routeBox",
+      "kind": "binding",
+      "key": "routeBox",
+      "owner": "parts/app1.js",
+      "description": "Active route geometry bounds populated by buildGeometry",
+      "recognition": [
+        {
+          "target": "^routeBox$",
+          "binding": true,
+          "declaration": "parts/app2.js"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "ROUTE_TILE_NAMES",
+      "kind": "binding",
+      "key": "ROUTE_TILE_NAMES",
+      "owner": "parts/app1.js",
+      "description": "Route tile-name list populated by buildGeometry and read by the basemap label exclusion",
+      "recognition": [
+        {
+          "target": "^ROUTE_TILE_NAMES(?:[.\\\\[].*)?$",
+          "binding": true,
+          "declaration": "parts/app2.js"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "crCitySeq",
+      "kind": "binding",
+      "key": "crCitySeq",
+      "owner": "parts/create-pick.js",
+      "description": "City search request sequence",
+      "recognition": [
+        {
+          "target": "^crCitySeq$",
+          "binding": true
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "restackArmed",
+      "kind": "binding",
+      "key": "restackArmed",
+      "owner": "parts/app2.js",
+      "description": "Pending basemap restack flag",
+      "recognition": [
+        {
+          "target": "^restackArmed$",
+          "binding": true
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "crSession",
+      "kind": "binding",
+      "key": "crSession",
+      "owner": "parts/create-pick.js",
+      "description": "Creation lifetime token bumped on enter and exit",
+      "recognition": [
+        {
+          "target": "^crSession$",
+          "binding": true,
+          "declaration": "parts/create-fetch.js"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "creating",
+      "kind": "binding",
+      "key": "creating",
+      "owner": "parts/create-pick.js",
+      "description": "Creation lifetime flag set on enter and exit",
+      "recognition": [
+        {
+          "target": "^creating$",
+          "binding": true,
+          "declaration": "parts/create-fetch.js"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "crStage",
+      "kind": "binding",
+      "key": "crStage",
+      "owner": "parts/create-pick.js",
+      "description": "Create-route stage set by stage transitions and exit",
+      "recognition": [
+        {
+          "target": "^crStage$",
+          "binding": true,
+          "declaration": "parts/create-fetch.js"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "last-area",
+      "kind": "storage",
+      "key": "snowroute.v2.lastarea",
+      "owner": "parts/create-pick.js",
+      "description": "Last accepted city/area for create-route suggestions",
+      "recognition": [
+        {
+          "call": "^(?:lsSet|lsDel|txSet|txDel|localStorage\\.(?:setItem|removeItem))$",
+          "arg": "^LS_GLOBAL\\.lastArea|[\"']snowroute\\.v2\\.lastarea[\"']$"
+        }
+      ]
+    },
+    {
+      "id": "brand-away",
+      "kind": "dom",
+      "key": "#brandLayer.away",
+      "owner": "parts/app2.js",
+      "description": "Route pane away state projected onto the brand layer",
+      "recognition": [
+        {
+          "call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
+          "arg": "^[\"']away[\"']$"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "streets-sheet-lifecycle",
+      "kind": "dom",
+      "key": "#sheet.open/height/maxHeight",
+      "owner": "parts/app2.js",
+      "description": "Streets sheet lifecycle and detent geometry",
+      "recognition": [
+        {
+          "target": "^\\$\\(['\\\"]sheet['\\\"]\\)\\.style\\.(?:height|maxHeight|transform)$"
+        },
+        {
+          "call": "^\\$\\(['\\\"]sheet['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
+          "arg": "^['\\\"](?:open|full|snapping|dragging)['\\\"]$"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "basemap-label-policy",
+      "kind": "map-layer",
+      "key": "basemap symbol layers and route-name clones",
+      "owner": "parts/app2.js",
+      "description": "Basemap layout, paint, exclusions, and route-name handover clones",
+      "recognition": [
+        {
+          "call": "^(?:m|map)\\.(?:setLayoutProperty|setPaintProperty|setFilter|setLayerZoomRange|removeLayer)$",
+          "arg": "^cloneId|L\\.id$",
+          "fn": "glUnifyLabels"
+        },
+        {
+          "call": "^(?:m|map)\\.addLayer$",
+          "arg": "^clone$",
+          "fn": "glUnifyLabels"
+        },
+        {
+          "call": "^GLM\\.setLayerZoomRange$",
+          "arg": "^L\\.id$",
+          "fn": "tunePlaceLabels"
+        }
+      ]
+    },
+    {
+      "id": "preview-save-enabled",
+      "kind": "dom",
+      "key": "#pvSaveBtn.disabled",
+      "owner": "parts/create-save.js",
+      "description": "Save action availability on the create preview",
+      "recognition": [
+        {
+          "target": "^\\$\\(['\\\"]pvSaveBtn['\\\"]\\)\\.disabled$"
+        }
+      ]
+    },
+    {
+      "id": "map-viewport-size",
+      "kind": "canvas",
+      "key": "map.resize",
+      "owner": "parts/app2.js",
+      "description": "Resize of the shared MapLibre canvas",
+      "recognition": [
+        {
+          "call": "^map\\.resize$"
+        }
+      ]
+    },
+    {
+      "id": "streets-icons",
+      "kind": "dom",
+      "key": "Streets/selection icon hosts",
+      "owner": "parts/app2.js",
+      "description": "Streets open button, note button and note-row icon markup",
+      "recognition": [
+        {
+          "target": "^\\$\\(['\\\"](?:streetsBtn|selNote)['\\\"]\\)\\.innerHTML$"
+        }
+      ]
+    },
+    {
+      "id": "pace-icons",
+      "kind": "dom",
+      "key": "Pace icon hosts",
+      "owner": "parts/app3.js",
+      "description": "Pace button markup",
+      "recognition": [
+        {
+          "target": "^\\$\\(['\\\"]paceBtn['\\\"]\\)\\.innerHTML$"
+        }
+      ]
+    },
+    {
+      "id": "gps-icons",
+      "kind": "dom",
+      "key": "Locate icon hosts",
+      "owner": "parts/app3.js",
+      "description": "Recenter button markup",
+      "recognition": [
+        {
+          "target": "^\\$\\(['\\\"]centreBtn['\\\"]\\)\\.innerHTML$"
+        }
+      ]
+    },
+    {
+      "id": "create-icons",
+      "kind": "dom",
+      "key": "Create icon hosts",
+      "owner": "parts/create-pick.js",
+      "description": "Create back and search icon markup",
+      "recognition": [
+        {
+          "target": "^(?:bx|si)\\.innerHTML$",
+          "fn": "renderIcons"
+        }
+      ]
+    },
+    {
+      "id": "pace-icon-table",
+      "kind": "binding",
+      "key": "PACE_ICONS",
+      "owner": "parts/app4.js",
+      "description": "Pace icon mint table populated by renderIcons",
+      "recognition": [
+        {
+          "target": "^PACE_ICONS(?:[.\\\\[].*)?$",
+          "binding": true,
+          "declaration": "parts/app3.js"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "snow-canvas-render",
+      "kind": "canvas",
+      "key": "#snowCv bitmap and drawing context",
+      "owner": "parts/brand-snow.js",
+      "description": "Snow canvas bitmap size and frame rendering",
+      "recognition": [
+        {
+          "target": "^\\$\\(['\\\"]snowCv['\\\"]\\)\\.(?:width|height)$"
+        }
+      ],
+      "enforce": true
+    },
+    {
+      "id": "home-tab-icon",
+      "kind": "dom",
+      "key": "#homeBtn .tabIco",
+      "owner": "parts/app5.js",
+      "description": "Tab icon markup for home",
+      "recognition": [
+        {
+          "target": "^\\$\\(id\\)\\.querySelector\\(['\\\"]\\.tabIco['\\\"]\\)\\.innerHTML$",
+          "context": "\\['homeBtn',\\ 'gpsBtn',\\ 'clearBtn',\\ 'routesBtn'\\]\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "routes-tab-icon",
+      "kind": "dom",
+      "key": "#routesBtn .tabIco",
+      "owner": "parts/app2.js",
+      "description": "Tab icon markup for routes",
+      "recognition": [
+        {
+          "target": "^\\$\\(id\\)\\.querySelector\\(['\\\"]\\.tabIco['\\\"]\\)\\.innerHTML$",
+          "context": "\\['homeBtn',\\ 'gpsBtn',\\ 'clearBtn',\\ 'routesBtn'\\]\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "clear-tab-icon",
+      "kind": "dom",
+      "key": "#clearBtn .tabIco",
+      "owner": "parts/app3.js",
+      "description": "Tab icon markup for clear",
+      "recognition": [
+        {
+          "target": "^\\$\\(id\\)\\.querySelector\\(['\\\"]\\.tabIco['\\\"]\\)\\.innerHTML$",
+          "context": "\\['homeBtn',\\ 'gpsBtn',\\ 'clearBtn',\\ 'routesBtn'\\]\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "gps-tab-icon",
+      "kind": "dom",
+      "key": "#gpsBtn .tabIco",
+      "owner": "parts/app3.js",
+      "description": "Tab icon markup for gps",
+      "recognition": [
+        {
+          "target": "^\\$\\(id\\)\\.querySelector\\(['\\\"]\\.tabIco['\\\"]\\)\\.innerHTML$",
+          "context": "\\['homeBtn',\\ 'gpsBtn',\\ 'clearBtn',\\ 'routesBtn'\\]\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "streets-note-icons",
+      "kind": "dom",
+      "key": ".ntIco, .nmNote, .cvNoteIco",
+      "owner": "parts/app2.js",
+      "description": "Streets row note icon markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "document\\.querySelectorAll\\('\\.ntIco,\\ \\.nmNote,\\ \\.cvNoteIco'\\)\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "clean-note-icons",
+      "kind": "dom",
+      "key": ".ntIco, .nmNote, .cvNoteIco",
+      "owner": "parts/app3.js",
+      "description": "Clean detail note icon markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "document\\.querySelectorAll\\('\\.ntIco,\\ \\.nmNote,\\ \\.cvNoteIco'\\)\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "create-pin-icons",
+      "kind": "dom",
+      "key": ".crPin",
+      "owner": "parts/create-pick.js",
+      "description": "Create search result pin markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "document\\.querySelectorAll\\('\\.crPin'\\)\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "pace-stat-icons",
+      "kind": "dom",
+      "key": ".statgrid .ic[data-ic]",
+      "owner": "parts/app3.js",
+      "description": "Pace stat icon markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "document\\.querySelectorAll\\('\\.statgrid\\ \\.ic\\[data\\-ic\\]'\\)\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "route-back-icons",
+      "kind": "dom",
+      "key": ".rmBack",
+      "owner": "parts/app2.js",
+      "description": "Route menu Back icon markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "document\\.querySelectorAll\\('\\.rmBack'\\)\\.forEach"
+        }
+      ]
+    },
+    {
+      "id": "sheetClose-icon",
+      "kind": "dom",
+      "key": "#sheetClose",
+      "owner": "parts/app2.js",
+      "description": "Close button icon markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "\\['sheetClose',\\ 'paceClose',\\ 'xClose'\\]"
+        }
+      ]
+    },
+    {
+      "id": "paceClose-icon",
+      "kind": "dom",
+      "key": "#paceClose",
+      "owner": "parts/app3.js",
+      "description": "Close button icon markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "\\['sheetClose',\\ 'paceClose',\\ 'xClose'\\]"
+        }
+      ]
+    },
+    {
+      "id": "rmClose-icon",
+      "kind": "dom",
+      "key": "#rmClose",
+      "owner": "parts/app2.js",
+      "description": "Close button icon markup",
+      "recognition": [
+        {
+          "target": "^el\\.innerHTML$",
+          "fn": "renderIcons",
+          "context": "\\['rmClose',\\ 'setClose'\\]"
+        }
+      ]
+    },
+    {
+      "id": "map-canvas-listeners",
+      "kind": "canvas",
+      "key": "map.getCanvas() gesture listeners",
+      "owner": "parts/app2.js",
+      "description": "Gesture listeners installed on the MapLibre canvas",
+      "recognition": [
+        {
+          "call": "^c\\.addEventListener$",
+          "arg": "^['\\\"](?:pointerdown|wheel)['\\\"]$"
+        }
+      ]
+    },
+    {
+      "id": "map-repaint",
+      "kind": "canvas",
+      "key": "map.triggerRepaint",
+      "owner": "parts/app2.js",
+      "description": "Frame scheduling for the shared MapLibre renderer",
+      "recognition": [
+        {
+          "call": "^map\\.triggerRepaint$"
+        }
+      ]
+    },
+    {
+      "id": "keyboard-card-transform",
+      "kind": "binding",
+      "key": "kbShiftHost/kbShiftPx/kbInSettle/kbVisH",
+      "owner": "parts/app5.js",
+      "description": "Keyboard shift state for the focused-field card (host, offset, settle flag, visible height)",
+      "recognition": [
+        {
+          "target": "^kbShiftHost$",
+          "binding": true
+        },
+        {
+          "target": "^kbShiftPx$",
+          "binding": true
+        },
+        {
+          "target": "^kbInSettle$",
+          "binding": true
+        },
+        {
+          "target": "^kbVisH$",
+          "binding": true
+        }
+      ],
+      "enforce": true
+    }
+  ],
+  "ambiguous": [
+    {
+      "id": "crSectorSession",
+      "candidates": [
+        "parts/create-fetch.js (reset)",
+        "parts/create-pick.js (session and face transitions)"
+      ],
+      "why": "Written by the fetch layer's reset and the pick layer's session handling; no single seat exists."
+    },
+    {
+      "id": "crCov",
+      "candidates": [
+        "parts/create-cache.js (city-grid reset)",
+        "parts/create-citydata.js (merge/index)",
+        "parts/create-pick.js (session teardown)"
+      ],
+      "why": "The prepared coverage index is built by the cache/citydata pipeline and torn down by the session seat; ownership is split by pipeline stage."
+    },
+    {
+      "id": "crCovGen",
+      "candidates": [
+        "parts/create-cache.js (grid)",
+        "parts/create-citydata.js (fallback)",
+        "parts/create-pick.js (lifetime invalidation)"
+      ],
+      "why": "The generation token is bumped by each pipeline stage and by session invalidation; no single seat exists."
+    },
+    {
+      "id": "crPrepFail",
+      "candidates": [
+        "parts/create-fetch.js (entry)",
+        "parts/create-cache.js (grid)",
+        "parts/create-citydata.js (fallback)",
+        "parts/create-pick.js (teardown)"
+      ],
+      "why": "The preparation error record is written by every stage that can fail and cleared at teardown."
+    },
+    {
+      "id": "crFailFromGrid",
+      "candidates": [
+        "parts/create-fetch.js (entry)",
+        "parts/create-cache.js (grid)",
+        "parts/create-pick.js (teardown)"
+      ],
+      "why": "Error provenance follows the same multi-stage write pattern as crPrepFail."
+    },
+    {
+      "id": "crPrepAnchor",
+      "candidates": [
+        "parts/create-citydata.js (preparation)",
+        "parts/create-pick.js (tap and teardown)"
+      ],
+      "why": "The retry anchor is set during preparation and consumed/cleared by the pick layer."
+    },
+    {
+      "id": "crPending",
+      "candidates": [
+        "parts/create-pick.js (queue, re-render, removal)",
+        "parts/create-citydata.js (coverage sweep)"
+      ],
+      "why": "The pending-street collection is managed by the pick layer and swept by the coverage builder."
+    },
+    {
+      "id": "crWanted",
+      "candidates": [
+        "parts/create-pick.js (offer)",
+        "parts/create-fetch.js (transition clears the offer)"
+      ],
+      "why": "The extension offer is raised by the pick layer and cleared by a fetch transition."
+    },
+    {
+      "id": "storage-finclean",
+      "candidates": [
+        "parts/app3.js (arms inside the finish transaction)",
+        "parts/app1.js (reconciles and discharges at load)",
+        "parts/app4.js (restore discharges inside its verified write set)"
+      ],
+      "why": "A cross-module transaction obligation: each writer is a different step of one protocol, and no single seat exists."
+    },
+    {
+      "id": "storagePersist",
+      "candidates": [
+        "parts/app4.js (declaration, reads, presentation)",
+        "parts/app5.js (sole writer: the boot persist() answer)"
+      ],
+      "why": "Home and sole writer are different modules by construction; the tree names no owner."
+    },
+    {
+      "id": "route-menu-boot-chrome",
+      "candidates": [
+        "parts/create-save.js (intro)",
+        "parts/app5.js (return to picker)",
+        "parts/create-pick.js (park and resume)"
+      ],
+      "why": "The boot/show/bye/notrans classes are a lifecycle shared by the three boot-path seats."
+    },
+    {
+      "id": "map-camera",
+      "candidates": [
+        "parts/app2.js (initial and map selection)",
+        "parts/app3.js (GPS follow)",
+        "parts/app5.js (route framing)",
+        "parts/create-pick.js (create framing)"
+      ],
+      "why": "The shared camera is framed by four features by design; no single seat exists."
+    }
+  ],
+  "exemptions": []
+}

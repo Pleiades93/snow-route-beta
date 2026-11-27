@@ -30778,6 +30778,12 @@
    "kind": "machinery-exempt",
    "reason": "Machinery and docs only: gate scanners, the limits and census judges, CI wiring, an ESLint config and the prohibition inventory; no parts/ surface changes, so there are no anchors to enumerate.",
    "issued": "2026-11-27 graft-a-machinery"
+  },
+  {
+   "id": "graft-b-boundaries",
+   "kind": "machinery-exempt",
+   "reason": "Machinery and docs only: the boundary scanner, its owner map and baseline, gate wiring and the boundary inventory; no parts/ surface changes, so there are no anchors to enumerate.",
+   "issued": "2026-11-27 graft-b-boundaries"
   }
  ]
 }

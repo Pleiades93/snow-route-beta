@@ -721,6 +721,14 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-27 graft-a-machinery"
+  },
+  {
+   "id": "graft-b-boundaries",
+   "kind": "no-cut",
+   "reason": "Machinery and docs only: no parts/ code is cut, moved or changed. The round adds the boundary scanner (report-only plus per-state enforcement in the parts scan), its owner map and baseline, and the boundary inventory.",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-27 graft-b-boundaries"
   }
  ]
 }

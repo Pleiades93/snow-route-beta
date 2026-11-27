@@ -1704,6 +1704,103 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: a prepended listener keeps descendant identities",
           run_scan(s_tree), 0)
 
+# ------------------------------------------------------- boundary scan
+BOUNDARY_OWNERS = {
+    "version": 2, "mode": "fixture", "snapshot": "fixture", "complete": False,
+    "states": [
+        {"id": "snow-scene", "kind": "body-class", "key": "snow-scene",
+         "owner": "parts/brand-snow.js", "enforce": True,
+         "recognition": [{"call": "^document\\.body\\.classList\\.(?:add|remove|toggle|replace)$",
+                          "classArguments": True}]},
+        {"id": "trail", "kind": "binding", "key": "trail", "owner": "parts/app1.js",
+         "recognition": [{"target": "^trail(?:[.\\[].*)?$"}]},
+    ],
+    "ambiguous": [], "exemptions": [],
+}
+SCENE_WRITE = "function paint() { document.body.classList.add('snow-scene'); }\n"
+
+
+def boundary_tree(base, *, app3="", owners=None, baseline=None):
+    w(base / "parts" / "brand-snow.js",
+      "function glow() { document.body.classList.add('snow-scene');"
+      " document.body.classList.add('lit'); }\n")
+    w(base / "parts" / "app3.js", app3)
+    w(base / "parts" / "head.html", SCAN_HTML)
+    w(base / "scripts" / "parts-clone-baseline.json",
+      '{\n  "exemptions": [],\n  "pairs": []\n}\n')
+    w(base / "scripts" / "parts-boundary-owners.json",
+      json.dumps(owners if owners is not None else BOUNDARY_OWNERS, indent=2) + "\n")
+    w(base / "scripts" / "parts-boundary-baseline.json",
+      json.dumps(baseline or []) + "\n")
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("boundary: a clean tree passes (owner-side writes only)",
+          run_scan(boundary_tree(t / "bclean")), 0)
+    check("boundary: a planted foreign write to an enforced state fails",
+          run_scan(boundary_tree(t / "benforced", app3=SCENE_WRITE)), 1)
+    check("boundary: the same write passes when the state is report-only",
+          run_scan(boundary_tree(t / "breport",
+                                 owners={**BOUNDARY_OWNERS, "states": [
+                                     {**BOUNDARY_OWNERS["states"][0], "enforce": False},
+                                     BOUNDARY_OWNERS["states"][1]]},
+                                 app3=SCENE_WRITE)), 0)
+    check("boundary: a planted foreign write to a report-only state passes",
+          run_scan(boundary_tree(t / "btrail",
+                                 app3="function reset() { trail = []; }\n")), 0)
+    check("boundary: a baselined seat on an enforced state passes",
+          run_scan(boundary_tree(t / "bbased", app3=SCENE_WRITE,
+                                 baseline=[{"state": "snow-scene",
+                                            "file": "parts/app3.js",
+                                            "fn": "paint", "occ": 1}])), 0)
+    exempt_owners = {**BOUNDARY_OWNERS, "exemptions": [
+        {"state": "snow-scene", "file": "parts/app3.js", "fn": "paint", "occ": 1,
+         "name": "fixture-preview", "why": "The fixture preview has its own exit."}]}
+    check("boundary: a named exemption on an enforced state passes",
+          run_scan(boundary_tree(t / "bexempt", app3=SCENE_WRITE,
+                                 owners=exempt_owners)), 0)
+    blank_owners = {**BOUNDARY_OWNERS, "exemptions": [
+        {"state": "snow-scene", "file": "parts/app3.js", "fn": "paint", "occ": 1,
+         "name": "fixture-preview", "why": " "}]}
+    check("boundary: an exemption with a blank reason does not exempt",
+          run_scan(boundary_tree(t / "bblank", app3=SCENE_WRITE,
+                                 owners=blank_owners)), 1)
+    away_owners = {**BOUNDARY_OWNERS, "states": BOUNDARY_OWNERS["states"] + [
+        {"id": "brand-away", "kind": "dom", "key": "#brandLayer.away",
+         "owner": "parts/app2.js", "enforce": True,
+         "recognition": [{"call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
+                          "arg": "^[\"']away[\"']$"}]}]}
+    check("boundary: a planted multi-token write to an enforced state fails",
+          run_scan(boundary_tree(t / "bmulti", owners=away_owners,
+                                 app3="function x() { $('brandLayer').classList.add('other', 'away'); }\n")), 1)
+    regen = boundary_tree(t / "bregen", app3=SCENE_WRITE)
+    check("boundary: baseline regeneration records a planted enforced seat",
+          run_scan(regen, "--write-boundary-baseline"), 0)
+    regen_baseline = json.loads(
+        (regen / "scripts" / "parts-boundary-baseline.json").read_text())
+    check("boundary: the regenerated baseline carries the planted seat",
+          0 if {"state": "snow-scene", "file": "parts/app3.js",
+                "fn": "paint", "occ": 1} in regen_baseline else 1, 0)
+    check("boundary: a plain scan passes against the regenerated baseline",
+          run_scan(regen), 0)
+    check("boundary: a planted replace write to an enforced state fails",
+          run_scan(boundary_tree(t / "breplace", owners=away_owners,
+                                 app3="function x() { $('brandLayer').classList.replace('other', 'away'); }\n")), 1)
+    clone_a = ("function fixtureCloneA() { const a = alphaOne(1); const b = betaTwo(2); const c = gammaThree(3); "
+               "if (a && b) return a + b + c; if (c > 9) return c * 3; "
+               "return deltaFour(a, b) + epsilonFive(b, c) + zetaSix(c, a); }\n")
+    clone_tree = boundary_tree(t / "bcloneregen", app3=SCENE_WRITE + clone_a)
+    w(clone_tree / "parts" / "brand-snow.js",
+      "function glow() { document.body.classList.add('snow-scene');"
+      " document.body.classList.add('lit'); }\n"
+      + clone_a.replace("fixtureCloneA", "fixtureCloneB"))
+    check("boundary: regeneration with a clone failure is refused",
+          run_scan(clone_tree, "--write-boundary-baseline"), 1)
+    check("boundary: the refused regeneration leaves the baseline unchanged",
+          0 if json.loads((clone_tree / "scripts" / "parts-boundary-baseline.json").read_text()) == [] else 1, 0)
+
 # ------------------------------------------------- worked examples
 # TESTING.md rule 6's proof cases, pinned to their observation needles.
 def needle_in(rel, *needles):
@@ -1727,6 +1824,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 161
+total = 174
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
