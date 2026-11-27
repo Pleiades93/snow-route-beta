@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-xupb+7On26V0i4fXF1WvKseBV0sMuw0OKLN4wgJbDiJMsQUA6f040LiQNf+Z5igx' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-HSCDAbmLXhYhbM0pFf1Vc037CrT8goBorXa+IFHI4x4/xXeF/tjZDwtfMniuvjG7' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -11169,6 +11169,7 @@ $('pvAddBtn').addEventListener('click', () => { // back to picking for more; Don
 
 // ---- name it + save ---- naming stays its own step; this pane's Save route is the only save
 $('pvSaveBtn').addEventListener('click', openNameIt);
+/** @returns {void} */
 function openNameIt() {
   if (!draft || !draftStreets().length) return;
   $('crNameInput').value = draft.name || nextRouteNameGuess();
@@ -11181,6 +11182,7 @@ function openNameIt() {
 $('crNameBack').addEventListener('click', () => { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('preview'); });
 $('crSaveBtn').addEventListener('click', saveDraftRoute);
 let crSaveInFlight = false; // single-flight, or a double-tap runs the save twice under one id: the write awaits, the button is unguarded
+/** @returns {Promise<void>} */
 async function saveDraftRoute() {
   if (crSaveInFlight) return;
   crSaveInFlight = true;
@@ -11192,7 +11194,7 @@ async function saveDraftRoute() {
   const ends = (() => { // the pack carries boundary ends computed from the same extract as the sectors; no prepared coverage, no records
     try {
       if (!crCov || !crCov.byName) return {};
-      const all = {};
+      const all = /** @type {RoadsMap} */ ({});
       for (const nm of Object.keys(crCov.byName)) { const ways = crCov.byName[nm].map(w => w && w.pts).filter(p => Array.isArray(p) && p.length > 1); if (ways.length) all[nm] = ways; }
       const be = computeBoundaryEnds(roads, all);
       const de = computeDeadEnds(roads, all); // dead ends join the same field, computed by the sibling computation from the same extract
@@ -11202,7 +11204,7 @@ async function saveDraftRoute() {
   })();
   // the save stores chosen sectors only: the draft keeps whole streets, the pack never sees unchosen ends
   const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] });
-  if (!v.ok) { showBanner('Route not saved', v.error); return; }
+  if (!v.ok) { showBanner('Route not saved', (/** @type {{ok: false, error: string}} */ (v)).error); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
   if (!(await upPut(pack.id, pack))) { showBanner('Route not saved'); return; } // one route's verified write: no whole-record rewrite remains to erase another route; a failure refuses this route only
   userPackCache[pack.id] = pack; // the backup picture joins the commit (create-packs.js: the cache moves only at verified commit points)

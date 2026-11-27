@@ -1,5 +1,6 @@
 // ---- name it + save ---- naming stays its own step; this pane's Save route is the only save
 $('pvSaveBtn').addEventListener('click', openNameIt);
+/** @returns {void} */
 function openNameIt() {
   if (!draft || !draftStreets().length) return;
   $('crNameInput').value = draft.name || nextRouteNameGuess();
@@ -12,6 +13,7 @@ function openNameIt() {
 $('crNameBack').addEventListener('click', () => { if (!routeLoaded) parkBootChrome(); else closeRouteMenu(); setCreateStage('preview'); });
 $('crSaveBtn').addEventListener('click', saveDraftRoute);
 let crSaveInFlight = false; // single-flight, or a double-tap runs the save twice under one id: the write awaits, the button is unguarded
+/** @returns {Promise<void>} */
 async function saveDraftRoute() {
   if (crSaveInFlight) return;
   crSaveInFlight = true;
@@ -23,7 +25,7 @@ async function saveDraftRoute() {
   const ends = (() => { // the pack carries boundary ends computed from the same extract as the sectors; no prepared coverage, no records
     try {
       if (!crCov || !crCov.byName) return {};
-      const all = {};
+      const all = /** @type {RoadsMap} */ ({});
       for (const nm of Object.keys(crCov.byName)) { const ways = crCov.byName[nm].map(w => w && w.pts).filter(p => Array.isArray(p) && p.length > 1); if (ways.length) all[nm] = ways; }
       const be = computeBoundaryEnds(roads, all);
       const de = computeDeadEnds(roads, all); // dead ends join the same field, computed by the sibling computation from the same extract
@@ -33,7 +35,7 @@ async function saveDraftRoute() {
   })();
   // the save stores chosen sectors only: the draft keeps whole streets, the pack never sees unchosen ends
   const v = normalizePack({ name, area, primaries: [...draft.primaries], roads, reference: {}, ends }, { tileNames: [...Object.values(draft.osmNames), ...(draft.tileNames || [])] });
-  if (!v.ok) { showBanner('Route not saved', v.error); return; }
+  if (!v.ok) { showBanner('Route not saved', (/** @type {{ok: false, error: string}} */ (v)).error); return; }
   const pack = v.pack; pack.id = uniqueRouteId(name);
   if (!(await upPut(pack.id, pack))) { showBanner('Route not saved'); return; } // one route's verified write: no whole-record rewrite remains to erase another route; a failure refuses this route only
   userPackCache[pack.id] = pack; // the backup picture joins the commit (create-packs.js: the cache moves only at verified commit points)

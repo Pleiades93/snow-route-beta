@@ -37466,6 +37466,59 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r6",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "crSaveInFlight",
+     "openNameIt",
+     "saveDraftRoute"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-save.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:openNameIt:parts/create-save.js:pvSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - openNameIt is registered by reference as the pvSaveBtn click handler in parts/create-save.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:saveDraftRoute:parts/create-save.js:crSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - saveDraftRoute is registered by reference as the crSaveBtn click handler in parts/create-save.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/app3.js": "1db3d475ab360dd00f17f7ab3724e764ebc54d0d83501748ef0dad292abe5948",
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "8c198a73db70c427d987d703ff676253b7d8312cf8b314177f3ae87eb28b657b",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "0983841e10c36e1f56cc48da74b85ebe3426946a8576393096ea84ba592f85e2",
+    "parts/create-citydata.js": "f80d26bac88bd614c47acb2f100401a64cf357744a2f932db7b37270ad39b814",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7",
+    "parts/create-save.js": "4514b06b458611c26b0740fedc279010ef709a0157df6f142e1a883a5ed14c83",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

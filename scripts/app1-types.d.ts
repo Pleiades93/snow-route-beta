@@ -222,6 +222,12 @@ type SnapGeo = { key: string, polys: SnapPoly[], grid: Map<string, number[]> };
 /** One run-distance counter record (schema, rundist): end is the anchor trail point or null. */
 type RunDistRec = { run: number, m: number, end: number[] | null };
 
+/** The create flow's draft route (create-fetch): the pack being built. */
+type CrDraft = { name: string, area: string, primaries: Set<string>, roads: RoadsMap, osmNames: Record<string, string>, tileNames?: string[] };
+
+/** The merged coverage extract (create-fetch): ways by street name. */
+type CrCov = { byName: Record<string, { pts: LatLng[] }[]> };
+
 /** The geolocation coordinate surface the GPS code reads. */
 type GeolocationCoordinates = { latitude: number, longitude: number, accuracy: number, speed: number | null, heading: number | null };
 
@@ -475,6 +481,54 @@ declare function stopGps(silent?: boolean): void;
 /** app3.js: true while the live watch is a recording (in-run) watch. */
 declare var gpsFromRun: boolean;
 
+/** create-fetch.js: the draft route being built, or null. */
+declare var draft: CrDraft | null;
+
+/** create-fetch.js: the draft's street names. */
+declare function draftStreets(): string[];
+
+/** create-fetch.js: the guessed area label for a new draft. */
+declare var crAreaGuess: string;
+
+/** create-fetch.js: the merged coverage extract, or null before preparation. */
+declare var crCov: CrCov | null;
+
+/** create-pick.js: the draft geometry cache shared by the create consumers. */
+declare function crDraftGeom(): any;
+
+/** create-pick.js: one street's chosen length in metres. */
+declare function crStreetChosenM(name: string, g: any): number;
+
+/** create-pick.js: restores the boot chrome after the create flow. */
+declare function restoreBootChrome(): void;
+
+/** create-pick.js: parks the boot chrome for the create flow. */
+declare function parkBootChrome(): void;
+
+/** create-pick.js: sets the create flow's stage. */
+declare function setCreateStage(stage: string): void;
+
+/** create-pick.js: the roads the save stores (chosen sectors only). */
+declare function crFilteredRoads(): RoadsMap;
+
+/** create-pick.js: leaves the create flow. */
+declare function exitCreate(): void;
+
+/** create-citydata.js: warms the shipped-city catalogue from boot. */
+declare function crWarmCityLibrary(): void;
+
+/** app2.js: formats a length in metres for display. */
+declare function fmtLenM(m: number): string;
+
+/** app2.js: opens the route menu. */
+declare function openRouteMenu(): void;
+
+/** app2.js: closes the route menu. */
+declare function closeRouteMenu(): void;
+
+/** app2.js: tiles drawn so far on the live map. */
+declare var tilesOk: number;
+
 // ---- 3. Browser surface actually used by the checked parts ----
 
 /** whatsnew.js: the current release's About notes (one version block). Declared in this section, not section 2: the mirrors checker's provenance list cannot name whatsnew.js. Retires when whatsnew.js joins the check (stage 3d). */
@@ -623,6 +677,7 @@ declare var window: {
   __warm: string;
   __spriteWarm: string;
   __tailAt: number;
+  __bootPickRoute: ((id: string) => void) | undefined;
   matchMedia: typeof matchMedia;
   navigator: { userAgent: string; maxTouchPoints: number, standalone?: boolean };
   addEventListener(type: string, listener: (e: any) => void, capture?: boolean): void;

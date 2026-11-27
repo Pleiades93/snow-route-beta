@@ -14,6 +14,8 @@ touched by a cast and whitespace only): same verdict, no update
 needed.
 Stage 2c (app5 joins the type check): same verdict, no update
 needed.
+Stage 2d (create-save joins the type check): same verdict, no
+update needed.
 
 ## The snow rule (one rule, app-wide)
 

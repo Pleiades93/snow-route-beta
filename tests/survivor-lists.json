@@ -799,6 +799,18 @@
     "parts/app5.js": "8c198a73db70c427d987d703ff676253b7d8312cf8b314177f3ae87eb28b657b"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r5",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-save.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-save.js"
+   ],
+   "files": {
+    "parts/create-save.js": "4514b06b458611c26b0740fedc279010ef709a0157df6f142e1a883a5ed14c83"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }
