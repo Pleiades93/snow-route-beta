@@ -46,6 +46,13 @@ touch-action: none. No surface, element or snow status
 changed - the guard changes what a two-finger gesture does,
 not what any surface shows. Map reviewed; no update needed
 beyond this note.
+S2 ROUND 1 (2026-11-27): openClean in app3.js is split into
+its four sections (summary, street rows, noted-only rows,
+delete control) as sibling functions in the same part. The
+clean-detail surface inside the Pace sheet renders exactly
+as before - same elements, order and values, pinned by
+proof-1299. No surface, element or snow status changed.
+Map reviewed; no update needed beyond this note.
 
 ## The snow rule (one rule, app-wide)
 
