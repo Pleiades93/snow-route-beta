@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-ktq1PHgmTa9fmLzHxKHEunOOutvTS7fqJhq9PVmuX15AOchKITxyvNM92IrOcRhT' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-xrtO9bDWM3s+FYF7NTpLI/9ZCW609dncr1Kwl84rjj4VbfsCTwRNIt6c4mY2185E' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -8598,48 +8598,75 @@ function nextRouteNameGuess() { let mx = 1; for (const p of ROUTE_PACKS) { const
 
 // ---- draft state: session only (not a route, not in any slot) ----
 let creating = false, crStage = 'pick', crBootParked = false, crAreaGuess = '', crPickBusy = false; // crReturnToPreview is gone: it existed only to rewrite the Done label, and the label never rewrites now
+/** @type {CrDraft|null} */
 let draft = null; // every street key is the full map name; an absent sectors entry means the whole road
 // the name-keyed maps are prototype-free: a tapped '__proto__' street must land as an own key
+/** @returns {CrDraft} */
 function newDraft() { return { roads: Object.create(null), primaries: new Set(), osmNames: Object.create(null), tileNames: [], name: '', area: '', sectors: Object.create(null), parts: Object.create(null) }; }
+/** @type {{ street: string|null, snapshot: any, collapsed: boolean, face: string }} */
 let crSectorSession = { street: null, snapshot: undefined, collapsed: false, face: 'panel' }; // the sector/panel session as one record: street, entry snapshot (null = whole road), collapsed, face
+/** @returns {void} */
 function crSectorReset() { crSectorSession.street = null; crSectorSession.snapshot = undefined; } // a sector session's teardown in one place; it closes the pair only, collapsed/face cleared separately on purpose
+/** @returns {string[]} */
 function draftStreets() { return draft ? Object.keys(draft.roads) : []; }
 
 // ---- city-first preparation ---- a picked city loads whole, once; every tap then resolves locally, no per-tap network
+/** @type {CrTiming} */
 const CR_TIMING = { budgetMs: 120000, attempt1Ms: 70000, topupBudgetMs: 90000, topupAttempt1Ms: 60000, capBytes: 2 * 1024 * 1024, cityCapBytes: 60 * 1024 * 1024, attemptStallMs: 60000, packFirstByteMs: 120000, packStallMs: 60000, stallMs: 180000 }; // Beta 1.229: stallMs - the no-progress bound for a whole street-grid / area preparation: if NOTHING has landed for this long the load cannot progress, and the watchdogs (crGridWatchdog in create-cache.js, crPrepWatchdog in create-citydata.js) force the existing failed/degraded landing instead of a readout percentage that never moves again (Andrew's Aurora stall). Sized off the fetch budget above: a full budget of honest trying (120s) plus a minute of slack, so a slow-but-alive load is never cut - the preparation watchdogs see LANDINGS, not bytes, so their bound must stay above the whole fetch budget or they would cut fetches the budget itself would have let live. Beta 1.246: attemptStallMs - the OTHER stall rule, one level down (Andrew's Apple-standard rule): inside crOverpassFetch, an attempt that has produced NO BYTES for this long is aborted and the fetch moves to its next instance inside the same budget; the answer landing and every chunk re-arm it, so a slow-but-alive download (bytes trickling) is never cut by it - it lives or dies by its attempt cap and the budget alone. The two rules are not interchangeable: the attempt rule cannot see the unbudgeted wedges the watchdogs exist for (a pack download, a saved-grid read - promises with no bytes to watch), and the watchdogs cannot see bytes. Beta 1.249: packFirstByteMs / packStallMs - the city pack download's own two windows (crPackDownload, create-citydata.js), the silence rules' third seat: a pack is ONE static file whose host spends real time producing a big city's answer before the first byte moves, so its pre-first-byte window is the generous 120 s (Andrew's ruling, 2026-11-19), and once bytes flow the window tightens to the same 60 s the attempt rule uses. A silence kill there retries inside crPackLoad's cached promise, bounded by stallMs itself (referenced from crPackLoad, never restated) - the preparation watchdogs stay the outer backstop, exactly as they were. The battery shrinks them like every other budget here. // ONE overall deadline per fetch with the attempt budgets defined INSIDE it - the primary may take at most attempt1Ms, so the fallback always keeps a meaningful reserve. Verify round (CG-PF-07): the TOP-UP budgets obey the same measured profile as the batch - the primary's measured successes were 40.6/52.7 s, so a 40 s top-up cap reproduced the PF-02 failure on the exception path; the top-up primary now gets 60 s of its 90 s. An object (not bare consts) as the honest test seam: the battery shrinks budgets and caps instead of waiting out real minutes.
 const CR_INNER_KM = 2, CR_BUFFER_KM = 1, CR_TOPUP_RING_KM = 2; // the fallback footprint: a fixed ~4x4 km box plus 1 km buffer - geographic, never viewport-derived
 const CR_CELL_KM = 4, CR_GRID_PARALLEL = 3, CR_CELL_TRIES = 2; // the grid: ~4x4 km cells, at most 3 fetches in flight, each cell retried once before it is marked failed
 let crSession = 0; // bumped on every enterCreate and exitCreate
+/** @type {CrCity|null} */
 let crCity = null; // { name, lat, lon, bbox } - the city in scope (lat/lon/bbox null when only the name is known)
+/** @type {CrCov|null} */
 let crCov = null; // the merged extract taps resolve from: city cells + fallback boxes, one index (ids dedupe across cells)
+/** @type {any} */
 let crWanted = null; // an explicit preparation offer the hint's button acts on; cleared when a preparation starts
+/** @type {any} */
 let crTopOp = null; // the in-flight top-up's cancellation handle (crOverpassFetch's op), so exitCreate can stop its download too
 let crCovGen = 0; // the coverage generation
+/** @type {CrPrepRec|null} */
 let crPrep = null; // { gen, session, anchor, startedAt, ticker, op } while a FALLBACK box preparation is in flight
+/** @type {CrGrid|null} */
 let crGrid = null; // the city grid preparation's record, kept after it settles for progress/resume state
 let crPrepState = 'none'; // app writes go through crSetPrepState below; a direct assignment survives only as the battery's scenario seeding
 // the prep state record: writes outside the observed transition table are refused and recorded in crPrepViolations
+/** @type {Record<string,string[]>} */
 const CR_PREP_EDGES = { none: ['preparing', 'none'], preparing: ['preparing', 'ready', 'degraded', 'failed', 'none'], ready: ['preparing', 'none'], degraded: ['preparing', 'none'], failed: ['preparing', 'none'] };
 const crPrepViolations = []; // 'from->to' of every refused transition - empty in every healthy run; the battery's teeth checks (drive181) read it
+/** @param {string} next @returns {boolean} */
 function crSetPrepState(next) { if (next === crPrepState) return true; const row = CR_PREP_EDGES[crPrepState]; if (row && row.indexOf(next) >= 0) { crPrepState = next; return true; } crPrepViolations.push(crPrepState + '->' + next); return false; } // a write of the state the record already holds is a re-assertion, not a transition: the settle sites are re-entrant (two cell completions in one tick can both reach the grid's finish) and re-asserted the same value, unremarked, through 1.153 - the setter passes it, unrecorded (drive181's first CI run proved the re-assertions happen in healthy flows: ready->ready, failed->failed, degraded->degraded). A current state with no row in the table (a value the app itself never holds) refuses every CHANGE the same way - the record never throws
+/** @type {CrPrepFail|null} */
 let crPrepFail = null; // { kind: 'unreachable' | 'error' | 'dense' | 'badjson', status?, remark? }
 let crFailFromGrid = false; // which one failed: Retry resumes a grid's cells but re-runs a box at its anchor; never confuse them
+/** @returns {void} */
 function crPrepBegin() { crSetPrepState('preparing'); crPrepFail = null; crFailFromGrid = false; crWanted = null; } // the entry bundle: state to 'preparing', failure cleared, offer answered; the generation bump stays at the sites
+/** @type {any} */
 let crPrepAnchor = null; // where Retry / a not-ready tap re-prepares
+/** @type {Record<string,any>} */
 let crPending = {}; // streets whose shape reaches beyond verified coverage (fail-closed): listed as pending, NEVER added half-known
+/** @type {Record<string,boolean>} */
 let crToppedUp = {}; // '<full name>@<gen>' -> true: a street's ONE top-up per coverage generation is spent
 let crCityReturn = 'doors'; // where the city pane's Back lands
+/** @param {number} lat @param {number} lng @param {number} halfKm @returns {RouteBox} */
 function crBoxAround(lat, lng, halfKm) { const dLat = halfKm * 1000 / MLAT, dLng = halfKm * 1000 / MLNG; return { s: +(lat - dLat).toFixed(6), n: +(lat + dLat).toFixed(6), w: +(lng - dLng).toFixed(6), e: +(lng + dLng).toFixed(6) }; }
+/** @param {RouteBox|null} box @param {number} lat @param {number} lng @returns {boolean} */
 function crInBox(box, lat, lng) { return !!box && lat >= box.s && lat <= box.n && lng >= box.w && lng <= box.e; }
+/** @param {RouteBox[]|null|undefined} boxes @param {number} lat @param {number} lng @returns {boolean} */
 function crInAnyBox(boxes, lat, lng) { for (const b of boxes || []) { if (crInBox(b, lat, lng)) return true; } return false; } // verified coverage is a SET of boxes: an endpoint is verified when it lies inside ANY of them
 // the one query builder: batch and top-up share its grammar; the battery decodes the bodies and grades this output
+/** @param {string} filter @param {RouteBox} box @param {number} timeoutS @returns {string} */
 function crQL(filter, box, timeoutS) { return '[out:json][timeout:' + timeoutS + '];way[' + filter + '](' + box.s + ',' + box.w + ',' + box.n + ',' + box.e + ');out geom;'; }
+/** @param {RouteBox} box @param {number} timeoutS @returns {string} */
 function crAreaQL(box, timeoutS) { return crQL('"name"]["highway"', box, timeoutS); }
+/** @param {string} osmName @param {RouteBox} box @param {number} timeoutS @returns {string} */
 function crNameQL(osmName, box, timeoutS) { return crQL('"name"="' + osmName.replace(/(["\\])/g, '\\$1') + '"', box, timeoutS); }
+/** @param {any} op @returns {void} */
 function crAbortOp(op) { try { if (op && op.ctl) op.ctl.abort(); } catch (e) {} } // stop an in-flight fetch's download, not just its right to land (CG-PF-10: Cancel/exit/supersede abort the request itself)
+/** @param {any} r @param {((total: number) => string|null)|undefined} onChunk @returns {Promise<any>} */
 async function crReadBodyText(r, onChunk) { // the shared response consumption (stream, accumulate, decode); every policy (timers, caps, checks) stays at the callers
   if (!r.body || typeof r.body.getReader !== 'function') return { fallback: true };
-  const reader = r.body.getReader(), chunks = []; let total = 0;
+  const reader = r.body.getReader(), /** @type {Uint8Array[]} */ chunks = []; let total = 0;
   for (;;) {
     const part = await reader.read();
     if (part.done) break;
@@ -8651,10 +8678,11 @@ async function crReadBodyText(r, onChunk) { // the shared response consumption (
   const buf = new Uint8Array(total); let off = 0; for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
   return { text: new TextDecoder().decode(buf) };
 }
+/** @param{string} ql @param{number} budgetMs @param{number} attempt1Ms @param{(() => boolean)|null|undefined} sessionOk @param{any} op @returns{Promise<any>} */
 async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
   // one deadline: attempt 1 capped inside it (fallback keeps a reserve); the byte cap is enforced as bytes arrive
   const t0 = Date.now(), deadline = t0 + budgetMs;
-  let lastFail = { ok: false, kind: 'unreachable' };
+  let lastFail = /** @type {any} */ ({ ok: false, kind: 'unreachable' });
   for (let i = 0; i < OVERPASS_URLS.length; i++) {
     if (sessionOk && !sessionOk()) return { ok: false, kind: 'stale' };
     const remain = deadline - Date.now(); if (remain <= 0) break;
@@ -8663,7 +8691,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
     if (op) op.ctl = ctl; // the caller can stop THIS download (Cancel / exit / supersede - CG-PF-10)
     const to = ctl ? setTimeout(() => { try { ctl.abort(); } catch (e) {} }, cap) : null;
     // the attempt's silence timer beside its cap timer: armed at start, re-armed per chunk; clearTimers retires both together
-    let stallTo = null;
+    let /** @type {number|null} */ stallTo = null;
     const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { try { ctl.abort(); } catch (e) {} }, CR_TIMING.attemptStallMs); };
     const clearTimers = () => { if (to) clearTimeout(to); if (stallTo) clearTimeout(stallTo); };
     armStall();
@@ -8701,6 +8729,7 @@ async function crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op) {
   }
   return lastFail;
 }
+/** @param{RouteBox} box @param{string|null} name @param{number} budgetMs @param{number} attempt1Ms @param{(() => boolean)|null|undefined} sessionOk @param{any} op @returns{Promise<any>} */
 async function crSourceExtract(box, name, budgetMs, attempt1Ms, sessionOk, op) {
   // the seam: every extract comes through this one function; packs plug in behind it, the service is the fallback
   const pk = await crPackServe(box, name, sessionOk);
@@ -8709,14 +8738,19 @@ async function crSourceExtract(box, name, budgetMs, attempt1Ms, sessionOk, op) {
   return crOverpassFetch(ql, budgetMs, attempt1Ms, sessionOk, op);
 }
 // ---- city packs ---- a pack in the catalogue lights its city up in the chooser with no app change
+/** @type {{ slug: string, bbox: RouteBox, failed: boolean }|null} */
 let crPackCtx = null; // { slug, bbox, failed } while the active city's preparation is pack-backed; null = the service is the source
 let crPackNote = ''; // the pack source state ('' = undecided, 'service' = fell back to the street service)
+/** @type {Promise<any>|null} */
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
 let crPackIndexKnown = false; // the catalogue answered: an unlisted city is the live service's dataset ('overpass'); an unanswered catalogue states no identity
-let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
-const crPackCtls = Object.create(null); // slug -> the current download attempt's AbortController, owned by the load: dropping the load can abort the attempt itself
+let crPackLoads = /** @type {Record<string,Promise<any>>} */ (Object.create(null)); // slug -> Promise<elements>: the session's downloaded packs, adapted once
+const crPackCtls = /** @type {Record<string,any>} */ (Object.create(null)); // slug -> the current download attempt's AbortController, owned by the load: dropping the load can abort the attempt itself
+/** @param {string} slug @returns {void} */
 function crPackAbort(slug) { const c = crPackCtls[slug]; if (c) { delete crPackCtls[slug]; try { c.abort(); } catch (e) {} } }
+/** @param {any} s @returns {boolean} */
 function crPackSlugOk(s) { return typeof s === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(s) && s.toLowerCase() !== 'index'; }
+/** @returns {Promise<any>} */
 function crPackIndexLoad() {
   if (!crPackIndexP) {
     crPackIndexP = (async () => {
@@ -8732,10 +8766,12 @@ function crPackIndexLoad() {
   }
   return crPackIndexP;
 }
+/** @returns {void} */
 function crWarmCityLibrary() { crPackIndexLoad(); } // the catalogue downloads from BOOT: a cold-open chooser tap otherwise waits the whole fetch before the list paints
+/** @param {string} name @param {RouteBox} bbox @returns {Promise<CrPackCity|null>} */
 async function crPackResolveCity(name, bbox) { // the pack's box must contain the grid box (less would certify coverage never downloaded); a slow catalogue cannot wedge preparation
   if (!name || !bbox) return null;
-  const entries = await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]);
+  const entries = /** @type {any[]} */ (await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]));
   if (!entries) return null;
   const e = entries.find(x => x && typeof x.name === 'string' && crPackSlugOk(x.slug) && x.name.toLowerCase() === String(name).toLowerCase() && Array.isArray(x.bbox) && x.bbox.length === 4);
   if (!e) return null;
@@ -8745,10 +8781,11 @@ async function crPackResolveCity(name, bbox) { // the pack's box must contain th
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
   return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // the catalogue's generatedAt is the pack's stamp: republishing re-stamps it, and the dataset identity binds saved records to it
 }
+/** @param {string} slug @returns {Promise<any>} */
 async function crPackDownload(slug) { // one attempt: silence past packFirstByteMs, then packStallMs between bytes, aborts it with a tagged error the retry reads
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   if (ctl) crPackCtls[slug] = ctl; // the load owns this attempt's controller until it settles or the load is dropped (crPackAbort)
-  let stallTo = null, sawByte = false, killed = false;
+  let /** @type {number|null} */ stallTo = null, sawByte = false, killed = false;
   const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { killed = true; try { ctl.abort(); } catch (e) {} }, sawByte ? CR_TIMING.packStallMs : CR_TIMING.packFirstByteMs); };
   const clearStall = () => { if (stallTo) clearTimeout(stallTo); };
   armStall();
@@ -8767,10 +8804,11 @@ async function crPackDownload(slug) { // one attempt: silence past packFirstByte
     return pack;
   } catch (e) {
     clearStall();
-    if (killed) { const err = new Error('pack stall'); err.packStall = true; throw err; }
+    if (killed) { const err = /** @type {any} */ (new Error('pack stall')); err.packStall = true; throw err; }
     throw e;
   } finally { if (ctl && crPackCtls[slug] === ctl) delete crPackCtls[slug]; } // a settled attempt unregisters itself; an aborted one was already unregistered by crPackAbort
 }
+/** @param {string} slug @param {boolean|undefined} force @returns {Promise<any>} */
 function crPackLoad(slug, force) { // adapted into the extract shape; ids are negative (OSM ids are positive); a failed load is not cached
   if (!crPackSlugOk(slug)) return Promise.reject(new Error('pack slug'));
   if (!force && crPackLoads[slug]) return crPackLoads[slug];
@@ -8798,6 +8836,7 @@ function crPackLoad(slug, force) { // adapted into the extract shape; ids are ne
   p.catch(() => { if (crPackLoads[slug] === p) delete crPackLoads[slug]; });
   return p;
 }
+/** @param{RouteBox} box @param{string|null} name @param{(() => boolean)|null|undefined} sessionOk @returns{Promise<any>} */
 async function crPackServe(box, name, sessionOk) { // a way belongs when any of its points lies in the box, geometry returned whole; null when no pack applies
   const ctx = crPackCtx;
   if (!ctx || ctx.failed) return null;
@@ -8817,43 +8856,52 @@ async function crPackServe(box, name, sessionOk) { // a way belongs when any of 
   return { ok: true, json: { elements: out }, ms: Date.now() - t0 };
 }
 // the point normalisation for both cleaners: 1e7 rounding; a point survives only past 0.1 m from the last kept
-function crCleanPtPush(pts, lat, lon) { const p = [Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+/** @param {LatLng[]} pts @param {number} lat @param {number} lon @returns {void} */
+function crCleanPtPush(pts, lat, lon) { const p = /** @type {LatLng} */ ([Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]); if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+/** @param {any} elements @param {Record<string,{name: string, pts: LatLng[]}>} byId @returns {Record<string,{name: string, pts: LatLng[]}>} */
 function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, cleaned by crCleanPtPush (1e7 rounding, sub-0.1 m duplicates dropped)
   for (const el of elements || []) {
     if (!el || el.type !== 'way' || el.id == null || !el.tags || typeof el.tags.name !== 'string' || !el.tags.name) continue;
     if (!Array.isArray(el.geometry) || el.geometry.length < 2) continue;
-    const pts = [];
+    const pts = /** @type {LatLng[]} */ ([]);
     for (const g of el.geometry) crCleanPtPush(pts, g.lat, g.lon);
     if (pts.length > 1) byId[el.id] = { name: el.tags.name, pts };
   }
   return byId;
 }
+/** @param {any} rawPts @returns {LatLng[]|null} */
 function crCleanPts(rawPts) { // stored pairs clean through crCleanPtPush, plus the finiteness/range condition crResolve demands of every point it reads
   if (!Array.isArray(rawPts)) return null;
-  const pts = [];
+  const pts = /** @type {LatLng[]} */ ([]);
   for (const gp of rawPts) {
     if (!Array.isArray(gp) || gp.length < 2 || !isFinite(gp[0]) || !isFinite(gp[1]) || gp[0] < -90 || gp[0] > 90 || gp[1] < -180 || gp[1] > 180) continue;
     crCleanPtPush(pts, gp[0], gp[1]);
   }
   return pts.length > 1 ? pts : null;
 }
+/** @param {any} entry @returns {{ id: any, name: string, pts: LatLng[] }|null} */
 function crCleanStoredWay(entry) { // a triple installs only by passing the extract's cleaning (usable id, non-empty name, 2+ cleaned points); else dropped whole
   if (!Array.isArray(entry) || entry.length < 3) return null;
   if (entry[0] == null || typeof entry[1] !== 'string' || !entry[1]) return null;
   const pts = crCleanPts(entry[2]);
   return pts ? { id: entry[0], name: entry[1], pts } : null;
 }
+/** @param {Record<string,{name: string, pts: LatLng[]}>} byId @param {RouteBox[]} boxes @returns {CrCov} */
 function crCovFromWays(byId, boxes) { // the record: ways by name, ids in byId (cells and top-ups merge into one index), plus the verified boxes
-  const byName = Object.create(null); // street names are external data: a null-prototype index keeps 'constructor'/'__proto__' as own properties, never the prototype
+  const byName = /** @type {Record<string,{name: string, pts: LatLng[]}[]>} */ (Object.create(null)); // street names are external data: a null-prototype index keeps 'constructor'/'__proto__' as own properties, never the prototype
   for (const id of Object.keys(byId)) {
     const w = byId[id];
     (byName[w.name] = byName[w.name] || []).push(w);
   }
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
+/** @returns {CrCov} */
 function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // byId starts null-prototype too: a stored '__proto__' id must land as an entry, never the prototype
+/** @param {Record<string,{name: string, pts: LatLng[]}>} byId @param {RouteBox|null} box @returns {CrCov} */
 function crCovFold(byId, box) { const cov = crCovEnsure(); for (const id of Object.keys(byId)) cov.byId[id] = byId[id]; if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box); return cov; } // Architecture #17: the coverage record's FOLD - already-validated ways and one answered box land on the record, and nothing else happens: no reindex, no search refresh. The cache restore folds per restored cell through here (through 1.280 it wrote crCov.byId and crCov.boxes directly from create-cache.js); the once-only reindex + refresh after its loop stays the caller's discipline (Beta 1.254, A-02)
+/** @returns {CrCov} */
 function crCovReindex() { const cov = crCovEnsure(); cov.byName = crCovFromWays(cov.byId, cov.boxes).byName; return cov; } // the byName rebuild: the name index is a pure function of byId, rebuilt when coverage settles, never per cell
+/** @param {any} elements @param {RouteBox|null} box @returns {CrCov} */
 function crCovMerge(elements, box) { // fold one answered extract into the coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);
@@ -8863,8 +8911,10 @@ function crCovMerge(elements, box) { // fold one answered extract into the cover
   crRefreshSearch(); // a merge changes coverage: an open search re-runs against the fuller extract here, not its earlier answer
   return cov;
 }
+/** @param {LatLng[]} line @param {RouteBox} box @returns {{ line: LatLng[], startCut: boolean, endCut: boolean }[]} */
 function crClipLineToBox(line, box) { // the sub-lines of a stitched line inside a box, cut at the boundary; pieces record cut-made ends (startCut/endCut)
-  const pieces = [];
+  const pieces = /** @type {{ line: LatLng[], startCut: boolean, endCut: boolean }[]} */ ([]);
+  /** @type {{ line: LatLng[], startCut: boolean, endCut: boolean }|null} */
   let cur = null;
   const close = () => { if (cur && cur.line.length > 1) pieces.push(cur); cur = null; };
   for (let i = 1; i < line.length; i++) {
@@ -8877,8 +8927,8 @@ function crClipLineToBox(line, box) { // the sub-lines of a stitched line inside
       else { const r = Q[k] / P[k]; if (P[k] < 0) { if (r > t0) t0 = r; } else if (r < t1) t1 = r; if (t0 > t1) { miss = true; break; } }
     }
     if (miss) { close(); continue; }
-    const A = t0 === 0 ? a : [a[0] + dy * t0, a[1] + dx * t0];
-    const B = t1 === 1 ? b : [a[0] + dy * t1, a[1] + dx * t1];
+    const A = t0 === 0 ? a : /** @type {LatLng} */ ([a[0] + dy * t0, a[1] + dx * t0]);
+    const B = t1 === 1 ? b : /** @type {LatLng} */ ([a[0] + dy * t1, a[1] + dx * t1]);
     if (!cur) cur = { line: [A], startCut: t0 > 0, endCut: false };
     const last = cur.line[cur.line.length - 1];
     if (last[0] !== A[0] || last[1] !== A[1]) cur.line.push(A);
@@ -8889,6 +8939,7 @@ function crClipLineToBox(line, box) { // the sub-lines of a stitched line inside
   close();
   return pieces;
 }
+/** @param {string} osmName @param {{ lat: number, lng: number }} lngLat @param {RouteBox} [boundary] @returns {any} */
 function crResolve(osmName, lngLat, boundary) { // a run end is closed only inside verified coverage (a continuation would have been returned); outside, the run is unproven
   const cov = crCov; if (!cov) return { status: 'nocov' };
   const ways = cov.byName[osmName];
@@ -8918,7 +8969,9 @@ function crResolve(osmName, lngLat, boundary) { // a run end is closed only insi
   return { status: 'ok', segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
 }
 // the prep family's current-check under the one convention (at crSearchCurrent, create-pick.js); this family's true inputs are (gen, session)
+/** @param {number} gen @param {number} session @returns {boolean} */
 function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
+/** @param {CrPrepRec} prep @param {() => boolean} preparing @returns {void} */
 function crPrepWatchdog(prep, preparing) { // the fallback's watchdog (the grid's mirror): past stallMs, force the failed landing, the wedged landing orphaned first
   if (!preparing() || crPrep !== prep) return;
   if (Date.now() - prep.startedAt < CR_TIMING.stallMs) return;
@@ -8926,9 +8979,10 @@ function crPrepWatchdog(prep, preparing) { // the fallback's watchdog (the grid'
   crCovGen++;
   crAbortOp(prep.op);
   crPrep = null;
-  crSetPrepState('failed'); crPrepFail = { ok: false, kind: 'unreachable' };
+  crSetPrepState('failed'); crPrepFail = /** @type {any} */ ({ ok: false, kind: 'unreachable' });
   crRenderHint();
 }
+/** @param {{ lat: number, lng: number }|null} anchor @returns {void} */
 function crStartPrep(anchor) { // the fallback preparation: one bounded box around an anchor, session-only, for places with no picked or saved city
   if (!creating || !anchor || !isFinite(anchor.lat) || !isFinite(anchor.lng)) return;
   if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
@@ -8939,7 +8993,7 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
   const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen), preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
   crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to an outstanding offer (it clears inside crPrepBegin); the anchor stays this site's own
-  const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
+  const prep = crPrep = /** @type {CrPrepRec} */ ({ gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} });
   crRenderHint();
   prep.ticker = setInterval(() => { crPrepWatchdog(prep, preparing); if (preparing()) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // every tick runs the progress watchdog before it renders
   crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, preparing, prep.op).then(res => {
@@ -8955,6 +9009,7 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
     crRenderHint();
   });
 }
+/** @returns {void} */
 function crCancelPrep() { // stops the wait AND the downloads, keeps the draft, the city and every loaded cell; late answers land nowhere
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
   if (crGrid) crGridStop('cancelled');
@@ -8963,6 +9018,7 @@ function crCancelPrep() { // stops the wait AND the downloads, keeps the draft, 
   crSetPrepState(crGrid ? crGridSettledState() : (crCov && crCov.boxes.length ? 'ready' : 'none'));
   crRenderHint();
 }
+/** @returns {void} */
 function crSweepPending() { // a fresh extract may complete streets that were pending on a narrower one
   if (!crCov || (crPrepState !== 'ready' && crPrepState !== 'degraded')) return;
   for (const pk of Object.keys(crPending)) {

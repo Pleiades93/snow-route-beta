@@ -835,6 +835,20 @@
     "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r8",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/create-fetch.js and parts/create-citydata.js. Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/create-citydata.js",
+    "parts/create-fetch.js"
+   ],
+   "files": {
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

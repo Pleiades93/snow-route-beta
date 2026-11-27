@@ -23,6 +23,8 @@
     "../parts/create-packs.js",
     "../parts/app5.js",
     "../parts/create-save.js",
-    "../parts/create-cache.js"
+    "../parts/create-cache.js",
+    "../parts/create-fetch.js",
+    "../parts/create-citydata.js"
   ]
 }

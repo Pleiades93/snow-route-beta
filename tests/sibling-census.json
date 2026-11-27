@@ -38109,6 +38109,717 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r9",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "CR_BUFFER_KM",
+     "CR_CELL_KM",
+     "CR_CELL_TRIES",
+     "CR_GRID_PARALLEL",
+     "CR_INNER_KM",
+     "CR_PREP_EDGES",
+     "CR_TIMING",
+     "CR_TOPUP_RING_KM",
+     "crAreaGuess",
+     "crAreaQL",
+     "crBootParked",
+     "crBoxAround",
+     "crCancelPrep",
+     "crCity",
+     "crCityReturn",
+     "crCleanPtPush",
+     "crCleanPts",
+     "crCleanStoredWay",
+     "crClipLineToBox",
+     "crCov",
+     "crCovEnsure",
+     "crCovFold",
+     "crCovFromWays",
+     "crCovGen",
+     "crCovMerge",
+     "crCovReindex",
+     "crFailFromGrid",
+     "crGrid",
+     "crInAnyBox",
+     "crInBox",
+     "crIndexWays",
+     "crNameQL",
+     "crPackAbort",
+     "crPackCtls",
+     "crPackCtx",
+     "crPackDownload",
+     "crPackIndexKnown",
+     "crPackIndexLoad",
+     "crPackIndexP",
+     "crPackLoad",
+     "crPackLoads",
+     "crPackNote",
+     "crPackResolveCity",
+     "crPackServe",
+     "crPackSlugOk",
+     "crPending",
+     "crPickBusy",
+     "crPrep",
+     "crPrepAnchor",
+     "crPrepBegin",
+     "crPrepCurrent",
+     "crPrepFail",
+     "crPrepState",
+     "crPrepViolations",
+     "crPrepWatchdog",
+     "crQL",
+     "crResolve",
+     "crSectorReset",
+     "crSectorSession",
+     "crSession",
+     "crSetPrepState",
+     "crStage",
+     "crStartPrep",
+     "crSweepPending",
+     "crTopOp",
+     "crToppedUp",
+     "crWanted",
+     "crWarmCityLibrary",
+     "creating",
+     "draft",
+     "draftStreets",
+     "newDraft"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-citydata.js",
+    "parts/create-fetch.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:crAreaQL:parts/create-fetch.js:crSourceExtract",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crAreaQL() is called from crSourceExtract in parts/create-fetch.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crBoxAround:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crBoxAround() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crBoxAround:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crBoxAround() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crBoxAround:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crBoxAround() is called from pickStreet in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCancelPrep:parts/create-pick.js:crHintBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCancelPrep() is called from crHintBtn:click in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCleanPtPush:parts/create-citydata.js:crIndexWays",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPtPush() is called from crIndexWays in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCleanPtPush:parts/create-citydata.js:pts",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPtPush() is called from pts in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCleanPts:parts/create-citydata.js:crCleanStoredWay",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanPts() is called from crCleanStoredWay in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCleanStoredWay:parts/create-cache.js:byId",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCleanStoredWay() is called from byId in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crClipLineToBox:parts/create-citydata.js:crResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crClipLineToBox() is called from crResolve in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovEnsure:parts/create-citydata.js:crCovFold",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovEnsure() is called from crCovFold in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovEnsure:parts/create-citydata.js:crCovMerge",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovEnsure() is called from crCovMerge in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovEnsure:parts/create-citydata.js:crCovReindex",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovEnsure() is called from crCovReindex in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovFold:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovFold() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovFromWays:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovFromWays() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovFromWays:parts/create-citydata.js:crCovEnsure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovFromWays() is called from crCovEnsure in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovFromWays:parts/create-citydata.js:crCovReindex",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovFromWays() is called from crCovReindex in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-cache.js:crGridPump",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from crGridPump in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovMerge:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovMerge() is called from pickStreet in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovReindex:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovReindex() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crCovReindex:parts/create-citydata.js:crCovMerge",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crCovReindex() is called from crCovMerge in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInAnyBox:parts/create-citydata.js:crResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInAnyBox() is called from crResolve in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInAnyBox:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInAnyBox() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInAnyBox:parts/create-pick.js:crPendStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInAnyBox() is called from crPendStreet in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInAnyBox:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInAnyBox() is called from pickStreet in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInBox:parts/create-citydata.js:crResolve",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInBox() is called from crResolve in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInBox:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInBox() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInBox:parts/create-fetch.js:crInAnyBox",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInBox() is called from crInAnyBox in parts/create-fetch.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInBox:parts/create-pick.js:b:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInBox() is called from b:click in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInBox:parts/create-pick.js:cityBox",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInBox() is called from cityBox in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInBox:parts/create-pick.js:dx",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInBox() is called from dx in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crInBox:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crInBox() is called from pickStreet in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crIndexWays:parts/create-citydata.js:crCovMerge",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crIndexWays() is called from crCovMerge in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackAbort:parts/create-cache.js:crGridStall",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackAbort() is called from crGridStall in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackDownload:parts/create-citydata.js:crPackLoad",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackDownload() is called from crPackLoad in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackIndexLoad:parts/app3.js:snapGeoEnsure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackIndexLoad() is called from snapGeoEnsure in parts/app3.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackIndexLoad:parts/create-citydata.js:crPackResolveCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackIndexLoad() is called from crPackResolveCity in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackIndexLoad:parts/create-citydata.js:crWarmCityLibrary",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackIndexLoad() is called from crWarmCityLibrary in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackIndexLoad:parts/create-pick.js:crRenderCityChoices",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackIndexLoad() is called from crRenderCityChoices in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackLoad:parts/app3.js:snapGeoEnsure",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackLoad() is called from snapGeoEnsure in parts/app3.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackLoad:parts/create-citydata.js:crPackServe",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackLoad() is called from crPackServe in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackResolveCity:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackResolveCity() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackServe:parts/create-fetch.js:crSourceExtract",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackServe() is called from crSourceExtract in parts/create-fetch.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackSlugOk:parts/create-citydata.js:crPackLoad",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackSlugOk() is called from crPackLoad in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPackSlugOk:parts/create-citydata.js:crPackResolveCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPackSlugOk() is called from crPackResolveCity in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPrepBegin:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepBegin() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPrepBegin:parts/create-cache.js:crGridResume",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepBegin() is called from crGridResume in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPrepBegin:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepBegin() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPrepCurrent:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepCurrent() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crPrepWatchdog:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crPrepWatchdog() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crQL:parts/create-fetch.js:crAreaQL",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crQL() is called from crAreaQL in parts/create-fetch.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crQL:parts/create-fetch.js:crNameQL",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crQL() is called from crNameQL in parts/create-fetch.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crResolve:parts/create-citydata.js:crSweepPending",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResolve() is called from crSweepPending in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crResolve:parts/create-pick.js:pickStreet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crResolve() is called from pickStreet in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSectorReset:parts/create-pick.js:crCloseSectors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSectorReset() is called from crCloseSectors in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSectorReset:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSectorReset() is called from enterCreate in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSectorReset:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSectorReset() is called from exitCreate in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSectorReset:parts/create-pick.js:setCreateStage",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSectorReset() is called from setCreateStage in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSectorReset:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSectorReset() is called from top-level in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSetPrepState:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetPrepState() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSetPrepState:parts/create-cache.js:crGridFinish",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetPrepState() is called from crGridFinish in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSetPrepState:parts/create-citydata.js:crCancelPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetPrepState() is called from crCancelPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSetPrepState:parts/create-citydata.js:crPrepWatchdog",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetPrepState() is called from crPrepWatchdog in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSetPrepState:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetPrepState() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSetPrepState:parts/create-fetch.js:crPrepBegin",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetPrepState() is called from crPrepBegin in parts/create-fetch.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSetPrepState:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetPrepState() is called from exitCreate in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crStartPrep:parts/create-pick.js:b:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStartPrep() is called from b:click in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crStartPrep:parts/create-pick.js:crHintBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crStartPrep() is called from crHintBtn:click in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSweepPending:parts/create-cache.js:crCityPrepare",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSweepPending() is called from crCityPrepare in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSweepPending:parts/create-cache.js:crGridFinish",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSweepPending() is called from crGridFinish in parts/create-cache.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crSweepPending:parts/create-citydata.js:crStartPrep",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSweepPending() is called from crStartPrep in parts/create-citydata.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from openRouteMenu in parts/app2.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/app2.js:rmCreate:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from rmCreate:click in parts/app2.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/create-pick.js:openDoors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from openDoors in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/create-save.js:arm",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from arm in parts/create-save.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:draftStreets:parts/create-pick.js:askDiscard",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - draftStreets() is called from askDiscard in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:draftStreets:parts/create-pick.js:crClearAll:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - draftStreets() is called from crClearAll:click in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:draftStreets:parts/create-pick.js:crDoneBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - draftStreets() is called from crDoneBtn:click in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:draftStreets:parts/create-pick.js:crFilteredRoads",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - draftStreets() is called from crFilteredRoads in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:draftStreets:parts/create-pick.js:renderCrLists",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - draftStreets() is called from renderCrLists in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:draftStreets:parts/create-pick.js:renderDraft",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - draftStreets() is called from renderDraft in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:draftStreets:parts/create-save.js:pvSaveBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - draftStreets() is called from pvSaveBtn:click in parts/create-save.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:newDraft:parts/create-pick.js:crDoorManual:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - newDraft() is called from crDoorManual:click in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:newDraft:parts/create-pick.js:crPickCity",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - newDraft() is called from crPickCity in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:newDraft:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - newDraft() is called from enterCreate in parts/create-pick.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/app3.js": "1db3d475ab360dd00f17f7ab3724e764ebc54d0d83501748ef0dad292abe5948",
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "8c198a73db70c427d987d703ff676253b7d8312cf8b314177f3ae87eb28b657b",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7",
+    "parts/create-save.js": "4514b06b458611c26b0740fedc279010ef709a0157df6f142e1a883a5ed14c83",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

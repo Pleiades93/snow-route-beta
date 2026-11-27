@@ -223,10 +223,10 @@ type SnapGeo = { key: string, polys: SnapPoly[], grid: Map<string, number[]> };
 type RunDistRec = { run: number, m: number, end: number[] | null };
 
 /** The create flow's draft route (create-fetch): the pack being built. */
-type CrDraft = { name: string, area: string, primaries: Set<string>, roads: RoadsMap, osmNames: Record<string, string>, tileNames?: string[] };
+type CrDraft = { name: string, area: string, primaries: Set<string>, roads: RoadsMap, osmNames: Record<string, string>, tileNames?: string[], sectors: Record<string, any>, parts: Record<string, any> };
 
 /** The merged coverage extract (create-fetch): ways by street name. */
-type CrCov = { byName: Record<string, { pts: LatLng[] }[]>, byId: Record<string, { name: string, pts: LatLng[] }>, boxes: any[] };
+type CrCov = { gen: number, byName: Record<string, { name: string, pts: LatLng[] }[]>, byId: Record<string, { name: string, pts: LatLng[] }>, boxes: RouteBox[], fetchedAt: number };
 
 /** One cell of the create grid (create-cache): its box and fetch state. */
 type CrGridCell = { key: string, box: RouteBox, state: string, tries: number };
@@ -244,10 +244,16 @@ type CrCacheRec = { cityName: string, bbox: RouteBox, cells: Record<string, { at
 type CrCity = { name: string, lat: number | null, lon: number | null, bbox?: RouteBox };
 
 /** A shipped city pack's catalogue identity (create-citydata). */
-type CrPackCity = { slug: string, gen: number, bbox: RouteBox };
+type CrPackCity = { slug: string, gen: string, bbox: RouteBox };
 
 /** The create fetch timing budget (create-fetch, CR_TIMING). */
 type CrTiming = { budgetMs: number, attempt1Ms: number, topupBudgetMs: number, topupAttempt1Ms: number, capBytes: number, cityCapBytes: number, attemptStallMs: number, packFirstByteMs: number, packStallMs: number, stallMs: number };
+
+/** The fallback preparation's record (create-fetch owns the binding). */
+type CrPrepRec = { gen: number, session: number, anchor: any, startedAt: number, ticker: number | null, op: any };
+
+/** The preparation failure record (create-fetch): kind, plus optional status/remark. */
+type CrPrepFail = { kind: string, status?: number, remark?: string };
 
 /** The geolocation coordinate surface the GPS code reads. */
 type GeolocationCoordinates = { latitude: number, longitude: number, accuracy: number, speed: number | null, heading: number | null };
@@ -502,17 +508,9 @@ declare function stopGps(silent?: boolean): void;
 /** app3.js: true while the live watch is a recording (in-run) watch. */
 declare var gpsFromRun: boolean;
 
-/** create-fetch.js: the draft route being built, or null. */
-declare var draft: CrDraft | null;
 
-/** create-fetch.js: the draft's street names. */
-declare function draftStreets(): string[];
 
-/** create-fetch.js: the guessed area label for a new draft. */
-declare var crAreaGuess: string;
 
-/** create-fetch.js: the merged coverage extract, or null before preparation. */
-declare var crCov: CrCov | null;
 
 /** create-pick.js: the draft geometry cache shared by the create consumers. */
 declare function crDraftGeom(): any;
@@ -535,8 +533,6 @@ declare function crFilteredRoads(): RoadsMap;
 /** create-pick.js: leaves the create flow. */
 declare function exitCreate(): void;
 
-/** create-citydata.js: warms the shipped-city catalogue from boot. */
-declare function crWarmCityLibrary(): void;
 
 /** app2.js: formats a length in metres for display. */
 declare function fmtLenM(m: number): string;
@@ -550,90 +546,52 @@ declare function closeRouteMenu(): void;
 /** app2.js: tiles drawn so far on the live map. */
 declare var tilesOk: number;
 
-/** create-fetch.js: the create fetch timing budget. */
-declare var CR_TIMING: CrTiming;
 
-/** create-fetch.js: grid cell size (km), fetch parallelism, per-cell tries. */
-declare var CR_CELL_KM: number;
-/** create-fetch.js: see CR_CELL_KM. */
-declare var CR_GRID_PARALLEL: number;
-/** create-fetch.js: see CR_CELL_KM. */
-declare var CR_CELL_TRIES: number;
 
-/** create-fetch.js: the create session counter. */
-declare var crSession: number;
 
-/** create-fetch.js: the coverage generation counter. */
-declare var crCovGen: number;
 
-/** create-fetch.js: true while the create flow is open. */
-declare var creating: boolean;
 
-/** create-fetch.js: the live city grid record, or null. */
-declare var crGrid: CrGrid | null;
 
-/** create-fetch.js: the live preparation record, or null. */
-declare var crPrep: any;
 
-/** create-fetch.js: the preparation state word. */
-declare var crPrepState: string;
 
-/** create-fetch.js: the preparation's failure record. */
-declare var crPrepFail: any;
 
-/** create-fetch.js: true when the failure came from the grid. */
-declare var crFailFromGrid: boolean;
 
-/** create-fetch.js: the picked city, or null. */
-declare var crCity: CrCity | null;
 
-/** create-fetch.js: a box around a centre point. */
-declare function crBoxAround(lat: number, lon: number, km: number): RouteBox;
 
-/** create-fetch.js: the preparation entry bundle. */
-declare function crPrepBegin(): void;
 
-/** create-fetch.js: sets the preparation state word. */
-declare function crSetPrepState(state: string): void;
 
-/** create-citydata.js: the active pack context, or null. */
-declare var crPackCtx: { slug: string, bbox: RouteBox, failed: boolean } | null;
 
-/** create-citydata.js: the pack note for the hint line. */
-declare var crPackNote: string;
 
-/** create-citydata.js: in-flight pack loads by slug. */
-declare var crPackLoads: Record<string, any>;
 
-/** create-citydata.js: true once the pack catalogue has answered. */
-declare var crPackIndexKnown: boolean;
 
-/** create-citydata.js: builds a coverage index from a by-id way map. */
-declare function crCovFromWays(byId: any, boxes: any[]): CrCov;
 
-/** create-citydata.js: folds a by-id way map into the live coverage. */
-declare function crCovFold(byId: any, box: RouteBox): void;
 
-/** create-citydata.js: rebuilds the coverage name index. */
-declare function crCovReindex(): void;
 
-/** create-citydata.js: merges fetched elements into the live coverage. */
-declare function crCovMerge(elements: any, box: RouteBox): void;
 
-/** create-citydata.js: cleans one stored way for the coverage fold. */
-declare function crCleanStoredWay(sw: any): { id: any, name: string, pts: LatLng[] } | null;
 
-/** create-citydata.js: resolves a city to its shipped pack, or null. */
-declare function crPackResolveCity(name: string, bbox: RouteBox): Promise<CrPackCity | null>;
 
-/** create-citydata.js: aborts a pack download. */
-declare function crPackAbort(slug: string): void;
 
-/** create-citydata.js: sweeps pending picks after a settle. */
-declare function crSweepPending(): void;
 
 /** create-pick.js: re-renders the create hint line. */
 declare function crRenderHint(): void;
+
+/** create-pick.js: adds one resolved street to the draft. */
+declare function crAddStreet(name: string, segs: any): void;
+
+/** create-pick.js: adds one further run to a drafted street. */
+declare function crAddRun(name: string, segs: any): void;
+
+/** create-pick.js: projects a point onto a segment, in metres. */
+declare function crSegProjM(p: LatLng, a: LatLng, b: LatLng): { pt: LatLng, d: number };
+
+/** create-pick.js: a line's length in metres. */
+declare function crLineLen(pts: LatLng[]): number;
+
+/** create-pick.js: stitches ways into runs by endpoint chaining. */
+declare function chainWays(ways: LatLng[][]): { line: LatLng[], exact?: boolean, segments: LatLng[][] }[];
+
+/** create-pick.js: the Overpass endpoints, primary plus fallback. */
+declare var OVERPASS_URLS: string[];
 
 /** create-pick.js: refreshes the street search after an index rebuild. */
 declare function crRefreshSearch(): void;
@@ -643,13 +601,7 @@ declare function landIfCurrent(token: any, isCurrent: (g: any) => boolean): () =
 
 // ---- 3. Browser surface actually used by the checked parts ----
 
-/** create-fetch.js: aborts one in-flight fetch operation. Declared in this section, not section 2:
- * the mirrors checker's name scanner loses depth sync inside create-fetch.js before this
- * declaration and cannot see it. Retires when create-fetch.js joins the check (stage 3b). */
-declare function crAbortOp(op: any): void;
 
-/** create-fetch.js: fetches one box's extract from the source. Declared here for the same reason as crAbortOp above. Retires at stage 3b. */
-declare function crSourceExtract(box: RouteBox, a: any, budgetMs: number, attemptMs: number, isCurrent: () => boolean, op: any): Promise<any>;
 
 /** whatsnew.js: the current release's About notes (one version block). Declared in this section, not section 2: the mirrors checker's provenance list cannot name whatsnew.js. Retires when whatsnew.js joins the check (stage 3d). */
 declare var WHATSNEW: { v: string, items: string[] };
@@ -904,6 +856,8 @@ declare var caches: {
 };
 
 declare function fetch(url: string, options?: any): Promise<any>;
+declare var TextDecoder: any;
+declare var TextEncoder: any;
 
 /** The abort surface the preload fetch timeout uses. */
 declare class AbortController {

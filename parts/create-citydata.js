@@ -1,12 +1,17 @@
 // ---- city packs ---- a pack in the catalogue lights its city up in the chooser with no app change
+/** @type {{ slug: string, bbox: RouteBox, failed: boolean }|null} */
 let crPackCtx = null; // { slug, bbox, failed } while the active city's preparation is pack-backed; null = the service is the source
 let crPackNote = ''; // the pack source state ('' = undecided, 'service' = fell back to the street service)
+/** @type {Promise<any>|null} */
 let crPackIndexP = null; // the session's catalogue promise (null result cached too: no library this session)
 let crPackIndexKnown = false; // the catalogue answered: an unlisted city is the live service's dataset ('overpass'); an unanswered catalogue states no identity
-let crPackLoads = Object.create(null); // slug -> Promise<elements>: the session's downloaded packs, adapted once
-const crPackCtls = Object.create(null); // slug -> the current download attempt's AbortController, owned by the load: dropping the load can abort the attempt itself
+let crPackLoads = /** @type {Record<string,Promise<any>>} */ (Object.create(null)); // slug -> Promise<elements>: the session's downloaded packs, adapted once
+const crPackCtls = /** @type {Record<string,any>} */ (Object.create(null)); // slug -> the current download attempt's AbortController, owned by the load: dropping the load can abort the attempt itself
+/** @param {string} slug @returns {void} */
 function crPackAbort(slug) { const c = crPackCtls[slug]; if (c) { delete crPackCtls[slug]; try { c.abort(); } catch (e) {} } }
+/** @param {any} s @returns {boolean} */
 function crPackSlugOk(s) { return typeof s === 'string' && /^[a-z0-9][a-z0-9_-]*$/i.test(s) && s.toLowerCase() !== 'index'; }
+/** @returns {Promise<any>} */
 function crPackIndexLoad() {
   if (!crPackIndexP) {
     crPackIndexP = (async () => {
@@ -22,10 +27,12 @@ function crPackIndexLoad() {
   }
   return crPackIndexP;
 }
+/** @returns {void} */
 function crWarmCityLibrary() { crPackIndexLoad(); } // the catalogue downloads from BOOT: a cold-open chooser tap otherwise waits the whole fetch before the list paints
+/** @param {string} name @param {RouteBox} bbox @returns {Promise<CrPackCity|null>} */
 async function crPackResolveCity(name, bbox) { // the pack's box must contain the grid box (less would certify coverage never downloaded); a slow catalogue cannot wedge preparation
   if (!name || !bbox) return null;
-  const entries = await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]);
+  const entries = /** @type {any[]} */ (await Promise.race([crPackIndexLoad(), new Promise(res => setTimeout(() => res(null), 8000))]));
   if (!entries) return null;
   const e = entries.find(x => x && typeof x.name === 'string' && crPackSlugOk(x.slug) && x.name.toLowerCase() === String(name).toLowerCase() && Array.isArray(x.bbox) && x.bbox.length === 4);
   if (!e) return null;
@@ -35,10 +42,11 @@ async function crPackResolveCity(name, bbox) { // the pack's box must contain th
   if (!(pb.s <= bbox.s + EPS && pb.n >= bbox.n - EPS && pb.w <= bbox.w + EPS && pb.e >= bbox.e - EPS)) return null;
   return { slug: e.slug, bbox: pb, gen: typeof e.generatedAt === 'string' ? e.generatedAt : '' }; // the catalogue's generatedAt is the pack's stamp: republishing re-stamps it, and the dataset identity binds saved records to it
 }
+/** @param {string} slug @returns {Promise<any>} */
 async function crPackDownload(slug) { // one attempt: silence past packFirstByteMs, then packStallMs between bytes, aborts it with a tagged error the retry reads
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   if (ctl) crPackCtls[slug] = ctl; // the load owns this attempt's controller until it settles or the load is dropped (crPackAbort)
-  let stallTo = null, sawByte = false, killed = false;
+  let /** @type {number|null} */ stallTo = null, sawByte = false, killed = false;
   const armStall = () => { if (!ctl) return; if (stallTo) clearTimeout(stallTo); stallTo = setTimeout(() => { killed = true; try { ctl.abort(); } catch (e) {} }, sawByte ? CR_TIMING.packStallMs : CR_TIMING.packFirstByteMs); };
   const clearStall = () => { if (stallTo) clearTimeout(stallTo); };
   armStall();
@@ -57,10 +65,11 @@ async function crPackDownload(slug) { // one attempt: silence past packFirstByte
     return pack;
   } catch (e) {
     clearStall();
-    if (killed) { const err = new Error('pack stall'); err.packStall = true; throw err; }
+    if (killed) { const err = /** @type {any} */ (new Error('pack stall')); err.packStall = true; throw err; }
     throw e;
   } finally { if (ctl && crPackCtls[slug] === ctl) delete crPackCtls[slug]; } // a settled attempt unregisters itself; an aborted one was already unregistered by crPackAbort
 }
+/** @param {string} slug @param {boolean|undefined} force @returns {Promise<any>} */
 function crPackLoad(slug, force) { // adapted into the extract shape; ids are negative (OSM ids are positive); a failed load is not cached
   if (!crPackSlugOk(slug)) return Promise.reject(new Error('pack slug'));
   if (!force && crPackLoads[slug]) return crPackLoads[slug];
@@ -88,6 +97,7 @@ function crPackLoad(slug, force) { // adapted into the extract shape; ids are ne
   p.catch(() => { if (crPackLoads[slug] === p) delete crPackLoads[slug]; });
   return p;
 }
+/** @param{RouteBox} box @param{string|null} name @param{(() => boolean)|null|undefined} sessionOk @returns{Promise<any>} */
 async function crPackServe(box, name, sessionOk) { // a way belongs when any of its points lies in the box, geometry returned whole; null when no pack applies
   const ctx = crPackCtx;
   if (!ctx || ctx.failed) return null;
@@ -107,43 +117,52 @@ async function crPackServe(box, name, sessionOk) { // a way belongs when any of 
   return { ok: true, json: { elements: out }, ms: Date.now() - t0 };
 }
 // the point normalisation for both cleaners: 1e7 rounding; a point survives only past 0.1 m from the last kept
-function crCleanPtPush(pts, lat, lon) { const p = [Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]; if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+/** @param {LatLng[]} pts @param {number} lat @param {number} lon @returns {void} */
+function crCleanPtPush(pts, lat, lon) { const p = /** @type {LatLng} */ ([Math.round(lat * 1e7) / 1e7, Math.round(lon * 1e7) / 1e7]); if (!pts.length || distM(pts[pts.length - 1], p) > 0.1) pts.push(p); }
+/** @param {any} elements @param {Record<string,{name: string, pts: LatLng[]}>} byId @returns {Record<string,{name: string, pts: LatLng[]}>} */
 function crIndexWays(elements, byId) { // Overpass elements -> byId { id: { name, pts } }, cleaned by crCleanPtPush (1e7 rounding, sub-0.1 m duplicates dropped)
   for (const el of elements || []) {
     if (!el || el.type !== 'way' || el.id == null || !el.tags || typeof el.tags.name !== 'string' || !el.tags.name) continue;
     if (!Array.isArray(el.geometry) || el.geometry.length < 2) continue;
-    const pts = [];
+    const pts = /** @type {LatLng[]} */ ([]);
     for (const g of el.geometry) crCleanPtPush(pts, g.lat, g.lon);
     if (pts.length > 1) byId[el.id] = { name: el.tags.name, pts };
   }
   return byId;
 }
+/** @param {any} rawPts @returns {LatLng[]|null} */
 function crCleanPts(rawPts) { // stored pairs clean through crCleanPtPush, plus the finiteness/range condition crResolve demands of every point it reads
   if (!Array.isArray(rawPts)) return null;
-  const pts = [];
+  const pts = /** @type {LatLng[]} */ ([]);
   for (const gp of rawPts) {
     if (!Array.isArray(gp) || gp.length < 2 || !isFinite(gp[0]) || !isFinite(gp[1]) || gp[0] < -90 || gp[0] > 90 || gp[1] < -180 || gp[1] > 180) continue;
     crCleanPtPush(pts, gp[0], gp[1]);
   }
   return pts.length > 1 ? pts : null;
 }
+/** @param {any} entry @returns {{ id: any, name: string, pts: LatLng[] }|null} */
 function crCleanStoredWay(entry) { // a triple installs only by passing the extract's cleaning (usable id, non-empty name, 2+ cleaned points); else dropped whole
   if (!Array.isArray(entry) || entry.length < 3) return null;
   if (entry[0] == null || typeof entry[1] !== 'string' || !entry[1]) return null;
   const pts = crCleanPts(entry[2]);
   return pts ? { id: entry[0], name: entry[1], pts } : null;
 }
+/** @param {Record<string,{name: string, pts: LatLng[]}>} byId @param {RouteBox[]} boxes @returns {CrCov} */
 function crCovFromWays(byId, boxes) { // the record: ways by name, ids in byId (cells and top-ups merge into one index), plus the verified boxes
-  const byName = Object.create(null); // street names are external data: a null-prototype index keeps 'constructor'/'__proto__' as own properties, never the prototype
+  const byName = /** @type {Record<string,{name: string, pts: LatLng[]}[]>} */ (Object.create(null)); // street names are external data: a null-prototype index keeps 'constructor'/'__proto__' as own properties, never the prototype
   for (const id of Object.keys(byId)) {
     const w = byId[id];
     (byName[w.name] = byName[w.name] || []).push(w);
   }
   return { gen: crCovGen, byName, byId, boxes: (boxes || []).slice(), fetchedAt: Date.now() };
 }
+/** @returns {CrCov} */
 function crCovEnsure() { if (!crCov) crCov = crCovFromWays(Object.create(null), []); return crCov; } // byId starts null-prototype too: a stored '__proto__' id must land as an entry, never the prototype
+/** @param {Record<string,{name: string, pts: LatLng[]}>} byId @param {RouteBox|null} box @returns {CrCov} */
 function crCovFold(byId, box) { const cov = crCovEnsure(); for (const id of Object.keys(byId)) cov.byId[id] = byId[id]; if (box && !cov.boxes.some(b => b.s === box.s && b.w === box.w && b.n === box.n && b.e === box.e)) cov.boxes.push(box); return cov; } // Architecture #17: the coverage record's FOLD - already-validated ways and one answered box land on the record, and nothing else happens: no reindex, no search refresh. The cache restore folds per restored cell through here (through 1.280 it wrote crCov.byId and crCov.boxes directly from create-cache.js); the once-only reindex + refresh after its loop stays the caller's discipline (Beta 1.254, A-02)
+/** @returns {CrCov} */
 function crCovReindex() { const cov = crCovEnsure(); cov.byName = crCovFromWays(cov.byId, cov.boxes).byName; return cov; } // the byName rebuild: the name index is a pure function of byId, rebuilt when coverage settles, never per cell
+/** @param {any} elements @param {RouteBox|null} box @returns {CrCov} */
 function crCovMerge(elements, box) { // fold one answered extract into the coverage: ways dedupe by id, the answered box joins the verified set
   const cov = crCovEnsure();
   crIndexWays(elements, cov.byId);
@@ -153,8 +172,10 @@ function crCovMerge(elements, box) { // fold one answered extract into the cover
   crRefreshSearch(); // a merge changes coverage: an open search re-runs against the fuller extract here, not its earlier answer
   return cov;
 }
+/** @param {LatLng[]} line @param {RouteBox} box @returns {{ line: LatLng[], startCut: boolean, endCut: boolean }[]} */
 function crClipLineToBox(line, box) { // the sub-lines of a stitched line inside a box, cut at the boundary; pieces record cut-made ends (startCut/endCut)
-  const pieces = [];
+  const pieces = /** @type {{ line: LatLng[], startCut: boolean, endCut: boolean }[]} */ ([]);
+  /** @type {{ line: LatLng[], startCut: boolean, endCut: boolean }|null} */
   let cur = null;
   const close = () => { if (cur && cur.line.length > 1) pieces.push(cur); cur = null; };
   for (let i = 1; i < line.length; i++) {
@@ -167,8 +188,8 @@ function crClipLineToBox(line, box) { // the sub-lines of a stitched line inside
       else { const r = Q[k] / P[k]; if (P[k] < 0) { if (r > t0) t0 = r; } else if (r < t1) t1 = r; if (t0 > t1) { miss = true; break; } }
     }
     if (miss) { close(); continue; }
-    const A = t0 === 0 ? a : [a[0] + dy * t0, a[1] + dx * t0];
-    const B = t1 === 1 ? b : [a[0] + dy * t1, a[1] + dx * t1];
+    const A = t0 === 0 ? a : /** @type {LatLng} */ ([a[0] + dy * t0, a[1] + dx * t0]);
+    const B = t1 === 1 ? b : /** @type {LatLng} */ ([a[0] + dy * t1, a[1] + dx * t1]);
     if (!cur) cur = { line: [A], startCut: t0 > 0, endCut: false };
     const last = cur.line[cur.line.length - 1];
     if (last[0] !== A[0] || last[1] !== A[1]) cur.line.push(A);
@@ -179,6 +200,7 @@ function crClipLineToBox(line, box) { // the sub-lines of a stitched line inside
   close();
   return pieces;
 }
+/** @param {string} osmName @param {{ lat: number, lng: number }} lngLat @param {RouteBox} [boundary] @returns {any} */
 function crResolve(osmName, lngLat, boundary) { // a run end is closed only inside verified coverage (a continuation would have been returned); outside, the run is unproven
   const cov = crCov; if (!cov) return { status: 'nocov' };
   const ways = cov.byName[osmName];
@@ -208,7 +230,9 @@ function crResolve(osmName, lngLat, boundary) { // a run end is closed only insi
   return { status: 'ok', segs: best.exact ? best.segments.slice().sort((a, b) => crLineLen(b) - crLineLen(a)) : [best.line] };
 }
 // the prep family's current-check under the one convention (at crSearchCurrent, create-pick.js); this family's true inputs are (gen, session)
+/** @param {number} gen @param {number} session @returns {boolean} */
 function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
+/** @param {CrPrepRec} prep @param {() => boolean} preparing @returns {void} */
 function crPrepWatchdog(prep, preparing) { // the fallback's watchdog (the grid's mirror): past stallMs, force the failed landing, the wedged landing orphaned first
   if (!preparing() || crPrep !== prep) return;
   if (Date.now() - prep.startedAt < CR_TIMING.stallMs) return;
@@ -216,9 +240,10 @@ function crPrepWatchdog(prep, preparing) { // the fallback's watchdog (the grid'
   crCovGen++;
   crAbortOp(prep.op);
   crPrep = null;
-  crSetPrepState('failed'); crPrepFail = { ok: false, kind: 'unreachable' };
+  crSetPrepState('failed'); crPrepFail = /** @type {any} */ ({ ok: false, kind: 'unreachable' });
   crRenderHint();
 }
+/** @param {{ lat: number, lng: number }|null} anchor @returns {void} */
 function crStartPrep(anchor) { // the fallback preparation: one bounded box around an anchor, session-only, for places with no picked or saved city
   if (!creating || !anchor || !isFinite(anchor.lat) || !isFinite(anchor.lng)) return;
   if (crCov && crInAnyBox(crCov.boxes, anchor.lat, anchor.lng) && crPrepState !== 'preparing') { crRenderHint(); return; } // verified coverage already includes this anchor - reuse it, no second download (CG-PF-04)
@@ -229,7 +254,7 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
   const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen), preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
   crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to an outstanding offer (it clears inside crPrepBegin); the anchor stays this site's own
-  const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
+  const prep = crPrep = /** @type {CrPrepRec} */ ({ gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} });
   crRenderHint();
   prep.ticker = setInterval(() => { crPrepWatchdog(prep, preparing); if (preparing()) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // every tick runs the progress watchdog before it renders
   crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, preparing, prep.op).then(res => {
@@ -245,6 +270,7 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
     crRenderHint();
   });
 }
+/** @returns {void} */
 function crCancelPrep() { // stops the wait AND the downloads, keeps the draft, the city and every loaded cell; late answers land nowhere
   if (crPrep) { clearInterval(crPrep.ticker); crAbortOp(crPrep.op); crPrep = null; }
   if (crGrid) crGridStop('cancelled');
@@ -253,6 +279,7 @@ function crCancelPrep() { // stops the wait AND the downloads, keeps the draft, 
   crSetPrepState(crGrid ? crGridSettledState() : (crCov && crCov.boxes.length ? 'ready' : 'none'));
   crRenderHint();
 }
+/** @returns {void} */
 function crSweepPending() { // a fresh extract may complete streets that were pending on a narrower one
   if (!crCov || (crPrepState !== 'ready' && crPrepState !== 'degraded')) return;
   for (const pk of Object.keys(crPending)) {
