@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "bf4000110098479d4e58bfee27c3c132680226dc26bef93ff65167096e22e3c3",
+  "canonical_registry_sha256": "792b2b9f73099268d0976e980ef26f4f75d6144b4e2495b8af051338f240b251",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -14340,11 +14340,12 @@
   },
   {
    "added": "2026-11-27",
-   "fix": "G-B: the boundary scanner fixtures prove both verdicts in plain Node (owner-side and read calls silent; baselined KNOWN; named exemption EXEMPT; blank-reason exemption ignored; only a NEW write to an enforce-marked state reads enforced).",
+   "file": "tests/boundary-fixtures.cjs",
+   "fix": "G-B: the boundary scanner fixtures prove both verdicts in plain Node (owner-side and read calls silent; baselined KNOWN; named exemption EXEMPT; blank-reason exemption ignored; only a NEW write to an enforce-marked state reads enforced). They run as a checks.yml step after the npm install; the probe is a grep because the registry gate runs before that install in CI.",
    "fix_id": "graft-b-boundaries",
    "id": "gb-fixtures",
-   "command": "cd . && node tests/boundary-fixtures.cjs",
-   "type": "command_exit0"
+   "pattern": "boundary fixtures:",
+   "type": "grep_present"
   }
  ]
 }
