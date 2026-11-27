@@ -18763,6 +18763,32 @@
    "red": "proof-1254 exits 1: 12 passed, 1 failed - case 3 (O-02) fires on the plain-object SAMPLES.",
    "green": "Mutation reverted (app3.js sha256 restored): proof-1254 passes 13/13.",
    "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "mound-edge-drive229",
+   "check": "tests/browser/drive229.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive229.mjs": "fc851b3d633c569b18dd71dbc4d6298a5b335022c28958114a106b17f4b2af1b",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477"
+   },
+   "mutation": "the shipped defect itself: base tree d55052df, whose render() closes the bank path with the chord lineTo(W, H)",
+   "red": "drive229 on base d55052df (drive file only): right-edge profile FAILS at 393 ([23, 12, 1] vs 34.1px) and at 430 ([21, 11, 1] vs 39.0px); passes at 390 (phase-dependent); bottom-row and mirror-guard checks pass at all widths",
+   "green": "drive229 on the fixed tree: 9/9 PASS (390 [31,31,32] vs 32.3; 393 [32,33,33] vs 33.7; 430 [38,38,38] vs 38.7), and 9/9 again via run.mjs",
+   "issued": "2026-11-27 mound-fix"
+  },
+  {
+   "id": "mound-edge-drive229-r2",
+   "check": "tests/browser/drive229.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive229.mjs": "be497a2774352b5dc9d90f1dec89301b695653a6b089ee637261085be3f529a0",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477"
+   },
+   "mutation": "the shipped defect itself: base tree d55052df, whose render() closes the bank path with the chord lineTo(W, H). Supersedes mound-edge-drive229 (the drive's header comments were trimmed for the PR comment limit; executable bytes unchanged in behaviour, both directions re-run on the final bytes)",
+   "red": "final drive229 on base d55052df: right-edge profile FAILS at 393 ([23, 12, 1] vs 34.4px) and at 430 ([21, 11, 1] vs 39.3px); passes at 390; bottom-row and mirror-guard checks pass at all widths",
+   "green": "final drive229 on the fixed tree: 9/9 PASS (390, 393, 430 - profile, bottom-row and mirror-guard checks all true)",
+   "issued": "2026-11-27 mound-fix"
   }
  ]
 }

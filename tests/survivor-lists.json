@@ -1182,6 +1182,53 @@
     "parts/app3.js": "fac28d166656f385fa5b8c167a067eac7f1a4790f0e9bcde2b32e57ac8a2e9c6"
    },
    "issued": "2026-11-27 s1-finish-app3 (r3: names all three changed parts paths for the push gate; app2 changed annotation-only, nothing cut there)"
+  },
+  {
+   "id": "mound-fix",
+   "kind": "cut",
+   "surface": "the snow bank paint in parts/brand-snow.js render()",
+   "cut": "The sampling loop bound (x <= W becomes x <= lastX, one grid step past the right edge) and the closing point ((W, H) becomes (lastX, H), off-canvas). groundHeightAt is byte-identical.",
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The bank's profile at every x inside [0, W] is unchanged: groundHeightAt is byte-identical and the paint differs only at and past the right edge",
+     "case": "right-edge profile",
+     "check": "tests/browser/drive229.mjs",
+     "observes": "the settled bank's last three columns against the mirrored two-sine profile at x = W at 390/393/430, with the mirror cross-checked at W/2 against the app's own __snow.ground() readout"
+    },
+    {
+     "behaviour": "Flakes land on the same ground as before: landing reads groundHeightAt on [0, W], which the round does not touch",
+     "case": "SNOW3 the accumulation is present in the layer state",
+     "check": "tests/browser/drive180.mjs",
+     "observes": "the engine's ground readout (groundHeightAt at W/2 via __snow.ground()) standing above zero in the build phase, the same surface the landing test reads"
+    },
+    {
+     "behaviour": "The bottom row of the canvas paints white to the last column at every tested width",
+     "case": "bottom-row bank white reaches the right edge",
+     "check": "tests/browser/drive229.mjs",
+     "observes": "the canvas's bottom-right pixel at 390/393/430 in the settled state"
+    },
+    {
+     "behaviour": "Snow stands on all 13 blue surfaces",
+     "case": "W20 the walk judged every live pane",
+     "check": "tests/browser/drive228.mjs",
+     "observes": "the surface walk's per-pane snow judgements in boot and tab mode (21/21 PASS on the fixed tree)"
+    },
+    {
+     "behaviour": "The menu fluidity budget holds: the paint gains at most two lineTo segments per frame",
+     "case": "F3 open budget",
+     "check": "tests/browser/drive226.mjs",
+     "observes": "frame intervals across the 420ms menu-open window; locally the throttled F9 legs fail on the base tree too (rig timing, classified FLAKE) - the CI battery is the judging run"
+    }
+   ],
+   "files": {
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/whatsnew.js": "4d9edbf3c798dbe9ff9ae25ffc164f8b5aba29cb054ef00f54daff4d79017aa6"
+   },
+   "issued": "2026-11-27 mound-fix"
   }
  ]
 }

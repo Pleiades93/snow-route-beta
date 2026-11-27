@@ -33,6 +33,12 @@ set): parts/ changed by JSDoc annotation plus two proven-dead
 declarations deleted (app3's _fxEncodeEntry, app1's LS_GLOBAL.prep
 key) - no surface, element or behaviour changed. Same verdict, no
 update needed.
+MOUND-FIX (Beta 1.302, 2026-11-27): the bank's paint in
+brand-snow render() samples one grid step past the right edge
+and closes off-canvas, so the crest is no longer sliced at the
+edge. No surface, element or snow status changed; the wave
+profile itself is byte-identical. Map reviewed; no update
+needed beyond this note.
 
 ## The snow rule (one rule, app-wide)
 
