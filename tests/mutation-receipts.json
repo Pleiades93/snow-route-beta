@@ -18727,6 +18727,30 @@
    "red": "tsc -p scripts/tsconfig.json exits 2 with parts/app3.js(1697,21): error TS7006: Parameter 'unannotated' implicitly has an 'any' type - the step would fail.",
    "green": "Probe removed: tsc -p scripts/tsconfig.json exits 0 on the clean tree (all 16 parts).",
    "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "s1-finish-proof-1254-literals",
+   "check": "tests/proof/proof-1254.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1254.mjs": "b638d2f2be72a425603e6f9038ea6978e6bd0b632219802259108ac100252094"
+   },
+   "mutation": "Changed parts/app3.js's SAMPLES container from Object.create(null) to a plain object literal ({}), after this round's annotation moved the literals proof-1254 pins (SAMPLES/samplesFor casts, the wakeLock declaration casts, and the LS_GLOBAL value floor 7 -> 6 for the proven-dead prep key deleted by this round).",
+   "red": "proof-1254 exits 1: 12 passed, 1 failed - case 3 (O-02) fires on the plain-object SAMPLES; the updated literals and floor still bite.",
+   "green": "Mutation reverted (app3.js sha256 restored): proof-1254 passes 13/13 on the final tree.",
+   "issued": "2026-11-27 s1-finish-app3"
+  },
+  {
+   "id": "s1-finish-proof-1273-literal",
+   "check": "tests/proof/proof-1273.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1273.mjs": "0eff4846d89009c9d8ba445fce9fb098ab73f61e74e5d78359098fa601cc97e5"
+   },
+   "mutation": "Renamed the gpsGapRuns declaration in parts/app3.js (const gpsGapRunsGone = ...), after this round's annotation added the Map cast to the declaration proof-1273 case 1 pins.",
+   "red": "proof-1273 exits 1: 12 passed, 1 failed - case 1 (the gap ledger is declared) fires.",
+   "green": "Mutation reverted (app3.js sha256 restored): proof-1273 passes 13/13 on the final tree.",
+   "issued": "2026-11-27 s1-finish-app3"
   }
  ]
 }

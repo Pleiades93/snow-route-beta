@@ -13,7 +13,7 @@ let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log('FAIL:', name); } };
 
 // ---------- detection: the watchdog records the gap ----------
-check('1: the gap ledger is declared', app3.includes('const gpsGapRuns = new Map();'));
+check('1: the gap ledger is declared', app3.includes('const gpsGapRuns = /** @type {Map<string,number>} */ (new Map());'));
 check('2: a watchdog restart on a run-owned watch records the gap',
   app3.includes('if (wasRunGps && runStart && Date.now() - runStart > GPS_STALE_MS) gpsGapRuns.set(LS.start, runStart);'));
 check('3: run transitions clear the ledger entry',
