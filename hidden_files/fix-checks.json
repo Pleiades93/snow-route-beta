@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "b045e3b81d134876be8012fde27623298bd333ed17afa506fda41e1cb641f163",
+  "canonical_registry_sha256": "bf4000110098479d4e58bfee27c3c132680226dc26bef93ff65167096e22e3c3",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1634,
-   "included": 1604,
+   "canonical": 1640,
+   "included": 1610,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14292,6 +14292,59 @@
    "id": "ga-prohibition-inventory",
    "pattern": "## Stays in prose",
    "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "G-B (boundary checks): the parts scan runs the boundary pass - a NEW foreign write to an enforced state fails with the owner named and the corrective action.",
+   "fix_id": "graft-b-boundaries",
+   "id": "gb-scanner-wired",
+   "pattern": "new foreign write to",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/parts-boundary-owners.json",
+   "fix": "G-B: the boundary owner map names one owner per state or records it ambiguous with candidates; keyboard-card-transform was resolved to app5.js at the G-B re-derivation.",
+   "fix_id": "graft-b-boundaries",
+   "id": "gb-owners-map",
+   "pattern": "\"keyboard-card-transform\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/parts-boundary-owners.json",
+   "fix": "G-B: enforcement is per-state data on the owner map - a state enforces only with an unambiguous single-seat owner, zero foreign seats and exact recognition.",
+   "fix_id": "graft-b-boundaries",
+   "id": "gb-enforcement-on",
+   "pattern": "\"enforce\": true",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/parts-boundary-baseline.json",
+   "fix": "G-B: the boundary baseline records every confirmed foreign seat (192 at the G-B regeneration); basemap-label-policy keeps its one baselined engine.js seat, report-only until that write moves.",
+   "fix_id": "graft-b-boundaries",
+   "id": "gb-baseline-seat",
+   "pattern": "\"state\":\"basemap-label-policy\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-receipts.py",
+   "fix": "G-B: the boundary scanner is a receipts judge path - a change to its verdicts carries mutation receipts like every judge.",
+   "fix_id": "graft-b-boundaries",
+   "id": "gb-judge-path",
+   "pattern": "\"scripts/scan-boundaries.cjs\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "fix": "G-B: the boundary scanner fixtures prove both verdicts in plain Node (owner-side and read calls silent; baselined KNOWN; named exemption EXEMPT; blank-reason exemption ignored; only a NEW write to an enforce-marked state reads enforced).",
+   "fix_id": "graft-b-boundaries",
+   "id": "gb-fixtures",
+   "command": "cd . && node tests/boundary-fixtures.cjs",
+   "type": "command_exit0"
   }
  ]
 }

@@ -1,7 +1,8 @@
 'use strict';
 
-// Parts scan: ignored write outcomes, new clones and labelpts
-// source-ownership violations fail the push and the gate.
+// Parts scan: ignored write outcomes, new clones, labelpts
+// source-ownership violations and enforced boundary violations
+// fail the push and the gate.
 
 const { createHash } = require('node:crypto');
 const fs = require('node:fs');
@@ -9,10 +10,34 @@ const path = require('node:path');
 const ts = require('typescript');
 
 const writeBaseline = process.argv.includes('--write-baseline');
-const positional = process.argv.slice(2).filter(arg => arg !== '--write-baseline');
+const writeBoundaryBaseline = process.argv.includes('--write-boundary-baseline');
+const positional = process.argv.slice(2)
+  .filter(arg => arg !== '--write-baseline' && arg !== '--write-boundary-baseline');
 const root = positional[0] || path.join(__dirname, '..');
 const dir = path.join(root, 'parts');
 const baseline = JSON.parse(fs.readFileSync(path.join(root, 'scripts/parts-clone-baseline.json'), 'utf8'));
+const scanBoundaries = require('./scan-boundaries.cjs');
+const boundaryOwnersFile = path.join(root, 'scripts/parts-boundary-owners.json');
+const boundaryBaselineFile = path.join(root, 'scripts/parts-boundary-baseline.json');
+// A tree without boundary data (gate-fixture synthetic trees) skips
+// the boundary pass; the real tree always carries both files.
+const boundaryOn = fs.existsSync(boundaryOwnersFile) && fs.existsSync(boundaryBaselineFile);
+const boundaryOwners = boundaryOn ? JSON.parse(fs.readFileSync(boundaryOwnersFile, 'utf8')) : null;
+const boundaryBaseline = boundaryOn ? JSON.parse(fs.readFileSync(boundaryBaselineFile, 'utf8')) : [];
+const boundaryCounts = { KNOWN: 0, EXEMPT: 0, NEW: 0 };
+const boundaryWrites = [];
+let boundaryProgram = null;
+let boundaryChecker = null;
+
+function boundaryTree(file) {
+  if (!boundaryProgram) {
+    const names = fs.readdirSync(dir).filter(name => name.endsWith('.js')).sort();
+    boundaryProgram = ts.createProgram(names.map(name => path.resolve(dir, name)),
+      { allowJs: true, noLib: true, noResolve: true });
+    boundaryChecker = boundaryProgram.getTypeChecker();
+  }
+  return boundaryProgram.getSourceFile(path.resolve(root, file));
+}
 const clones = new Map();
 const pairs = new Map();
 let failures = 0;
@@ -98,6 +123,18 @@ function scanJs(file, source) {
       fail(`${file}:${line(error.start)}: cannot scan JavaScript: ${ts.flattenDiagnosticMessageText(error.messageText, ' ')}. Fix the syntax and rerun.`);
     }
     return;
+  }
+  if (boundaryOn) {
+    const programTree = boundaryTree(file);
+    for (const hit of scanBoundaries(programTree, file, boundaryOwners, boundaryBaseline, boundaryChecker)) {
+      boundaryCounts[hit.status]++;
+      if (hit.enforced) {
+        fail(`${file}:${hit.line}: boundary: new foreign write to ${hit.state}, owned by ${hit.owner}. Route the write through the owner, or record a named exemption in scripts/parts-boundary-owners.json.`);
+      } else if (hit.status !== 'KNOWN') console.log(hit.message);
+    }
+    if (writeBoundaryBaseline) {
+      boundaryWrites.push(...scanBoundaries.findWrites(programTree, file, boundaryOwners, boundaryChecker));
+    }
   }
   const ownerCounts = new Map();
   const scopeCounts = new Map();
@@ -253,6 +290,28 @@ if (writeBaseline) {
       `{\n  "exemptions": ${exemptions},\n  "pairs": [\n${body}\n  ]\n}\n`);
     console.log(`baseline written: ${list.length} pairs`);
   }
+}
+
+if (writeBoundaryBaseline && boundaryOn) {
+  if (failures) {
+    console.error('boundary baseline refused: the tree failed the checks above. Fix those failures before regenerating.');
+    process.exitCode = 1;
+  } else {
+    const seats = boundaryWrites.map(({ state, file, fn, occ }) => ({ state, file, fn, occ }));
+    seats.sort((a, b) => {
+      const ka = JSON.stringify([a.state, a.file, a.fn, a.occ]);
+      const kb = JSON.stringify([b.state, b.file, b.fn, b.occ]);
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    const body = seats.map(seat => '  ' + JSON.stringify(seat)).join(',\n');
+    fs.writeFileSync(boundaryBaselineFile, `[\n${body}\n]\n`);
+    console.log(`boundary baseline written: ${seats.length} seats`);
+  }
+}
+
+if (boundaryOn) {
+  const enforcedStates = boundaryOwners.states.filter(state => state.enforce === true).length;
+  console.log(`boundaries: ${boundaryCounts.KNOWN} baselined, ${boundaryCounts.EXEMPT} exempted, ${boundaryCounts.NEW} new (${enforcedStates} states enforced)`);
 }
 
 const known = new Set(baseline.pairs.map(pair => JSON.stringify([...pair].sort())));

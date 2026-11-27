@@ -103,6 +103,7 @@ JUDGE_PATHS = {
     "scripts/run-proofs.py",
     "scripts/premise-lint.py",
     "scripts/scan-parts.cjs",
+    "scripts/scan-boundaries.cjs",
 }
 
 KINDS = ("mutation", "historical", "rendered")

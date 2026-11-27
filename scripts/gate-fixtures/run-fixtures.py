@@ -1704,6 +1704,70 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: a prepended listener keeps descendant identities",
           run_scan(s_tree), 0)
 
+# ------------------------------------------------------- boundary scan
+BOUNDARY_OWNERS = {
+    "version": 2, "mode": "fixture", "snapshot": "fixture", "complete": False,
+    "states": [
+        {"id": "snow-scene", "kind": "body-class", "key": "snow-scene",
+         "owner": "parts/brand-snow.js", "enforce": True,
+         "recognition": [{"call": "^document\\.body\\.classList\\.(?:add|remove|toggle|replace)$",
+                          "classArguments": True}]},
+        {"id": "trail", "kind": "binding", "key": "trail", "owner": "parts/app1.js",
+         "recognition": [{"target": "^trail(?:[.\\[].*)?$"}]},
+    ],
+    "ambiguous": [], "exemptions": [],
+}
+SCENE_WRITE = "function paint() { document.body.classList.add('snow-scene'); }\n"
+
+
+def boundary_tree(base, *, app3="", owners=None, baseline=None):
+    w(base / "parts" / "brand-snow.js",
+      "function glow() { document.body.classList.add('snow-scene');"
+      " document.body.classList.add('lit'); }\n")
+    w(base / "parts" / "app3.js", app3)
+    w(base / "parts" / "head.html", SCAN_HTML)
+    w(base / "scripts" / "parts-clone-baseline.json",
+      '{\n  "exemptions": [],\n  "pairs": []\n}\n')
+    w(base / "scripts" / "parts-boundary-owners.json",
+      json.dumps(owners if owners is not None else BOUNDARY_OWNERS, indent=2) + "\n")
+    w(base / "scripts" / "parts-boundary-baseline.json",
+      json.dumps(baseline or []) + "\n")
+    return base
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    check("boundary: a clean tree passes (owner-side writes only)",
+          run_scan(boundary_tree(t / "bclean")), 0)
+    check("boundary: a planted foreign write to an enforced state fails",
+          run_scan(boundary_tree(t / "benforced", app3=SCENE_WRITE)), 1)
+    check("boundary: the same write passes when the state is report-only",
+          run_scan(boundary_tree(t / "breport",
+                                 owners={**BOUNDARY_OWNERS, "states": [
+                                     {**BOUNDARY_OWNERS["states"][0], "enforce": False},
+                                     BOUNDARY_OWNERS["states"][1]]},
+                                 app3=SCENE_WRITE)), 0)
+    check("boundary: a planted foreign write to a report-only state passes",
+          run_scan(boundary_tree(t / "btrail",
+                                 app3="function reset() { trail = []; }\n")), 0)
+    check("boundary: a baselined seat on an enforced state passes",
+          run_scan(boundary_tree(t / "bbased", app3=SCENE_WRITE,
+                                 baseline=[{"state": "snow-scene",
+                                            "file": "parts/app3.js",
+                                            "fn": "paint", "occ": 1}])), 0)
+    exempt_owners = {**BOUNDARY_OWNERS, "exemptions": [
+        {"state": "snow-scene", "file": "parts/app3.js", "fn": "paint", "occ": 1,
+         "name": "fixture-preview", "why": "The fixture preview has its own exit."}]}
+    check("boundary: a named exemption on an enforced state passes",
+          run_scan(boundary_tree(t / "bexempt", app3=SCENE_WRITE,
+                                 owners=exempt_owners)), 0)
+    blank_owners = {**BOUNDARY_OWNERS, "exemptions": [
+        {"state": "snow-scene", "file": "parts/app3.js", "fn": "paint", "occ": 1,
+         "name": "fixture-preview", "why": " "}]}
+    check("boundary: an exemption with a blank reason does not exempt",
+          run_scan(boundary_tree(t / "bblank", app3=SCENE_WRITE,
+                                 owners=blank_owners)), 1)
+
 # ------------------------------------------------- worked examples
 # TESTING.md rule 6's proof cases, pinned to their observation needles.
 def needle_in(rel, *needles):
@@ -1727,6 +1791,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 161
+total = 168
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

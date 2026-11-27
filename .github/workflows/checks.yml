@@ -278,8 +278,10 @@ jobs:
         run: |
           npm ci
           ./node_modules/.bin/tsc -p tsconfig.json
-      - name: Parts scan (write outcomes, clones, labelpts ownership)
+      - name: Parts scan (write outcomes, clones, labelpts ownership, boundaries)
         run: node scripts/scan-parts.cjs .
+      - name: Boundary scanner fixtures (G-B gate)
+        run: node tests/boundary-fixtures.cjs
       - name: ESLint (standard JS rules beside the bespoke scanners)
         run: npm exec --yes --package=eslint@9.39.1 -- eslint 'parts/*.js' '{scripts,tests}/**/*.{js,cjs,mjs}'
       - name: Basemap style parity (parts/pmstyles.js is generated - regeneration must be byte-identical)
