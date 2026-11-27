@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "a1c531c76c2605697ce9867fd45f668b6fdf4746d55fc2a8204e9d9a140d84c0",
+  "canonical_registry_sha256": "b045e3b81d134876be8012fde27623298bd333ed17afa506fda41e1cb641f163",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1628,
-   "included": 1598,
+   "canonical": 1634,
+   "included": 1604,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14237,6 +14237,60 @@
    "fix_id": "phase7-bearing-frame",
    "id": "phase7-bearing-frame-owner",
    "pattern": "function convertBearingFrame(cameraMapBearing, { mapBearing, cameraBearing }) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/scan-parts.cjs",
+   "fix": "G-A (standards machinery): the parts scan owns the labelpts source contract - creation only in addRouteTitles, data rewrites only in glUnifyLabels (both parts/app2.js), removal refused anywhere.",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-scan-ownership",
+   "pattern": "function scanSourceOwnership(node, file, at) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-pr-limits.py",
+   "fix": "G-A: the PR limits judge flags a touched comment stating a prohibition (never / must / only ... may) as a warning quoting it and asking where its check is; converted rules block, prose warns.",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-prohibition-warning",
+   "pattern": "where is its check?",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-census.py",
+   "fix": "G-A: the census gate refuses a parts change whose change set omits docs/SURFACE-MAP.md while the map exists (STD-05 surface-map currency, coarse form until the map carries a file-to-surface mapping).",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-surface-map-check",
+   "pattern": "surface-map gate: parts changed without the surface map",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "eslint.config.js",
+   "fix": "G-A: ESLint flat config at the repo root - no-debugger and no-dupe-args over parts, scripts and tests (STD-04: standard tooling beside the bespoke scanners; no-undef/no-unused-vars excluded until an assembly-aware scope model exists).",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-eslint-config",
+   "pattern": "'no-dupe-args': 'error'",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": ".github/workflows/checks.yml",
+   "fix": "G-A: checks.yml runs the parts scan and ESLint inside build-and-test, so arrivals that bypass push.py are judged by the same scanners.",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-ci-wiring",
+   "pattern": "ESLint (standard JS rules beside the bespoke scanners)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "docs/PROHIBITION-INVENTORY.md",
+   "fix": "G-A: the prohibition inventory records every standing prohibition as mechanically checked or as prose with the reason a check cannot establish it; deferrals are recorded decisions, never silent drops.",
+   "fix_id": "graft-a-machinery",
+   "id": "ga-prohibition-inventory",
+   "pattern": "## Stays in prose",
    "type": "grep_present"
   }
  ]

@@ -18100,6 +18100,58 @@
    "red": "suite FAILS: 3 failure(s) over 18 run(s), all in moved-seat ('labelpts' convicted as expired though it moved seats to app2.js) - re-observed on the final tree",
    "green": "suite PASS with the shipped whole-tree lint: 18 runs over 9 cases, 0 failures; removed-everywhere flags under both lints",
    "issued": "2026-11-27 phase6-finisher (r2: runner docstring history tags stripped; mutation re-observed)"
+  },
+  {
+   "id": "ga-source-ownership",
+   "check": "scripts/scan-parts.cjs",
+   "kind": "mutation",
+   "files": {
+    "scripts/scan-parts.cjs": "93bad2302f4e75bcc872c9470a47e79d7f98838982912148f7a20360c7a1075b",
+    "scripts/gate-fixtures/run-fixtures.py": "434a8d8fbed30e7e626a6be1db76494c54f03ffa23b8022906a8a679e0cdc37a"
+   },
+   "mutation": "Remove the scanSourceOwnership call from the scanner's visitor in a scratch state, then rerun the gate fixture suite.",
+   "red": "Observed twice: 155 pass, 6 fail - exactly the new convicting fixtures flip (4 scan ownership, 1 prohibition warning, 1 surface-map, all neutered together); the owners-pass and ordinary controls stay green.",
+   "green": "Shipped judges restored byte-identical: gate fixtures 161 pass, 0 fail; the real tree scan PASSes with 0 ownership violations.",
+   "issued": "2026-11-27 graft-a-machinery"
+  },
+  {
+   "id": "ga-prohibition-warning",
+   "check": "scripts/check-pr-limits.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-pr-limits.py": "afea87040d77fae1989f3d5a46911e457c29a31a30766272bbb098dde4d04589",
+    "scripts/gate-fixtures/run-fixtures.py": "434a8d8fbed30e7e626a6be1db76494c54f03ffa23b8022906a8a679e0cdc37a"
+   },
+   "mutation": "Disable the prohibition-warning block in changed_line_errors (warnings guard forced false), then rerun the gate fixture suite.",
+   "red": "Observed twice in the combined neuter run (155 pass, 6 fail): the prohibition fixture flips - the touched 'Never reuse a stale route snapshot.' comment produces no warning; the ordinary-comment control stays green.",
+   "green": "Shipped judge restored byte-identical: gate fixtures 161 pass, 0 fail; the prohibition comment warns and quotes the comment, the ordinary comment does not.",
+   "issued": "2026-11-27 graft-a-machinery"
+  },
+  {
+   "id": "ga-surface-map",
+   "check": "scripts/check-census.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd",
+    "scripts/gate-fixtures/run-fixtures.py": "434a8d8fbed30e7e626a6be1db76494c54f03ffa23b8022906a8a679e0cdc37a"
+   },
+   "mutation": "Disable the surface-map check in the census gate (guard forced false), then rerun the gate fixture suite.",
+   "red": "Observed twice in the combined neuter run (155 pass, 6 fail): the surface-map fixture flips - a parts push leaving docs/SURFACE-MAP.md out of the set is no longer refused; the map-carrying control stays green.",
+   "green": "Shipped judge restored byte-identical: gate fixtures 161 pass, 0 fail; the map-less parts push is refused with the surface-map message and the map-carrying push passes.",
+   "issued": "2026-11-27 graft-a-machinery"
+  },
+  {
+   "id": "ga-gate-wiring",
+   "check": ".github/workflows/checks.yml",
+   "kind": "historical",
+   "files": {
+    ".github/workflows/checks.yml": "74f06e8d6f91c2d28df067208f7373cfc3d8b44c94bcea2d983e715102aa4a9a",
+    "eslint.config.js": "2cf5d9e0283d24879ebe4c33cc16fa106c016f9ea868a7da7fe887e42cfdd5b0"
+   },
+   "mutation": "Compare the checks workflow at base 12bf51c6 with the current tree and run the wired commands on the clean tree.",
+   "red": "The base workflow has no parts-scan step and no ESLint step: neither command judges a PR that did not arrive via push.py.",
+   "green": "The current workflow carries both steps after the type check; extracted commands on the clean tree exit 0 (parts scan PASS; ESLint 0 errors, 1 warning in a pinned fixture file).",
+   "issued": "2026-11-27 graft-a-machinery"
   }
  ]
 }

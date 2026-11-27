@@ -731,6 +731,18 @@ with tempfile.TemporaryDirectory() as td:
           run_push(t / "censusunmarked", ["parts/a.js", "parts/b.js",
                                           "index.html", "tests/sibling-census.json"],
                    mode="push", env_extra=unmarked), 1)
+    mapenv = census_tree("censusmap")
+    w(t / "censusmap" / "docs" / "SURFACE-MAP.md", "# Surface Map\nfixture v2\n")
+    patch_branch(t / "censusmap", "docs/SURFACE-MAP.md", "# Surface Map\nfixture v1\n")
+    check("push: a parts change leaving the surface map out of the push is refused (surface-map gate)",
+          run_push(t / "censusmap", ["parts/a.js", "parts/b.js",
+                                     "index.html", "tests/sibling-census.json"],
+                   mode="push", env_extra=mapenv), 1)
+    check("push: the same parts change carrying the surface map pushes",
+          run_push(t / "censusmap", ["parts/a.js", "parts/b.js",
+                                     "index.html", "tests/sibling-census.json",
+                                     "docs/SURFACE-MAP.md"],
+                   mode="push", env_extra=mapenv), 0)
     # Machinery-only: local parts identical to the branch's (no
     # pending parts delta - a differing unpushed part would refuse
     # this push at the prospective build check, PR #146's rule, long
@@ -1441,6 +1453,20 @@ with tempfile.TemporaryDirectory() as td:
     def head1(repo):
         return subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD~1"],
                               capture_output=True, text=True).stdout.strip()
+    comment_path = "parts/comment.js"
+    for name, comment, expected in (
+        ("prohibition", "Never reuse a stale route snapshot.", True),
+        ("ordinary", "Keep a fresh route snapshot.", False),
+    ):
+        repo, _ = git_repo(t / name, [
+            ("initial comment", {comment_path: "// Preserve the route snapshot.\n"}),
+            ("edit comment", {comment_path: f"// {comment}\n"}),
+        ])
+        rc, out = run_limits_out(repo, head1(repo))
+        warning = f'prohibition/obligation "{comment}" - where is its check?'
+        observed = warning in out if expected else "::warning::pr-limits:" in out
+        check(f"pr-limits: touched {name} comment has the expected warning",
+              (rc, observed), (0, expected))
     repo, _ = git_repo(t / "rewritten", [("c1", {"parts/a.js": long_block + "const a = 1;\n"}),
                                          ("c2", {"parts/a.js": long_block.replace("whiskey", "whisky") + "const a = 1;\n"})])
     check("pr-limits: a rewritten long comment fails on its full text",
@@ -1618,6 +1644,36 @@ with tempfile.TemporaryDirectory() as td:
           run_scan(scan_tree(t / "cssclone",
                              html=SCAN_HTML.replace("</style>",
                                                     ".fixC { color: red; margin: 0; }\n</style>"))), 1)
+    owner_js = (
+        "function addRouteTitles(m, o) { if (o.newStack) m.addSource('labelpts', { type: 'geojson', data: o.data }); }\n"
+        "function glUnifyLabels(o) { if (o.routeData) o.m.getSource('labelpts').setData(o.routeData); }\n"
+    )
+
+    def owner_tree(name, js, fname="app2.js"):
+        base = t / name
+        w(base / "parts" / fname, js)
+        w(base / "parts" / "head.html", SCAN_HTML)
+        w(base / "scripts" / "parts-clone-baseline.json",
+          '{\n  "exemptions": [],\n  "pairs": []\n}\n')
+        return base
+
+    check("scan: labelpts owners in app2.js pass",
+          run_scan(owner_tree("owners", owner_js)), 0)
+    check("scan: unrelated source calls pass",
+          run_scan(owner_tree("othersrc", owner_js +
+                              "map.removeSource('other');\nmap.addSource('other', spec);\n")), 0)
+    check("scan: labelpts creation outside addRouteTitles fails",
+          run_scan(owner_tree("badadd", owner_js + "map.addSource('labelpts', spec);\n")), 1)
+    check("scan: labelpts creation in engine.js fails",
+          run_scan(owner_tree("badaddeng",
+                              "function addRouteTitles(m) { m.addSource('labelpts', spec); }\n",
+                              "engine.js")), 1)
+    check("scan: labelpts removal anywhere fails",
+          run_scan(owner_tree("badremove", owner_js +
+                              "function drop(m) { m.removeSource('labelpts'); }\n")), 1)
+    check("scan: labelpts setData outside glUnifyLabels fails",
+          run_scan(owner_tree("badset", owner_js +
+                              "function other(m) { m.getSource('labelpts').setData(d); }\n")), 1)
     clone_tree = scan_tree(t / "baselined", js=SCAN_JS + SCAN_CLONE)
     check("scan: --write-baseline records the standing clone pair",
           run_scan(clone_tree, "--write-baseline"), 0)
@@ -1671,6 +1727,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 151
+total = 161
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
