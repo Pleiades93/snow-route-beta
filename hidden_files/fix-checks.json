@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "13e3d49013dc220ff96639b8e2560c6a6ee968fd8cd4f95c42de714fd31febb0",
+  "canonical_registry_sha256": "87faf4bfbb1fffcdf81640a6bbb548ae194b4f8bb2a60e15b687142fa8fefcc9",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1620,
-   "included": 1590,
+   "canonical": 1627,
+   "included": 1597,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -37,7 +37,7 @@
   },
   {
    "added": "2026-11-01",
-   "file": "parts/engine.js",
+   "file": "parts/app2.js",
    "fix": "Street-name labels ride the engine's tier layers: each tier carries the name field and hands over at its zoom bound (maxzoom 16.4). If labels lose their name source or handover, streets go anonymous at some zoom \u2014 restore the tier label layers. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the pinned text was the app-title layer construction / the nudgeFifth body - both retired with the title system; this probe now pins their absence.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the tier title layers are restored under the zoom-15 cap; this probe pins their construction again)",
    "id": "beta-label-handover-retired-1258",
    "pattern": "filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name']",
@@ -7662,7 +7662,7 @@
   },
   {
    "added": "2026-11-15",
-   "file": "parts/engine.js",
+   "file": "parts/app2.js",
    "fix": "Green paint matches the street (Beta 1.208, PR #83, merge 7920dabe; rollback: revert the merge -> 51ad0e17). Andrew's orders 2026-11-15 from his 1.206 phone screenshots: (R1) full green draws at the surface width (band layers on surfW, shared surfCASE casing, BANDW/BANDCASE/BAND_HALF retired, band trims at SURF_HALF); (R2) a one-side-done piece fills its half of the road - a FILL family on half-offset lines (+/-2.475 m) drawn at surfW x 0.5 (t1-fill), replacing the fixed-pixel kerb line; (R3) selecting a stretch no longer breaks its green - selFill is built by the same fillSlicePts as the board, corner connectors (fillCornerLinks, explicitly flagged) ride the selection redraw; (R4) street names never repeat - the app's titles (labelpts, one anchor per street) stay up at every zoom and the basemap clones are retired. Gate rounds added: clipOnLine (fill ends clipped ON their half line, by intersection at oblique junctions), the per-side-paint clip rule (fill<->band continuity), and the connector flag. Proof: tests/proof/proof-green-half-road.mjs. (Rolled 2026-11-20 by labelretire-1258, Beta 1.258: the subject retired or moved with the app-title retirement - this probe now pins the shipped form.) (Rolled 2026-11-20 by labelmix-1261, Beta 1.261: the titles are restored below zoom 15 (the R4 form is re-pinned in proof-green-half-road itself); this probe pins the title spec's opacity tail again) (Rolled 2026-11-24 by label-handover-1294, Beta 1.294: the titles fade out across zoom 15-16 and end at maxzoom 16 for the handover; this probe pins the spec's opacity tail in its new form) (Rolled 2026-11-25 by label-switch-1297, Beta 1.297: the fade stops are deleted; the tail is now the 12.62 fade-in stop)",
    "fix_id": "green-half-road",
    "id": "green-half-road-titles-retired-1258",
@@ -11474,7 +11474,7 @@
    "fix": "Beta 1.258 (labelretire-1258; Andrew's decision, 2026-11-20): the map's own street names replace the app's titles. The engine's streetnamespt1-4 layers over the labelpts source and the Beta 1.248 re-placement helper are retired; glUnifyLabels (app2, renamed from glHideLabels) restores the basemap road-label originals' stock filters from the embedded spec and their stock zoom ranges (major from 11, minor from 15), so route streets carry the map's own full names (Ferrari Court, Santa Barbara Place). Proof: tests/proof/proof-1258.mjs (15 checks, both-ways verified); drive130 grades the rendered rule. Rollback: a revert PR restoring the Beta 1.257 behaviour under Beta 1.259. [Re-pinned 2026-11-21 by labelrevert-1263 (Beta 1.263, Andrew's naming-revert decision): the naming system is restored to its Beta 1.257 state; this probe now pins the restored form.] [Re-pinned 2026-11-21 by createmodenaming-1265 (Beta 1.265): glUnifyLabels' target filter is now conditional on the create-mode state - while creating, the target is the basemap's stock filter (map defaults, Andrew's rule); outside create mode the computed filter is the same shape this probe has always guarded, with the exclusion literal built once as exclF.]",
    "fix_id": "labelretire-1258",
    "id": "labelretire1258-stock-filter",
-   "pattern": "const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);",
+   "pattern": "const targetF = handover ? (baseF ? ['all', baseF, exclF] : exclF) : baseF;",
    "type": "grep_present"
   },
   {
@@ -11483,7 +11483,7 @@
    "fix": "Beta 1.258 (labelretire-1258; Andrew's decision, 2026-11-20): the map's own street names replace the app's titles. The engine's streetnamespt1-4 layers over the labelpts source and the Beta 1.248 re-placement helper are retired; glUnifyLabels (app2, renamed from glHideLabels) restores the basemap road-label originals' stock filters from the embedded spec and their stock zoom ranges (major from 11, minor from 15), so route streets carry the map's own full names (Ferrari Court, Santa Barbara Place). Proof: tests/proof/proof-1258.mjs (15 checks, both-ways verified); drive130 grades the rendered rule. Rollback: a revert PR restoring the Beta 1.257 behaviour under Beta 1.259. [Re-pinned 2026-11-21 by labelrevert-1263 (Beta 1.263, Andrew's naming-revert decision): the naming system is restored to its Beta 1.257 state; this probe now pins the restored form.]",
    "fix_id": "labelretire-1258",
    "id": "labelretire1258-stock-zoom",
-   "pattern": "m.setLayerZoomRange(L.id, 13, 24)",
+   "pattern": "const minZoom = isClone ? ROUTE_LABEL_ZOOM : 13;",
    "type": "grep_present"
   },
   {
@@ -11501,7 +11501,7 @@
    "fix": "Beta 1.258 (labelretire-1258; Andrew's decision, 2026-11-20): the map's own street names replace the app's titles. The engine's streetnamespt1-4 layers over the labelpts source and the Beta 1.248 re-placement helper are retired; glUnifyLabels (app2, renamed from glHideLabels) restores the basemap road-label originals' stock filters from the embedded spec and their stock zoom ranges (major from 11, minor from 15), so route streets carry the map's own full names (Ferrari Court, Santa Barbara Place). Proof: tests/proof/proof-1258.mjs (15 checks, both-ways verified); drive130 grades the rendered rule. Rollback: a revert PR restoring the Beta 1.257 behaviour under Beta 1.259.",
    "fix_id": "labelretire-1258",
    "id": "labelretire1258-unify-name",
-   "pattern": "function glUnifyLabels(m)",
+   "pattern": "function glUnifyLabels({ m, stack, routeData }) {",
    "type": "grep_present"
   },
   {
@@ -11930,16 +11930,16 @@
    "fix": "Beta 1.265 (createmodenaming-1265; PR #161, merge 9fa014bc887ebc53a00197b8c9825ea7762d52f5; live sha256 d607c45ca9e380bd6ef98d037317708451367d76df663928725f54f24b04675e, reads Beta 1.265). Andrew's rule of 2026-11-21: while creating a route, street naming reverts to MAP DEFAULTS everywhere - the basemap names every street including an existing route's streets. Through 1.264 the create backdrop hid the loaded route's title layers with its paint while glUnifyLabels' basemap exclusion of route streets kept applying, leaving the loaded route's area with NO street names at all. The fix makes the create-mode state (`creating`) the single condition inside glUnifyLabels (parts/app2.js): while creating, the road-label layers' target filter is the basemap's own stock filter with the exclusion clause not added (the literal is built once, as exclF); outside create mode the computed filter is byte-for-byte the pre-1.265 one. crSetBackdrop (parts/create-pick.js) re-runs the label pass on both backdrop flips so the lift lands on entry and the restore on exit; restacks (mid-create theme swaps) recompute from the same state. drive218 grades the rendered behaviour (14/14; 9/14 on the 1.264 tree, failing exactly the five create-mode checks); proof-1265 pins the shape statically (6/6; an in-tree mutation removing the condition fails exactly its check 1). If a probe here fails, the round has regressed - restore the shipped form.",
    "fix_id": "createmodenaming-1265",
    "id": "createmodenaming1265-condition",
-   "pattern": "const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);",
+   "pattern": "const targetF = handover ? (baseF ? ['all', baseF, exclF] : exclF) : baseF;",
    "type": "grep_present"
   },
   {
    "added": "2026-11-21",
-   "file": "parts/create-pick.js",
+   "file": "parts/app2.js",
    "fix": "Beta 1.265 (createmodenaming-1265; PR #161, merge 9fa014bc887ebc53a00197b8c9825ea7762d52f5; live sha256 d607c45ca9e380bd6ef98d037317708451367d76df663928725f54f24b04675e, reads Beta 1.265). Andrew's rule of 2026-11-21: while creating a route, street naming reverts to MAP DEFAULTS everywhere - the basemap names every street including an existing route's streets. Through 1.264 the create backdrop hid the loaded route's title layers with its paint while glUnifyLabels' basemap exclusion of route streets kept applying, leaving the loaded route's area with NO street names at all. The fix makes the create-mode state (`creating`) the single condition inside glUnifyLabels (parts/app2.js): while creating, the road-label layers' target filter is the basemap's own stock filter with the exclusion clause not added (the literal is built once, as exclF); outside create mode the computed filter is byte-for-byte the pre-1.265 one. crSetBackdrop (parts/create-pick.js) re-runs the label pass on both backdrop flips so the lift lands on entry and the restore on exit; restacks (mid-create theme swaps) recompute from the same state. drive218 grades the rendered behaviour (14/14; 9/14 on the 1.264 tree, failing exactly the five create-mode checks); proof-1265 pins the shape statically (6/6; an in-tree mutation removing the condition fails exactly its check 1). If a probe here fails, the round has regressed - restore the shipped form.",
    "fix_id": "createmodenaming-1265",
    "id": "createmodenaming1265-backdrop-rerun",
-   "pattern": "if (typeof glUnifyLabels === 'function') glUnifyLabels(map);",
+   "pattern": "glUnifyLabels({ m });",
    "type": "grep_present"
   },
   {
@@ -12839,7 +12839,7 @@
   },
   {
    "added": "2026-11-23",
-   "file": "parts/create-pick.js",
+   "file": "parts/app2.js",
    "fix_id": "layers-catalogue-1282",
    "id": "layers-catalogue-1282-stack",
    "fix": "Beta 1.282 (architecture #13): create mode's hide list IS the engine catalogue's stack (CR_ROUTE_LAYERS = GLP.layers.stack) - the 37-id literal is retired. This probe pins the seat; a spelled list returning here reopens the drift class proof-1264 guards.",
@@ -13189,7 +13189,7 @@
   },
   {
    "added": "2026-11-24",
-   "file": "parts/engine.js",
+   "file": "parts/app2.js",
    "fix": "Beta 1.293 (label-switch-1293): in the on state the title layers carry the centre spec Andrew approved from the real-app sample on 2026-11-24 - text-anchor center, radial offset 0, on the unchanged Beta 1.290 label points. proof-anchors check 1b pins the literal; drive219 B2/D2 read it live per-tick and across a theme swap (mutation receipt labelswitch-1293-drive219-centre).",
    "fix_id": "label-switch-1293",
    "id": "labelswitch1293-centre-spec",
@@ -13216,11 +13216,11 @@
   },
   {
    "added": "2026-11-24",
-   "file": "parts/engine.js",
+   "file": "parts/app2.js",
    "fix": "Beta 1.293 (label-switch-1293): both title entry points (the labelpts source and the four tier layers in addStack) sit behind this one typeof-guarded read of the flags.js global - the #176 sandbox lesson: an undeclared global must never throw. Bypassing this gate fails drive219 W2 and proof-anchors 1c (mutation receipt labelswitch-1293-drive219-offstate).",
    "fix_id": "label-switch-1293",
    "id": "labelswitch1293-gate",
-   "pattern": "const titlesOn = () => typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;",
+   "pattern": "const titlesOn = typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;",
    "type": "grep_present"
   },
   {
@@ -13229,7 +13229,7 @@
    "fix": "Beta 1.293 (label-switch-1293): while the switch is off, glUnifyLabels lifts the route-name exclusion from roads_labels_major/minor (the titlesOff local feeds the same targetF lift create mode uses), so the basemap names the route streets like every other street. Without the lift the off state would show no name at all on route streets. drive219 W3/W4 grade it live; proof-1265 check 1 pins the condition.",
    "fix_id": "label-switch-1293",
    "id": "labelswitch1293-exclusion-lift",
-   "pattern": "const titlesOff = typeof ROUTE_TITLES_ON === 'undefined' || !ROUTE_TITLES_ON;",
+   "pattern": "const handover = titlesOn && !(typeof creating !== 'undefined' && creating);",
    "type": "grep_present"
   },
   {
@@ -13251,7 +13251,7 @@
   },
   {
    "added": "2026-11-24",
-   "file": "parts/engine.js",
+   "file": "parts/app2.js",
    "fix": "Beta 1.294 (label-handover-1294): the title layers fade out across zoom 15-16 inside their own spec (a spec value, not a code write). If the band stops leave the spec, the titles stay at full strength into the basemap's zoom band and double-print against the handover copies. drive219 V2/V3 grade it live; proof-anchors 4a pins the spec. (Rolled 2026-11-25 by label-switch-1297, Beta 1.297: the fade band is deleted - the expression now ends at the 12.62 stop and the titles end at the 15.2 cap; this probe pins the no-ramp expression.)",
    "fix_id": "label-handover-1294",
    "id": "labelhandover1294-title-fade",
@@ -13260,11 +13260,11 @@
   },
   {
    "added": "2026-11-24",
-   "file": "parts/engine.js",
+   "file": "parts/app2.js",
    "fix": "Beta 1.294 (label-handover-1294): the title layers end at maxzoom 16 - above the band the basemap names everything. Opacity alone would still place the title symbols and steal collisions, so the cap is what makes 'gone above 16' true. drive219 V3 and drive130 L2 grade it live; proof-anchors 4a pins it. (Rolled 2026-11-25 by label-switch-1297, Beta 1.297: the cap is now 15.2, the instant switch point.)",
    "fix_id": "label-handover-1294",
    "id": "labelhandover1294-title-cap",
-   "pattern": "minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter:",
+   "pattern": "minzoom: PT_MIN[t - 1], maxzoom: ROUTE_LABEL_ZOOM, filter:",
    "type": "grep_present"
   },
   {
@@ -13273,7 +13273,7 @@
    "fix": "Beta 1.294 (label-handover-1294): glUnifyLabels builds the route-names-only handover clones of roads_labels_major/minor only in the handover state (titles on, not creating). In create mode or with titles off, no clones exist and the map is the plain basemap. drive219 N4/Z5 and drive130 L3 grade it live; proof-anchors 4b pins the gate.",
    "fix_id": "label-handover-1294",
    "id": "labelhandover1294-clones-gated",
-   "pattern": "const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);",
+   "pattern": "const handover = titlesOn && !(typeof creating !== 'undefined' && creating);",
    "type": "grep_present"
   },
   {
@@ -13723,7 +13723,7 @@
    "fix": "Beta 1.297 (label-switch-1297): the handover clones start at the one shared constant routeLabelMinZoom = 15.2 (Andrew's decided switch point) - creation and the zoom-range guard both read it, so the pair cannot drift apart. drive130 L3 and drive214 M4 grade it live; proof-anchors 4b pins it.",
    "fix_id": "label-switch-1297",
    "id": "labelswitch1297-clone-floor",
-   "pattern": "const routeLabelMinZoom = 15.2;",
+   "pattern": "const ROUTE_LABEL_ZOOM = 15.2;",
    "type": "grep_present"
   },
   {
@@ -14165,6 +14165,69 @@
    "fix_id": "phase5-land-if-current",
    "id": "phase5-styledata-handwritten",
    "pattern": "if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "Phase 6 (label handover owner): the shared handover threshold lives once in the naming owner - titles cap and clones start at the same constant.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-owner-threshold",
+   "pattern": "const ROUTE_LABEL_ZOOM = 15.2;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "Phase 6 (label handover owner): the title layers and the labelpts source are built by the owner (addRouteTitles in app2.js), not inside engine addStack.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-owner-titles",
+   "pattern": "function addRouteTitles(m, { newStack, data, ids, fontStack }) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "Phase 6 (label handover owner): addStack hands its stack context (new stack, LABELPTS, catalogue title ids, font stack) to the owner through the unify hook.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-engine-hook",
+   "pattern": "H.glUnifyLabels({ m: GLM, stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack } });",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "Phase 6 (label handover owner): the titles' low-zoom fade-in ramp at 12.6 stays in the title spec - its removal was rejected by Andrew (2026-11-25); only the 15.2 switch is instant.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-ramp-kept",
+   "pattern": "'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app2.js",
+   "fix": "Phase 6 (label handover owner): the creation backdrop's hide/restore is owned with the naming it flips (setRouteBackdrop in app2.js); create-pick keeps only the POI half.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-backdrop-owner",
+   "pattern": "function setRouteBackdrop(m, on, updatePois) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "Phase 6 (label handover owner): the engine no longer carries the title spec - the old addStack seat (maxzoom literal in the tier loop) stays gone.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-no-engine-title-spec",
+   "pattern": "maxzoom: 15.2, filter:",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/browser/drive216.mjs",
+   "fix": "Phase 6 (P3 audit fix): drive216's handover judge samples the clone layers as well as the titles - P3b requires the crossing window to close on the clones (Velmar Drive placed, 5+ clone names), so a clone-side drop at 15.2 cannot pass unseen.",
+   "fix_id": "phase6-label-handover",
+   "id": "phase6-p3-clone-coverage",
+   "pattern": "P3b the crossing hands over",
    "type": "grep_present"
   }
  ]

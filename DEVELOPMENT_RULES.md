@@ -92,9 +92,10 @@ every other street at every zoom. While on, each title sits centred
 on its label point (`text-anchor: 'center'`, no radial offset) and
 the layers are otherwise spec-fixed: once the stack is built, no code
 writes a title layer's visibility or text-opacity, and nothing
-removes or rebuilds the labelpts source - it is created once in
-addStack and rewritten only by rebuildRoute's setData on a route
-switch. The zoom behaviour lives INSIDE the spec, which is not a code
+removes or rebuilds the labelpts source - the naming owner
+(addRouteTitles/glUnifyLabels in app2.js) creates it once at stack
+build, and a route switch rewrites it only through the owner's
+route-data setData. The zoom behaviour lives INSIDE the spec, which is not a code
 write: the title spec caps the layers at maxzoom 15.2 with no fade
 stops (the low-zoom fade-in at 12.6 is the one ramp it carries), and
 glUnifyLabels builds a route-names-only clone of each basemap

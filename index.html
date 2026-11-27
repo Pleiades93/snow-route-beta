@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-f2xgx2uWDlmjHTpidlJ6dpTFWGQHV81xT+bC++9pJCicTj75U6GX024UrIxoGcnC' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-O1hNcOHHmZB0nt06wC3r4AiYVOInJmu3FzwZvrP7Gjm/wg5SQNpGuQWpAltNDV/3' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3584,11 +3584,10 @@ const LAYERS = {
 };
 LAYERS.text = [...LAYERS.titles, 'routepoi-txt'];
 LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];
-// The source-only switch (flags.js): titles exist only when it is on.
-const titlesOn = () => typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;
 function addStack() {
   tunePlaceLabels();
-  if (!GLM.getSource('centres')) {
+  const newStack = !GLM.getSource('centres');
+  if (newStack) {
     GLM.addSource('centres', { type: 'geojson', data: CUR.centres });
     GLM.addSource('bands', { type: 'geojson', data: CUR.bands });
     GLM.addSource('edges', { type: 'geojson', data: CUR.edges });
@@ -3600,8 +3599,6 @@ function addStack() {
     GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
-    // created once when titles are on; rebuildRoute alone rewrites it. Title visibility and opacity are spec-fixed
-    if (titlesOn()) GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
   const before = firstSymbolId();
@@ -3663,18 +3660,6 @@ function addStack() {
   add(line('selfade-fill', 'selFades', { 'line-gradient': fadeGrad(GREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
   // --- hit (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
-  // the 'labels' source is not added (LABELS stay as data only); the titles are layers, one per street
-  const PT_MIN = [13.7, 13.35, 13.0, 12.6];
-  if (titlesOn()) for (let t = 1; t <= 4; t++) {
-    const id = 'streetnamespt' + t;
-    if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack,
-        'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-anchor': 'center', 'text-radial-offset': 0,
-        'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333',
-        'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1],
-        'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
-    }
-  }
   // at 12.6 the paint and names pop out, the POI in: no fading (Andrew), never one alone
   add({ id: 'routepoi-ring',
     type: 'circle',
@@ -3697,7 +3682,7 @@ function addStack() {
       'text-opacity-transition': { duration: 0, delay: 0 },
       'text-halo-width': 1.6 } });
   LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // the paint and glow groups are the catalogue's
-  H.glUnifyLabels(GLM);
+  H.glUnifyLabels({ m: GLM, stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack } });
   pushSources();
   applyGlow();
   syncTheme();
@@ -3786,10 +3771,9 @@ function managePulse() {
     CUR = null; rebuildData(); lastSig = stateSig();
     if (!GLM) return;
     if (GLM.getSource('hit')) GLM.getSource('hit').setData(HIT);
-    if (GLM.getSource('labelpts')) GLM.getSource('labelpts').setData(LABELPTS);
     if (GLM.getSource('routepoi')) GLM.getSource('routepoi').setData(ROUTEPOI);
     if (GLM.getLayer('routepoi-txt')) { try { GLM.setLayoutProperty('routepoi-txt', 'text-field', (H.activeRoute && H.activeRoute.name) || 'Snow Route'); } catch (e) {} } // the POI wears the route's name - a switch renames it
-    H.glUnifyLabels(GLM); // the basemap label pass runs on the new route's map
+    H.glUnifyLabels({ m: GLM, routeData: LABELPTS }); // the basemap label pass runs on the new route's map, and rewrites the title source with it
     pushSources();
   }
   function drop() {       // GL failed / fell back to raster: stop touching GL entirely
@@ -3867,9 +3851,27 @@ onMapReady(() => map.on('error', e => { if (!glOk && e && e.error && /fetch|Fail
 // proof the basemap is drawing: the moment a tile lands after an outage, the death notice clears itself
 onMapReady(() => map.on('sourcedata', e => { if (e.dataType === 'source' && e.sourceId === 'protomaps' && e.tile) { tilesOk++; if (basemapDead) { basemapDead = false; noteMapState(); } } }));
 const ROUTE_TILE_NAMES = []; // every street's name as the tiles spell it (drives the exclusion in glUnifyLabels); pack data, refilled per load
-function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styles are two different ready-made maps
+const ROUTE_LABEL_ZOOM = 15.2; // the one handover threshold: titles cap here, the route clones start here
+function addRouteTitles(m, { newStack, data, ids, fontStack }) { // the naming owner builds the title layers (engine passes its stack context through the host hook)
+  if (newStack) m.addSource('labelpts', { type: 'geojson', data }); // created once per stack; a route switch rewrites it through the unify pass alone
+  const PT_MIN = [13.7, 13.35, 13.0, 12.6];
+  for (const [index, id] of ids.entries()) {
+    const t = index + 1;
+    if (!m.getLayer(id)) {
+      m.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: ROUTE_LABEL_ZOOM, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack,
+        'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-anchor': 'center', 'text-radial-offset': 0,
+        'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': isNight() ? '#e8e8e8' : '#333333',
+        'text-halo-color': isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1],
+        'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
+    }
+  }
+}
+function glUnifyLabels({ m, stack, routeData }) { // BASEMAP LABEL UNIFICATION: the day and night styles are two different ready-made maps
   // on every restack, normalize every basemap text layer (typeface, size curve per kind); route layers are never touched
   try {
+    const titlesOn = typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON; // the source-only switch (flags.js): titles exist only when it is on
+    if (stack && titlesOn) addRouteTitles(m, stack);
+    if (routeData && m.getSource('labelpts')) m.getSource('labelpts').setData(routeData);
     const glyphs = (m.getStyle() && m.getStyle().glyphs) || '';
     const font = glyphs.indexOf('versatiles') >= 0 ? ['noto_sans_regular'] : ['Noto Sans Regular'];
     const SIZE = {
@@ -3879,25 +3881,23 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
       other: ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 12]
     };
     // route names get their own label-layer copies (from 15.2, no fade): a filter cannot key on zoom
-    const routeLabelMinZoom = 15.2;
     const spec = (typeof isNight === 'function' && isNight()) ? PM_NIGHT : PM_DAY;
     const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const setL = (id, k, v) => { if (!eq(m.getLayoutProperty(id, k), v)) m.setLayoutProperty(id, k, v); }; // no-op guards: this pass runs on every stack build, and a mutation re-triggers symbol placement - skip matches
     const setP = (id, k, v) => { if (!eq(m.getPaintProperty(id, k), v)) { try { m.setPaintProperty(id, k, v); } catch (e2) {} } };
     // kind filters are authored in legacy form: rebuilt as expressions, or any combined filter is rejected whole
     const convF = f => (Array.isArray(f) && f[0] === 'in' && typeof f[1] === 'string') ? ['in', ['get', f[1]], ['literal', f.slice(2)]] : f;
-    const titlesOff = typeof ROUTE_TITLES_ON === 'undefined' || !ROUTE_TITLES_ON;
-    const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);
-    for (const baseId of ['roads_labels_major', 'roads_labels_minor']) {
+    const handover = titlesOn && !(typeof creating !== 'undefined' && creating);
+    const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]], baseIds = ['roads_labels_major', 'roads_labels_minor'];
+    for (const baseId of baseIds) {
       const cloneId = baseId + '-route';
       if (m.getLayer(cloneId)) { try { m.removeLayer(cloneId); } catch (e2) {} } // rebuilt below in the handover state, gone in every other
       if (handover) {
         const specL = (spec.layers || []).find(x => x.id === baseId);
         if (specL) {
           const clone = JSON.parse(JSON.stringify(specL));
-          clone.id = cloneId; clone.minzoom = routeLabelMinZoom; clone.maxzoom = 24;
+          clone.id = cloneId; clone.minzoom = ROUTE_LABEL_ZOOM; clone.maxzoom = 24;
           const baseF0 = specL.filter ? convF(specL.filter) : null;
-          const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];
           clone.filter = baseF0 ? ['all', baseF0, routeF] : routeF;
           const live = m.getStyle().layers; const at = live.findIndex(x => x.id === baseId);
           const beforeId = at >= 0 && live[at + 1] ? live[at + 1].id : undefined; // the clone seats right after its base, so a remove-and-rebuild restores the same layer order
@@ -3928,25 +3928,45 @@ function glUnifyLabels(m) { // BASEMAP LABEL UNIFICATION: the day and night styl
       }
       if (kind === 'road') {
         const isClone = id === 'roads_labels_major-route' || id === 'roads_labels_minor-route';
-        if (isClone) { if ((L.minzoom || 0) !== routeLabelMinZoom || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, routeLabelMinZoom, 24); }
-        else if ((L.minzoom || 0) !== 13 || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, 13, 24); // guard: same no-op rule as setL/setP
+        const isBase = baseIds.includes(id);
+        const minZoom = isClone ? ROUTE_LABEL_ZOOM : 13;
+        if ((L.minzoom || 0) !== minZoom || (L.maxzoom === undefined ? 24 : L.maxzoom) !== 24) m.setLayerZoomRange(L.id, minZoom, 24); // guard: same no-op rule as setL/setP
         // LABEL RULE: titles name the route below 15.2; clones take route names over from 15.2
         setL(L.id, 'symbol-spacing', 250); // Andrew re-picked 250 on 2026-11-24: names repeat sooner when zoomed in.
-        if (id === 'roads_labels_major' || id === 'roads_labels_minor') {
-          // while creating, the exclusion is simply not added (every street named); `creating` is the single condition
+        if (isBase) {
+          // the target follows the handover state: creating or titles off lifts the exclusion (every street named)
           const specL = (spec.layers || []).find(x => x.id === id);
           const baseF = specL && specL.filter ? convF(specL.filter) : null;
           const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];
-          const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);
+          const targetF = handover ? (baseF ? ['all', baseF, exclF] : exclF) : baseF;
           if (!eq(L.filter, targetF)) { try { m.setFilter(L.id, targetF); } catch (e2) {} } // guard
         }
-        if ((id === 'roads_labels_major' || id === 'roads_labels_minor' || isClone) && !(typeof isNight === 'function' && isNight())) {
+        if ((isBase || isClone) && !(typeof isNight === 'function' && isNight())) {
           // day names darken to the label ink with a light edge (stock names wash out over route lines)
           setP(L.id, 'text-color', '#333333'); setP(L.id, 'text-halo-color', 'rgba(255,255,255,.92)'); setP(L.id, 'text-halo-width', 1.5);
         }
       }
     }
   } catch (e) { /* a style without label layers has nothing to normalize */ }
+}
+const CR_ROUTE_LAYERS = GLP.layers.stack; // the hide list is the engine's stack via GLP.layers, never hand-kept: proof-1264 fails on any gap
+let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
+function routeBackdropNeedsHide(m) { // a restack can add a visible layer after the snapshot, recorded or not: either re-fires the hide
+  return crHiddenLayers && CR_ROUTE_LAYERS.some(id => { try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } });
+}
+function setRouteBackdrop(m, on, updatePois) { // the creation backdrop's hide/restore, owned here with the naming it flips
+  const visPair = (id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot records the layer's live visibility (the live value is the natural one now)
+  if (on) {
+    if (!crHiddenLayers) crHiddenLayers = [];
+    // a route layer landing after the snapshot joins the record here, so the hide covers its first frame
+    for (const id of CR_ROUTE_LAYERS) { try { if (m.getLayer(id) && !crHiddenLayers.some(pair => pair[0] === id)) crHiddenLayers.push(visPair(id)); } catch (e) {} }
+    for (const pair of crHiddenLayers) { try { m.setLayoutProperty(pair[0], 'visibility', 'none'); } catch (e) {} }
+  } else {
+    if (crHiddenLayers) { for (const pair of crHiddenLayers) { try { if (m.getLayer(pair[0])) m.setLayoutProperty(pair[0], 'visibility', pair[1]); } catch (e) {} } crHiddenLayers = null; }
+  }
+  updatePois();
+  // the backdrop flip is the naming flip: creating lifts the route-name exclusion; exit returns it
+  glUnifyLabels({ m });
 }
 function addReferenceLayers() {
   const feats = [];
@@ -10023,14 +10043,12 @@ function renderDraft() { // the draft renders from its own roads through its own
 }
 // restoration is for swaps only: a missing sentinel is the swap signal; standing layers mean nothing was wiped
 onMapReady(() => map.on('styledata', () => { if (creating) { if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {
-    if (crHiddenLayers && (crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }) || CR_ROUTE_LAYERS.some(id => { try { return map.getLayer(id) && !crHiddenLayers.some(pr => pr[0] === id) && (map.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }))) crSetBackdrop(true); // Beta 1.266: an UNRECORDED route layer standing visible fires it too - a layer that lands after the enter snapshot (the stack still building when creation opens, mid-load-in) is not in the record yet, and the recorded-only check would never see it
+    if (routeBackdropNeedsHide(map)) crSetBackdrop(true); // the naming owner judges it: any route layer standing visible again, recorded or not, re-fires the hide
     return; }
   renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a swap mid-create wipes custom layers: redraw the draft, re-hide the backdrop, re-seat the POI surface
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
 
 // ---- creation backdrop ---- the loaded route's paint hides while creating; a POI marks each route's centre; exit restores visibility
-const CR_ROUTE_LAYERS = GLP.layers.stack;   // the hide list is the engine's stack via GLP.layers, never hand-kept: proof-1264 fails on any gap
-let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
 function crPoiFeatures() {
   return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature',
@@ -10061,26 +10079,12 @@ function ensureCrPoiLayers() {
       paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
   } catch (e) { /* the style may still be loading - the styledata hook re-runs this while creating */ }
 }
-function crSetBackdrop(on) {
+function crSetBackdrop(on) { // the hide/restore itself lives with the naming owner (setRouteBackdrop, app2.js); this seat keeps the creation POI half
   if (!map || typeof map.setLayoutProperty !== 'function') return;
-  if (on) {
-    const crVisPair = (id) => [id, map.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot records the layer's live visibility (the live value is the natural one now)
-    if (!crHiddenLayers) {
-      crHiddenLayers = [];
-      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }
-    } else {
-      // a route layer landing after the snapshot joins the record here, so the hide covers its first frame
-      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id) && !crHiddenLayers.some((pr) => pr[0] === id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }
-    }
-    for (const pair of crHiddenLayers) { try { map.setLayoutProperty(pair[0], 'visibility', 'none'); } catch (e) {} }
-    ensureCrPoiLayers();
-  } else {
-    if (crHiddenLayers) { for (const pair of crHiddenLayers) { try { if (map.getLayer(pair[0])) map.setLayoutProperty(pair[0], 'visibility', pair[1]); } catch (e) {} } crHiddenLayers = null; }
-    for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
-    try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
-  }
-  // the backdrop flip is the naming flip: creating lifts the route-name exclusion; exit returns it
-  try { if (typeof glUnifyLabels === 'function') glUnifyLabels(map); } catch (e) {}
+  setRouteBackdrop(map, on, () => {
+    if (on) ensureCrPoiLayers();
+    else { for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} } try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {} }
+  });
   syncCrGlow(); // the exit's reliable beat: if a trim session outlived its render, the glow still dies here
 }
 function crRowEl(n, g) {

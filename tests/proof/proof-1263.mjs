@@ -57,25 +57,30 @@ const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log
 // Beta 1.290 (label round) re-point, claim strengthened: the source is
 // created ONCE - the re-place that used to rebuild it mid-session is
 // deleted, and rebuildRoute's setData is the only rewrite door.
-check('1: the labelpts source is created once from LABELPTS in addStack (never removed, never re-added), rebuildRoute rewrites it by setData alone, and the tier layers ride it at the original tier minzooms',
-  (engine.split("addSource('labelpts'").length - 1) === 1 &&
-  engine.slice(engine.indexOf('function addStack()'), engine.indexOf('function rebuildRoute()')).includes("GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
-  !engine.includes("removeSource('labelpts')") &&
-  (engine.split("getSource('labelpts').setData(LABELPTS)").length - 1) === 1 &&
-  engine.includes('const PT_MIN = [13.7, 13.35, 13.0, 12.6];') &&
-  engine.includes("const id = 'streetnamespt' + t;") &&
+check('1: the labelpts source is created once from LABELPTS by the naming owner at stack build (never removed, never re-added), ' +
+  'a route switch rewrites it by setData alone through the unify pass, and the tier layers ride it at the original tier minzooms',
+  (app2.split("addSource('labelpts'").length - 1) === 1 &&
+  app2.includes("m.addSource('labelpts', { type: 'geojson', data })") &&
+  engine.includes('stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack }') &&
+  !engine.includes("removeSource('labelpts')") && !app2.includes("removeSource('labelpts')") &&
+  (app2.split("getSource('labelpts').setData(routeData)").length - 1) === 1 &&
+  engine.includes('H.glUnifyLabels({ m: GLM, routeData: LABELPTS });') &&
+  app2.includes('const PT_MIN = [13.7, 13.35, 13.0, 12.6];') &&
+  app2.includes('minzoom: PT_MIN[t - 1], maxzoom: ROUTE_LABEL_ZOOM') &&
   engine.includes('function nudgeFifth()') && engine.includes('function assignTiers()'));
 
 // ---------- (2) the cap at the switch ----------
 check('2: the title layers are capped at maxzoom 15.2 and the spec opacity carries no 15-16 fade stops (the 12.6 fade-in is untouched)',
-  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter:') &&
-  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]"));
+  app2.includes('const ROUTE_LABEL_ZOOM = 15.2;') &&
+  app2.includes('minzoom: PT_MIN[t - 1], maxzoom: ROUTE_LABEL_ZOOM, filter:') &&
+  app2.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]"));
 
 // ---------- (3) the exclusion restored at every zoom; the split deleted ----------
 check("3: glUnifyLabels sets the pre-1.258 exclusion (stock kind filter AND name not in ROUTE_TILE_NAMES) on the originals under the blanket 13-24 zoom range, with the day readability paint - and no '-pre15' band exists anywhere in parts (Beta 1.265 premise update: the exclusion literal is now built once as exclF and applied under the create-mode condition - outside create mode the computed filter is this same shape; proof-1265 pins the condition)",
   app2.includes("const exclF = ['!', ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]]];") &&
   app2.includes("(baseF ? ['all', baseF, exclF] : exclF)") &&
-  app2.includes('m.setLayerZoomRange(L.id, 13, 24)') &&
+  app2.includes('const minZoom = isClone ? ROUTE_LABEL_ZOOM : 13;') &&
+  app2.includes('m.setLayerZoomRange(L.id, minZoom, 24)') &&
   app2.includes("setP(L.id, 'text-color', '#333333')") &&
   !app2.includes('-pre15') && !engine.includes('-pre15') && !app5.includes('-pre15') &&
   !createPick.includes('-pre15') && !app1.includes('-pre15') &&
@@ -89,8 +94,8 @@ check("4: the 1.259 priority lane stays deleted - no lane layer id, no 'route-la
 // ---------- (5) the '-route' clones: removed every pass, rebuilt only for the handover ----------
 check("5: the '-route' clone layers are removed at the top of the label pass and rebuilt only in the handover state, route names only (Beta 1.294 premise update: the 1.208 retirement is superseded by the handover)",
   app2.includes("const cloneId = baseId + '-route';") && app2.includes('if (m.getLayer(cloneId))') &&
-  app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") &&
-  app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];"));
+  app2.includes("const handover = titlesOn && !(typeof creating !== 'undefined' && creating);") &&
+  app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]], baseIds = ['roads_labels_major', 'roads_labels_minor'];"));
 
 // ---------- (6) THE NAMED EXCEPTION: R1 ----------
 check("6: R1 symbol-spacing is owned in glUnifyLabels at the top of the road branch, value 250 (Beta 1.294 premise update: Andrew re-picked the repetition on 2026-11-24; the write now covers the originals and the handover clones)",
@@ -122,8 +127,8 @@ check('10: LEFTBIT is present AND read by the label-anchor computation (load-bea
 // Beta 1.282 (#13) re-point, claim unchanged: the hide list no longer spells
 // the titles itself - CR_ROUTE_LAYERS IS the engine catalogue's stack, and
 // the catalogue's title group (in its stack) is the four tiers.
-check('11: the create-pick hide list carries the four title layers',
-  createPick.includes('const CR_ROUTE_LAYERS = GLP.layers.stack;') &&
+check('11: the backdrop hide list carries the four title layers',
+  app2.includes('const CR_ROUTE_LAYERS = GLP.layers.stack;') &&
   engine.includes("titles: [1, 2, 3, 4].map(t => 'streetnamespt' + t),") &&
   engine.includes('LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];'));
 
@@ -153,7 +158,9 @@ try {
     ROADS: Object.fromEntries(fixNames.map(n => [n, fixSTRETCH[n].runs.flatMap(r => r.parts)])),
     SPOT: {}, pieces: { 'constructor': [1, 1, 1], LongAve: [1, 1, 1] },
     selStretch: null, selSet: [], isNight: () => false,
-    activeRoute: { name: 'Proof' }, glUnifyLabels: () => {},
+    activeRoute: { name: 'Proof' },
+    // the stub honours the hook contract, creating the title source from the stack context.
+    glUnifyLabels: ({ m, stack }) => { if (stack && stack.newStack) m.addSource('labelpts', { type: 'geojson', data: stack.data }); },
   };
   const sources = {}, layers = [];
   const mockGLM = {

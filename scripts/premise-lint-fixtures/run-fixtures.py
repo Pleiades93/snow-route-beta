@@ -25,6 +25,11 @@ Cases:
   key-renamed-display-on-storage-line  (fix cycle 1, case 7) a real
                    key renamed while a same-text display value survives
                    as a storage VALUE: key mode must still flag it.
+  moved-seat       a literal removed from one
+                   parts file but alive in another: moved, not expired;
+                   neither mode flags.
+  removed-everywhere  a literal removed from
+                   every parts file that held it: base mode still flags.
 
 Run: python3 scripts/premise-lint-fixtures/run-fixtures.py
 Exit 0 = every case run matched its expectations.

@@ -34,8 +34,9 @@ const check = (name, cond) => { if (cond) { pass++; } else { fail++; console.log
 // ---------- (1) the lift conditions in glUnifyLabels ----------
 // Beta 1.293: titles off is the second lift - no app titles exist, so the basemap names route streets.
 check("1: glUnifyLabels computes the road-label target from the lift conditions - while creating OR titles off the target is the basemap's own stock filter (baseF), otherwise the pre-1.265 exclusion shape",
-  app2.includes("const titlesOff = typeof ROUTE_TITLES_ON === 'undefined' || !ROUTE_TITLES_ON;") &&
-  app2.includes("const targetF = ((typeof creating !== 'undefined' && creating) || titlesOff) ? baseF : (baseF ? ['all', baseF, exclF] : exclF);"));
+  app2.includes("const titlesOn = typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;") &&
+  app2.includes("const handover = titlesOn && !(typeof creating !== 'undefined' && creating);") &&
+  app2.includes("const targetF = handover ? (baseF ? ['all', baseF, exclF] : exclF) : baseF;"));
 
 // ---------- (2) the exclusion is built in exactly one place, applied by one call ----------
 const exclBuilds = (app2.match(/\['!', \['in', \['get', 'name'\], \['literal', ROUTE_TILE_NAMES\]\]\]/g) || []).length;
@@ -52,11 +53,11 @@ check('3: create mode forks no label layer of its own (no -create clone ids anyw
   !createPick.includes("roads_labels_major-create") && !createPick.includes("roads_labels_minor-create"));
 
 // ---------- (4) the backdrop re-runs the label pass on the flip ----------
-const bdStart = createPick.indexOf('function crSetBackdrop(on) {');
-const bdEnd = bdStart > -1 ? createPick.indexOf('\n}\n', bdStart) : -1;
-const bdBody = bdStart > -1 && bdEnd > bdStart ? createPick.slice(bdStart, bdEnd) : '';
-check('4: crSetBackdrop re-runs glUnifyLabels(map) as part of the backdrop flip (both directions ride the same function - the on/off branches above it set the layer visibility and the POI)',
-  bdBody.includes("if (typeof glUnifyLabels === 'function') glUnifyLabels(map);"));
+const bdStart = app2.indexOf('function setRouteBackdrop(m, on, updatePois) {');
+const bdEnd = bdStart > -1 ? app2.indexOf('\n}\n', bdStart) : -1;
+const bdBody = bdStart > -1 && bdEnd > bdStart ? app2.slice(bdStart, bdEnd) : '';
+check('4: the backdrop flip re-runs the label pass (both directions ride setRouteBackdrop in the naming owner - its tail calls glUnifyLabels; crSetBackdrop delegates to it and keeps the POI half)',
+  bdBody.includes('glUnifyLabels({ m });') && createPick.includes('setRouteBackdrop(map, on,'));
 
 // ---------- (5) the enter/exit ordering the re-run depends on ----------
 const enStart = createPick.indexOf('function enterCreate(stage) {');

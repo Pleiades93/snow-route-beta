@@ -84,7 +84,7 @@ check('5b: releaseTitleCure and titleCureRelease occur nowhere in app5 - a relea
 check('6: app2\'s hold machinery is DELETED whole: no nameHoldSet, no nameHoldApply, no nameHoldHideOnly, no nameFade state - the titles-only scope question is moot when nothing holds any name in any path',
   !app2.includes('nameHoldSet') && !app2.includes('nameHoldApply') &&
   !app2.includes('nameHoldHideOnly') && !app2.includes('nameFade'));
-const unifyStart = app2.indexOf('function glUnifyLabels(m)');
+const unifyStart = app2.indexOf('function glUnifyLabels({');
 const unifyBody = unifyStart > -1 ? app2.slice(unifyStart, app2.indexOf('\n}\n', unifyStart)) : '';
 check('6b: the basemap label pass re-applies no hold at its tail (the seat the hold rode on every restack): glUnifyLabels\' body names no hold machinery - its writes are the standing unification alone (the drive216 P3 ban\'s substance: app code never writes a basemap name\'s paint or visibility to hide it)',
   unifyStart > -1 && !unifyBody.includes('nameHold') && unifyBody.includes('setLayerZoomRange'));
@@ -104,8 +104,9 @@ check('8: no route preloading rides the load path (Andrew, 2026-11-21: the app m
 
 // ---------- (9) the backdrop reads live visibility (Beta 1.290 re-point) ----------
 const createPick = read('parts/create-pick.js');
-check('9: the create backdrop snapshots LIVE visibility (crVisPair reads getLayoutProperty directly): with the hold deleted there is no transient none a snapshot could misrecord as the state to restore - the PR #162 hazard\'s precondition is gone, and nameHoldNaturalVis occurs in no part',
-  createPick.includes("const crVisPair = (id) => [id, map.getLayoutProperty(id, 'visibility') || 'visible'];") &&
+check('9: the create backdrop snapshots LIVE visibility (visPair in the naming owner reads getLayoutProperty directly): with the hold deleted there is no transient none a snapshot could misrecord as the state to restore - ' +
+  'the PR #162 hazard\'s precondition is gone, and nameHoldNaturalVis occurs in no part',
+  app2.includes("const visPair = (id) => [id, m.getLayoutProperty(id, 'visibility') || 'visible'];") &&
   !createPick.includes('nameHoldNaturalVis') && !app2.includes('nameHoldNaturalVis'));
 
 // ---------- (10) editorial ----------

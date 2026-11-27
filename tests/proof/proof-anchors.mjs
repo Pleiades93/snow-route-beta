@@ -39,11 +39,12 @@ const allParts = Object.values(parts).join('\n');
 check('1a: the side machinery is gone - no assignAnchors, no titleDirections, no stored anchor read anywhere in parts',
   !allParts.includes('assignAnchors') && !allParts.includes('titleDirections') && !allParts.includes("'text-anchor': ['get', 'anchor']"));
 check('1b: the title spec is the centre literal and no variable-anchor or radial offset survives in the engine',
-  engine.includes("'text-anchor': 'center', 'text-radial-offset': 0") && !engine.includes('text-variable-anchor') && !engine.includes("'text-radial-offset': 0.8"));
+  app2.includes("'text-anchor': 'center', 'text-radial-offset': 0") && !engine.includes('text-variable-anchor') &&
+  !engine.includes("'text-radial-offset': 0.8") && !app2.includes('text-variable-anchor') && !app2.includes("'text-radial-offset': 0.8"));
 check('1c: the switch gates both title entry points - the labelpts source and the tier layers - behind one typeof-guarded read',
-  engine.includes("const titlesOn = () => typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;") &&
-  engine.includes("if (titlesOn()) GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });") &&
-  engine.includes('if (titlesOn()) for (let t = 1; t <= 4; t++)'));
+  app2.includes("const titlesOn = typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;") &&
+  app2.includes('if (stack && titlesOn) addRouteTitles(m, stack);') &&
+  engine.includes('H.glUnifyLabels({ m: GLM, stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack } });'));
 {
   let flags = '';
   try { flags = read('flags.js'); } catch (e) { flags = ''; }
@@ -133,22 +134,24 @@ check('3a: the deleted cure/hold machinery occurs in NO part (armTitleRePlace, r
   !allParts.includes('titleCureRelease') && !allParts.includes('titleGuardArmed') &&
   !allParts.includes('nameHoldSet') && !allParts.includes('nameHoldApply') && !allParts.includes('nameFade'));
 check('3b: labelpts is created exactly once and never removed in any part',
-  (engine.split("addSource('labelpts'").length - 1) === 1 && !allParts.includes("removeSource('labelpts')"));
-check('3c: no part writes a title layer\'s properties by literal id (the specs in addStack are the only seat; the create backdrop\'s recorded-pair restore is the one sanctioned visibility writer and it names no title id literally)',
+  (app2.split("addSource('labelpts'").length - 1) === 1 && !allParts.includes("removeSource('labelpts')"));
+check('3c: no part writes a title layer\'s properties by literal id (the title spec in the naming owner is the only seat; ' +
+  'the create backdrop\'s recorded-pair restore is the one sanctioned visibility writer and it names no title id literally)',
   !/set(?:Layout|Paint)Property\('streetnamespt/.test(allParts));
 
 // ---------- (4) the handover ----------
 // Titles and clones meet at one boundary, 15.2, with no fade on either side.
 check('4a: the title spec carries no fade stops and is capped at maxzoom 15.2',
-  engine.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]") &&
-  engine.includes('minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter:'));
+  app2.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1]") &&
+  app2.includes('const ROUTE_LABEL_ZOOM = 15.2;') &&
+  app2.includes('minzoom: PT_MIN[t - 1], maxzoom: ROUTE_LABEL_ZOOM, filter:'));
 check('4b: the clones are built only in the handover state (titles on, not creating), from zoom 15.2, with no spec fade ramp',
-  app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") &&
-  app2.includes('const routeLabelMinZoom = 15.2;') &&
-  app2.includes('clone.id = cloneId; clone.minzoom = routeLabelMinZoom; clone.maxzoom = 24;') &&
+  app2.includes("const handover = titlesOn && !(typeof creating !== 'undefined' && creating);") &&
+  app2.includes('const ROUTE_LABEL_ZOOM = 15.2;') &&
+  app2.includes('clone.id = cloneId; clone.minzoom = ROUTE_LABEL_ZOOM; clone.maxzoom = 24;') &&
   !app2.includes("'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, 1]"));
 check('4c: the clone filter is route-names only (the positive name test, never the exclusion), set once at creation',
-  app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]];") &&
+  app2.includes("const routeF = ['in', ['get', 'name'], ['literal', ROUTE_TILE_NAMES]], baseIds = ['roads_labels_major', 'roads_labels_minor'];") &&
   app2.includes("clone.filter = baseF0 ? ['all', baseF0, routeF] : routeF;"));
 check('4d: the basemap repetition is 250, one owned write in the label pass',
   (app2.split("setL(L.id, 'symbol-spacing', 250);").length - 1) === 1 &&

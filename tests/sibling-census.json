@@ -30307,6 +30307,369 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-27 phase5-land-if-current fix round (Codex line-neutrality restructure; same anchors and marks, pins moved)"
+  },
+  {
+   "id": "phase6-label-handover-r1",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "addRouteTitles",
+     "glUnifyLabels",
+     "setRouteBackdrop",
+     "routeBackdropNeedsHide",
+     "crSetBackdrop",
+     "addStack",
+     "rebuildRoute"
+    ]
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/create-pick.js",
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:addRouteTitles:parts/app2.js:glUnifyLabels",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - addRouteTitles() is called from glUnifyLabels in parts/app2.js",
+     "status": "covered",
+     "note": "the owner's own call at the top of the unify pass when stack context arrives with the switch on; exercised by every stack build in drive219 N2/N4 and drive216 P1"
+    },
+    {
+     "id": "caller:addStack:parts/engine.js:init",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - addStack() is called from init in parts/engine.js",
+     "status": "covered",
+     "note": "GLP.init builds the stack; the hook call at its tail is the port's only change there; exercised by every drive boot (drive219 N1/N2 read the built result)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "enterCreate turns the backdrop on through the delegation; drive217 B-series and drive218 B-series grade the hidden state and the lifted exclusion"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "exitCreate turns it off through the delegation; drive217 D-series and drive218 D1 grade the restore"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the styledata stand-down re-fires the hide via routeBackdropNeedsHide; drive217 C-series (theme swap mid-create) and drive218 C-series grade it"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "the onMapReady boot seat (creation entered before the map existed): unchanged call, now through the delegation; the state it lands is graded by drive217/218 B-series"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the GL_HOST getter re-export, unchanged by the port; selftest-engine-surface pins the host surface and proof-1263 check 12's fixture drives the hook contract"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app2.js:setRouteBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from setRouteBackdrop in parts/app2.js",
+     "status": "covered",
+     "note": "the backdrop flip's tail re-run of the label pass; drive218 B1/D1 grade the exclusion lift and restore it produces"
+    },
+    {
+     "id": "caller:routeBackdropNeedsHide:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeBackdropNeedsHide() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the re-apply judgement in the owner; proof-1262 check 14 pins its union condition and drive217/218 C-series grade it live"
+    },
+    {
+     "id": "caller:setRouteBackdrop:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setRouteBackdrop() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "the delegation itself; proof-1265 check 4 pins the seat and drive217/218 grade its effects end to end"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crSetBackdrop, routeBackdropNeedsHide without dismissing it",
+     "status": "covered",
+     "note": "the styledata handler touches the backdrop seats without dismissing them; graded by the drive217/218 C-series theme-swap legs"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "0983841e10c36e1f56cc48da74b85ebe3426946a8576393096ea84ba592f85e2",
+    "parts/create-citydata.js": "f80d26bac88bd614c47acb2f100401a64cf357744a2f932db7b37270ad39b814",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "6fa08387db8bba9a3224a124f8bfb751fcb963d2caf5aa22ebf8473b967a61c2",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-label-handover-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "addRouteTitles",
+     "glUnifyLabels",
+     "setRouteBackdrop",
+     "routeBackdropNeedsHide",
+     "crSetBackdrop",
+     "addStack",
+     "rebuildRoute"
+    ]
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/create-pick.js",
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:addRouteTitles:parts/app2.js:glUnifyLabels",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - addRouteTitles() is called from glUnifyLabels in parts/app2.js",
+     "status": "covered",
+     "note": "the owner's own call at the top of the unify pass when stack context arrives with the switch on; exercised by every stack build in drive219 N2/N4 and drive216 P1"
+    },
+    {
+     "id": "caller:addStack:parts/engine.js:init",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - addStack() is called from init in parts/engine.js",
+     "status": "covered",
+     "note": "GLP.init builds the stack; the hook call at its tail is the port's only change there; exercised by every drive boot (drive219 N1/N2 read the built result)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "enterCreate turns the backdrop on through the delegation; drive217 B-series and drive218 B-series grade the hidden state and the lifted exclusion"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "exitCreate turns it off through the delegation; drive217 D-series and drive218 D1 grade the restore"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the styledata stand-down re-fires the hide via routeBackdropNeedsHide; drive217 C-series (theme swap mid-create) and drive218 C-series grade it"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "the onMapReady boot seat (creation entered before the map existed): unchanged call, now through the delegation; the state it lands is graded by drive217/218 B-series"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the GL_HOST getter re-export, unchanged by the port; selftest-engine-surface pins the host surface and proof-1263 check 12's fixture drives the hook contract"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app2.js:setRouteBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from setRouteBackdrop in parts/app2.js",
+     "status": "covered",
+     "note": "the backdrop flip's tail re-run of the label pass; drive218 B1/D1 grade the exclusion lift and restore it produces"
+    },
+    {
+     "id": "caller:routeBackdropNeedsHide:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeBackdropNeedsHide() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the re-apply judgement in the owner; proof-1262 check 14 pins its union condition and drive217/218 C-series grade it live"
+    },
+    {
+     "id": "caller:setRouteBackdrop:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setRouteBackdrop() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "the delegation itself; proof-1265 check 4 pins the seat and drive217/218 grade its effects end to end"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crSetBackdrop, routeBackdropNeedsHide without dismissing it",
+     "status": "covered",
+     "note": "the styledata handler touches the backdrop seats without dismissing them; graded by the drive217/218 C-series theme-swap legs"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "0983841e10c36e1f56cc48da74b85ebe3426946a8576393096ea84ba592f85e2",
+    "parts/create-citydata.js": "f80d26bac88bd614c47acb2f100401a64cf357744a2f932db7b37270ad39b814",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "b96d4a85327a04b2ead4dd8404db1312c9712bc56aba8e9beef3ee5f10a41e82",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-27 phase6-label-handover (r2: pins moved by the engine comment fix; same anchors and marks)"
+  },
+  {
+   "id": "phase6-label-handover-r3",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "addRouteTitles",
+     "glUnifyLabels",
+     "setRouteBackdrop",
+     "routeBackdropNeedsHide",
+     "crSetBackdrop",
+     "addStack",
+     "rebuildRoute"
+    ]
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/create-pick.js",
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:addRouteTitles:parts/app2.js:glUnifyLabels",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - addRouteTitles() is called from glUnifyLabels in parts/app2.js",
+     "status": "covered",
+     "note": "the owner's own call at the top of the unify pass when stack context arrives with the switch on; exercised by every stack build in drive219 N2/N4 and drive216 P1"
+    },
+    {
+     "id": "caller:addStack:parts/engine.js:init",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - addStack() is called from init in parts/engine.js",
+     "status": "covered",
+     "note": "GLP.init builds the stack; the hook call at its tail is the port's only change there; exercised by every drive boot (drive219 N1/N2 read the built result)"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "enterCreate turns the backdrop on through the delegation; drive217 B-series and drive218 B-series grade the hidden state and the lifted exclusion"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:exitCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from exitCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "exitCreate turns it off through the delegation; drive217 D-series and drive218 D1 grade the restore"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the styledata stand-down re-fires the hide via routeBackdropNeedsHide; drive217 C-series (theme swap mid-create) and drive218 C-series grade it"
+    },
+    {
+     "id": "caller:crSetBackdrop:parts/create-pick.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crSetBackdrop() is called from top-level in parts/create-pick.js",
+     "status": "covered",
+     "note": "the onMapReady boot seat (creation entered before the map existed): unchanged call, now through the delegation; the state it lands is graded by drive217/218 B-series"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app1.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from top-level in parts/app1.js",
+     "status": "covered",
+     "note": "the GL_HOST getter re-export, unchanged by the port; selftest-engine-surface pins the host surface and proof-1263 check 12's fixture drives the hook contract"
+    },
+    {
+     "id": "caller:glUnifyLabels:parts/app2.js:setRouteBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - glUnifyLabels() is called from setRouteBackdrop in parts/app2.js",
+     "status": "covered",
+     "note": "the backdrop flip's tail re-run of the label pass; drive218 B1/D1 grade the exclusion lift and restore it produces"
+    },
+    {
+     "id": "caller:routeBackdropNeedsHide:parts/create-pick.js:map:styledata",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - routeBackdropNeedsHide() is called from map:styledata in parts/create-pick.js",
+     "status": "covered",
+     "note": "the re-apply judgement in the owner; proof-1262 check 14 pins its union condition and drive217/218 C-series grade it live"
+    },
+    {
+     "id": "caller:setRouteBackdrop:parts/create-pick.js:crSetBackdrop",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - setRouteBackdrop() is called from crSetBackdrop in parts/create-pick.js",
+     "status": "covered",
+     "note": "the delegation itself; proof-1265 check 4 pins the seat and drive217/218 grade its effects end to end"
+    },
+    {
+     "id": "gesture:parts/create-pick.js:map:styledata",
+     "kind": "gesture",
+     "source": "derived: handler scan - the map styledata handler in parts/create-pick.js touches crSetBackdrop, routeBackdropNeedsHide without dismissing it",
+     "status": "covered",
+     "note": "the styledata handler touches the backdrop seats without dismissing them; graded by the drive217/218 C-series theme-swap legs"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "0983841e10c36e1f56cc48da74b85ebe3426946a8576393096ea84ba592f85e2",
+    "parts/create-citydata.js": "f80d26bac88bd614c47acb2f100401a64cf357744a2f932db7b37270ad39b814",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; same anchors and marks)"
   }
  ]
 }

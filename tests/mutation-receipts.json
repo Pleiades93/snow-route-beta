@@ -17789,6 +17789,317 @@
    "red": "CI shard 2 on PR #229 head 079fb55e: drive208 9/9 checks, 1 exception - FAIL (TypeError: g.isCurrent is not a function at crGridPump, from crGridResume)",
    "green": "drive208 passes locally 9/9, 0 exceptions after the staging installs the same landIfCurrent capture the constructor installs",
    "issued": "2026-11-27 phase5-land-if-current fix round (r2: file set without the generated tracker-source, which no prospective tree carries; evidence unchanged)"
+  },
+  {
+   "id": "phase6-repin-1263",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "73cddeb2bc472f5e39a15fcb31d867a63195dba5df5458c78d571b30db0dcc7c",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/engine.js": "6fa08387db8bba9a3224a124f8bfb751fcb963d2caf5aa22ebf8473b967a61c2"
+   },
+   "mutation": "the naming owner's shared handover constant raised (ROUTE_LABEL_ZOOM 15.2 -> 16 in parts/app2.js)",
+   "red": "proof-1263: 12 passed, 1 failed (check 2, the cap at the shared constant) - observed twice",
+   "green": "proof-1263: 13 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-repin-1264",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "e30dca1e8e28a6b0d7805650d77145eea14303284f1cd1fcc9bd3ed308287e6a",
+    "parts/engine.js": "6fa08387db8bba9a3224a124f8bfb751fcb963d2caf5aa22ebf8473b967a61c2",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920"
+   },
+   "mutation": "addStack's unify hook stops passing the catalogue title ids (ids: LAYERS.titles -> ids: [] in parts/engine.js)",
+   "red": "proof-1264: 4 passed, 2 failed (check 1 plumbing, check 4 stale titles) - observed twice",
+   "green": "proof-1264: 6 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-repin-1265",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "9f29b45aa5ce64ab09880d87a87b7715d78d938ba7dad1f6797a8a2c130d5ebf",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920"
+   },
+   "mutation": "the road-label target's handover branches inverted in glUnifyLabels (lift and exclusion swapped, parts/app2.js)",
+   "red": "proof-1265: 5 passed, 1 failed (check 1, the lift conditions) - observed twice",
+   "green": "proof-1265: 6 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-repin-1270",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "a4a23d83c7da5baadfa463774203ed642e76f330e56b4c1ec5d7da57f2852cca",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920"
+   },
+   "mutation": "the backdrop snapshot stops reading live visibility (visPair returns a constant in parts/app2.js)",
+   "red": "proof-1270: 12 pass, 1 fail (check 9, the live snapshot) - observed twice",
+   "green": "proof-1270: 13 pass, 0 fail on the reverted tree",
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-repin-anchors",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "c94156f94a75b358c6f04ab84a9899a8132e110024fe42cef8afdaf9e79ca075",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/engine.js": "6fa08387db8bba9a3224a124f8bfb751fcb963d2caf5aa22ebf8473b967a61c2"
+   },
+   "mutation": "the title cap raised in the owner's spec (maxzoom ROUTE_LABEL_ZOOM -> 16 in parts/app2.js)",
+   "red": "proof-anchors: 13 passed, 1 failed (check 4a, the cap) - observed twice",
+   "green": "proof-anchors: 14 passed, 0 failed on the reverted tree",
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-repin-1263-r2",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "2850d7e2f068f65b357324643f770c37cdf532363980490072ba1557f532dae1",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/engine.js": "b96d4a85327a04b2ead4dd8404db1312c9712bc56aba8e9beef3ee5f10a41e82"
+   },
+   "mutation": "the naming owner's shared handover constant raised (ROUTE_LABEL_ZOOM 15.2 -> 16 in parts/app2.js)",
+   "red": "proof-1263: 12 passed, 1 failed (check 2, the cap at the shared constant) - observed twice on the final tree",
+   "green": "proof-1263: 13 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-label-handover (r2: pins moved by the PR-limits line splits; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1264-r2",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "b4adfbccc6536cb52e169db6e129736ab6e2bb3d55f4fb248d4be16fbc6f3426",
+    "parts/engine.js": "b96d4a85327a04b2ead4dd8404db1312c9712bc56aba8e9beef3ee5f10a41e82",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920"
+   },
+   "mutation": "addStack's unify hook stops passing the catalogue title ids (ids: LAYERS.titles -> ids: [] in parts/engine.js)",
+   "red": "proof-1264: 4 passed, 2 failed (check 1 plumbing, check 4 stale titles) - observed twice on the final tree",
+   "green": "proof-1264: 6 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-label-handover (r2: pins moved by the PR-limits line splits; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1265-r2",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "9f29b45aa5ce64ab09880d87a87b7715d78d938ba7dad1f6797a8a2c130d5ebf",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920"
+   },
+   "mutation": "the road-label target's handover branches inverted in glUnifyLabels (lift and exclusion swapped, parts/app2.js)",
+   "red": "proof-1265: 5 passed, 1 failed (check 1, the lift conditions) - observed twice on the final tree",
+   "green": "proof-1265: 6 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-label-handover (r2: pins moved by the PR-limits line splits; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1270-r2",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "686d8d7b8f31dec5930b10e8033adc3307d1580e5e55decd23ab6d5c37d1025a",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920"
+   },
+   "mutation": "the backdrop snapshot stops reading live visibility (visPair returns a constant in parts/app2.js)",
+   "red": "proof-1270: 12 pass, 1 fail (check 9, the live snapshot) - observed twice on the final tree",
+   "green": "proof-1270: 13 pass, 0 fail on the reverted final tree",
+   "issued": "2026-11-27 phase6-label-handover (r2: pins moved by the PR-limits line splits; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-anchors-r2",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "ee1320107abbc6f522c37d61fc656429da1c26afda047098ff2dba6cc5b34ba4",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/engine.js": "b96d4a85327a04b2ead4dd8404db1312c9712bc56aba8e9beef3ee5f10a41e82"
+   },
+   "mutation": "the title cap raised in the owner's spec (maxzoom ROUTE_LABEL_ZOOM -> 16 in parts/app2.js)",
+   "red": "proof-anchors: 13 passed, 1 failed (check 4a, the cap) - observed twice on the final tree",
+   "green": "proof-anchors: 14 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-label-handover (r2: pins moved by the PR-limits line splits; mutation re-observed)"
+  },
+  {
+   "id": "phase6-drive216-p3-clones",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive216.mjs": "010b4be0ab5d343acd8c65ab68f11d9484ded8d3e82892a1d3fda7c8357e035e",
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29"
+   },
+   "mutation": "the handover clones suppressed across the crossing (clone.minzoom ROUTE_LABEL_ZOOM -> 24 in parts/app2.js, so the clone layers never place)",
+   "red": "drive216 P3b FAILS with 'close clones 0' in both mutated runs, while the title-side P3 still passes - the old drive could not see this failure at all",
+   "green": "drive216 P3b and P4b PASS on the clean ported tree (runs show only the known local-rig P2/P5 sample-floor failures, dropped: [] - identical signature to the pristine baseline)",
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-repin-1263-r3",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "12801b6a8de77fd268f76d17a5c87b8feb9913a01e9dbe9aa1e096100cde67bd",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416"
+   },
+   "mutation": "the naming owner's shared handover constant raised (ROUTE_LABEL_ZOOM 15.2 -> 16 in parts/app2.js)",
+   "red": "proof-1263: 12 passed, 1 failed (check 2, the cap at the shared constant) - observed twice on the line-neutrality restructured tree",
+   "green": "proof-1263: 13 passed, 0 failed on the reverted restructured tree",
+   "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1264-r3",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "b4adfbccc6536cb52e169db6e129736ab6e2bb3d55f4fb248d4be16fbc6f3426",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7"
+   },
+   "mutation": "addStack's unify hook stops passing the catalogue title ids (ids: LAYERS.titles -> ids: [] in parts/engine.js)",
+   "red": "proof-1264: 4 passed, 2 failed (check 1 plumbing, check 4 stale titles) - observed twice on the restructured tree",
+   "green": "proof-1264: 6 passed, 0 failed on the reverted restructured tree",
+   "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1265-r3",
+   "check": "tests/proof/proof-1265.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1265.mjs": "9f29b45aa5ce64ab09880d87a87b7715d78d938ba7dad1f6797a8a2c130d5ebf",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7"
+   },
+   "mutation": "the road-label target's handover branches inverted in glUnifyLabels (lift and exclusion swapped, parts/app2.js)",
+   "red": "proof-1265: 5 passed, 1 failed (check 1, the lift conditions) - observed twice on the restructured tree",
+   "green": "proof-1265: 6 passed, 0 failed on the reverted restructured tree",
+   "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1270-r3",
+   "check": "tests/proof/proof-1270.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1270.mjs": "686d8d7b8f31dec5930b10e8033adc3307d1580e5e55decd23ab6d5c37d1025a",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7"
+   },
+   "mutation": "the backdrop snapshot stops reading live visibility (visPair returns a constant in parts/app2.js)",
+   "red": "proof-1270: 12 pass, 1 fail (check 9, the live snapshot) - observed twice on the restructured tree",
+   "green": "proof-1270: 13 pass, 0 fail on the reverted restructured tree",
+   "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-anchors-r3",
+   "check": "tests/proof/proof-anchors.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-anchors.mjs": "565c7bdb8bac1357d509fd1ef2d31b1cf0264e793d84974551be3a17e53f66b3",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416"
+   },
+   "mutation": "the title cap raised in the owner's spec (maxzoom ROUTE_LABEL_ZOOM -> 16 in parts/app2.js)",
+   "red": "proof-anchors: 13 passed, 1 failed (check 4a, the cap) - observed twice on the restructured tree",
+   "green": "proof-anchors: 14 passed, 0 failed on the reverted restructured tree",
+   "issued": "2026-11-27 phase6-label-handover (r3: Codex line-neutrality restructure; mutation re-observed)"
+  },
+  {
+   "id": "phase6-premise-lint-moved-seat",
+   "check": "scripts/premise-lint.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/premise-lint.py": "5918040363c15ac3f41efccf2e17efa177a9a4c9952b244427abfdc207f32349",
+    "scripts/source_query.py": "bdd6f34ea357638e998ffc87455dcf1b8f8d75cc1196dcd34568022771125fd3"
+   },
+   "mutation": "surviving()/key_survives() reverted to the per-file survival model (premise-lint.py as at base 506efb40); the shipped fixture suite and the PR's real parts diff run against the reverted lint",
+   "red": "fixtures FAIL on moved-seat (3 failures over 18 runs: 'labelpts' flagged expired though alive in head app2.js); the PR parts diff --strict exits 1 with exactly 3 flags ('center' x15 drives, 'labelpts' x4, 'text-radial-offset' x1)",
+   "green": "shipped whole-tree lint: fixtures PASS (18 runs over 9 cases, removed-everywhere still flagging); the same PR parts diff --strict exits 0, no flags",
+   "issued": "2026-11-27 phase6-finisher"
+  },
+  {
+   "id": "phase6-premise-lint-fixtures-moved-seat",
+   "check": "scripts/premise-lint-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/premise-lint-fixtures/run-fixtures.py": "f49863c5a1e70f9fb9d86f1bfc29e6873ee408468deafc4eb652bbfc3ccbc410",
+    "scripts/premise-lint.py": "5918040363c15ac3f41efccf2e17efa177a9a4c9952b244427abfdc207f32349",
+    "scripts/premise-lint-fixtures/cases/moved-seat/case.json": "8205f73a52a335efa39b01171662ab0b282aead0f84666ed3e63b729dbe83785",
+    "scripts/premise-lint-fixtures/cases/removed-everywhere/case.json": "0d1e7f5d3b216a3f724abf434dbc6e6ffb9bfcf4e405630739ad126c2168db3d"
+   },
+   "mutation": "the lint under test reverted to the per-file survival model (premise-lint.py as at base 506efb40); the shipped suite (9 cases incl. the two new Phase 6 cases) run against it",
+   "red": "suite FAILS: 3 failure(s) over 18 run(s), all in moved-seat ('labelpts' convicted as expired though it moved seats to app2.js)",
+   "green": "suite PASS with the shipped whole-tree lint: 18 runs over 9 cases, 0 failures; removed-everywhere flags under both lints",
+   "issued": "2026-11-27 phase6-finisher"
+  },
+  {
+   "id": "phase6-drive216-p3-clones-r2",
+   "check": "tests/browser/drive216.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive216.mjs": "010b4be0ab5d343acd8c65ab68f11d9484ded8d3e82892a1d3fda7c8357e035e",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100"
+   },
+   "mutation": "clone zoom floor raised at the owner's zoom-range guard in parts/app2.js (const minZoom = isClone ? 24 : 13), scratch copy assembled and driven; the construction-seat form (clone.minzoom = 24 at build) self-heals through that guard and does not convict",
+   "red": "drive216 P3b FAILS twice on the mutated final tree - 'close clones 0' both runs; run 1 with the open side healthy (open titles 32, Velmar placed), so the clone term alone convicts; title-side P3 passes both runs",
+   "green": "drive216 on the unmutated final tree: P3b and P4b PASS (9/11, only the documented local sampler-starvation legs failing, dropped: [] throughout; a first clean run read close clones 10)",
+   "issued": "2026-11-27 phase6-finisher"
+  },
+  {
+   "id": "phase6-repin-1263-r4",
+   "check": "tests/proof/proof-1263.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1263.mjs": "fbb54047ddc02bfb1e746a08fb3167884f507f0de7cf5b997f9105d6037720b5",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416"
+   },
+   "mutation": "the naming owner's shared handover constant raised (ROUTE_LABEL_ZOOM 15.2 -> 16 in parts/app2.js)",
+   "red": "proof-1263: 12 passed, 1 failed (check 2, the cap at the shared constant) - observed twice on the final tree",
+   "green": "proof-1263: 13 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-finisher (r4: Codex P1 comment tidy - history tags stripped, claims unchanged; mutation re-observed)"
+  },
+  {
+   "id": "phase6-repin-1264-r4",
+   "check": "tests/proof/proof-1264.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1264.mjs": "79ef260565192bc9b2881a63f6446786c8bbff233472dad8dfae35ceeca0f719",
+    "parts/engine.js": "9e6f548a9ecdbeaaabbc95e0da28d6933969660e9ba43763fdc076468405f416",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7"
+   },
+   "mutation": "addStack's unify hook stops passing the catalogue title ids (ids: LAYERS.titles -> ids: [] in parts/engine.js)",
+   "red": "proof-1264: 4 passed, 2 failed (check 1 plumbing, check 4 stale titles) - observed twice on the final tree",
+   "green": "proof-1264: 6 passed, 0 failed on the reverted final tree",
+   "issued": "2026-11-27 phase6-finisher (r4: Codex P1 comment tidy - history tags stripped, claims unchanged; mutation re-observed)"
+  },
+  {
+   "id": "phase6-premise-lint-fixtures-moved-seat-r2",
+   "check": "scripts/premise-lint-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/premise-lint-fixtures/run-fixtures.py": "5e433fd857b36fbeeaa3029c3a93736b16d2fbf41648247affff3a64f03ea9e1",
+    "scripts/premise-lint.py": "5918040363c15ac3f41efccf2e17efa177a9a4c9952b244427abfdc207f32349",
+    "scripts/premise-lint-fixtures/cases/moved-seat/case.json": "8205f73a52a335efa39b01171662ab0b282aead0f84666ed3e63b729dbe83785",
+    "scripts/premise-lint-fixtures/cases/removed-everywhere/case.json": "0d1e7f5d3b216a3f724abf434dbc6e6ffb9bfcf4e405630739ad126c2168db3d"
+   },
+   "mutation": "the lint under test reverted to the per-file survival model (premise-lint.py as at base 506efb40); the shipped suite (9 cases incl. the two new moved-seat cases) run against it",
+   "red": "suite FAILS: 3 failure(s) over 18 run(s), all in moved-seat ('labelpts' convicted as expired though it moved seats to app2.js) - re-observed on the final tree",
+   "green": "suite PASS with the shipped whole-tree lint: 18 runs over 9 cases, 0 failures; removed-everywhere flags under both lints",
+   "issued": "2026-11-27 phase6-finisher (r2: runner docstring history tags stripped; mutation re-observed)"
   }
  ]
 }

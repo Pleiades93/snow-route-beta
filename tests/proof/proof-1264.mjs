@@ -31,12 +31,15 @@
 // addStack derivation, and pins create-pick's seat on the catalogue
 // (check 5). The drift class this guards is the same one, one level up:
 // a stack layer missing from the catalogue leaks exactly as before.
+
+// the owner builds the tiers from the catalogue's ids, passed through the unify hook (check 1 pins it).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const engine = read('parts/engine.js');
+const app2 = read('parts/app2.js');
 const createPick = read('parts/create-pick.js');
 const whatsnew = read('parts/whatsnew.js');
 const changelog = read('CHANGELOG.md');
@@ -51,8 +54,8 @@ const stackBody = stackStart > -1 && stackEnd > stackStart ? engine.slice(stackS
 const stack = new Set();
 for (const m of stackBody.matchAll(/add\(line\('([^']+)'/g)) stack.add(m[1]);
 for (const m of stackBody.matchAll(/add\(\{ id: '([^']+)'/g)) stack.add(m[1]);
-const tierLoop = stackBody.match(/for \(let t = 1; t <= (\d+); t\+\+\) \{\s*const id = 'streetnamespt' \+ t;/);
-if (tierLoop) for (let t = 1; t <= Number(tierLoop[1]); t++) stack.add('streetnamespt' + t);
+// the tiers come from the catalogue's titles, via the hook in addStack (check 1).
+const hookTitles = stackBody.includes('ids: LAYERS.titles');
 
 // ---------- read the hide list: the engine catalogue's stack (Beta 1.282) ----------
 const catStart = engine.indexOf('const LAYERS = {');
@@ -61,13 +64,15 @@ const catEnd = catStart > -1 ? engine.indexOf(catEndMark, catStart) : -1;
 const catSrc = catStart > -1 && catEnd > catStart ? engine.slice(catStart, catEnd + catEndMark.length) : '';
 const LAYERS = catSrc ? vm.runInNewContext(catSrc + '\nLAYERS;') : null;
 const list = new Set(LAYERS ? LAYERS.stack : []);
+if (hookTitles && LAYERS) for (const id of LAYERS.titles) stack.add(id);
 
 const FADES = ['fade-casing', 'fade-surf-y', 'fade-surf-r', 'fade-band-g', 'fade-fill-g', 'selfade-y', 'selfade-r', 'selfade-g', 'selfade-fill'];
 const EXCLUSIONS = []; // route-stack layers that stay visible in create mode, each with its reason - none today (see header)
 
 // ---------- (1) the derivation is real, not an empty extraction ----------
-check('1: the derivation reads the stack (35+ layer ids from addStack, the streetnamespt tier loop among them) and the catalogue (35+ ids in its stack) - a silently empty extraction fails here, not downstream',
-  stack.size >= 35 && list.size >= 35 && stack.has('streetnamespt1') && stack.has('streetnamespt4') && list.has('sel-glow5-b'));
+check('1: the derivation reads the stack (35+ layer ids from addStack, the catalogue title ids among them via the unify hook) and the catalogue (35+ ids in its stack) - a silently empty extraction fails here, not downstream',
+  stack.size >= 35 && list.size >= 35 && stack.has('streetnamespt1') && stack.has('streetnamespt4') && list.has('sel-glow5-b') &&
+  hookTitles && app2.includes('function addRouteTitles(m, { newStack, data, ids, fontStack })') && app2.includes('for (const [index, id] of ids.entries())'));
 
 // ---------- (2) stack ⊆ list: nothing the engine stacks escapes the backdrop ----------
 const unhidden = [...stack].filter(id => !list.has(id) && !EXCLUSIONS.includes(id));
@@ -84,8 +89,8 @@ check('4: every CR_ROUTE_LAYERS member is a layer addStack actually builds - no 
   stale.length === 0);
 
 // ---------- (5) the list is the backdrop's working list ----------
-check('5: crSetBackdrop records and hides by iterating CR_ROUTE_LAYERS, and CR_ROUTE_LAYERS IS the catalogue stack this proof reads (GLP.layers.stack - the list this proof reads is the list the backdrop uses)',
-  createPick.includes('const CR_ROUTE_LAYERS = GLP.layers.stack;') && createPick.includes('for (const id of CR_ROUTE_LAYERS)') && createPick.includes("map.setLayoutProperty(pair[0], 'visibility', 'none')"));
+check('5: the backdrop records and hides by iterating CR_ROUTE_LAYERS, and CR_ROUTE_LAYERS IS the catalogue stack this proof reads (GLP.layers.stack - the list this proof reads is the list the backdrop uses)',
+  app2.includes('const CR_ROUTE_LAYERS = GLP.layers.stack;') && app2.includes('for (const id of CR_ROUTE_LAYERS)') && app2.includes("m.setLayoutProperty(pair[0], 'visibility', 'none')") && createPick.includes('setRouteBackdrop(map, on,'));
 
 // ---------- (6) the release editorial ----------
 check("6: the CHANGELOG orders Beta 1.266 above 1.265",

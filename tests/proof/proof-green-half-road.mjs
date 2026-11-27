@@ -371,12 +371,14 @@ GLP.sync();
 check('R4: the owned R1 symbol-spacing write appears exactly once in app2.js (Beta 1.294 premise update: the value is 250, re-picked by Andrew on 2026-11-24)',
   app2.split("setL(L.id, 'symbol-spacing', 250);").length - 1 === 1);
 check('R4: the tile-fed clones exist only as the handover pair (route names only, handover state only), the 1.259 lane stays deleted, and the 1.261 -pre15 band stays deleted whole (Beta 1.294 premise update)',
-  app2.includes("const cloneId = baseId + '-route';") && app2.includes("const handover = !titlesOff && !(typeof creating !== 'undefined' && creating);") && !app2.includes('roads_labels_minor-priority') && !app2.includes("'route-labels'") && !app2.includes('-pre15'));
-check('R4: the engine builds the title layers and the labelpts source again, capped at maxzoom 15.2 for the handover ' +
-  '(Beta 1.297 premise update: the instant switch supersedes the 1.294 cap at 16; the source is created exactly once in the whole engine, so the count itself is the scoped pin)',
-  (eng.split("addSource('labelpts'").length - 1) === 1 &&
-  eng.slice(eng.indexOf('function addStack()'), eng.indexOf('function rebuildRoute()')).includes("addSource('labelpts'") &&
-  eng.slice(eng.indexOf('function addStack()'), eng.indexOf('function rebuildRoute()')).includes("'streetnamespt' + t") && eng.includes('maxzoom: 15.2, filter:'));
+  app2.includes("const cloneId = baseId + '-route';") && app2.includes("const handover = titlesOn && !(typeof creating !== 'undefined' && creating);") &&
+  !app2.includes('roads_labels_minor-priority') && !app2.includes("'route-labels'") && !app2.includes('-pre15'));
+check('R4: the naming owner builds the title layers and the labelpts source again, capped at the shared 15.2 for the handover ' +
+  '(Beta 1.297 premise update: the instant switch supersedes the 1.294 cap at 16; Phase 6 premise update: the owner builds them from the stack context addStack passes through the unify hook; ' +
+  'the source is created exactly once in the whole app, so the count itself is the scoped pin)',
+  (app2.split("addSource('labelpts'").length - 1) === 1 &&
+  eng.slice(eng.indexOf('function addStack()'), eng.indexOf('function rebuildRoute()')).includes('stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack }') &&
+  app2.includes('minzoom: PT_MIN[t - 1], maxzoom: ROUTE_LABEL_ZOOM, filter:') && app2.includes('const ROUTE_LABEL_ZOOM = 15.2;'));
 check('R4: app2 carries the route-name exclusion again, on the two originals at every zoom (Beta 1.263 premise update; Beta 1.265 premise update: the literal is built once as exclF and applied under the create-mode condition - outside create mode the computed filter is unchanged)',
   // issue #179: the exclusion pin is sharpened to the definition - the bare
   // name also matches its read inside the label pass.
