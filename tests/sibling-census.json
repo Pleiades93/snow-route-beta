@@ -30772,6 +30772,12 @@
     "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
    },
    "issued": "2026-11-27"
+  },
+  {
+   "id": "graft-a-machinery",
+   "kind": "machinery-exempt",
+   "reason": "Machinery and docs only: gate scanners, the limits and census judges, CI wiring, an ESLint config and the prohibition inventory; no parts/ surface changes, so there are no anchors to enumerate.",
+   "issued": "2026-11-27 graft-a-machinery"
   }
  ]
 }

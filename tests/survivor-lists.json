@@ -713,6 +713,14 @@
     "parts/app3.js": "1db3d475ab360dd00f17f7ab3724e764ebc54d0d83501748ef0dad292abe5948"
    },
    "issued": "2026-11-27"
+  },
+  {
+   "id": "graft-a-machinery",
+   "kind": "no-cut",
+   "reason": "Machinery and docs only: no parts/ code is cut, moved or changed. The round adds gate checks (scan ownership rule, prohibition warning, surface-map census check, ESLint wiring) and the prohibition inventory.",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-27 graft-a-machinery"
   }
  ]
 }
