@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-0iEFBcwp+Lduu39rj1Vky3R3v+QakN4jgHbI5w+knkTn9MgxNi5ncnC50mfQ7JkX' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-oYVEnltnO25Oaz64uuncorxVFKjxCA+k7hN+K1A2jN68G15uoYqvN/acsJqIVrOD' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -4501,10 +4501,10 @@ function renderStreets() { // tap a street's name area to open its note editor (
 function syncNoteSheetRaise() { // at full while an editor is open: only then can the region lift the field above the keyboard
   const sh = $('sheet'); if (!sh) return;
   if (NOTEEDIT.openFor && sh.classList.contains('open')) {
-    if (!sh.classList.contains('full')) { sh.classList.add('full'); sh.style.maxHeight = 'none'; sh.style.height = sheetFullH(vvHeight()) + 'px'; NOTEEDIT.raiseActive = true; }
+    if (!sh.classList.contains('full')) { SHEETS.setFull(sh, true); NOTEEDIT.raiseActive = true; }
   } else if (NOTEEDIT.raiseActive) {
     NOTEEDIT.raiseActive = false;
-    if (sh.classList.contains('open')) { sh.classList.remove('full'); sh.style.height = ''; sh.style.maxHeight = ''; }
+    if (sh.classList.contains('open')) SHEETS.setFull(sh, false);
   }
 }
 function collapseNoteEditor() { // closing resets the list (no editor survives to the next open); the re-render finalizes pending saves first
@@ -4525,27 +4525,6 @@ function syncFilterTabs(animate) { document.querySelectorAll('#filters button').
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => { listFilter = b.dataset.f; syncFilterTabs(true); renderStreets(); }));
 window.addEventListener('resize', () => seatFilterPill(false));
 seatFilterPill(false);
-function closeSheetEl(s) { // the close animates: freeze the height for the whole slide-down, clear it only when the motion ends
-  cancelSheetSpring(s);
-  if (s.id === 'sheet') collapseNoteEditor(); // any animated close of the Streets sheet resets an open note editor first
-  if (!s.classList.contains('open')) { s.classList.remove('full'); s.classList.remove('dragging'); return; }
-  const h = s.offsetHeight;
-  s.style.height = h + 'px'; s.style.maxHeight = 'none'; s.style.transform = '';
-  s.classList.remove('open'); s.classList.remove('full'); s.classList.remove('snapping'); s.classList.remove('dragging'); // the base (closing) transition and curve own the motion from here
-  setTimeout(() => { if (!s.classList.contains('open')) { s.style.height = ''; s.style.maxHeight = ''; } }, 480);
-}
-function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetEl); } // every sheet by class, present and future: no hand-kept list to fall behind a new menu
-// the drag/flick zone is the empty top strip (handle + title row): content below is pure scrolling
-const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // the three stops: closed, half (SHEET_DEF_VH), full (sheetFullH's title cap; SHEET_FULL_VH is the fallback)
-const SHEET_FULL_MARGIN_PX = 8; // the full stop stands this far above the title's edge: covers the title, never the screen top
-function sheetFullH(vh) { // the full stop's height, measured per call (drags are rare; a stale cache is how geometry rules drift)
-  const t = document.querySelector('#hud .title');
-  if (!t) return vh * SHEET_FULL_VH;
-  const r = t.getBoundingClientRect();
-  if (!r.height) return vh * SHEET_FULL_VH;
-  const vvTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
-  return vh - Math.max(0, r.top - vvTop - SHEET_FULL_MARGIN_PX);
-}
 // a release runs a damped spring (omega 30/s) starting at velocity: a from-rest snap read as 'just disappears'
 const SHEET_OMEGA = 30;
 function cancelSheetSpring(sheet) { if (sheet._spring) { cancelAnimationFrame(sheet._spring); sheet._spring = null; } }
@@ -4567,97 +4546,122 @@ function springSheet(sheet, q0, qT, v0, apply, finish) {
   };
   sheet._spring = requestAnimationFrame(step);
 }
-function makeSheetDraggable(sheet) {
-  let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null, panelMoved = false, samples = [];
-  sheet.addEventListener('pointerdown', e => {
-    if (dragging) return;
-    if (e.target.closest('button')) return; // buttons keep their taps
-    if (!e.target.closest('.grab, .sheetHead')) return; // drags start only in the empty top strip
-    dragging = true; moved = false; panelMoved = false; pid = e.pointerId;
-    startY = lastY = e.clientY; startH = sheet.offsetHeight;
-    samples = [{ t: performance.now(), y: e.clientY }];
-  });
-  sheet.addEventListener('pointermove', e => {
-    if (!dragging || e.pointerId !== pid) return;
-    const dy = e.clientY - lastY; lastY = e.clientY;
-    const total = startY - e.clientY; // +ve = finger travelled up
-    if (!moved && Math.abs(total) < 3) return; // near-zero dead zone: the old 9 px threshold was the first hitch of the drag hesitation
-    if (!moved) {
-      moved = true;
-      if (sheet._spring) { cancelSheetSpring(sheet);
-      sheet.style.transform = '';
-      startY = e.clientY;
-      lastY = e.clientY;
-      startH = sheet.offsetHeight;
+const SHEETS = (() => { // the sheet lifecycle owner: opening, detents, gesture settlement, interruption and terminal cleanup for both sheets
+  function clearHeight(sheet) { sheet.style.height = ''; sheet.style.maxHeight = ''; }
+  function open(sheet, prepare, keepHeight) { if (!keepHeight) clearHeight(sheet); if (prepare) prepare(); sheet.classList.add('open'); }
+  function setFull(sheet, full) { if (full) { sheet.classList.add('full'); sheet.style.maxHeight = 'none'; sheet.style.height = sheetFullH(vvHeight()) + 'px'; } else { sheet.classList.remove('full'); clearHeight(sheet); } }
+  function close(sheet) { // the close animates: freeze the height for the whole slide-down, clear it only when the motion ends
+    cancelSheetSpring(sheet);
+    if (sheet.id === 'sheet') collapseNoteEditor(); // the editor resets BEFORE the height is measured
+    if (!sheet.classList.contains('open')) { sheet.classList.remove('full'); sheet.classList.remove('dragging'); return; }
+    sheet.style.height = sheet.offsetHeight + 'px'; sheet.style.maxHeight = 'none'; sheet.style.transform = '';
+    sheet.classList.remove('open'); sheet.classList.remove('full'); sheet.classList.remove('snapping'); sheet.classList.remove('dragging'); // the base (closing) transition and curve own the motion from here
+    setTimeout(() => { if (!sheet.classList.contains('open')) clearHeight(sheet); }, 480);
+  }
+  function closeGesture(sheet, height, velocity) { // spring the sheet off the bottom edge at the finger's speed, then land closed
+    sheet.classList.remove('full');
+    sheet.style.height = height + 'px'; sheet.style.maxHeight = 'none';
+    springSheet(sheet, 0, height * 1.05 + 8, -velocity * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => {
+      sheet.classList.remove('open');
+      clearHeight(sheet); sheet.style.transform = '';
+      if (sheet.id === 'sheet') collapseNoteEditor(); // a drag/flick close lands here, not in close: the note-editor reset rides both close funnels
+      // the close lands under .dragging: closed state settles first; .dragging lifts two frames later, unanimated
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
+    });
+  }
+  function closeAll() { document.querySelectorAll('.sheet').forEach(sheet => close(sheet)); } // every sheet by class, present and future: no hand-kept list to fall behind a new menu
+  // the drag/flick zone is the empty top strip (handle + title row): content below is pure scrolling
+  const SHEET_DEF_VH = 0.50, SHEET_FULL_VH = 0.94, SHEET_MIN_PX = 150; // the three stops: closed, half (SHEET_DEF_VH), full (sheetFullH's title cap; SHEET_FULL_VH is the fallback)
+  const SHEET_FULL_MARGIN_PX = 8; // the full stop stands this far above the title's edge: covers the title, never the screen top
+  function sheetFullH(vh) { // the full stop's height, measured per call (drags are rare; a stale cache is how geometry rules drift)
+    const t = document.querySelector('#hud .title');
+    if (!t) return vh * SHEET_FULL_VH;
+    const r = t.getBoundingClientRect();
+    if (!r.height) return vh * SHEET_FULL_VH;
+    const vvTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+    return vh - Math.max(0, r.top - vvTop - SHEET_FULL_MARGIN_PX);
+  }
+  function makeSheetDraggable(sheet) {
+    let startY = 0, lastY = 0, startH = 0, dragging = false, moved = false, pid = null, panelMoved = false, samples = [];
+    sheet.addEventListener('pointerdown', e => {
+      if (dragging) return;
+      if (e.target.closest('button')) return; // buttons keep their taps
+      if (!e.target.closest('.grab, .sheetHead')) return; // drags start only in the empty top strip
+      dragging = true; moved = false; panelMoved = false; pid = e.pointerId;
+      startY = lastY = e.clientY; startH = sheet.offsetHeight;
       samples = [{ t: performance.now(), y: e.clientY }];
-      } // a catch mid-settle restarts the drag from the sheet's live height
-      sheet.classList.add('dragging'); sheet.classList.remove('snapping');
-      try { sheet.setPointerCapture(pid); } catch (err) {}
-    }
-    const vh = vvHeight();
-    // the panel follows the finger (the content area below the top strip scrolls natively - drags can't start there)
-    const h = Math.max(SHEET_MIN_PX, Math.min(sheetFullH(vh), startH + total));
-    sheet.style.maxHeight = 'none';
-    sheet.style.height = h + 'px';
-    panelMoved = true;
-    samples.push({ t: performance.now(), y: e.clientY });
-    if (samples.length > 8) samples.shift();
-    e.preventDefault();
-  });
-  const end = e => {
-    if (!dragging || (e && e.pointerId !== pid)) return;
-    dragging = false;
-    if (!moved) return;
-    // swallow the click this drag would otherwise deliver to a row/button
-    const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); };
-    document.addEventListener('click', swallow, true);
-    setTimeout(() => document.removeEventListener('click', swallow, true), 350);
-    const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
-    // the default stop targets the natural height, not defH: short sheets sprang to half, then snapped back
-    const naturalH = (() => { const ph = sheet.style.height,
-      pm = sheet.style.maxHeight; sheet.style.height = ''; sheet.style.maxHeight = ''; const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
-    // velocity from the last ~130 ms of movement (px/ms, up positive): the spring starts at it
-    let v = 0;
-    if (panelMoved && samples.length > 1) {
-      const now = performance.now();
-      const s0 = samples.find(s => now - s.t <= 130) || samples[0];
-      const dt = now - s0.t;
-      if (dt >= 30) v = (s0.y - lastY) / dt;
-    }
-    // a swipe throws the panel to its next stop on release - only when the panel itself moved
-    const flick = panelMoved && Math.abs(v) > 0.30 ? (v > 0 ? 1 : -1) : 0;
-    const settleStop = targetH => { // spring the height to a stop; end state = the old snap's end state
-      const isFull = targetH >= sheetFullH(vh) - 1;
-      if (isFull) sheet.classList.add('full'); else sheet.classList.remove('full');
+    });
+    sheet.addEventListener('pointermove', e => {
+      if (!dragging || e.pointerId !== pid) return;
+      const dy = e.clientY - lastY; lastY = e.clientY;
+      const total = startY - e.clientY; // +ve = finger travelled up
+      if (!moved && Math.abs(total) < 3) return; // near-zero dead zone: the old 9 px threshold was the first hitch of the drag hesitation
+      if (!moved) {
+        moved = true;
+        if (sheet._spring) { cancelSheetSpring(sheet);
+        sheet.style.transform = '';
+        startY = e.clientY;
+        lastY = e.clientY;
+        startH = sheet.offsetHeight;
+        samples = [{ t: performance.now(), y: e.clientY }];
+        } // a catch mid-settle restarts the drag from the sheet's live height
+        sheet.classList.add('dragging'); sheet.classList.remove('snapping');
+        try { sheet.setPointerCapture(pid); } catch (err) {}
+      }
+      const vh = vvHeight();
+      // the panel follows the finger (the content area below the top strip scrolls natively - drags can't start there)
+      const h = Math.max(SHEET_MIN_PX, Math.min(sheetFullH(vh), startH + total));
       sheet.style.maxHeight = 'none';
-      springSheet(sheet, h, targetH, v * 1000, q => { sheet.style.height = q + 'px'; }, () => {
-        sheet.classList.remove('dragging');
-        if (isFull) sheet.style.height = sheetFullH(vh) + 'px';
-        else { sheet.style.height = ''; sheet.style.maxHeight = ''; }
-      });
+      sheet.style.height = h + 'px';
+      panelMoved = true;
+      samples.push({ t: performance.now(), y: e.clientY });
+      if (samples.length > 8) samples.shift();
+      e.preventDefault();
+    });
+    const end = e => {
+      if (!dragging || (e && e.pointerId !== pid)) return;
+      dragging = false;
+      if (!moved) return;
+      // swallow the click this drag would otherwise deliver to a row/button
+      const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); document.removeEventListener('click', swallow, true); };
+      document.addEventListener('click', swallow, true);
+      setTimeout(() => document.removeEventListener('click', swallow, true), 350);
+      const vh = vvHeight(), h = sheet.offsetHeight, defH = vh * SHEET_DEF_VH;
+      // the default stop targets the natural height, not defH: short sheets sprang to half, then snapped back
+      const naturalH = (() => { const ph = sheet.style.height,
+        pm = sheet.style.maxHeight; clearHeight(sheet); const nh = sheet.offsetHeight; sheet.style.height = ph; sheet.style.maxHeight = pm; return nh; })();
+      // velocity from the last ~130 ms of movement (px/ms, up positive): the spring starts at it
+      let v = 0;
+      if (panelMoved && samples.length > 1) {
+        const now = performance.now();
+        const s0 = samples.find(s => now - s.t <= 130) || samples[0];
+        const dt = now - s0.t;
+        if (dt >= 30) v = (s0.y - lastY) / dt;
+      }
+      // a swipe throws the panel to its next stop on release - only when the panel itself moved
+      const flick = panelMoved && Math.abs(v) > 0.30 ? (v > 0 ? 1 : -1) : 0;
+      const settleStop = targetH => { // spring the height to a stop; end state = the old snap's end state
+        const isFull = targetH >= sheetFullH(vh) - 1;
+        if (isFull) sheet.classList.add('full'); else sheet.classList.remove('full');
+        sheet.style.maxHeight = 'none';
+        springSheet(sheet, h, targetH, v * 1000, q => { sheet.style.height = q + 'px'; }, () => {
+          sheet.classList.remove('dragging');
+          if (isFull) sheet.style.height = sheetFullH(vh) + 'px';
+          else clearHeight(sheet);
+        });
+      };
+      if (flick > 0) { settleStop(sheetFullH(vh)); return; }
+      if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else closeGesture(sheet, h, v); return; }
+      if (h < defH * 0.55) { closeGesture(sheet, h, v); return; }
+      if (h > (defH + sheetFullH(vh)) / 2) { settleStop(sheetFullH(vh)); return; }
+      settleStop(naturalH);
     };
-    const settleClose = () => { // spring the sheet off the bottom edge at the finger's speed, then land closed
-      sheet.classList.remove('full');
-      sheet.style.height = h + 'px'; sheet.style.maxHeight = 'none';
-      springSheet(sheet, 0, h * 1.05 + 8, -v * 1000, q => { sheet.style.transform = 'translateY(' + q + 'px)'; }, () => {
-        sheet.classList.remove('open');
-        sheet.style.height = ''; sheet.style.maxHeight = ''; sheet.style.transform = '';
-        if (sheet.id === 'sheet') collapseNoteEditor(); // a drag/flick close lands here, not in closeSheetEl: the note-editor reset rides both close funnels
-        // the close lands under .dragging: closed state settles first; .dragging lifts two frames later, unanimated
-        requestAnimationFrame(() => requestAnimationFrame(() => { if (!sheet.classList.contains('open')) sheet.classList.remove('dragging'); }));
-      });
-    };
-    if (flick > 0) { settleStop(sheetFullH(vh)); return; }
-    if (flick < 0) { if (sheet.classList.contains('full')) settleStop(naturalH); else settleClose(); return; }
-    if (h < defH * 0.55) { settleClose(); return; }
-    if (h > (defH + sheetFullH(vh)) / 2) { settleStop(sheetFullH(vh)); return; }
-    settleStop(naturalH);
-  };
-  sheet.addEventListener('pointerup', end);
-  sheet.addEventListener('pointercancel', end);
-}
-makeSheetDraggable($('sheet'));
-makeSheetDraggable($('pacePanel'));
+    sheet.addEventListener('pointerup', end);
+    sheet.addEventListener('pointercancel', end);
+  }
+  [$('sheet'), $('pacePanel')].forEach(makeSheetDraggable);
+  return { open, close, closeAll, setFull }; })();
+function closeSheets() { SHEETS.closeAll(); }
 // one route surface (boot splash and Routes tab share it); the loaded-route marker is a tab-mode-only signal
 function routeRowShell(tag, name, sub, opts) { // the one builder: every row builds here (one place to drift); text via textContent, never markup
   opts = opts || {};
@@ -4746,7 +4750,7 @@ wireRouteRows($('rmRoutes'), id => {
   else if (window.__bootPickRoute) window.__bootPickRoute(id);
 });
 $('streetsBtn').addEventListener('click', ev => { if (!tapGuard('streetsBtn', ev)) return; const open = $('sheet').classList.contains('open'); closeSheets();
-  if (!open) { $('sheet').style.height = ''; $('sheet').style.maxHeight = ''; renderStreets(); $('sheet').classList.add('open'); seatFilterPill(false); } });
+  if (!open) { SHEETS.open($('sheet'), renderStreets); seatFilterPill(false); } });
 $('sheetClose').addEventListener('click', closeSheets);
 $('paceClose').addEventListener('click', closeSheets);
 $('paceBtn').addEventListener('click', ev => { if (!tapGuard('paceBtn', ev)) return; if ($('pacePanel').classList.contains('open')) closePace(); else openPace(); });
@@ -4955,8 +4959,8 @@ function showPaceMain() { // the Pace sheet main view - header + pace content vi
   cleanDelArmedAt = NaN;
 }
 // showPaceMain first - an open left on the clean detail returns to the Pace main view
-function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; showPaceMain(); renderPace(); $('pacePanel').classList.add('open'); }
-function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet
+function openPace() { deselect(); closeSheets(); SHEETS.open($('pacePanel'), () => { showPaceMain(); renderPace(); }); }
+function closePace() { SHEETS.close($('pacePanel')); } // same animated close as every sheet
 
 // ===== CLEAN DETAIL ===== one archived clean in the list sheet: totals, streets in mark order, notes, two-tap delete
 const CLEAN_DEL_MIN_ARM_MS = 700;
@@ -5070,7 +5074,7 @@ function openClean(i) {
     updateCount();
   };
   cv.appendChild(del);
-  $('pacePanel').classList.add('open');
+  SHEETS.open($('pacePanel'), null, true);
   cv.scrollTop = 0;
 }
 function backToCleans() {

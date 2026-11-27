@@ -202,8 +202,8 @@ function showPaceMain() { // the Pace sheet main view - header + pace content vi
   cleanDelArmedAt = NaN;
 }
 // showPaceMain first - an open left on the clean detail returns to the Pace main view
-function openPace() { deselect(); closeSheets(); $('pacePanel').style.height = ''; $('pacePanel').style.maxHeight = ''; showPaceMain(); renderPace(); $('pacePanel').classList.add('open'); }
-function closePace() { closeSheetEl($('pacePanel')); } // same animated close as every sheet
+function openPace() { deselect(); closeSheets(); SHEETS.open($('pacePanel'), () => { showPaceMain(); renderPace(); }); }
+function closePace() { SHEETS.close($('pacePanel')); } // same animated close as every sheet
 
 // ===== CLEAN DETAIL ===== one archived clean in the list sheet: totals, streets in mark order, notes, two-tap delete
 const CLEAN_DEL_MIN_ARM_MS = 700;
@@ -317,7 +317,7 @@ function openClean(i) {
     updateCount();
   };
   cv.appendChild(del);
-  $('pacePanel').classList.add('open');
+  SHEETS.open($('pacePanel'), null, true);
   cv.scrollTop = 0;
 }
 function backToCleans() {

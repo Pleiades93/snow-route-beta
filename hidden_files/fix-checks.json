@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "d330e6eb6adac5be1b62956f00ead172e4649df09eed42ad8e1cf04f40a42861",
+  "canonical_registry_sha256": "4ed340f2a1d65b1d11d8e03fc58af8d0843e70f11759b5f38bb6f93957e7f54b",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1607,
-   "included": 1577,
+   "canonical": 1614,
+   "included": 1584,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -659,7 +659,7 @@
    "file": "parts/app2.js",
    "fix": "closeSheets closes EVERY sheet by class (Beta 1.77) \u2014 no hand-kept list to fall behind a new menu; the tap-away path relies on it covering any sheet.",
    "id": "beta-closesheets-by-class",
-   "pattern": "function closeSheets() { document.querySelectorAll('.sheet').forEach(closeSheetEl); }",
+   "pattern": "document.querySelectorAll('.sheet').forEach(sheet => close(sheet));",
    "type": "grep_present"
   },
   {
@@ -799,9 +799,9 @@
   {
    "added": "2026-11-01",
    "file": "parts/app2.js",
-   "fix": "A drag/flick close LANDS clean (settleClose springs the sheet off the bottom edge at the finger's own speed, then lands closed) \u2014 and the note-editor reset rides this funnel too, not just the X.",
+   "fix": "A drag/flick close LANDS clean (the sheet owner's close springs the sheet off the bottom edge at the finger's own speed, then lands closed) \u2014 and the note-editor reset rides this funnel too, not just the X.",
    "id": "beta-sheet-close-clean-landing",
-   "pattern": "const settleClose = () => { // spring the sheet off the bottom edge at the finger's speed, then land closed",
+   "pattern": "springSheet(sheet, 0, height * 1.05 + 8, -velocity * 1000",
    "type": "grep_present"
   },
   {
@@ -14048,6 +14048,69 @@
    "fix_id": "phase2-prove-it",
    "id": "phase2-survivors-absent-sentinel",
    "pattern": "ABSENT = \"absent\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app2.js",
+   "fix": "Phase 3: ONE sheet lifecycle owner (the SHEETS scope in app2.js) holds open / close / closeAll / setFull for every sheet \u2014 the close paths, the full-height cap and the drag wiring live behind it, not scattered across call sites.",
+   "fix_id": "phase3-sheet-owner",
+   "id": "phase3-sheet-owner-exists",
+   "pattern": "const SHEETS = (() => {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app2.js",
+   "fix": "Phase 3: the frozen drive-surface global closeSheets() delegates to the sheet owner (SHEETS.closeAll) \u2014 drives and the tap-away path keep working through the owner, never around it.",
+   "fix_id": "phase3-sheet-owner",
+   "id": "phase3-closesheets-delegates",
+   "pattern": "function closeSheets() { SHEETS.closeAll(); }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app3.js",
+   "fix": "Phase 3: the Pace sheet opens and closes through the sheet owner in app3.js (openPace / closePace route through SHEETS) \u2014 no second close path for the pacePanel.",
+   "fix_id": "phase3-sheet-owner",
+   "id": "phase3-app3-routes-through-owner",
+   "pattern": "SHEETS.open($('pacePanel'), () => { showPaceMain(); renderPace(); });",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "parts/app3.js",
+   "fix": "Phase 3: opening a saved clean's detail goes through the sheet owner with the keep-height flag, so the detail keeps the height the Pace sheet already holds (the shipped behaviour) instead of snapping to a stop.",
+   "fix_id": "phase3-sheet-owner",
+   "id": "phase3-openclean-keeps-height",
+   "pattern": "SHEETS.open($('pacePanel'), null, true);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive180.mjs",
+   "fix": "NOTILE2 fresh look: the rendered tile proof samples five transparent points of the artwork box, not one - a snowflake crossing one window can no longer stand in for tile paint.",
+   "fix_id": "notile2-median-sampler",
+   "id": "notile2-pooled-points",
+   "pattern": "const PTS = [[0.12, 0.12], [0.28, 0.08], [0.5, 0.05], [0.85, 0.1], [0.08, 0.28]];",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive180.mjs",
+   "fix": "NOTILE2 fresh look: the capture widens to up to three hold screenshots, so the judged sample spans the hold instead of one instant of falling snow.",
+   "fix_id": "notile2-median-sampler",
+   "id": "notile2-multi-shot",
+   "pattern": "const takeNotileShot = async () => {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive180.mjs",
+   "fix": "NOTILE2 fresh look: the verdict is the pooled median against the unchanged bound 14 - persistent tile paint (every point, every shot) still convicts; transient flakes are outvoted.",
+   "fix_id": "notile2-median-sampler",
+   "id": "notile2-median-verdict",
+   "pattern": "notilePool.length >= 5 && notileDiff >= 0 && notileDiff <= 14",
    "type": "grep_present"
   }
  ]

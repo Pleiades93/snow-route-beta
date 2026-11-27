@@ -17459,6 +17459,229 @@
    "red": "Before the JUDGE_PATHS edit, scripts/check-mirrors.py failed the tree naming the unnamed judge (check-survivors.py missing from JUDGE_PATHS); the full-PR receipts gate on PR #227 caught this receipt's staleness exactly as designed.",
    "green": "With check-survivors.py named in JUDGE_PATHS the mirrors gate passes all families on the final tree, and the receipts gate over the full PR diff covers every changed check/judge path.",
    "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase3-proof-1231-cancel",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1231.mjs": "d08c687114fef12658b99f4eda8e7e4be06467b35798d9dd9747d05fde2c0a85",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "removed the cancelSheetSpring(sheet) call from SHEETS.close in parts/app2.js",
+   "red": "proof-1231 22/23: only 3d fails (a close cancels a running spring first)",
+   "green": "proof-1231 23/23 on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-proof-1231-velocity",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1231.mjs": "d08c687114fef12658b99f4eda8e7e4be06467b35798d9dd9747d05fde2c0a85",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "changed the gesture-close spring start velocity in SHEETS.close from -velocity * 1000 to 0 in parts/app2.js",
+   "red": "proof-1231 22/23: only 3c fails (both settle paths start the spring at the release velocity)",
+   "green": "proof-1231 23/23 on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-drive192-editor-reset",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "c587a5273ab622181e4daeb91a4355548d51b30e109d7f31d3b5f38ccfdf53d4",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "neutered the sheet owner's resetNoteEditor to a no-op in parts/app2.js (rebuilt the assembly)",
+   "red": "drive192 46/54: KB4 and KB5 fail (the note editor survives both close funnels), all other cases green",
+   "green": "drive192 KB4 and KB5 pass on the restored tree (full local run 47/54, remaining failures D-detents cases reproduced identically on the pristine base)",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-drive123-instant-clear",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "d695dc1f063754739d8d30264d1ac6f9a11d10245c7eed1491e9dce704b41c67",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "replaced the height freeze in the sheet owner's button close with an instant clearHeight (the Beta 1.30 snap defect) in parts/app2.js, assembly rebuilt",
+   "red": "drive123 A5 freeze case fails: height right after close reads empty instead of the frozen 500px (the run's other failures were the A8 offline-download family, reproduced identically on the pristine base)",
+   "green": "drive123 A5 freeze and clear cases pass on the restored tree; full local run's only failures are the A8 family, identical on the pristine base",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-drive145-closeall-narrow",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive145.mjs": "70b25f2e3f146df5c27fcc65daf927ace6a01bed37ce400dc73666b572b18820",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "narrowed the sheet owner's closeAll to close only the #sheet element instead of every .sheet by class in parts/app2.js, assembly rebuilt",
+   "red": "drive145 58/63: N17 fails (the tap-away leaves the Pace sheet open) and N25-N28 fail as a cascade of the sheet left open; every other case green",
+   "green": "drive145 63/63 on the restored tree (local run before the mutation)",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-proof-1231-cancel-r2",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1231.mjs": "ccf288593b72c8b06e89463a4ae73dced48c9044802a89fd879d6f4b3b1d8616",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "removed the cancelSheetSpring(sheet) call from SHEETS.close in parts/app2.js (re-issued after the 3d pin was split across lines for the line limit; observation re-run on the final file)",
+   "red": "proof-1231 22/23: only 3d fails (a close cancels a running spring first)",
+   "green": "proof-1231 23/23 on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-proof-1231-velocity-r2",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1231.mjs": "ccf288593b72c8b06e89463a4ae73dced48c9044802a89fd879d6f4b3b1d8616",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "changed the gesture-close spring start velocity in SHEETS.close from -velocity * 1000 to 0 in parts/app2.js (re-issued with the line-limit fix; observation re-run on the final file)",
+   "red": "proof-1231 22/23: only 3c fails (both settle paths start the spring at the release velocity)",
+   "green": "proof-1231 23/23 on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-drive123-instant-clear-r2",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "1c001e068f682e415b79af41e763a3d1cce77b544bfafe6d02dfedd660cfd0ee",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "replaced the height freeze in the sheet owner's button close with an instant clearHeight (the Beta 1.30 snap defect) in parts/app2.js, assembly rebuilt (re-issued after drive123's staging line was split for the line limit; observation re-run on the final file)",
+   "red": "drive123 17/18: the only failure is A5's freeze case - height right after close reads empty instead of the frozen 500px",
+   "green": "drive123 A5 freeze and clear cases pass on the restored tree (the A8 offline-download family is rig-sensitive: it failed identically on the pristine base in one run and passed in another)",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-drive123-instant-clear-r3",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "a58da081c030506130e44ac56a497409d07bc87d55a428167524e13e29188a88",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "replaced the height freeze in the sheet owner's button close with an instant clearHeight (the Beta 1.30 snap defect) in parts/app2.js, assembly rebuilt (final re-issue after the A5 comment was compressed for the comment limit; observation re-run on the final file)",
+   "red": "drive123 17/18: the only failure is A5's freeze case - height right after close reads empty instead of the frozen 500px",
+   "green": "drive123 A5 freeze and clear cases pass on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-drive123-instant-clear-r4",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "64f729e7ee2a426ca8b68a571916b19356f79aed866d039e982cd21e4ed21404",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663"
+   },
+   "mutation": "replaced the height freeze in the sheet owner's button close with an instant clearHeight (the Beta 1.30 snap defect) in parts/app2.js, assembly rebuilt (final re-issue after the A5 comment block was compressed for the comment limit; observation re-run on the final file, third identical result)",
+   "red": "drive123 17/18: the only failure is A5's freeze case - height right after close reads empty instead of the frozen 500px",
+   "green": "drive123 A5 freeze and clear cases pass on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-proof-1231-cancel-r3",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1231.mjs": "ac6f62faee1a7cfbf5aef0bcc42291d8c4ac0cd064cde40e6c41d397019465e5",
+    "parts/app2.js": "6afea27d190af763eed5c7936624672dfaac8d2e62288a35fcf8e1ff48912339",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0"
+   },
+   "mutation": "removed the cancelSheetSpring(sheet) call from the sheet owner's button close in parts/app2.js (re-issued after the Codex line-neutrality restructure; observation re-run on the final file)",
+   "red": "proof-1231 22/23: only 3d fails (a close cancels a running spring first)",
+   "green": "proof-1231 23/23 on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "phase3-proof-1231-velocity-r3",
+   "check": "tests/proof/proof-1231.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1231.mjs": "ac6f62faee1a7cfbf5aef0bcc42291d8c4ac0cd064cde40e6c41d397019465e5",
+    "parts/app2.js": "6afea27d190af763eed5c7936624672dfaac8d2e62288a35fcf8e1ff48912339",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0"
+   },
+   "mutation": "changed the gesture-close spring start velocity in the owner's closeGesture from -velocity * 1000 to 0 in parts/app2.js (re-issued after the restructure; observation re-run on the final file)",
+   "red": "proof-1231 22/23: only 3c fails (both settle paths start the spring at the release velocity)",
+   "green": "proof-1231 23/23 on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "phase3-drive192-editor-reset-r2",
+   "check": "tests/browser/drive192.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive192.mjs": "c587a5273ab622181e4daeb91a4355548d51b30e109d7f31d3b5f38ccfdf53d4",
+    "parts/app2.js": "6afea27d190af763eed5c7936624672dfaac8d2e62288a35fcf8e1ff48912339",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0"
+   },
+   "mutation": "removed the note-editor reset lines from BOTH of the sheet owner's close funnels (the button close and the gesture close's landing) in parts/app2.js, assembly rebuilt (re-issued after the restructure inlined the reset at both funnels)",
+   "red": "drive192 51/54: KB4 and KB5 fail (the editor survives both close funnels); the third failure is one D-detents case of the documented local-rig class",
+   "green": "drive192 KB4 and KB5 pass on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "phase3-drive123-instant-clear-r5",
+   "check": "tests/browser/drive123.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive123.mjs": "64f729e7ee2a426ca8b68a571916b19356f79aed866d039e982cd21e4ed21404",
+    "parts/app2.js": "6afea27d190af763eed5c7936624672dfaac8d2e62288a35fcf8e1ff48912339",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0"
+   },
+   "mutation": "replaced the height freeze in the sheet owner's button close with an instant clearHeight (the Beta 1.30 snap defect) in parts/app2.js, assembly rebuilt (re-issued after the restructure; fourth identical observation)",
+   "red": "drive123 17/18: the only failure is A5's freeze case - height right after close reads empty instead of the frozen 500px",
+   "green": "drive123 A5 freeze and clear cases pass on the restored tree",
+   "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "phase3-drive145-closeall-narrow-r2",
+   "check": "tests/browser/drive145.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive145.mjs": "70b25f2e3f146df5c27fcc65daf927ace6a01bed37ce400dc73666b572b18820",
+    "parts/app2.js": "6afea27d190af763eed5c7936624672dfaac8d2e62288a35fcf8e1ff48912339",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0"
+   },
+   "mutation": "narrowed the sheet owner's closeAll to close only the #sheet element instead of every .sheet by class in parts/app2.js, assembly rebuilt (re-issued after the restructure; observation re-run on the final file)",
+   "red": "drive145 62/63: the only failure is N17 (the tap-away leaves the Pace sheet open)",
+   "green": "drive145 63/63 on the restored tree (clean re-run; one earlier clean run scattered N34, the documented rig class, and the re-run is fully green)",
+   "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "notile2-median-tile",
+   "check": "tests/browser/drive180.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive180.mjs": "3ef879c36a0c5fc1a3501de70a64691470cf5ca73a65cd56466284e862d2e211",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308"
+   },
+   "mutation": "tile restored in a scratch copy: parts/head.html #splashIcon gains background:#1b2fb6 (the tile-era opaque navy square), assembled + built there",
+   "red": "fixed drive180 on the mutated tree x3: NOTILE2 fails every run - median 38 over 10 readings, the 12% point reading exactly rgb(27,47,182); NOTILE1/ICONSIZE pass",
+   "green": "fixed drive180 on the clean tree x10: NOTILE2 passes every run - pooled medians 5,5,5,5,10,6,5,5,9,5 vs bound 14 (pools of 10-15 readings)",
+   "issued": "2026-11-26 notile2-fresh-look"
   }
  ]
 }

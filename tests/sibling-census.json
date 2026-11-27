@@ -29452,6 +29452,549 @@
    "kind": "machinery-exempt",
    "reason": "Machinery only: Phase 2 (prove-it machinery, /correct Classes 2 + 5) changes gate scripts, the checks workflow, gate fixtures, docs and one drive's case ID (drive125 S7b buildings -> S7a), and changes no parts/ surface, so there are no anchors to enumerate.",
    "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase3-sheet-lifecycle",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "sheet",
+     "pacePanel"
+    ],
+    "functions": [
+     "closeSheets",
+     "sheetFullH",
+     "springSheet",
+     "cancelSheetSpring",
+     "openPace",
+     "closePace",
+     "openClean",
+     "syncNoteSheetRaise",
+     "collapseNoteEditor"
+    ]
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:cancelSheetSpring:parts/app2.js:close",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from close in parts/app2.js",
+     "status": "covered",
+     "note": "proof-1231 3d pins the owner's close cancelling first (mutation-proven this round: removing the call fails only 3d)"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/app2.js:sheet:pointermove",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from sheet:pointermove in parts/app2.js",
+     "status": "covered",
+     "note": "the drag catch-restart inside the owner's drag wiring; exercised by drive145 N30/N34 flick cases and the drive192 D detents"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/app2.js:springSheet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from springSheet in parts/app2.js",
+     "status": "covered",
+     "note": "springSheet cancelling the sheet's prior spring before starting; proof-1231 spring family + drive145 N34 (no pop back up through the landing)"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/create-pick.js:crSettleMorph",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from crSettleMorph in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: the helper stayed top-level and byte-identical so create-pick keeps using it; the create drives in the PR tier set exercise the morph"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/create-pick.js:head:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from head:pointerdown in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: same unchanged shared helper (see crSettleMorph row); create drives in the PR tier set"
+    },
+    {
+     "id": "caller:closePace:parts/app2.js:paceBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closePace() is called from paceBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "paceBtn toggles through openPace/closePace, now the owner; drive145 N32/N33 + drive192 P section"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "call site unchanged; closeSheets() now delegates to the owner (probe phase3-closesheets-delegates); the funnel is survivor-covered by drive145 N17"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:paceClose:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - closeSheets is registered by reference as the paceClose click handler in parts/app2.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the Pace X rides the same closeSheets funnel as the Streets X (drive123 A5 pair, drive145 N17); drive192 P section cycles the Pace sheet"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "call site unchanged (delegation); the renderStreets/editor interplay is exercised by drive192 KB1-KB5"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:sheetClose:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - closeSheets is registered by reference as the sheetClose click handler in parts/app2.js; the event invokes it directly",
+     "status": "covered",
+     "note": "THE button close: drive123 A5 freeze + clear pair, drive192 KB4 (editor reset on the X)"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "streetsBtn toggles the Streets sheet closed when open; drive145 N24 + drive192 sheet cycles throughout"
+    },
+    {
+     "id": "caller:closeSheets:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "call site unchanged (delegation to the owner); the funnel is survivor-covered by drive145 N17"
+    },
+    {
+     "id": "caller:closeSheets:parts/app3.js:openPace",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from openPace in parts/app3.js",
+     "status": "covered",
+     "note": "openPace closes the other sheets before opening Pace, through the owner; drive145 N32 + drive192 P section"
+    },
+    {
+     "id": "caller:closeSheets:parts/app5.js:document:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from document:pointerdown in parts/app5.js",
+     "status": "covered",
+     "note": "THE tap-away: drive145 N17 (closes EVERY sheet by class) - a named survivor this round"
+    },
+    {
+     "id": "caller:closeSheets:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "call site unchanged (delegation to the owner); the funnel is survivor-covered by drive145 N17"
+    },
+    {
+     "id": "caller:collapseNoteEditor:parts/app2.js:resetNoteEditor",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from resetNoteEditor in parts/app2.js",
+     "status": "covered",
+     "note": "the owner's own reset; drive192 KB4 + KB5, mutation-proven this round (neutering it fails exactly KB4/KB5)"
+    },
+    {
+     "id": "caller:collapseNoteEditor:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route load collapses the editor directly, deliberately not a sheet close; it calls the same collapseNoteEditor the owner calls, unchanged by this round"
+    },
+    {
+     "id": "caller:openClean:parts/app3.js:r:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openClean() is called from r:click in parts/app3.js",
+     "status": "covered",
+     "note": "the cleans-list row tap; drive192 P7 (detail opens inside the Pace sheet, sheet stays open) - a named survivor this round"
+    },
+    {
+     "id": "caller:openPace:parts/app2.js:paceBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openPace() is called from paceBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "drive145 N32/N33 (Pace opens and settles at the stops) + drive192 P section"
+    },
+    {
+     "id": "caller:openPace:parts/app3.js:backToCleans",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openPace() is called from backToCleans in parts/app3.js",
+     "status": "covered",
+     "note": "the detail's back path returns through openPace; drive192 P section exercises the detail open/back cycle"
+    },
+    {
+     "id": "caller:sheetFullH:parts/app2.js:setFull",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - sheetFullH() is called from setFull in parts/app2.js",
+     "status": "covered",
+     "note": "proof-1228 4b/4c pin sheetFullH( inside the owner (4c needs >= 8 calls); drive192 KB1 (editor raise lands at the cap)"
+    },
+    {
+     "id": "caller:sheetFullH:parts/app2.js:sheet:pointermove",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - sheetFullH() is called from sheet:pointermove in parts/app2.js",
+     "status": "covered",
+     "note": "the drag clamps at the full cap; drive192 D detents + drive145 N29"
+    },
+    {
+     "id": "caller:sheetFullH:parts/app2.js:sheet:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - sheetFullH() is called from sheet:pointerup in parts/app2.js",
+     "status": "covered",
+     "note": "the settle decision reads the cap; proof-1231 3c + drive145 N30/N34"
+    },
+    {
+     "id": "caller:springSheet:parts/app2.js:close",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from close in parts/app2.js",
+     "status": "covered",
+     "note": "the owner's gesture close springs at the release velocity; proof-1231 3c, mutation-proven this round"
+    },
+    {
+     "id": "caller:springSheet:parts/app2.js:sheet:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from sheet:pointerup in parts/app2.js",
+     "status": "covered",
+     "note": "proof-1231 3c + drive145 N34 (clean landing, transitions off through it)"
+    },
+    {
+     "id": "caller:springSheet:parts/create-pick.js:crMorphTo",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from crMorphTo in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: springSheet stayed top-level and byte-identical; the create drives in the PR tier set exercise the morph"
+    },
+    {
+     "id": "caller:springSheet:parts/create-pick.js:head:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from head:pointerup in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: same unchanged shared helper (see crMorphTo row); create drives in the PR tier set"
+    },
+    {
+     "id": "caller:syncNoteSheetRaise:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncNoteSheetRaise() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "the editor raise now routes through the owner's setFull; drive192 KB1 (raise to the full stop) + proof-1228 4b/4c"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:pointerdown",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document pointerdown handler in parts/app5.js touches closeSheets without dismissing it",
+     "status": "covered",
+     "note": "the tap-away gesture family; drive145 N17 - a named survivor this round"
+    },
+    {
+     "id": "theme:pacePanel",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #pacePanel has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no styling changed this round; drive192 D detents run the Pace sheet day and night at three sizes"
+    },
+    {
+     "id": "theme:sheet",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #sheet has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no styling changed this round; drive192 D detents run the Streets sheet day and night at three sizes"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "d1d005a2283f6a643330942bff376f63d8e8c263759010c44353efc11b7e4e6d",
+    "parts/app3.js": "3e3533f275089fbf8dcfd39085abba8bf05550a77878241f5471a8cf401eb663",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "f268106b59d05180efdcc69d9e9e7666dfa495765696490469b7ed30b9e7f136",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "c8183d4e9fd5b2f8de15751e8c51cda513bb25c0b14ce708eb6415816a6c3986",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 phase3-sheet-lifecycle"
+  },
+  {
+   "id": "phase3-sheet-lifecycle-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "sheet",
+     "pacePanel"
+    ],
+    "functions": [
+     "closeSheets",
+     "sheetFullH",
+     "springSheet",
+     "cancelSheetSpring",
+     "openPace",
+     "closePace",
+     "openClean",
+     "syncNoteSheetRaise",
+     "collapseNoteEditor"
+    ]
+   },
+   "changed": [
+    "parts/app2.js",
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:cancelSheetSpring:parts/app2.js:close",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from close in parts/app2.js",
+     "status": "covered",
+     "note": "proof-1231 3d pins the owner's close cancelling first (mutation-proven this round: removing the call fails only 3d)"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/app2.js:sheet:pointermove",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from sheet:pointermove in parts/app2.js",
+     "status": "covered",
+     "note": "the drag catch-restart inside the owner's drag wiring; exercised by drive145 N30/N34 flick cases and the drive192 D detents"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/app2.js:springSheet",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from springSheet in parts/app2.js",
+     "status": "covered",
+     "note": "springSheet cancelling the sheet's prior spring before starting; proof-1231 spring family + drive145 N34 (no pop back up through the landing)"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/create-pick.js:crSettleMorph",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from crSettleMorph in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: the helper stayed top-level and byte-identical so create-pick keeps using it; the create drives in the PR tier set exercise the morph"
+    },
+    {
+     "id": "caller:cancelSheetSpring:parts/create-pick.js:head:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cancelSheetSpring() is called from head:pointerdown in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: same unchanged shared helper (see crSettleMorph row); create drives in the PR tier set"
+    },
+    {
+     "id": "caller:closePace:parts/app2.js:paceBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closePace() is called from paceBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "paceBtn toggles through openPace/closePace, now the owner; drive145 N32/N33 + drive192 P section"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "call site unchanged; closeSheets() now delegates to the owner (probe phase3-closesheets-delegates); the funnel is survivor-covered by drive145 N17"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:paceClose:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - closeSheets is registered by reference as the paceClose click handler in parts/app2.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the Pace X rides the same closeSheets funnel as the Streets X (drive123 A5 pair, drive145 N17); drive192 P section cycles the Pace sheet"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "call site unchanged (delegation); the renderStreets/editor interplay is exercised by drive192 KB1-KB5"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:sheetClose:click",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - closeSheets is registered by reference as the sheetClose click handler in parts/app2.js; the event invokes it directly",
+     "status": "covered",
+     "note": "THE button close: drive123 A5 freeze + clear pair, drive192 KB4 (editor reset on the X)"
+    },
+    {
+     "id": "caller:closeSheets:parts/app2.js:streetsBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from streetsBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "streetsBtn toggles the Streets sheet closed when open; drive145 N24 + drive192 sheet cycles throughout"
+    },
+    {
+     "id": "caller:closeSheets:parts/app3.js:askCancelStart",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from askCancelStart in parts/app3.js",
+     "status": "covered",
+     "note": "call site unchanged (delegation to the owner); the funnel is survivor-covered by drive145 N17"
+    },
+    {
+     "id": "caller:closeSheets:parts/app3.js:openPace",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from openPace in parts/app3.js",
+     "status": "covered",
+     "note": "openPace closes the other sheets before opening Pace, through the owner; drive145 N32 + drive192 P section"
+    },
+    {
+     "id": "caller:closeSheets:parts/app5.js:document:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from document:pointerdown in parts/app5.js",
+     "status": "covered",
+     "note": "THE tap-away: drive145 N17 (closes EVERY sheet by class) - a named survivor this round"
+    },
+    {
+     "id": "caller:closeSheets:parts/create-pick.js:enterCreate",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - closeSheets() is called from enterCreate in parts/create-pick.js",
+     "status": "covered",
+     "note": "call site unchanged (delegation to the owner); the funnel is survivor-covered by drive145 N17"
+    },
+    {
+     "id": "caller:collapseNoteEditor:parts/app2.js:close",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from close in parts/app2.js",
+     "status": "covered",
+     "note": "the button close's own editor reset, before the height is measured; drive192 KB4, mutation-proven this round (removing both funnels' resets fails exactly KB4 + KB5)"
+    },
+    {
+     "id": "caller:collapseNoteEditor:parts/app2.js:closeGesture",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from closeGesture in parts/app2.js",
+     "status": "covered",
+     "note": "the gesture close's landing reset; drive192 KB5, mutation-proven this round (same removal as the close row)"
+    },
+    {
+     "id": "caller:collapseNoteEditor:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - collapseNoteEditor() is called from loadRoute in parts/app5.js",
+     "status": "covered",
+     "note": "route load collapses the editor directly, deliberately not a sheet close; it calls the same collapseNoteEditor the owner calls, unchanged by this round"
+    },
+    {
+     "id": "caller:openClean:parts/app3.js:r:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openClean() is called from r:click in parts/app3.js",
+     "status": "covered",
+     "note": "the cleans-list row tap; drive192 P7 (detail opens inside the Pace sheet, sheet stays open) - a named survivor this round"
+    },
+    {
+     "id": "caller:openPace:parts/app2.js:paceBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openPace() is called from paceBtn:click in parts/app2.js",
+     "status": "covered",
+     "note": "drive145 N32/N33 (Pace opens and settles at the stops) + drive192 P section"
+    },
+    {
+     "id": "caller:openPace:parts/app3.js:backToCleans",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openPace() is called from backToCleans in parts/app3.js",
+     "status": "covered",
+     "note": "the detail's back path returns through openPace; drive192 P section exercises the detail open/back cycle"
+    },
+    {
+     "id": "caller:sheetFullH:parts/app2.js:setFull",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - sheetFullH() is called from setFull in parts/app2.js",
+     "status": "covered",
+     "note": "proof-1228 4b/4c pin sheetFullH( inside the owner (4c needs >= 8 calls); drive192 KB1 (editor raise lands at the cap)"
+    },
+    {
+     "id": "caller:sheetFullH:parts/app2.js:sheet:pointermove",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - sheetFullH() is called from sheet:pointermove in parts/app2.js",
+     "status": "covered",
+     "note": "the drag clamps at the full cap; drive192 D detents + drive145 N29"
+    },
+    {
+     "id": "caller:sheetFullH:parts/app2.js:sheet:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - sheetFullH() is called from sheet:pointerup in parts/app2.js",
+     "status": "covered",
+     "note": "the settle decision reads the cap; proof-1231 3c + drive145 N30/N34"
+    },
+    {
+     "id": "caller:springSheet:parts/app2.js:closeGesture",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from closeGesture in parts/app2.js",
+     "status": "covered",
+     "note": "the gesture close springs the sheet off the bottom edge at the release velocity; proof-1231 3c, mutation-proven this round"
+    },
+    {
+     "id": "caller:springSheet:parts/app2.js:sheet:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from sheet:pointerup in parts/app2.js",
+     "status": "covered",
+     "note": "proof-1231 3c + drive145 N34 (clean landing, transitions off through it)"
+    },
+    {
+     "id": "caller:springSheet:parts/create-pick.js:crMorphTo",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from crMorphTo in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: springSheet stayed top-level and byte-identical; the create drives in the PR tier set exercise the morph"
+    },
+    {
+     "id": "caller:springSheet:parts/create-pick.js:head:pointerup",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - springSheet() is called from head:pointerup in parts/create-pick.js",
+     "status": "covered",
+     "note": "create-route sibling: same unchanged shared helper (see crMorphTo row); create drives in the PR tier set"
+    },
+    {
+     "id": "caller:syncNoteSheetRaise:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncNoteSheetRaise() is called from renderStreets in parts/app2.js",
+     "status": "covered",
+     "note": "the editor raise now routes through the owner's setFull; drive192 KB1 (raise to the full stop) + proof-1228 4b/4c"
+    },
+    {
+     "id": "gesture:parts/app5.js:document:pointerdown",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document pointerdown handler in parts/app5.js touches closeSheets without dismissing it",
+     "status": "covered",
+     "note": "the tap-away gesture family; drive145 N17 - a named survivor this round"
+    },
+    {
+     "id": "theme:pacePanel",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #pacePanel has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no styling changed this round; drive192 D detents run the Pace sheet day and night at three sizes"
+    },
+    {
+     "id": "theme:sheet",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #sheet has NO day rule and NO body.night rule",
+     "status": "covered",
+     "note": "no styling changed this round; drive192 D detents run the Streets sheet day and night at three sizes"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "198c22b4370f7418e746d17ddc7085b30f868bf90112226f059ead8e690608f0",
+    "parts/app2.js": "6afea27d190af763eed5c7936624672dfaac8d2e62288a35fcf8e1ff48912339",
+    "parts/app3.js": "057b31ff3dbf2f8226751d715578fc644631a53570faade7c4cf811b9f3340a0",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/app5.js": "a12f2f5d616d59f03b21a9dc8a21c058a23cdbbdb25e7957cae401671ad21cd3",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "f268106b59d05180efdcc69d9e9e7666dfa495765696490469b7ed30b9e7f136",
+    "parts/create-citydata.js": "909186d77b29138fe592d281cd8d930eeff983c0c719c5a35cb947d4b13d7949",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "5c27be844ce398a2130b8f16eb331b5b299d0c70f75e74ffd520c3061c26ab70",
+    "parts/create-pick.js": "3af8e3a34aa7bb9aa6db843cec29137020c1826025f9e3c58135d5f6a1a3514b",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "9684c69862156dc70ee9a2b88278b4e825c5bf35f0c150fbc5660ccbdce9304b",
+    "parts/engine.js": "c8183d4e9fd5b2f8de15751e8c51cda513bb25c0b14ce708eb6415816a6c3986",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "dd55f34cd855e60a6fadae7e261aa99f1682b9d7d8446696532045e3a281fafb"
+   },
+   "issued": "2026-11-26 phase3-sheet-lifecycle fix round"
+  },
+  {
+   "id": "notile2-median-sampler",
+   "kind": "machinery-exempt",
+   "reason": "machinery round: no parts/ file changes - the round changes one check (tests/browser/drive180.mjs) and its ledgers only",
+   "issued": "2026-11-26 notile2-fresh-look"
   }
  ]
 }

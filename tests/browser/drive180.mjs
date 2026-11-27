@@ -546,13 +546,34 @@ let lastCy = null, steady = 0;
 let notileBox = null; // the artwork-only proof (NOTILE below): the rendered box at the first fully-in hold poll
 let prevIconBox = null; // NOTILE2 hardening (testing-efficiency rollout, 2026-11-23): the box and the screenshot must be simultaneous - the old code took the box from the trace's last sample and shot a CDP round-trip later, so a still-moving icon put the 12%/12% sample on the wrong pixel. The capture now runs only after two consecutive polls report the SAME box, waits two animation frames, reads the box from getBoundingClientRect in the same evaluate, and re-shoots (up to 3 attempts) if the box moved across the shot.
 const readIconBox = async () => await ev(`(async () => { await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); const ic = document.getElementById('splashIcon'); if (!ic) return ''; const r = ic.getBoundingClientRect(); return JSON.stringify({ x: r.left, y: r.top, w: r.width, h: r.height }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null).catch(() => null);
+const menuShown = async () => await ev(`(() => { const rm = document.getElementById('routeMenu'); return rm && rm.classList.contains('show') ? 'y' : ''; })()`).catch(() => 'y');
+const sameBox = (a, b) => !!a && !!b && Math.abs(a.x - b.x) <= 0.5 && Math.abs(a.y - b.y) <= 0.5 && Math.abs(a.w - b.w) <= 0.5 && Math.abs(a.h - b.h) <= 0.5;
+let notileShots = []; // NOTILE2's decoded hold screenshots, filled by captureNotile
+const takeNotileShot = async () => {
+  try { await shot('drive180-notile.png'); notileShots.push(decodePng(fs.readFileSync('drive180-notile.png'))); } catch (e) { }
+  try { fs.unlinkSync('drive180-notile.png'); } catch (e) { }
+};
 const captureNotile = async () => {
   for (let attempt = 0; attempt < 3; attempt++) {
     const boxNow = await readIconBox();
     if (!boxNow || !(boxNow.w > 0)) return null;
-    try { await shot('drive180-notile.png'); } catch (e) { return null; }
-    const after = await readIconBox();
-    if (after && Math.abs(after.x - boxNow.x) <= 0.5 && Math.abs(after.y - boxNow.y) <= 0.5 && Math.abs(after.w - boxNow.w) <= 0.5 && Math.abs(after.h - boxNow.h) <= 0.5) return boxNow;
+    const before = notileShots.length;
+    await takeNotileShot();
+    if (notileShots.length === before) return null;
+    if (sameBox(await readIconBox(), boxNow)) {
+      // Snow paints the ground NOTILE2 reads: widen the sample over the hold.
+      for (let extra = 0; extra < 2; extra++) {
+        await sleep(350);
+        if (!sameBox(await readIconBox(), boxNow)) break;
+        if (await menuShown()) break;
+        const n = notileShots.length;
+        await takeNotileShot();
+        if (notileShots.length === n) break;
+        if (await menuShown()) { notileShots.pop(); break; }
+      }
+      return boxNow;
+    }
+    notileShots.pop();
   }
   return null;
 };
@@ -607,10 +628,7 @@ function decodePng(buf) {
   }
   return { w, h, px };
 }
-let notileShot = null;
-if (notileBox) {
-  try { notileShot = decodePng(fs.readFileSync('drive180-notile.png')); fs.unlinkSync('drive180-notile.png'); } catch (e) { notileShot = null; }
-}
+// (The hold screenshots were decoded by captureNotile into notileShots.)
 let notileFacts = null;
 try {
   notileFacts = await ev(`(() => { const ic = document.getElementById('splashIcon'); if (!ic) return ''; const cs = getComputedStyle(ic); let alphas = null; try { const cv = document.createElement('canvas'); cv.width = ic.naturalWidth; cv.height = ic.naturalHeight; const c2 = cv.getContext('2d'); c2.drawImage(ic, 0, 0); const d = c2.getImageData(0, 0, cv.width, cv.height).data; const A = (x, y) => d[(y * cv.width + x) * 4 + 3]; alphas = { tl: A(0, 0), tr: A(cv.width - 1, 0), bl: A(0, cv.height - 1), br: A(cv.width - 1, cv.height - 1), lm: A(0, Math.floor(cv.height / 2)), tm: A(Math.floor(cv.width / 2), 0), rm: A(cv.width - 1, Math.floor(cv.height / 2)) }; } catch (e) { alphas = null; } return JSON.stringify({ rad: cs.borderTopLeftRadius, sh: cs.boxShadow, nw: ic.naturalWidth, nh: ic.naturalHeight, alphas }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
@@ -670,17 +688,36 @@ ok('HOLD1 the icon is fully in AND still dead centre through the hold before the
   holdIn.length >= 1);
 ok('NOTILE1 NO TILE DRESSING (artwork-only splash): on the live #splashIcon the computed border radius is ' + (notileFacts ? notileFacts.rad : 'n/a') + ' and box-shadow ' + (notileFacts ? notileFacts.sh : 'n/a') + ' (the tile-era 38px radius and 0 18px 50px shadow are gone), the inlined image natural size is ' + (notileFacts ? notileFacts.nw : 'n/a') + 'x' + (notileFacts ? notileFacts.nh : 'n/a') + 'px (the 512x512 artwork asset), and the asset pixels themselves carry NO blue square: alpha at every point this artwork leaves clear - top corners ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.tl + '/' + notileFacts.alphas.tr : 'n/a') + ', top-mid ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.tm : 'n/a') + ', left-mid ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.lm : 'n/a') + ', right-mid ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.rm : 'n/a') + ' (all zero - fully transparent; a tile would paint every one opaque) - while the bottom corners read ' + (notileFacts && notileFacts.alphas ? notileFacts.alphas.bl + '/' + notileFacts.alphas.br : 'n/a') + ' because since Beta 1.260 the snow\'s bottom edge is feathered into the splash gradient (Beta 1.260 re-pin, TEST class: Andrew\'s STRONG bottom feather dissolves the bottom 40 asset px, so the corners the Beta 1.213 pin asserted opaque at 255 - the pack band\'s shape then - now read 0 by his design; the dissolved edge is the asset\'s shape now, asserted the same way)',
   !!notileFacts && notileFacts.rad === '0px' && notileFacts.sh === 'none' && notileFacts.nw === 512 && notileFacts.nh === 512 && !!notileFacts.alphas && notileFacts.alphas.tl === 0 && notileFacts.alphas.tr === 0 && notileFacts.alphas.lm === 0 && notileFacts.alphas.tm === 0 && notileFacts.alphas.rm === 0 && notileFacts.alphas.bl === 0 && notileFacts.alphas.br === 0);
-let notileDiff = -1, notileIn = null, notileRef = null;
-if (notileShot && notileBox && trace.length) {
-  const dsf = notileShot.w / (trace[0].vw || 420);
-  const samp = (cx, cy) => { let r = 0, g = 0, b = 0, n = 0; const xi = Math.round(cx * dsf), yi = Math.round(cy * dsf); for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const o = ((yi + dy) * notileShot.w + (xi + dx)) * 4; r += notileShot.px[o]; g += notileShot.px[o + 1]; b += notileShot.px[o + 2]; n++; } return [Math.round(r / n), Math.round(g / n), Math.round(b / n)]; };
-  const iy2 = notileBox.y + 0.12 * notileBox.h;
-  notileIn = samp(notileBox.x + 0.12 * notileBox.w, iy2);
-  notileRef = samp(notileBox.x - 60, iy2);
-  notileDiff = Math.max(Math.abs(notileIn[0] - notileRef[0]), Math.abs(notileIn[1] - notileRef[1]), Math.abs(notileIn[2] - notileRef[2]));
+let notileDiff = -1, notileIn = null, notileRef = null, notilePool = [];
+if (notileShots.length && notileBox && trace.length) {
+  // Five points the asset carries transparent (alpha 0, margin measured).
+  const PTS = [[0.12, 0.12], [0.28, 0.08], [0.5, 0.05], [0.85, 0.1], [0.08, 0.28]];
+  for (const sh of notileShots) {
+    const dsf = sh.w / (trace[0].vw || 420);
+    const samp = (cx, cy) => {
+      let r = 0, g = 0, b = 0, n = 0;
+      const xi = Math.round(cx * dsf), yi = Math.round(cy * dsf);
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const o = ((yi + dy) * sh.w + (xi + dx)) * 4; r += sh.px[o]; g += sh.px[o + 1]; b += sh.px[o + 2]; n++; }
+      return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
+    };
+    for (const pt of PTS) {
+      const py = notileBox.y + pt[1] * notileBox.h;
+      const pin = samp(notileBox.x + pt[0] * notileBox.w, py);
+      const pref = samp(notileBox.x - 60, py);
+      if (sh === notileShots[0] && pt[0] === 0.12 && pt[1] === 0.12) { notileIn = pin; notileRef = pref; }
+      notilePool.push(Math.max(Math.abs(pin[0] - pref[0]), Math.abs(pin[1] - pref[1]), Math.abs(pin[2] - pref[2])));
+    }
+  }
+  notilePool.sort((a, b) => a - b);
+  // The median reading: persistent paint judged, transient flakes outvoted.
+  notileDiff = notilePool[Math.floor((notilePool.length - 1) / 2)];
 }
-ok('NOTILE2 NO TILE PAINT (artwork-only splash, the rendered proof): in the hold screenshot the pixel at 12%/12% of the artwork box - a spot the asset itself carries as fully transparent (alpha 0 at asset (61,61) - the square asset\'s 12%/12% point) - reads rgb' + JSON.stringify(notileIn) + ' against the splash gradient 60px left of the box at rgb' + JSON.stringify(notileRef) + ': max channel difference ' + notileDiff + ' (bound 14 - the smooth gradient alone accounts for single digits; the tile build painted its opaque navy square there, ~25+ per channel away from the gradient)',
-  notileShot !== null && notileBox !== null && notileDiff >= 0 && notileDiff <= 14);
+ok('NOTILE2 NO TILE PAINT (artwork-only splash, the rendered proof): in the hold screenshots the pixel at 12%/12% of the artwork box - a spot the asset itself carries as fully transparent ' +
+  '(alpha 0 at asset (61,61) - the square asset\'s 12%/12% point) - reads rgb' + JSON.stringify(notileIn) + ' against the splash gradient 60px left of the box at rgb' + JSON.stringify(notileRef) +
+  ' on the first shot; the judged figure is the MEDIAN channel difference ' + notileDiff + ' over ' + notilePool.length + ' readings (5 transparent points x ' + notileShots.length +
+  ' hold shots, each point against the gradient on its own row) (bound 14 - the smooth gradient alone accounts for single digits at every point; the snow scene paints this ground too, ' +
+  'and a flake crossing one window at one instant cannot move the median; the tile build painted its opaque navy square at EVERY point, ~25+ per channel away from the gradient)',
+  notilePool.length >= 5 && notileDiff >= 0 && notileDiff <= 14);
 // CUT3 + SOLO (Beta 1.178) replace N4/SLOT/CLEAR: there is no
 // resting pose to pin and no landed title to clear the button -
 // the resting facts are the layer's cut state and the pills'
