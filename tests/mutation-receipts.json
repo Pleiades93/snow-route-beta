@@ -17446,6 +17446,19 @@
    "red": "A changed set naming parts/a.js against an empty survivor ledger exits 1 through the Survivors step body extracted from the shipped checks.yml.",
    "green": "Benign set and workflow_dispatch exit 0; all three Survivors step cases pass in the final 151-case suite.",
    "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-judge-list-r2",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "248bc127da0a7ea4b156a5f0d6acea88ecc777d3cbfe9dd128fd16038763eec3",
+    "scripts/check-survivors.py": "ef70b7145020969277df3371de2bce723126b9e804677a1a171f6565736d3b49"
+   },
+   "mutation": "Re-issue of phase2-judge-list: the JUDGE_PATHS edit itself is byte-identical, but its co-pinned file (scripts/check-survivors.py) moved twice after the original observation (pretty-print ledger write, then the ABSENT sentinel), staling the pair. The mirrors red/green stands as observed at the original issue.",
+   "red": "Before the JUDGE_PATHS edit, scripts/check-mirrors.py failed the tree naming the unnamed judge (check-survivors.py missing from JUDGE_PATHS); the full-PR receipts gate on PR #227 caught this receipt's staleness exactly as designed.",
+   "green": "With check-survivors.py named in JUDGE_PATHS the mirrors gate passes all families on the final tree, and the receipts gate over the full PR diff covers every changed check/judge path.",
+   "issued": "2026-11-26 phase2-prove-it"
   }
  ]
 }
