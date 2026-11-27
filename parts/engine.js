@@ -1576,11 +1576,10 @@ const LAYERS = {
 };
 LAYERS.text = [...LAYERS.titles, 'routepoi-txt'];
 LAYERS.stack = [...LAYERS.paint, ...LAYERS.poi, ...LAYERS.titles, ...LAYERS.glow];
-// The source-only switch (flags.js): titles exist only when it is on.
-const titlesOn = () => typeof ROUTE_TITLES_ON !== 'undefined' && !!ROUTE_TITLES_ON;
 function addStack() {
   tunePlaceLabels();
-  if (!GLM.getSource('centres')) {
+  const newStack = !GLM.getSource('centres');
+  if (newStack) {
     GLM.addSource('centres', { type: 'geojson', data: CUR.centres });
     GLM.addSource('bands', { type: 'geojson', data: CUR.bands });
     GLM.addSource('edges', { type: 'geojson', data: CUR.edges });
@@ -1592,8 +1591,6 @@ function addStack() {
     GLM.addSource('selFill', { type: 'geojson', data: CUR.selFill });
     GLM.addSource('selGlow', { type: 'geojson', data: buildSelGlow() });
     GLM.addSource('hit', { type: 'geojson', data: HIT });
-    // created once when titles are on; rebuildRoute alone rewrites it. Title visibility and opacity are spec-fixed
-    if (titlesOn()) GLM.addSource('labelpts', { type: 'geojson', data: LABELPTS });
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
   const before = firstSymbolId();
@@ -1655,18 +1652,6 @@ function addStack() {
   add(line('selfade-fill', 'selFades', { 'line-gradient': fadeGrad(GREEN), 'line-width': wScale(surfW, 0.5), 'line-opacity': 1 }, { 'line-cap': 'butt' }, ['==', ['get', 'k'], 'f']));
   // --- hit (every treatment) ---
   add(line('hit', 'hit', { 'line-color': '#fff', 'line-width': 24 * WIDTH_K, 'line-opacity': 0 }));
-  // the 'labels' source is not added (LABELS stay as data only); the titles are layers, one per street
-  const PT_MIN = [13.7, 13.35, 13.0, 12.6];
-  if (titlesOn()) for (let t = 1; t <= 4; t++) {
-    const id = 'streetnamespt' + t;
-    if (!GLM.getLayer(id)) {
-      GLM.addLayer({ id, type: 'symbol', source: 'labelpts', minzoom: PT_MIN[t - 1], maxzoom: 15.2, filter: ['==', ['get', 'tier'], t], layout: { 'text-field': ['get', 'name'], 'text-font': fontStack,
-        'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 14.6, 10.5, 16.2, 12, 19, 13.5], 'text-padding': 1, 'text-anchor': 'center', 'text-radial-offset': 0,
-        'symbol-sort-key': ['-', ['get', 'len']], 'text-allow-overlap': false }, paint: { 'text-color': H.isNight() ? '#e8e8e8' : '#333333',
-        'text-halo-color': H.isNight() ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.59, 0, 12.62, 1],
-        'text-opacity-transition': { duration: 0, delay: 0 }, 'text-halo-width': 1.4 } });
-    }
-  }
   // at 12.6 the paint and names pop out, the POI in: no fading (Andrew), never one alone
   add({ id: 'routepoi-ring',
     type: 'circle',
@@ -1689,7 +1674,8 @@ function addStack() {
       'text-opacity-transition': { duration: 0, delay: 0 },
       'text-halo-width': 1.6 } });
   LAYERS.paint.concat(LAYERS.glow).forEach(id => { if (GLM.getLayer(id)) GLM.setLayerZoomRange(id, 12.5, 24); }); // the paint and glow groups are the catalogue's
-  H.glUnifyLabels(GLM);
+  // the naming owner builds the title layers inside this pass
+  H.glUnifyLabels({ m: GLM, stack: { newStack, data: LABELPTS, ids: LAYERS.titles, fontStack } });
   pushSources();
   applyGlow();
   syncTheme();
@@ -1778,10 +1764,9 @@ function managePulse() {
     CUR = null; rebuildData(); lastSig = stateSig();
     if (!GLM) return;
     if (GLM.getSource('hit')) GLM.getSource('hit').setData(HIT);
-    if (GLM.getSource('labelpts')) GLM.getSource('labelpts').setData(LABELPTS);
     if (GLM.getSource('routepoi')) GLM.getSource('routepoi').setData(ROUTEPOI);
     if (GLM.getLayer('routepoi-txt')) { try { GLM.setLayoutProperty('routepoi-txt', 'text-field', (H.activeRoute && H.activeRoute.name) || 'Snow Route'); } catch (e) {} } // the POI wears the route's name - a switch renames it
-    H.glUnifyLabels(GLM); // the basemap label pass runs on the new route's map
+    H.glUnifyLabels({ m: GLM, routeData: LABELPTS }); // the basemap label pass runs on the new route's map, and rewrites the title source with it
     pushSources();
   }
   function drop() {       // GL failed / fell back to raster: stop touching GL entirely

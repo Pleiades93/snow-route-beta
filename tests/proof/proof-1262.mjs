@@ -26,6 +26,7 @@ import { readFileSync } from 'node:fs';
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
 const pick = read('parts/create-pick.js');
+const app2 = read('parts/app2.js');
 const whatsnew = read('parts/whatsnew.js');
 const changelog = read('CHANGELOG.md');
 
@@ -78,9 +79,13 @@ check('11: the teardown itself kills the whole pair: state nulled, pulse stopped
 check('12: a basemap swap mid-create re-seats the surface (the styledata hook re-ensures it beside the draft and the backdrop, behind the gate fix\'s stand-down guard)',
   pick.includes("map.on('styledata'") && pick.includes("renderDraft(); crSetBackdrop(true); crIsectEnsure(); } }));"));
 
-check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158): the styledata restoration stands down while the custom layers stand (a missing sentinel is the swap signal), the ensure pushes the point only on change, and the stand-down still re-applies the backdrop when a recorded route layer stands visible again (the order-sensitive piece: GLP.init re-creates the route stack after this listener\'s turn on a swap)',
+check('14: the frame loop cannot storm the creation sources (gate fixes, PR #158): the styledata restoration stands down while the custom layers stand (a missing sentinel is the swap signal), ' +
+  'the ensure pushes the point only on change, and the stand-down still re-applies the backdrop when a route layer stands visible again ' +
+  '(the order-sensitive piece: GLP.init re-creates the route stack after this listener\'s turn on a swap)',
   pick.includes("if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {") &&
-  pick.includes("crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }) || CR_ROUTE_LAYERS.some(id => { try { return map.getLayer(id) && !crHiddenLayers.some(pr => pr[0] === id) && (map.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }))) crSetBackdrop(true);") && // Beta 1.266: the re-apply condition grew the unrecorded-layer clause (the backdrop top-up) - the recorded-layer clause this check pins stands unchanged inside it
+  pick.includes("if (routeBackdropNeedsHide(map)) crSetBackdrop(true);") && // Phase 6 re-point: the condition is the owner's routeBackdropNeedsHide scan
+  app2.includes("return crHiddenLayers && CR_ROUTE_LAYERS.some(id => {") &&
+  app2.includes("try { return m.getLayer(id) && (m.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; }") &&
   block.includes('if (want !== crIsectPushed)') && block.includes("let crIsectPushed = null;"));
 
 // ---------- the release editorial ----------

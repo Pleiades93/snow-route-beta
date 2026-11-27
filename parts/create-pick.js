@@ -1142,14 +1142,12 @@ function renderDraft() { // the draft renders from its own roads through its own
 }
 // restoration is for swaps only: a missing sentinel is the swap signal; standing layers mean nothing was wiped
 onMapReady(() => map.on('styledata', () => { if (creating) { if (map.getLayer('crDraftCase') && (!crIsectPoi || map.getLayer('crIsectDot'))) {
-    if (crHiddenLayers && (crHiddenLayers.some(pr => { try { return map.getLayer(pr[0]) && (map.getLayoutProperty(pr[0], 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }) || CR_ROUTE_LAYERS.some(id => { try { return map.getLayer(id) && !crHiddenLayers.some(pr => pr[0] === id) && (map.getLayoutProperty(id, 'visibility') || 'visible') !== 'none'; } catch (e) { return false; } }))) crSetBackdrop(true); // Beta 1.266: an UNRECORDED route layer standing visible fires it too - a layer that lands after the enter snapshot (the stack still building when creation opens, mid-load-in) is not in the record yet, and the recorded-only check would never see it
+    if (routeBackdropNeedsHide(map)) crSetBackdrop(true); // the naming owner judges it: any route layer standing visible again, recorded or not, re-fires the hide
     return; }
   renderDraft(); crSetBackdrop(true); crIsectEnsure(); } })); // a swap mid-create wipes custom layers: redraw the draft, re-hide the backdrop, re-seat the POI surface
 onMapReady(() => { if (creating) crSetBackdrop(true); }); // creation entered before the map existed (boot mode): the backdrop lands when the map does
 
 // ---- creation backdrop ---- the loaded route's paint hides while creating; a POI marks each route's centre; exit restores visibility
-const CR_ROUTE_LAYERS = GLP.layers.stack;   // the hide list is the engine's stack via GLP.layers, never hand-kept: proof-1264 fails on any gap
-let crHiddenLayers = null; // [[id, visibilityBefore], ...] recorded on the first hide; null = backdrop off
 const CR_POI_SRC = 'crPoi';
 function crPoiFeatures() {
   return ROUTE_PACKS.map(p => { const bb = computeRouteBox(p.roads); if (!bb) return null; return { type: 'Feature',
@@ -1180,26 +1178,15 @@ function ensureCrPoiLayers() {
       paint: { 'text-color': night ? '#e8e8e8' : '#333333', 'text-halo-color': night ? 'rgba(0,0,0,.8)' : 'rgba(255,255,255,.9)', 'text-halo-width': 1.6 } });
   } catch (e) { /* the style may still be loading - the styledata hook re-runs this while creating */ }
 }
-function crSetBackdrop(on) {
+function crSetBackdrop(on) { // the hide/restore itself lives with the naming owner (setRouteBackdrop, app2.js); this seat keeps the creation POI half
   if (!map || typeof map.setLayoutProperty !== 'function') return;
-  if (on) {
-    const crVisPair = (id) => [id, map.getLayoutProperty(id, 'visibility') || 'visible']; // a snapshot records the layer's live visibility (the live value is the natural one now)
-    if (!crHiddenLayers) {
-      crHiddenLayers = [];
-      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }
-    } else {
-      // a route layer landing after the snapshot joins the record here, so the hide covers its first frame
-      for (const id of CR_ROUTE_LAYERS) { try { if (map.getLayer(id) && !crHiddenLayers.some((pr) => pr[0] === id)) crHiddenLayers.push(crVisPair(id)); } catch (e) {} }
+  setRouteBackdrop(map, on, () => {
+    if (on) ensureCrPoiLayers();
+    else {
+      for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
+      try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
     }
-    for (const pair of crHiddenLayers) { try { map.setLayoutProperty(pair[0], 'visibility', 'none'); } catch (e) {} }
-    ensureCrPoiLayers();
-  } else {
-    if (crHiddenLayers) { for (const pair of crHiddenLayers) { try { if (map.getLayer(pair[0])) map.setLayoutProperty(pair[0], 'visibility', pair[1]); } catch (e) {} } crHiddenLayers = null; }
-    for (const id of ['crPoiRing', 'crPoiDot', 'crPoiTxt']) { try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {} }
-    try { if (map.getSource(CR_POI_SRC)) map.removeSource(CR_POI_SRC); } catch (e) {}
-  }
-  // the backdrop flip is the naming flip: creating lifts the route-name exclusion; exit returns it
-  try { if (typeof glUnifyLabels === 'function') glUnifyLabels(map); } catch (e) {}
+  });
   syncCrGlow(); // the exit's reliable beat: if a trim session outlived its render, the glow still dies here
 }
 function crRowEl(n, g) {

@@ -380,6 +380,176 @@
     "parts/create-pick.js": "5c82c5f734a1c4f618d3441bb7aa6ca6a8634efec92970230a4021e94852a001"
    },
    "issued": "2026-11-27 phase5-land-if-current (r3: pins moved by the Codex line-neutrality restructure; rows unchanged)"
+  },
+  {
+   "id": "phase6-label-handover-r1",
+   "kind": "cut",
+   "surface": "street-name handover policy: title build, route clones, originals' exclusion, creation backdrop",
+   "cut": "the policy's three hand-kept seats: the title construction inside engine addStack, the handover state computed inside the label pass from a titlesOff local, and the backdrop hide/restore hand-written in create-pick",
+   "changed": [
+    "parts/app2.js",
+    "parts/create-pick.js",
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The shipped switch reads ON in the running app (flags.js default, unchanged by the port)",
+     "case": "N1 THE SHIPPED SWITCH READS ON in the running app",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "the live ROUTE_TITLES_ON value in the booted app"
+    },
+    {
+     "behaviour": "The title build is live as shipped: the labelpts source carries the full pack, created once by the naming owner at stack build",
+     "case": "N2 THE TITLE BUILD IS LIVE AS SHIPPED: the labelpts source carries the full pack (features: ",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "the labelpts source's feature count against the pack's street count in the running app"
+    },
+    {
+     "behaviour": "The handover clones exist with their shipped shape: both -route layers present from minzoom 15.2 with route-only filters",
+     "case": "N4 THE HANDOVER CLONES EXIST AS SHIPPED with their shape: both -route layers present from minzoom 15.2, route-only filters ",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "both clone layers' presence, minzoom and filters in the running app"
+    },
+    {
+     "behaviour": "Basemap repetition is 250 on all four road-label layers (the two originals and the two clones), written by the owner's unify pass",
+     "case": "N5 THE REPETITION IS 250 ON ALL FOUR ROAD-LABEL LAYERS",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "symbol-spacing read back from all four road-label layers in the running app"
+    },
+    {
+     "behaviour": "Outside create mode the route-name exclusion sits in both originals' filters (the owner's handover target)",
+     "case": "A1 route mode: the exclusion sits in BOTH road-label filters",
+     "check": "tests/browser/drive218.mjs",
+     "observes": "both originals' live filters in route mode"
+    },
+    {
+     "behaviour": "Create mode lifts the exclusion from both road-label filters (the backdrop flip re-runs the owner's pass)",
+     "case": "B1 create mode: the exclusion is LIFTED from both road-label filters",
+     "check": "tests/browser/drive218.mjs",
+     "observes": "both originals' live filters inside create mode"
+    },
+    {
+     "behaviour": "Exiting create restores the exclusion in both filters",
+     "case": "D1 after exitCreate: the exclusion is restored in BOTH filters",
+     "check": "tests/browser/drive218.mjs",
+     "observes": "both originals' live filters after exitCreate"
+    },
+    {
+     "behaviour": "The creation backdrop hides every route-stack layer, selection fades included (the hide list is the catalogue stack, iterated by the owner)",
+     "case": "B2 create mode: every fade layer is hidden by the backdrop, selection fades included",
+     "check": "tests/browser/drive217.mjs",
+     "observes": "every fade layer's visibility under the backdrop in create mode"
+    },
+    {
+     "behaviour": "Exiting create restores every hidden layer's recorded visibility",
+     "case": "D2 after exitCreate: every fade layer",
+     "check": "tests/browser/drive217.mjs",
+     "observes": "the fade layers' visibility after exitCreate against their recorded values"
+    },
+    {
+     "behaviour": "The boot placement settles stable: the titles the owner built stand placed at the home view with the shipped character",
+     "case": "P1 the boot placement settles stable with the old system",
+     "check": "tests/browser/drive216.mjs",
+     "observes": "placed title count and its stability across consecutive samples after boot"
+    },
+    {
+     "behaviour": "Zooming through the 15.2 switch drops no title: route naming hands over from the titles to the clones across the crossing",
+     "case": "P3 zoom through 15: no title drops | samples ",
+     "check": "tests/browser/drive216.mjs",
+     "observes": "title presence sampled through the zoom-up crossing of the switch"
+    }
+   ],
+   "files": {
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920",
+    "parts/engine.js": "6fa08387db8bba9a3224a124f8bfb751fcb963d2caf5aa22ebf8473b967a61c2"
+   },
+   "issued": "2026-11-27 phase6-label-handover"
+  },
+  {
+   "id": "phase6-label-handover-r2",
+   "kind": "cut",
+   "surface": "street-name handover policy: title build, route clones, originals' exclusion, creation backdrop",
+   "cut": "the policy's three hand-kept seats: the title construction inside engine addStack, the handover state computed inside the label pass from a titlesOff local, and the backdrop hide/restore hand-written in create-pick",
+   "changed": [
+    "parts/app2.js",
+    "parts/create-pick.js",
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The shipped switch reads ON in the running app (flags.js default, unchanged by the port)",
+     "case": "N1 THE SHIPPED SWITCH READS ON in the running app",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "the live ROUTE_TITLES_ON value in the booted app"
+    },
+    {
+     "behaviour": "The title build is live as shipped: the labelpts source carries the full pack, created once by the naming owner at stack build",
+     "case": "N2 THE TITLE BUILD IS LIVE AS SHIPPED: the labelpts source carries the full pack (features: ",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "the labelpts source's feature count against the pack's street count in the running app"
+    },
+    {
+     "behaviour": "The handover clones exist with their shipped shape: both -route layers present from minzoom 15.2 with route-only filters",
+     "case": "N4 THE HANDOVER CLONES EXIST AS SHIPPED with their shape: both -route layers present from minzoom 15.2, route-only filters ",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "both clone layers' presence, minzoom and filters in the running app"
+    },
+    {
+     "behaviour": "Basemap repetition is 250 on all four road-label layers (the two originals and the two clones), written by the owner's unify pass",
+     "case": "N5 THE REPETITION IS 250 ON ALL FOUR ROAD-LABEL LAYERS",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "symbol-spacing read back from all four road-label layers in the running app"
+    },
+    {
+     "behaviour": "Outside create mode the route-name exclusion sits in both originals' filters (the owner's handover target)",
+     "case": "A1 route mode: the exclusion sits in BOTH road-label filters",
+     "check": "tests/browser/drive218.mjs",
+     "observes": "both originals' live filters in route mode"
+    },
+    {
+     "behaviour": "Create mode lifts the exclusion from both road-label filters (the backdrop flip re-runs the owner's pass)",
+     "case": "B1 create mode: the exclusion is LIFTED from both road-label filters",
+     "check": "tests/browser/drive218.mjs",
+     "observes": "both originals' live filters inside create mode"
+    },
+    {
+     "behaviour": "Exiting create restores the exclusion in both filters",
+     "case": "D1 after exitCreate: the exclusion is restored in BOTH filters",
+     "check": "tests/browser/drive218.mjs",
+     "observes": "both originals' live filters after exitCreate"
+    },
+    {
+     "behaviour": "The creation backdrop hides every route-stack layer, selection fades included (the hide list is the catalogue stack, iterated by the owner)",
+     "case": "B2 create mode: every fade layer is hidden by the backdrop, selection fades included",
+     "check": "tests/browser/drive217.mjs",
+     "observes": "every fade layer's visibility under the backdrop in create mode"
+    },
+    {
+     "behaviour": "Exiting create restores every hidden layer's recorded visibility",
+     "case": "D2 after exitCreate: every fade layer",
+     "check": "tests/browser/drive217.mjs",
+     "observes": "the fade layers' visibility after exitCreate against their recorded values"
+    },
+    {
+     "behaviour": "The boot placement settles stable: the titles the owner built stand placed at the home view with the shipped character",
+     "case": "P1 the boot placement settles stable with the old system",
+     "check": "tests/browser/drive216.mjs",
+     "observes": "placed title count and its stability across consecutive samples after boot"
+    },
+    {
+     "behaviour": "Zooming through the 15.2 switch drops no title: route naming hands over from the titles to the clones across the crossing",
+     "case": "P3 zoom through 15: no title drops | samples ",
+     "check": "tests/browser/drive216.mjs",
+     "observes": "title presence sampled through the zoom-up crossing of the switch"
+    }
+   ],
+   "files": {
+    "parts/app2.js": "c88220df0c435e4f2a9f30946ff92e47e40abcc843e7e66002b3cf8e12003f29",
+    "parts/create-pick.js": "a65a8317a88ab4e9ad65dd6940a1e465d1470dc380a4c17cf575f94671a8e920",
+    "parts/engine.js": "b96d4a85327a04b2ead4dd8404db1312c9712bc56aba8e9beef3ee5f10a41e82"
+   },
+   "issued": "2026-11-27 phase6-label-handover (r2: pins moved by the engine comment fix; rows unchanged)"
   }
  ]
 }
