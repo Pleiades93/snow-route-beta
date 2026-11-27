@@ -1,5 +1,17 @@
 # Changelog
 
+## Beta 1.301 — 2026-11-26
+
+Snow on every menu (Andrew's live report, 2026-11-26: on a cold start the splash and the boot picker snowed, but
+Choose a route and Select from list stood snowless). A step-aside from Beta 1.159/1.239 dimmed the snow canvas on
+every route-menu pane except the main one - one rule in four seats: the pane switch wrote it, the scene sync
+re-derived it, a CSS rule held the menu's plain gradient over the canvas, and the frame loop skipped painting
+while it stood. All four seats are retired for the canvas; the brand title keeps its own per-pane behaviour,
+untouched. The checks that pinned the old behaviour were re-derived at full strength (the claim is now snow
+present and advancing on the pane), and a new surface walk (drive228) visits all 13 blue menu surfaces by real
+taps in boot and tab mode, judging the snow standing at every stop - a future change that snowlesses any surface
+fails there. The round also seeds docs/SURFACE-MAP.md: every app surface, its snow status, and its governing rule.
+
 ## Beta 1.300 — 2026-11-26
 
 Boot-menu snow fix (Andrew's live report, 2026-11-26: on a cold start the start screen snowed, but the route picker that

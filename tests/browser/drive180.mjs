@@ -796,11 +796,8 @@ try {
 ok('SNOW9 RAISED PEAK (Beta 1.161 - Andrew: accumulating like the original, just higher): at the settle cycle\'s full amount (' + (snow9 ? snow9.amt.toFixed(3) : 'n/a') + ') the PAINTED snow crest stands ' + (snow9 ? snow9.peak : 'n/a') + 'px (two reads ' + (snow9 ? snow9.s1 : 'n/a') + '/' + (snow9 ? snow9.s2 : 'n/a') + 'px, the lower judged) against the expected crest ' + (snow9 ? snow9.exp.toFixed(1) : 'n/a') + 'px = the pinned 51px peak (the bottom bar\'s measured height) x the ground profile\'s maximum over the live width; the bar itself measures ' + (snow9 ? snow9.barH : 'n/a') + 'px in this same page (51 +/- 2)',
   !!snow9 && snow9.amt >= 0.995 && Math.abs(snow9.peak - snow9.exp) <= 5 && Math.abs(snow9.barH - SNOW9_PEAK) <= 2);
 
-// TITLE LIFETIME + SUB-PANE SNOW + LIST ROWS (Beta 1.159): navigate
-// the boot menu's panes with real clicks and judge what Andrew's
-// rules demand - the title (and the snow) present ONLY on the main
-// pane; the list rows centred and pill-typed. Effective opacity is
-// the ancestor-multiplied quantity the trace computes.
+// SUB-PANE SNOW + LIST ROWS: boot panes by real clicks -
+// title main-pane only, snow on every pane.
 const effOp = id => ev(`(() => { const el = document.getElementById('${id}'); if (!el) return -1; let op = 1, n = el; while (n && n.nodeType === 1) { const cs = getComputedStyle(n); if (cs.display === 'none' || cs.visibility === 'hidden') return 0; op *= parseFloat(cs.opacity); if (n === document.documentElement) break; n = n.parentElement; } return Math.round(op * 1000) / 1000; })()`).then(x => (typeof x === 'number' ? x : -1)).catch(() => -1);
 const paneOn = id => ev(`(() => { const p = document.getElementById('${id}'); return !!(p && p.classList.contains('on')); })()`).then(x => x === true).catch(() => false);
 const clickId = id => ev(`(() => { const b = document.getElementById('${id}'); if (!b) return false; b.click(); return true; })()`).then(x => x === true).catch(() => false);
@@ -811,7 +808,7 @@ try {
   r.tMain0 = await effOp('brandLayer');
   r.cvMain0 = await effOp('snowCv');
   await clickId('rmChoose');
-  r.toList = await waitFor(async () => (await paneOn('rmListPane')) && (await effOp('brandLayer')) <= 0.05 && (await effOp('snowCv')) <= 0.05, 3000); // Beta 1.178: the canvas term is new - through 1.177 the title's own .away fade (same .3s, same showRmPane call) was the settle proxy for the canvas read below; the title is display:none now and cannot proxy, so the wait keys on the canvas itself
+  r.toList = await waitFor(async () => (await paneOn('rmListPane')) && (await effOp('brandLayer')) <= 0.05 && (await effOp('snowCv')) >= 0.99, 3000); // the wait keys on the canvas itself: the snow must stand on this pane
   r.tList = await effOp('brandLayer');
   r.cvList = await effOp('snowCv');
   r.rows = await ev(`(() => { const meas = row => { const rr = row.getBoundingClientRect(); const out = { rcx: rr.left + rr.width / 2 }; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); if (nm) { const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); out.nOff = Math.round(Math.abs(t.left + t.width / 2 - out.rcx) * 10) / 10; const cs = getComputedStyle(nm); out.nSize = cs.fontSize; out.nWeight = cs.fontWeight; } if (ar) { const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); out.aOff = Math.round(Math.abs(t2.left + t2.width / 2 - out.rcx) * 10) / 10; } const rcs = getComputedStyle(row); out.bg = rcs.backgroundColor; out.sh = rcs.boxShadow; out.rad = rcs.borderRadius; out.ff = rcs.fontFamily; return out; }; const rows = [...document.querySelectorAll('#rmRoutes .routeRow')]; const btn = document.getElementById('rmCreate'); const bcs = btn ? getComputedStyle(btn) : null; return JSON.stringify({ rows: rows.map(meas), btnFf: bcs ? bcs.fontFamily : '', btnSize: bcs ? bcs.fontSize : '' }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
@@ -825,7 +822,7 @@ try {
   r.toCity = await waitFor(() => paneOn('rmCityListPane'), 3000);
   await waitFor(() => ev(`!!document.querySelector('#crCityList .rmNote') || document.querySelectorAll('#crCityList .routeRow').length > 1`).then(x => x === true).catch(() => false), 6000);
   r.bootCity = await ev(`(() => { const rm = document.getElementById('routeMenu'); return !!(rm && rm.classList.contains('boot')); })()`).then(x => x === true).catch(() => false); // Beta 1.238: the state the city read is judged in - this leg is the cold open, so .boot must stand (arm() removed only html.boot; #routeMenu.boot comes off at a pick's finish(), which this leg never performs). Beta 1.239: the read stays because SNOW10's precondition names the state, even though the expectation no longer splits on it
-  r.toCitySnow = await waitFor(async () => { const op = await effOp('snowCv'); return op <= 0.05; }, 3000); // Beta 1.239: the settle wait is unconditional again - the canvas must fade on this pane in EVERY state (the pre-1.238 form, restored with the plain toggle; the 1.238 state-aware form waited for >= 0.99 at boot, for the exemption that is now reverted)
+  r.toCitySnow = await waitFor(async () => { const op = await effOp('snowCv'); return op >= 0.99; }, 3000); // the snow must stand on this pane in every state
   r.cityRow = await ev(`(() => { const box = document.getElementById('crCityList'); if (!box || typeof routeRowShell !== 'function') return null; const row = routeRowShell('button', 'Mississauga', '12,345 streets · ready to load', { chevron: true }); box.appendChild(row); const rr = row.getBoundingClientRect(); const rcx = rr.left + rr.width / 2; const nm = row.querySelector('.routeName'), ar = row.querySelector('.routeArea'); const g = document.createRange(); g.selectNodeContents(nm); const t = g.getBoundingClientRect(); const g2 = document.createRange(); g2.selectNodeContents(ar); const t2 = g2.getBoundingClientRect(); const cs = getComputedStyle(nm); return JSON.stringify({ nOff: Math.round(Math.abs(t.left + t.width / 2 - rcx) * 10) / 10, aOff: Math.round(Math.abs(t2.left + t2.width / 2 - rcx) * 10) / 10, nSize: cs.fontSize }); })()`).then(x => typeof x === 'string' && x ? JSON.parse(x) : null);
   r.tCity = await effOp('brandLayer');
   r.cvCity = await effOp('snowCv');
@@ -836,15 +833,8 @@ try {
   r.tMain2 = await effOp('brandLayer');
   nav = r;
 } catch (e) { nav = null; }
-// TAB-MODE city leg (Beta 1.238; kept verbatim in substance by
-// Beta 1.239 - the expectation never changed, only the sheet it
-// once named is gone): a GENUINE boot pick (not a class
-// poke) ends the boot state - __bootPickRoute -> finish() removes
-// the splash and parks the menu - then the Routes menu opens in
-// tab mode and the same city pane is reached again. In that state
-// the canvas is gone with the splash, so the old hidden expectation
-// is what must hold. Isolated in its own try/catch: a failure here
-// is SNOW11's, never a corruption of the boot nav leg above.
+// TAB-MODE city leg: after a boot pick, the same city
+// pane in tab mode. The snow must stand too.
 let tabNav = null;
 try {
   const t = {};
@@ -862,7 +852,7 @@ try {
   await sleep(400); // the pane's own .35s fade, so the canvas read is settled, not mid-transition
   t.bootTab = await ev(`(() => { const rm = document.getElementById('routeMenu'); return !!(rm && rm.classList.contains('boot')); })()`).then(x => x === true).catch(() => true);
   t.tabTab = await ev(`(() => { const rm = document.getElementById('routeMenu'); return !!(rm && rm.classList.contains('tab')); })()`).then(x => x === true).catch(() => false);
-  t.cvCityTab = await effOp('snowCv'); // -1: the canvas is gone with the removed splash (the element itself is absent, not merely faded)
+  t.cvCityTab = await effOp('snowCv'); // the canvas is a body-level field since 1.299: it stands in tab mode too
   tabNav = t;
 } catch (e) { tabNav = null; }
 ok('BRAND1 (Beta 1.180) the brand is ABSENT on the main pane itself (brand layer effective opacity ' + (nav ? nav.tMain0 : 'n/a') + ') - the doors stand solo from the first menu frame, and no #splashTitle exists anywhere in the session - while the snow stays present with the menu (canvas effective opacity ' + (nav ? nav.cvMain0 : 'n/a') + '): the cut took the brand only, never the snow',
@@ -875,12 +865,16 @@ ok('BRAND4 the brand is gone on the create doors AND the city list too (create p
   !!nav && nav.toCreate && nav.toCity && nav.tCity <= 0.05);
 ok('BRAND5 (Beta 1.178/1.180) the brand is still absent at the main pane after the full create-side round trip (brand layer effective opacity ' + (nav ? nav.tMain2 : 'n/a') + ')',
   !!nav && nav.toMain2 && nav.tMain2 <= 0.05);
-ok('SNOW6 the snow hides in the sub-panes and returns at the main pane (the brand is gone everywhere now): canvas effective opacity on the route list ' + (nav ? nav.cvList : 'n/a') + ', on the city list ' + (nav ? nav.cvCity : 'n/a') + ', back at the main pane ' + (nav ? nav.cvMain1 : 'n/a') + ' (Beta 1.239: the original city clause returns - the 1.238 split by state retires with the exemption it served; SNOW10/SNOW11 still judge the city list per state below)',
-  !!nav && nav.cvList <= 0.05 && nav.cvCity <= 0.05 && nav.cvMain1 >= 0.99);
-ok('SNOW10 (Beta 1.239) at BOOT the Select City pane HIDES its snow: the nav leg reached the city list with #routeMenu.boot standing (' + (nav ? nav.bootCity : 'n/a') + ', the snow settled hidden: ' + (nav ? nav.toCitySnow : 'n/a') + ') and the canvas effective opacity reads ' + (nav ? nav.cvCity : 'n/a') + ' - the 1.238 exemption is reverted on Andrew\'s ruling (the snow belongs on the splash and load screens only, never behind a menu); this is the seat an exemption would return to, and a visible read (>= 0.99) here fails it on sight',
-  !!nav && nav.bootCity === true && nav.toCitySnow === true && nav.cvCity <= 0.05);
-ok('SNOW11 (Beta 1.238, standing under 1.239) in TAB mode the city list keeps the hidden expectation: after a genuine boot pick (splash removed: ' + (tabNav ? tabNav.splashGone : 'n/a') + ') the Routes menu stands in tab mode (boot class gone: ' + (tabNav ? !tabNav.bootTab : 'n/a') + ', tab class on: ' + (tabNav ? tabNav.tabTab : 'n/a') + '), the city pane was reached (' + (tabNav ? tabNav.toCityTab : 'n/a') + ') and the canvas effective opacity reads ' + (tabNav ? tabNav.cvCityTab : 'n/a') + ' - -1 (absent with the removed splash) or <= 0.05 (hidden): the 1.159 lifetime rule intact in tab mode too - and since Beta 1.239 the pane it judges is the plain blue menu again, the sheet itself gone',
-  !!tabNav && tabNav.picked === true && tabNav.splashGone === true && tabNav.toCityTab === true && tabNav.bootTab === false && tabNav.tabTab === true && (tabNav.cvCityTab === -1 || tabNav.cvCityTab <= 0.05));
+ok('SNOW6 the snow STANDS in the sub-panes and at the main pane alike (Andrew, 2026-11-26 - every blue menu): canvas effective opacity on the route list ' + (nav ? nav.cvList : 'n/a')
+  + ', on the city list ' + (nav ? nav.cvCity : 'n/a') + ', back at the main pane ' + (nav ? nav.cvMain1 : 'n/a') + ' (the brand is gone everywhere now; SNOW10/SNOW11 judge the city list per state below)',
+  !!nav && nav.cvList >= 0.99 && nav.cvCity >= 0.99 && nav.cvMain1 >= 0.99);
+ok('SNOW10 (Beta 1.301) at BOOT the Select City pane KEEPS its snow: the nav leg reached the city list with #routeMenu.boot standing (' + (nav ? nav.bootCity : 'n/a')
+  + ', the snow settled standing: ' + (nav ? nav.toCitySnow : 'n/a') + ') and the canvas effective opacity reads ' + (nav ? nav.cvCity : 'n/a') + ' - a hidden read (<= 0.05) here fails it on sight',
+  !!nav && nav.bootCity === true && nav.toCitySnow === true && nav.cvCity >= 0.99);
+ok('SNOW11 (Beta 1.301) in TAB mode the city list keeps its snow too: after a genuine boot pick (splash removed: ' + (tabNav ? tabNav.splashGone : 'n/a')
+  + ') the Routes menu stands in tab mode (boot class gone: ' + (tabNav ? !tabNav.bootTab : 'n/a') + ', tab class on: ' + (tabNav ? tabNav.tabTab : 'n/a') + '), the city pane was reached (' + (tabNav ? tabNav.toCityTab : 'n/a')
+  + ') and the canvas effective opacity reads ' + (tabNav ? tabNav.cvCityTab : 'n/a') + ' - the field is body-level since 1.299, so it stands behind the tab menu exactly as at boot',
+  !!tabNav && tabNav.picked === true && tabNav.splashGone === true && tabNav.toCityTab === true && tabNav.bootTab === false && tabNav.tabTab === true && tabNav.cvCityTab >= 0.99);
 const rowList = nav && nav.rows && Array.isArray(nav.rows.rows) ? nav.rows.rows : [];
 const rowNWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.nOff === 'number' ? x.nOff : 999))) : 999;
 const rowAWorst = rowList.length ? Math.max(...rowList.map(x => (typeof x.aOff === 'number' ? x.aOff : 999))) : 999;

@@ -3,32 +3,8 @@ import fs from 'node:fs';
 const { proc, send, S, ev, consoleLog, sleep, poll } = await launchDrive();
 const INDEXFX = JSON.parse(fs.readFileSync(new URL('../../packs/index.json', import.meta.url), 'utf8'));
 
-// drive213: /correct Phase 2, round C10 - the shipped form must match
-// Andrew's APPROVED form, measured rendered, not asserted from the
-// code. Phase 1's two instances, both corrected only when Andrew saw
-// them himself (he was the check both times):
-//   (1) Beta 1.237 (861393d): the approved centred-titles sample was
-//       built SCOPED to the Routes menu - #routeMenu .rmTitle only -
-//       leaving every Settings title at the left. His ruling widened
-//       it the same evening: EVERY blue menu's titles (066ace3, the
-//       base rule). Section A therefore ENUMERATES the class: every
-//       .rmTitle in the document must compute text-align:center, and
-//       a rendered sample across both menus must measure centred -
-//       a scope narrowed to one menu fails here by construction,
-//       because the check names no menu.
-//   (2) Beta 1.238 (5d2b50c): the cold-open Select City was built as
-//       a floating sheet with a snow exemption - showRmPane kept the
-//       snowfall canvas live behind that one pane. Andrew reverted
-//       it wholesale at 1.239 (0373018): the pane is the plain blue
-//       menu again, and snow lives only on the splash/load screens.
-//       Section B measures the cold-open Select City in its approved
-//       form: the snow canvas AWAY behind the pane, the pane
-//       full-bleed in its menu (no floating sheet), and the city
-//       list block centred (his 1.241 ruling).
-// Both sections were proven failing on their real historical trees
-// before this drive counted (the /correct discipline; runs recorded
-// in the round's RECORD): A fails at 861393d on the Settings titles,
-// B fails at 5d2b50c on the snow exemption and the sheet geometry.
+// drive213: the shipped form must match Andrew's approved form,
+// measured rendered: every menu title centred, snow on every pane.
 const R = { checks: [] };
 const ok = (name, cond) => R.checks.push([name, cond === true]);
 const J = async (expr) => { const raw = await ev(`(() => { try { return JSON.stringify((${expr})); } catch (e) { return JSON.stringify({ __err: String(e && e.message || e) }); } })()`); return typeof raw === 'string' ? JSON.parse(raw) : {}; };
@@ -62,12 +38,16 @@ const B = await J(`(() => {
   let gT = Infinity, gB = -Infinity;
   for (const el of pane.children) { const r = el.getBoundingClientRect(); if (r.height > 0) { gT = Math.min(gT, r.top); gB = Math.max(gB, r.bottom); } }
   return { boot: menu.classList.contains('boot'), snowAway: snow ? snow.classList.contains('away') : null,
+    running: window.__snow ? window.__snow.running() : null,
     bgImg: cs.backgroundImage, radius: cs.borderRadius, shadow: cs.boxShadow,
     listCx: lr.left + lr.width / 2, listW: lr.width, menuCx: mr.left + mr.width / 2,
     grpCy: (gT + gB) / 2, paneCy: pr.top + pr.height / 2 };
 })()`);
-ok('B1 (approved form: no snow behind a menu) at the cold-open Select City the snowfall canvas is AWAY - snow lives on the splash/load screens only, never behind a menu pane (the 1.238 exemption kept it live behind this one pane) | ' + JSON.stringify(B),
-  paneB === true && B.boot === true && B.snowAway === true);
+const fB1 = await J(`window.__snow ? window.__snow.frames() : -1`);
+await sleep(300);
+const fB2 = await J(`window.__snow ? window.__snow.frames() : -1`);
+ok('B1 (approved form: snow on every menu, Andrew 2026-11-26) at the cold-open Select City the snowfall STANDS - canvas not away, engine running, frames advancing (' + fB1 + ' -> ' + fB2 + ') | ' + JSON.stringify(B),
+  paneB === true && B.boot === true && B.snowAway === false && B.running === true && fB2 > fB1);
 ok('B2 (approved form: the plain menu, not a floating sheet) the Select City pane wears NO sheet form - transparent over the menu\'s own ground, square corners, no shadow (the 1.236-1.238 sheet wore the gradient itself at 26px radius with a shadow, floating over the scene) | ' + JSON.stringify(B),
   B.bgImg === 'none' && B.radius === '0px' && B.shadow === 'none');
 ok('B3 (approved form: the centred block, 1.241 - horizontal) with the catalogue POPULATED (' + INDEXFX.cities.length + ' city rows rendered), the city list block sits centred in the menu | rows=' + rowsB + ' ' + JSON.stringify(B),

@@ -77,8 +77,8 @@ check('7 (O-08): the CSP template narrows script-src to the MapLibre file',
   && !csp.includes("script-src 'sha384-{script}' https://cdn.jsdelivr.net; "));
 
 // ---------- O-09: snow rests while hidden, specks capped ----------
-check('8 (O-09): the snow loop skips away frames and the speck count is capped',
-  snow.includes("cvS.classList.contains('away')")
+check('8 (O-09): the speck count is capped; the away skip is retired (Beta 1.301 - snow on every menu)',
+  !snow.includes("cvS.classList.contains('away')")
   && snow.includes('Math.min(1000, Math.round(area / SPECK.per))'));
 
 // ---------- A-02: the restore fold does not merge per cell ----------

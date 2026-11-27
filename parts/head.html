@@ -661,9 +661,8 @@
 /* the poses land the whole brand block, not the title alone; the icon occupies the layer itself, no spacer */
 /* one snow canvas at body level: above the splash's blue, below the menus. The engine lives in brand-snow.js. */
 #snowCv { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; visibility: hidden; transition: opacity .3s ease; }
-#snowCv.away { opacity: 0; } /* the snow hides in the menu's sub-panes alongside the title and returns at the main pane */
 body.snow-scene #snowCv { visibility: visible; background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* while snow is live the canvas wears the menu blue, so the field is the menus' ground */
-body.snow-scene #snowCv:not(.away) ~ #routeMenu, body.snow-scene #snowCv:not(.away) ~ #setMenu { background: transparent; } /* menus step aside only while the field shows; hidden snow leaves them their own blue */
+body.snow-scene #snowCv ~ #routeMenu, body.snow-scene #snowCv ~ #setMenu { background: transparent; } /* while the scene is live the menus step aside for the one field */
 #brandLayer { position: fixed; inset: 0; z-index: 10001; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .3s var(--ease-open); }
 #brandBlock { display: flex; flex-direction: column; align-items: center; } /* no entrance of its own: entrances live on the children. One rigid unit, never reparented, and it no longer travels */
 #brandBlock > * { flex: none; }

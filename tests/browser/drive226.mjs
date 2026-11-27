@@ -119,15 +119,19 @@ ok('F7 rapid open/close/open converges through a real close: the middle state is
 await tapById(ev, 'rmClose');
 await sleep(700);
 
-// ---------- F10/F11: the sub-pane ground, and Settings never inherits .away ----------
+// ---------- F10/F11: the sub-pane keeps its snow, and Settings keeps its own ----------
 await tapById(ev, 'routesBtn');
 await sleep(500);
 await tapById(ev, 'rmChoose');
-await poll(`document.getElementById('snowCv').classList.contains('away')`, 5000);
+await poll(`document.getElementById('rmListPane').classList.contains('on')`, 5000);
 const P1 = await J(`({ away: document.getElementById('snowCv').classList.contains('away'),
-  menuBgi: getComputedStyle(document.getElementById('routeMenu')).backgroundImage })`);
-ok('F10 on a Routes sub-pane the snow hides (.away) AND the menu keeps its own blue ground - the map never shows through the menu | ' + JSON.stringify(P1),
-  P1.away === true && P1.menuBgi.includes('linear-gradient') && P1.menuBgi.includes('rgb(61, 101, 239)'));
+  running: window.__snow.running(), frames: window.__snow.frames(),
+  menuBgi: getComputedStyle(document.getElementById('routeMenu')).backgroundImage,
+  cvBgi: getComputedStyle(document.getElementById('snowCv')).backgroundImage })`);
+await sleep(250);
+const P1b = await J(`window.__snow.frames()`);
+ok('F10 on a Routes sub-pane the snow stands: no .away, engine running, frames advancing, the menu stepped aside over the field (the canvas is the opaque ground - the map never shows through) | ' + JSON.stringify({ P1, P1b }),
+  P1.away === false && P1.running === true && P1b > P1.frames && P1.menuBgi === 'none' && P1.cvBgi.includes('rgb(61, 101, 239)'));
 await tapById(ev, 'routesBtn');
 await sleep(700);
 await tapById(ev, 'setBtn');
@@ -135,7 +139,7 @@ await sleep(650);
 const P2 = await J(`({ away: document.getElementById('snowCv').classList.contains('away'), running: window.__snow.running(), frames: window.__snow.frames() })`);
 await sleep(250);
 const P3 = await J(`window.__snow.frames()`);
-ok('F11 Settings opened after a Routes sub-pane still gets its snow: no inherited .away, engine running, frames advancing | ' + JSON.stringify({ P2, P3 }),
+ok('F11 Settings opened after a Routes sub-pane still gets its snow: engine running, frames advancing, canvas never away | ' + JSON.stringify({ P2, P3 }),
   P2.away === false && P2.running === true && P3 > P2.frames);
 await tapById(ev, 'setClose');
 await sleep(700);
