@@ -18869,6 +18869,32 @@
    "red": "proof-1299 exit 1 on the frozen split tree: FAIL 'first tap arms for five seconds; invalid and 699ms taps cannot confirm' and FAIL '700ms confirms in delete, save, back, count order and cancels the timer'; the full 11-mutation set re-run on the frozen bytes, every mutation failing its named check",
    "green": "proof-1299 on the frozen split tree: 11 passed, 0 failed (exit 0); claims byte-identical to the pre-split registration; full proof suite 96/96",
    "issued": "2026-11-27 s2r1-openclean"
+  },
+  {
+   "id": "solid-sheets-drive231",
+   "check": "tests/browser/drive231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive231.mjs": "e5e079e3c10eed0aba96f83f97c7d47fdb71fdc4c1fd404d69d4bfd04d832e4e",
+    "parts/head.html": "9354b201521adeb3bfed3a438f5be1bfac7edc6a3be6f5e52087ceb53d02e26f"
+   },
+   "mutation": "the shipped state itself: base tree 744c8ef5, whose sheets wear the frosted --card colour (alpha .92 day / .94 night) behind blur(18px) saturate(1.6), so colours behind a sheet tint through",
+   "red": "drive231 on base 744c8ef5 (drive file only, final bytes): 21 checks, exactly 8 FAIL - 'background is fully opaque' and 'has no backdrop filter' for the Streets and Pace sheets in day and night; the tab-bar frost pins and the dragging checks PASS on base. Reproduced twice",
+   "green": "drive231 on the fixed tree: 21/21 PASS",
+   "issued": "2026-11-27 solid-sheets"
+  },
+  {
+   "id": "solid-sheets-drive231-r2",
+   "check": "tests/browser/drive231.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive231.mjs": "e5e079e3c10eed0aba96f83f97c7d47fdb71fdc4c1fd404d69d4bfd04d832e4e",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b"
+   },
+   "mutation": "the shipped state itself: base tree 744c8ef5, whose sheets wear the frosted --card colour (alpha .92 day / .94 night) behind blur(18px) saturate(1.6), so colours behind a sheet tint through",
+   "red": "drive231 on base 744c8ef5 (drive file only, final bytes): 21 checks, exactly 8 FAIL - 'background is fully opaque' and 'has no backdrop filter' for the Streets and Pace sheets in day and night; the tab-bar frost pins and the dragging checks PASS on base. Reproduced twice",
+   "green": "drive231 on the fixed tree: 21/21 PASS, including on the final bytes after the line-46 comment adjudication (r2)",
+   "issued": "2026-11-27 solid-sheets"
   }
  ]
 }
