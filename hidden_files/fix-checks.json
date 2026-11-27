@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "b84db46fa792144d7cde14c836be8782b138d9c858922be4296436d2763a81dc",
+  "canonical_registry_sha256": "b7a1dbf7af5fb3e2cc0b5277c9e73ae7f09761542d07c8fe1da073848a5ac429",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -694,7 +694,7 @@
    "file": "parts/app2.js",
    "fix": "MapLibre is handed a COPY of the embedded styles, never the original (Beta 1.77): MapLibre rewrites fields of a style object it is handed \u2014 a night boot followed by a day flip rewrote the night style's own sprite and the offline preload then missed the dark sprites (893 files, not 897).",
    "id": "beta-styles-handed-to-maplibre-as-copies",
-   "pattern": "const glStyleFor = /** @type {(night: boolean) => any} */ (night =>",
+   "pattern": "JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day']))",
    "type": "grep_present"
   },
   {
