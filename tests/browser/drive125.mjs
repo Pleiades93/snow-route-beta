@@ -47,15 +47,14 @@ ok('S3 header slab is transparent (map full-screen at the top)', S22.hudBg === '
 ok('S4 tab bar spans the bottom edge and takes the touch there (the old dead-strip job), dock clear above it | ' + JSON.stringify(S22),
   S22.strip.x === 0 && S22.strip.w === S22.vw && Math.abs(S22.strip.bottom - S22.vh) <= 1 && S22.startB <= S22.strip.top + 1 && S22.atBottom === 'tabBar' && S22.atStart === 'startBtn');
 
-// T (Beta 1.29, Andrew): menus are ONE family - the Streets/Pace sheets, the bottom
-// bar and the Settings pop-up share a surface in each theme; day is light glass with
-// dark text (never white-on-white over the bright map), night is a deep blue-black.
+// T (Beta 1.304, Andrew): sheets solid, both themes; the
+// bar keeps the frost - one hue family, two finishes.
 const T1 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, paceBg: surf($('pacePanel')),
   barBg: surf($('tabBar')), fillW: $('countFill').getBoundingClientRect().width,
   order: [...document.querySelectorAll('#tabBar .tabItem')].map(b => b.id) }); })()`));
-ok('T1 day menus share one light surface with dark text (bar = sheets; the Settings takeover is blue in both themes since 1.88, asserted at T3) | ' + JSON.stringify(T1),
-  T1.sheetBg === 'rgba(255, 255, 255, 0.92)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === T1.sheetBg);
+ok('T1 day sheets are solid white with dark text; the tab bar keeps the frost (Beta 1.304) | ' + JSON.stringify(T1),
+  T1.sheetBg === 'rgb(255, 255, 255)' && T1.sheetCol === 'rgb(28, 37, 52)' && T1.paceBg === T1.sheetBg && T1.barBg === 'rgba(255, 255, 255, 0.92)');
 ok('T2 tab order: Locate, Routes, Home dead centre, Clear, Settings (Beta 1.88: Day/Night is a floating button, not a tab) | ' + JSON.stringify(T1.order),
   JSON.stringify(T1.order) === JSON.stringify(['gpsBtn', 'routesBtn', 'homeBtn', 'clearBtn', 'setBtn']));
 ok('T3 the meter starts empty | fillW ' + T1.fillW, T1.fillW === 0);
@@ -166,8 +165,8 @@ const FADE = JSON.parse(await ev(`JSON.stringify(window.__fade || [])`));
 ok('S7b the swap really crossfades: the sun passes through mid opacities on its way in (Codex P2, PR #221) | samples ' + FADE.length, FADE.some(o => o > 0.05 && o < 0.95));
 const T4 = JSON.parse(await ev(`(() => { const surf = el => getComputedStyle(el).backgroundColor; return JSON.stringify({
   sheetBg: surf($('sheet')), sheetCol: getComputedStyle($('sheet')).color, barBg: surf($('tabBar')) }); })()`));
-ok('T4 night menus share the neutral charcoal (bar = sheets), text bright (Beta 1.75) | ' + JSON.stringify(T4),
-  T4.sheetBg === 'rgba(32, 33, 37, 0.94)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === T4.sheetBg);
+ok('T4 night sheets are solid charcoal, text bright; the tab bar keeps the frost (Beta 1.304) | ' + JSON.stringify(T4),
+  T4.sheetBg === 'rgb(32, 33, 37)' && T4.sheetCol === 'rgb(237, 242, 249)' && T4.barBg === 'rgba(32, 33, 37, 0.94)');
 // Poll the settled night ladder P2 asserts: the swap's restack rebuilds the style before the retune lands (7c).
 await waitTrue(poll, `(() => { const byId = {}; for (const L of map.getStyle().layers) byId[L.id] = L;
   const sub = byId['places_subplace'], loc = byId['places_locality'];
