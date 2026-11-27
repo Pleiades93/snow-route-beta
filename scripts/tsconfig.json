@@ -1,1 +1,23 @@
-{"compilerOptions":{"allowJs":true,"checkJs":true,"forceConsistentCasingInFileNames":true,"lib":["ES2022"],"module":"none","noEmit":true,"skipLibCheck":false,"strict":false,"target":"ES2022"},"include":["../parts/data.js","../parts/app1.js","../parts/engine.js","../parts/pmstyles.js","app1-types.d.ts"]}
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "ES2022"
+    ],
+    "module": "none",
+    "noEmit": true,
+    "noImplicitAny": true,
+    "skipLibCheck": false,
+    "strict": false,
+    "target": "ES2022"
+  },
+  "include": [
+    "../parts/data.js",
+    "../parts/app1.js",
+    "../parts/engine.js",
+    "../parts/pmstyles.js",
+    "app1-types.d.ts"
+  ]
+}

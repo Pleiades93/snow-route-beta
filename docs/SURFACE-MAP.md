@@ -6,6 +6,10 @@ and the rule that governs it. Seeded from the snow surface census of
 surface change - briefs reference this map when a change touches a
 surface.
 
+S1 type-safety round (2026-11-27): parts/ changed by JSDoc
+annotation only - no surface, element or behaviour changed. Map
+reviewed against the change; no update needed.
+
 ## The snow rule (one rule, app-wide)
 
 Andrew, 2026-11-26: every blue menu has the snow, no exceptions.

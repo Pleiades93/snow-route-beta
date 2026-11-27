@@ -5,6 +5,7 @@ const MLAT = 111320, MLNG = 80386;
 /** @type {() => number} */ const vvHeight = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight); // visible-screen height (shrinks when the phone keyboard opens)
 const YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';
 const PRIMARIES = new Set(); // the pack's primary streets: filled per load by buildGeometry from pack.primaries (values live in the pack)
+/** @type {RoutePack["spot"]} */
 const SPOT = {}; // the active pack's label-anchor hints: filled per load by buildGeometry from pack.spot
 const TRAIL_MAX = 8000;
 const TRAIL_WINDOW_S = 3600; // the trail window (seconds): the trail is a distance fallback, keeping only the live run's last 60 minutes
@@ -18,6 +19,7 @@ const FIXLOG_MAX_CHARS = 200000; // the character cap: 200,000 (this log), sized
 // lastArea pre-fills the area; fixlog + dp are device records (global, spanning routes); dp is never backed up
 const LS_GLOBAL = { night: 'snowroute.v2.night', nightExp: 'snowroute.v2.nightExp', exp: 'snowroute.v5.export', prep: 'snowroute.prep.v1', lastArea: 'snowroute.v2.lastarea', fixlog: 'snowroute.v1.fixlog', dp: 'snowroute.v1.dp' };
 const LEGACY_KEYS = { done: 'snowroute.v2', times: 'snowroute.v2.times', hist: 'snowroute.v2.history', notes: 'snowroute.v4.notes', via: 'snowroute.v4.via', trail: 'snowroute.v4.trail', cov: 'snowroute.v4.cov', start: 'snowroute.v5.start', flip: 'snowroute.v5.flip', sides: 'snowroute.v5.sides', sess: 'snowroute.v5.sess', pre: 'snowroute.5w.v5.preload', snap: 'snowroute.v5.snap', finclean: 'snowroute.v5.finclean', rundist: 'snowroute.v5.rundist', rundist2: 'snowroute.v5.rundist2' }; // Beta 1.193: 'rundist2' rides here on rundist's terms - the counter's second copy (bankRunDistMirror, app3), written only by the trail-flush path in PERSIST.flush below, never backed up; adoption reads it when the primary is lost (RUNDIST.adopt, app3). snap rides here too so LS.snap is defined on a legacy-fallback boot (the pre-1.76 app never wrote one - the key is simply absent there, which the cancel path already treats as 'no snapshot'); finclean rides for the same reason (Beta 1.141); rundist rides for the same reason (Beta 1.167, B5). Beta 1.254 (O-01): 'pre' rides too, naming the LIVE slot (routeKeys('5w').pre) - through 1.253 a fallback boot had LS.pre undefined, so the preload writer stored its record under a localStorage key literally named "undefined" and the readers read it back from there; the fallback session's preload record now lands where a later migrated boot looks for it
+/** @type {(keyof BackupFields)[]} */
 const ROUTE_FIELDS = ['done', 'times', 'hist', 'notes', 'via', 'trail', 'cov', 'start', 'flip', 'sides', 'sess'];
 const PACK_FIELDS = ['name', 'area', 'primaries', 'spot', 'tileNames', 'box', 'roads', 'reference', 'ends']; // the one list of pack fields: normalizePack walks it; an absent field fails validation by construction
 // ===== RULE CONSTANTS ===== every product-rule number lives here, named once; equal numbers for different policies stay separate constants
@@ -40,9 +42,11 @@ const PACK_TILES_MAX = 20000; // the tile-URL iteration budget: a worldwide-box 
 /** @param {string} id @returns {boolean} */ function migrateLegacyRoute(id) {
   if (id !== '5w') return true;
   const rk = routeKeys(id);
-  const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : v; }; // reads go through rawRead, not lsGet (throws read as absent there): unknown means retry next boot
+  /** @type {(k:string)=>string|null|undefined} */
+  const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : /** @type {string | null} */ (v); }; // reads go through rawRead, not lsGet (throws read as absent there): unknown means retry next boot
   const migMark = migGet(rk.mig); if (migMark === undefined) return false; if (migMark !== null) return true; // the move committed on an earlier boot - the slot is never re-examined against legacy again
   const legSides = migGet(LEGACY_KEYS.sides); if (legSides === undefined) return false; if (legSides === null) return true; // nothing legacy to move
+  /** @type {MigrationFillRecord} */
   let prog = {};
   try { const rawProg = migGet(rk.migfill); if (rawProg === undefined) return false; if (rawProg) { const p = JSON.parse(rawProg); if (p && typeof p === 'object' && !Array.isArray(p)) prog = p; } } catch (e) { prog = {}; }
   let progDirty = false;
@@ -162,7 +166,7 @@ const DP = { platform: DP_PLATFORM,
   pointerDown: false,
   renderSeen: false,
   hooked: false,
-  samples: [] };
+  samples: /** @type {number[]} */ ([]) };
 // the constructor's ratio: on Android the applied tier's, everywhere else the literal 2
 /** @returns {number} */ function dpPixelRatio() { return DP_ANDROID ? DP_TIERS[DP.tier].pr : 2; }
 /** @param {number[]} a @returns {number} */ function dpMedian(a) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
@@ -211,6 +215,7 @@ const DP = { platform: DP_PLATFORM,
 // real work only: a frame counts when the map rendered or is moving; idle screens earn no samples
 /** @returns {void} */ function dpSamplerStart() {
   let last = performance.now(), sinceEval = 0;
+  /** @type {(now:number)=>void} */
   const frame = now => {
     requestAnimationFrame(frame);
     const dt = now - last; last = now;
@@ -252,6 +257,7 @@ const RAW_READ_FAILED = {}; // rawRead's failure sentinel: a unique object no st
 /** @param {string} key @param {string} value @returns {TxStorageOutcome} */ function txSet(key, value) { if (!lsSet(key, value)) return Object.assign(storeFail(key, true), { failKind: 'write' }); return lsGet(key) === value ? storeOk() : Object.assign(storeFail(key, true), { failKind: 'verify' }); }
 /** @param {string} key @returns {TxStorageOutcome} */ function txDel(key) { if (!lsDel(key)) return Object.assign(storeFail(key, true), { failKind: 'write' }); return rawRead(key) === null ? storeOk() : Object.assign(storeFail(key, true), { failKind: 'verify' }); } // Beta 1.141 verify cycle 1: a delete verifies through rawRead, never lsGet - lsGet reads a THROWN read as absent, so an unverifiable delete could claim success; through rawRead the thrown read is the RAW_READ_FAILED sentinel, a 'verify' failure like any other disagreement
 /** @param {TxStep[]} steps @returns {TxOutcome} */ function runTx(steps) {
+  /** @type {TxStep[]} */
   const done = [];
   for (const st of steps) {
     const r = st.write();
@@ -265,7 +271,18 @@ const RAW_READ_FAILED = {}; // rawRead's failure sentinel: a unique object no st
   }
   return { outcome: 'committed', failedStep: null };
 }
-/** @param {number} startMs @param {number} lastStartedMs @param {boolean} boardEmpty @returns {string} */ function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startMs || !lastStartedMs || startMs !== lastStartedMs) return 'none'; return boardEmpty ? 'complete' : 'rollback'; } /** @param {HistoryEntry} entry @param {PiecesMap} P @param {PieceTimesMap} T @param {string[]} names @returns {boolean} */ function finishBoardMatch(entry, P, T, names) { if (!entry || !entry.sides || typeof entry.sides !== 'object' || !entry.sides.p || typeof entry.sides.p !== 'object') return false; const EP = entry.sides.p, ET = entry.sides.t && typeof entry.sides.t === 'object' ? entry.sides.t : {}; for (const n of names) { const ep = EP[n], cp = P[n]; if (!Array.isArray(ep) || !Array.isArray(cp) || ep.length !== cp.length) return false; for (let i = 0; i < ep.length; i++) if (ep[i] !== cp[i]) return false; const et = Array.isArray(ET[n]) ? ET[n] : [], ct = T && Array.isArray(T[n]) ? T[n] : [], lim = Math.max(et.length, ct.length); for (let i = 0; i < lim; i++) { const a = Array.isArray(et[i]) ? et[i] : null, b = Array.isArray(ct[i]) ? ct[i] : null; if ((a ? a[0] || null : null) !== (b ? b[0] || null : null) || (a ? a[1] || null : null) !== (b ? b[1] || null : null)) return false; } } return true; } /** @param {number | null} markerRun @param {number} markerAt @param {number} lastRunId @param {boolean} boardEmpty @param {boolean} boardMatch @returns {string} */ function finishReconcileNoRunAction(markerRun, markerAt, lastRunId, boardEmpty, boardMatch) { if (markerRun !== 0 || !markerAt || !lastRunId || markerAt !== lastRunId || boardEmpty || !boardMatch) return 'none'; return 'rollback'; } // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.104 (round 103, CG-103-02): the second argument is the newest archive entry's run identity (its runId), NOT its startedAt - strict equality on the identity is the whole contract // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.146 (census C1): the no-run reconciliation's exactness witness - the loaded board still equals the archive entry's own snapshot (entry.sides, buildSnap's deep copy of pieces/pieceTimes) exactly: pieces elementwise, stamp pairs normalized to [string|null, string|null] so the loader's sanitize round-trip (sparse holes and JSON nulls both read as null) cannot false-mismatch. Any doubt reads as NO match (fail-closed: nothing is removed). // pure - fixture-proven in tests/browser/selftest-tx.mjs. Beta 1.146 (census C1): the NO-RUN interrupted finish's signature - the finclean marker of a run-less finish (run: 0, at: the finish time) and the newest entry's runId carrying that same at (finishRun stamps it), the board still holding the archived work exactly. An empty board means the finish completed (the entry stands; completeFinishCleanup owns the marker); anything missing or mismatched means nothing happens.
+/** @param {number} startMs @param {number} lastStartedMs @param {boolean} boardEmpty @returns {string} */
+function finishReconcileAction(startMs, lastStartedMs, boardEmpty) { if (!startMs || !lastStartedMs || startMs !== lastStartedMs) return 'none'; return boardEmpty ? 'complete' : 'rollback'; }
+/** @param {HistoryEntry} entry @param {PiecesMap} P @param {PieceTimesMap} T @param {string[]} names @returns {boolean} */
+  function finishBoardMatch(entry, P, T, names) { if (!entry || !entry.sides || typeof entry.sides !== 'object' || !entry.sides.p || typeof entry.sides.p !== 'object') return false;
+  const EP = entry.sides.p, ET = entry.sides.t && typeof entry.sides.t === 'object' ? entry.sides.t : {}; for (const n of names) { const ep = EP[n], cp = P[n];
+  if (!Array.isArray(ep) || !Array.isArray(cp) || ep.length !== cp.length) return false; for (let i = 0; i < ep.length; i++) if (ep[i] !== cp[i]) return false;
+  const et = Array.isArray(ET[n]) ? ET[n] : [], ct = T && Array.isArray(T[n]) ? T[n] : [], lim = Math.max(et.length, ct.length); for (let i = 0; i < lim;
+  i++) { const a = Array.isArray(et[i]) ? et[i] : null, b = Array.isArray(ct[i]) ? ct[i] : null; if ((a ? a[0] || null : null) !== (b ? b[0] || null : null) || (a ? a[1] || null : null) !== (b ? b[1] || null : null)) return false;
+  } } return true; }
+/** @param {number|null} markerRun @param {number} markerAt @param {number} lastRunId @param {boolean} boardEmpty @param {boolean} boardMatch @returns {string} */
+function finishReconcileNoRunAction(markerRun, markerAt, lastRunId, boardEmpty, boardMatch) { if (markerRun !== 0 || !markerAt || !lastRunId || markerAt !== lastRunId || boardEmpty || !boardMatch) return 'none';
+  return 'rollback'; } // pure - fixture-proven in tests/browser/selftest-tx.mjs; the board-match and marker rules are census C1 (Beta 1.146)
 /** @param {string | null} raw @param {*} fb @returns {*} */ function parseJ(raw, fb) { if (raw == null) return fb; try { const v = JSON.parse(raw); return v == null ? fb : v; } catch (e) { return fb; } }
 // ===== SETTINGS ===== one global key; persistent toggles default ALL OFF (device behaviour starts off until flipped)
 const SETTINGS_KEY = 'snowroute.v2.settings';
@@ -286,6 +303,7 @@ let settings = loadSettings();
 // only the persistent three: settings.awake is never written
 /** @returns {boolean} */ function saveSettings() { return lsSet(SETTINGS_KEY, JSON.stringify({ vib: settings.vib, chime: settings.chime, chimeSound: settings.chimeSound })); }
 // Tap guard — 400 ms per control
+/** @type {Record<string,number>} */
 const tapLast = {};
 /** @param {string} key @param {{ timeStamp: number }} ev @returns {boolean} */ function tapGuard(key, ev) { const timestamp = ev.timeStamp; if (tapLast[key] !== undefined && timestamp - tapLast[key] < 400) return false; tapLast[key] = timestamp; return true; }
 
@@ -353,7 +371,8 @@ const tapLast = {};
   /** @type {StretchMap} */ const out = Object.create(null);
   const runsOf = Object.create(null), totals = Object.create(null);
   for (const n of Object.keys(roads)) {
-    const runs = stitchRuns(n, roads).map(L => { const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i])); return { line: L, cum, total: cum[cum.length - 1], parts: null }; });
+    const runs = stitchRuns(n, roads).map(L => { const cum = [0]; for (let i = 1; i < L.length; i++) cum.push(cum[i - 1] + distM(L[i - 1], L[i]));
+      return { line: L, cum, total: cum[cum.length - 1], parts: /** @type {LatLng[][] | null} */ (null) }; });
     runsOf[n] = runs;
     totals[n] = runs.reduce((a, r) => a + r.total, 0);
   }
@@ -383,6 +402,7 @@ const tapLast = {};
   for (const nm of Object.keys(roads)) for (const seg of roads[nm]) for (const p of seg) { any = true; w = Math.min(w, p[1]); e = Math.max(e, p[1]); s = Math.min(s, p[0]); n = Math.max(n, p[0]); }
   return any ? { w, s, e, n } : null;
 }
+/** @type {string[]} */
 const STREETNAMES = [];
 const names = STREETNAMES; // the paint engine's name for the street list
 
@@ -406,9 +426,19 @@ const STREETSET = new Set();
   buildSamples();
 }
 // state loads at pick time, not eval: before, nothing route-shaped is read, drawn or offered
-let doneSet = new Set(), doneTimes = {}, doneVia = {}, notes = {}, history = [], runStart = 0, trail = [], trailSessions = [], coveredIdx = {}, pieces = {}, pieceTimes = {};
+let doneSet = new Set(),
+  doneTimes = /** @type {Record<string, string>} */ ({}),
+  doneVia = /** @type {Record<string, string>} */ ({}),
+  notes = /** @type {Record<string, NoteEntry[]>} */ ({}),
+  history = /** @type {HistoryEntry[]} */ ([]),
+  runStart = 0,
+  trail = /** @type {TrailPoint[]} */ ([]),
+  trailSessions = /** @type {number[]} */ ([]),
+  coveredIdx = /** @type {Record<string, number[]>} */ ({}),
+  pieces = /** @type {PiecesMap} */ ({}),
+  pieceTimes = /** @type {PieceTimesMap} */ ({});
 const HIST = { // the history repository: the one owner of the record's load, projection, append, delete, rollback and serialisation
-  _rawList: null, _rawView: null, // snapshot: _rawList the raw array, _rawView[i] its view entry or null; writers persist forWrite(...), never the view
+  _rawList: /** @type {any[] | null} */ (null), _rawView: /** @type {(HistoryEntry | null)[] | null} */ (null), // snapshot: _rawList the raw array, _rawView[i] its view entry or null; writers persist forWrite(...), never the view
   // the load parses the text twice (the sanitizer mutates survivors): sanitizes into the view, records the snapshot
   /** @param {string} text @returns {HistoryEntry[]} */ loadFrom(text) {
     const parsed = parseJ(text, []);
@@ -422,6 +452,7 @@ const HIST = { // the history repository: the one owner of the record's load, pr
     for (let i = 0; i < list.length; i++) {
       const h = list[i]; let v = null;
       if (h && typeof h === 'object' && !Array.isArray(h) && !isNaN(Date.parse(h.at)) && h.items && typeof h.items === 'object') {
+        /** @type {HistoryEntry["items"]} */
         const m = {};
         if (Array.isArray(h.items)) { for (const n of h.items) if (typeof n === 'string' && STREETSET.has(n)) m[n] = (h.times && typeof h.times[n] === 'string' && !isNaN(Date.parse(h.times[n]))) ? h.times[n] : null; }
         else { for (const n of Object.keys(h.items)) { const t = h.items[n]; if (STREETSET.has(n) && (t === null || (typeof t === 'string' && !isNaN(Date.parse(t))))) m[n] = t; } }
@@ -470,6 +501,7 @@ const HIST = { // the history repository: the one owner of the record's load, pr
 /** @param {*} raw @param {number} count @returns {PieceTimePair[]} */ function sanitizePieceTimes(raw, count) {
   /** @type {(pr: *) => PieceTimePair} */ const pair = pr => Array.isArray(pr) ? [typeof pr[0] === 'string' ? pr[0] : null, typeof pr[1] === 'string' ? pr[1] : null] : [null, null];
   const lim = Number.isInteger(count) && count > 0 ? count : 0;
+  /** @type {PieceTimePair[]} */
   const out = [];
   if (Array.isArray(raw)) { const n = Math.min(raw.length, lim); for (let i = 0; i < n; i++) out[i] = pair(raw[i]); return out; }
   if (raw && typeof raw === 'object') { for (const k of Object.keys(raw)) { const i = Number(k); if (Number.isInteger(i) && i >= 0 && i < lim) out[i] = pair(raw[k]); } return out; }
@@ -477,6 +509,7 @@ const HIST = { // the history repository: the one owner of the record's load, pr
 }
 
 // ===== THE ROUTE BOARD MODULE (Arch-2, 2026-11-19) =====
+/** @param {*} raw @param {number} expectAt @param {SnapshotGeometry} [G] */
 function validateSnap(raw, expectAt, G) { // a cancel snapshot is untrusted: it applies by passing the loader's rules whole; any violation rejects it
   const set = G ? G.set : STREETSET, names = G ? G.names : STREETNAMES, stretch = G ? G.stretch : STRETCH, samples = G ? G.samples : SAMPLES;
   try {
@@ -491,7 +524,8 @@ function validateSnap(raw, expectAt, G) { // a cancel snapshot is untrusted: it 
     if (!C || typeof C !== 'object' || Array.isArray(C)) return null;
     for (const k of Object.keys(P)) if (!set.has(k)) return null;
     for (const k of Object.keys(T)) if (!set.has(k)) return null;
-    const pieces = {}, pieceTimes = {};
+    /** @type {PiecesMap} */
+    const pieces = {}, pieceTimes = /** @type {Record<string, PieceTimePair[]>} */ ({});
     for (const n of names) {
       const arr = P[n];
       if (!Array.isArray(arr) || arr.length !== stretch[n].parts.length) return null;
@@ -503,11 +537,14 @@ function validateSnap(raw, expectAt, G) { // a cancel snapshot is untrusted: it 
     }
     // the sanitizer keeps any string stamp; the loader's standard is parseable, so an unparseable stamp rejects
     for (const n of names) { for (const pr of pieceTimes[n]) { if ((pr[0] !== null && isNaN(Date.parse(pr[0]))) || (pr[1] !== null && isNaN(Date.parse(pr[1])))) return null; } }
+    /** @type {string[]} */
     const done = [];
     for (const d of D) { if (typeof d !== 'string' || !set.has(d)) return null; if (!done.includes(d)) done.push(d); }
-    const times = {}, via = {};
+    /** @type {Record<string,string>} */
+    const times = {}, via = /** @type {Record<string, string>} */ ({});
     for (const k of Object.keys(TM)) { if (!set.has(k) || typeof TM[k] !== 'string' || isNaN(Date.parse(TM[k]))) return null; times[k] = TM[k]; } // the value must be a real date too (the loader deletes times failing Date.parse)
     for (const k of Object.keys(V)) { if (!set.has(k) || typeof V[k] !== 'string') return null; via[k] = V[k]; }
+    /** @type {Record<string,number[]>} */
     const cov = {};
     for (const k of Object.keys(C)) {
       if (!set.has(k) || !samples[k] || !Array.isArray(C[k])) return null;
@@ -519,7 +556,8 @@ function validateSnap(raw, expectAt, G) { // a cancel snapshot is untrusted: it 
   } catch (e) { return null; }
 }
 const BOARD = {
-  /** @returns {{pieces: *, pieceTimes: *, doneSet: *, doneTimes: *, doneVia: *, coveredIdx: *}} */ state() { return { pieces, pieceTimes, doneSet, doneTimes, doneVia, coveredIdx }; }, // the live bindings as one object - GL_HOST's pieces getter reads through this, so the engine always sees the current binding after a restore or reset
+  /** @returns {{pieces:PiecesMap,pieceTimes:PieceTimesMap,doneSet:Set<string>,doneTimes:Record<string,string>,doneVia:Record<string,string>,coveredIdx:Record<string,number[]>}} */
+  state() { return { pieces, pieceTimes, doneSet, doneTimes, doneVia, coveredIdx }; }, // the live bindings as one object - GL_HOST's pieces getter reads through this, so the engine sees the current binding
   validate: validateSnap, // the reject-semantics entry, under the module's roof (the global function above keeps the drives' compatibility surface)
   // the pre-Start snapshot (deep pieces/pieceTimes/cov, array done, shallow times/via): the copy depths are Cancel's semantics
   /** @returns {*} */ capture() {
@@ -567,7 +605,8 @@ const BOARD = {
   /** @returns {string} */ serialiseCov() { return JSON.stringify(coveredIdx); }, // PERSIST.flush's throttled coverage write
   /** @returns {*} */ sidesCopy() { return JSON.parse(JSON.stringify({ p: pieces, t: pieceTimes })); }, // buildSnap's archived sides: a deep copy in the stored {p, t} shape
   /** @returns {*} */ clearedSides() { // finishRun's transaction input: the zeroed sides maps a committed finish writes as the cleared authority
-    const p = {}, t = {};
+    /** @type {PiecesMap} */
+    const p = {}, t = /** @type {PieceTimesMap} */ ({});
     for (const n of STREETNAMES) { p[n] = STRETCH[n].parts.map(() => 0); t[n] = {}; }
     return { p, t };
   },
@@ -588,14 +627,15 @@ const BOARD = {
     const wasComplete = streetComplete(name); // the feedback fires only on a real false-to-true flip, which this reports
     pieces[name] = STRETCH[name].parts.map(() => 3);
     const mts = at || new Date().toISOString();
+    /** @type {PieceTimesMap[string]} */
     const cur = (pieceTimes[name] && typeof pieceTimes[name] === 'object') ? pieceTimes[name] : {};
-    pieceTimes[name] = STRETCH[name].parts.map((_, i) => { const pr = Array.isArray(cur[i]) ? cur[i] : [null, null]; return [pr[0] || mts, pr[1] || mts]; });
+    pieceTimes[name] = STRETCH[name].parts.map((_, i) => { /** @type {PieceTimePair} */ const pr = Array.isArray(cur[i]) ? cur[i] : /** @type {PieceTimePair} */ ([null, null]); return [pr[0] || mts, pr[1] || mts]; });
     doneSet.add(name); doneTimes[name] = mts; doneVia[name] = via || 'tap';
     return { flipped: !wasComplete };
   },
   /** @param {string} name @returns {void} */ clearStreet(name) { // markUndone's mutation: the street zeroed whole, its completion record dropped
     pieces[name] = STRETCH[name].parts.map(() => 0);
-    pieceTimes[name] = STRETCH[name].parts.map(() => [null, null]);
+    pieceTimes[name] = STRETCH[name].parts.map(/** @returns {PieceTimePair} */ () => [null, null]);
     doneSet.delete(name); delete doneTimes[name]; delete doneVia[name];
   },
   /** @returns {void} */ loadDoneMeta() { // loadRouteState segment 1 (repair): the stored done set and its times/via, per-field sanitized
@@ -618,7 +658,7 @@ const BOARD = {
   /** @returns {void} */ loadSides() {
     pieces = {}; pieceTimes = {};
     const raw = parseJ(lsGet(LS.sides), null);
-    let P = null, T = {};
+    let P = null, T = /** @type {Record<string, unknown>} */ ({});
     if (raw && typeof raw === 'object') { if (raw.p) { P = raw.p; T = raw.t || {}; } else P = raw; }
     for (const n of STREETNAMES) {
       const count = STRETCH[n].parts.length;
@@ -632,16 +672,16 @@ const BOARD = {
     doneSet = new Set(STREETNAMES.filter(streetComplete));
     for (const n of STREETNAMES) {
       if (streetComplete(n) && doneTimes[n]) { // inheritance fills missing stamps, not only empty maps: holes read as never worked and undercounted the run
-        const full = pieces[n].map(v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]);
+        const full = pieces[n].map(/** @returns {PieceTimePair} */ v => [v & 1 ? doneTimes[n] : null, v & 2 ? doneTimes[n] : null]);
         if (!Object.keys(pieceTimes[n]).length) pieceTimes[n] = full;
-        else { const T2 = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }
+        else { const T2 = pieceTimes[n], out = /** @type {PieceTimePair[]} */ ([]); for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }
       }
     }
     for (const k of Object.keys(doneTimes)) if (!streetComplete(k)) delete doneTimes[k];
     for (const k of Object.keys(doneVia)) if (!streetComplete(k)) delete doneVia[k];
   },
 };
-let routeLoaded = false, activeRoute = null; // set by loadRoute (app4) once a pack is chosen; app2's paint/render gates read them
+let routeLoaded = false, activeRoute = /** @type {IdentifiedRoutePack | null} */ (null); // set by loadRoute (app4) once a pack is chosen; app2's paint/render gates read them
 /** @param {string} id @returns {void} */ function loadRouteState(id) {
   LS = migrateLegacyRoute(id) ? { ...routeKeys(id), ...LS_GLOBAL } : { ...LEGACY_KEYS, ...LS_GLOBAL };
 BOARD.loadDoneMeta(); // Arch-2: the board's load-repair lives in the module (BOARD.loadDoneMeta / loadCoverage / loadSides)
@@ -703,7 +743,7 @@ BOARD.loadSides();
   txDel(LS.finclean);
 }
 // ===== DAY/NIGHT ===== theme follows the sun (computed on-device, offline); the override holds until the next sun event
-let themeOverride = null, themeOverrideUntil = 0; // null = automatic
+let themeOverride = /** @type {boolean | null} */ (null), themeOverrideUntil = 0; // null = automatic
 /** @param {number} ms @param {number} lat @param {number} lng @returns {SunTimes} */ function sunTimes(ms, lat, lng) { // the sun events of the position-local day containing ms, as epoch ms
   // date is the position's solar frame (its longitude), never the device's zone: the instant is physical
   const shifted = new Date(ms + lng * 240000), y = shifted.getUTCFullYear(), mo = shifted.getUTCMonth(), da = shifted.getUTCDate();
@@ -792,8 +832,11 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
   return storeOk();
 }
 // PERSIST, the scheduling owner: a flag clears only when its write lands; late writers resolve by name at flush time
-/** @param {string} name @returns {Function|null} */ function lateFn(name) { const f = globalThis[name]; return typeof f === 'function' ? f : null; } // the step table's one late-writer resolution: app3 loads after app1, so its writers are resolved by name at flush time (and a partial load simply skips the step, exactly what the old typeof probes did)
+/** @param {string} name @returns {Function|null} */
+function lateFn(name) { const f = /** @type {LateWriterGlobals} */ (/** @type {unknown} */ (globalThis))[name];
+  return typeof f=== 'function' ? f : null; } // app3 loads after app1: its writers resolve by name at flush time
 const PERSIST = {
+  /** @type {Record<string, boolean>} */
   flags: { trail: false, sess: false, snap: false, start: false, aux: false, primary: false, fixlog: false },
   windows: { trail: 0, cov: 0, fixlog: 0 }, // the last SUCCESSFUL write per throttled kind (0 = never: the first flush writes at once)
   fence: false,

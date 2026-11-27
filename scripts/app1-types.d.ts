@@ -10,17 +10,8 @@
 //
 // Three kinds of declarations live here, kept apart on purpose:
 //
-// 1. STORAGE + GEOMETRY TYPEDEFS. The core shapes are taken from
-//    docs/STORAGE-SCHEMA.md, the data contract: the storage outcome
-//    {ok, failedKey, retryPending} (the Phase 3 contract the schema's
-//    save-family records travel in), the v5.snap snapshot, the pack shape
-//    (PACK_FIELDS, Beta 1.118/1.131 sections), the history entry, the
-//    v5.sides record, the v4.notes entry and the snowroute.v2.settings
-//    record. Where a field exists in the code but NOT in the schema it is
-//    marked CODE-ONLY below instead of being silently schema-claimed:
-//    HistoryEntry.runId (stamped by finishRun, app3, Beta 1.104) is absent
-//    from the schema's History entry line - that gap is recorded in the
-//    tranche's SHIP-RECORD-A1.md, not papered over here.
+// 1. STORAGE + GEOMETRY TYPEDEFS. Persisted shapes cite docs/STORAGE-SCHEMA.md.
+//    Implementation-only shapes and undocumented fields are marked CODE-ONLY.
 //
 // 2. CROSS-PART GLOBALS. app1.js is one part of a single assembled classic
 //    script, not a module: it consumes bindings declared by later parts.
@@ -36,8 +27,8 @@
 //    reports a false redeclare plus a cascade against the app's binding.
 //    So this file declares exactly the browser surface the checked parts
 //    use, with the shapes they use: the elements app1 asks for by id all exist in
-//    parts/head.html and are dereferenced directly (the pilot config runs
-//    with strictNullChecks off, so element nullability is not modelled).
+//    parts/head.html and are dereferenced directly (the base config runs
+//    with strictNullChecks off. See docs/TYPE-SAFETY-PLAN.md for nullable lookups).
 
 // ---- 1. Typedefs (docs/STORAGE-SCHEMA.md unless marked CODE-ONLY) ----
 
@@ -60,7 +51,7 @@ type RouteBox = { w: number, s: number, e: number, n: number };
 type PieceTimePair = [string | null, string | null];
 
 /** Per-street piece-time pairs (schema, v5.sides `t`). */
-type PieceTimesMap = { [street: string]: PieceTimePair[] };
+type PieceTimesMap = { [street: string]: Record<number, PieceTimePair> };
 
 /** Per-street side flags, 0..3 per stretch (schema, v5.sides `p`). */
 type PiecesMap = { [street: string]: number[] };
@@ -113,6 +104,102 @@ type RouteKeys = { done: string, times: string, hist: string, notes: string, via
 /** sunTimes' return: the day's sunrise/sunset as epoch ms, null when the sun never rises or sets that day (CODE-ONLY, app1). */
 type SunTimes = { rise: number | null, set: number | null, polar: 'day' | 'night' | null };
 
+/** Schema, IndexedDB: created routes. */
+type IdentifiedRoutePack = RoutePack & { id: string };
+
+/** Schema, Layout and the userpacks migration. Legacy values may omit the embedded id. */
+type UserPacksRecord = Record<string, RoutePack & { id?: string }>;
+
+/** Schema, Backup envelope: raw slot strings, plus the idle assertion and serialized snapshot. */
+type BackupFields = Partial<Record<'done' | 'times' | 'hist' | 'notes' | 'via' | 'trail' | 'cov' | 'flip' | 'sides' | 'sess', string>> & { start?: string | null };
+type BackupRoute = BackupFields & { snap?: string };
+
+type BackupV1 = { app: 'snowroute-backup', v: 1, at: string, data: Record<string, string> };
+
+type BackupV2 = {
+  app: 'snowroute-backup';
+  v: 2;
+  at: string;
+  routes: Record<string, BackupRoute>;
+  night?: string;
+  nightExp?: string;
+  userpacks?: UserPacksRecord;
+  settings?: string;
+  fixlog?: string;
+  recovery?: true;
+};
+
+/** Schema, Keys: last export summary. */
+type ExportSummary = { exportedAt?: number };
+
+/** Schema, Keys: v5.preload. Older records omit the route counts. */
+type PreloadRecord = { at: number, saved: number, total: number, routeSaved?: number, routeTotal?: number };
+
+/** Schema, Keys: v2.migfill, v5.finclean, v5.rundist and v5.rundist2. */
+type MigrationFillRecord = Partial<Record<keyof BackupFields, string>>;
+type FinishCleanupRecord = { run: number, at: number };
+type RunDistanceRecord = { run: number, m: number, end: TrailPoint | null };
+
+/** Schema, Keys: device tier hint. */
+type DeviceTierRecord = { t: number, at: number };
+
+/** Schema, IndexedDB: the city shape cache. */
+type CityShapeCell = { at: number, ways: [number, string, LatLng[]][] };
+type CityShapeRecord = { cityName: string, bbox: RouteBox, totalCells: number, savedAt: number, cells: Record<string, CityShapeCell> };
+
+/** Schema, Keys: e3 fixlog. Packed session field names are CODE-ONLY (app3 fixLogEncodeSessions). */
+type FixLogRecord = { e: 3, s: { v: string, t0: number, n: number, b: number, f: string }[] };
+
+/** CODE-ONLY: decoded fixlog tuple layout in app3. */
+type FixLogEntry = [
+  timestamp: number | null, lat: number | null, lng: number | null,
+  accuracy: number | null, speed: number | null, course: number | null,
+  output: [number | null, number | null, number | null, number | null, number | null] | null,
+  run: number,
+];
+
+/** CODE-ONLY: partial pack recognition census written by migratePack (app5). */
+type PackMigrationCensus = { fp: string, set: string, n: number, bytes: number };
+
+/** CODE-ONLY: route geometry used to validate a snapshot. */
+type SnapshotGeometry = { set: Set<string>, names: string[], stretch: StretchMap, samples: Record<string, LatLng[]> };
+
+/** CODE-ONLY: app3 writers resolved from the classic-script global object at flush time. */
+type LateWriterGlobals = Record<string, Function | undefined>;
+
+// CODE-ONLY: engine geometry, paint records and MapLibre boundary.
+type EngineRange = { start: number, end: number };
+type EngineStreet = { stitched: AnyPoint[], cuts: number[][], off0: AnyPoint[], off1: AnyPoint[], offH0: AnyPoint[], offH1: AnyPoint[] };
+type EngineVertex = { n: string, vi: number };
+type EngineEnd = EngineVertex & { side: number };
+type EngineEndKey = 'e0' | 'e1';
+type EngineJunction = { B: string, viA: number, V: AnyPoint, dB: AnyPoint, nB: AnyPoint, sin: number };
+type EnginePairs = Record<string, { n2: string, vi2: number, side2: number, corner: AnyPoint | null }[]>;
+type EngineClipTag = { clip: string, vi: number };
+type EngineClipPiece = { pts: AnyPoint[], sTag: EngineClipTag | null, eTag: EngineClipTag | null };
+type EngineMember = { n: string, idx: number, side?: number };
+type EngineStrand = { pts: AnyPoint[], key: string, mem: EngineMember[], e0?: EngineEnd | null, e1?: EngineEnd | null, corner?: boolean };
+type EngineFragment = { ci: number, band: boolean, pts: AnyPoint[] };
+type EngineSelection = { name: string, idx: number };
+type EngineFade = { pts: AnyPoint[], k: string, col: string };
+type EngineFeature<P = Record<string, string | number>, C = AnyPoint | AnyPoint[]> = {
+  type: string, properties: P, geometry: { type: string, coordinates: C }
+};
+type EngineCollection = { type: string, features: EngineFeature[] };
+type EngineLayer = { id: string, type: string, minzoom?: number, maxzoom?: number, source?: string, layout?: Record<string, unknown>, paint?: Record<string, unknown>, filter?: unknown };
+type EngineMap = {
+  getSource(id: string): { setData(data: EngineCollection | EngineFeature): void } | undefined;
+  getLayer(id: string): EngineLayer | undefined;
+  getStyle(): { layers?: EngineLayer[] };
+  addSource(id: string, source: { type: string, data: EngineCollection | EngineFeature, lineMetrics?: boolean }): void;
+  addLayer(layer: EngineLayer, before?: string): void;
+  setLayerZoomRange(id: string, min: number, max: number): void;
+  setLayoutProperty(id: string, name: string, value: unknown): void;
+  setPaintProperty(id: string, name: string, value: unknown): void;
+};
+type WidthCurve = [string, string[], string[], ...number[]];
+type EngineGlowLayer = { p?: number, s?: number, b: number, o: number, a: number, c?: string };
+
 // ---- 2. Cross-part globals (home part named per declaration) ----
 
 /** app2.js: `let routeBox = null` - the active pack's bounding box, set by buildGeometry (app1) on every load. */
@@ -141,6 +228,7 @@ declare function setBasemap(): void;
 
 /** app3.js: persists the pre-Start snapshot (LS.snap); retried by flushAux (app1). Returns the storage outcome. */
 declare function saveSnap(): StorageOutcome;
+/** app3.js: persists the packed fixlog record. */
 declare function saveFixLog(): StorageOutcome;
 
 /** app3.js: banks the run-distance counter (LS.rundist) - on every recorded fix since Beta 1.193 (the 30 s / 25 m throttle retired), and when forced by flushAux (app1) on a forced flush so a mid-run reload resumes the true figure (Beta 1.186, storage fix round P2). The force flag now only marks the page-death call; banking itself is change-gated. Returns nothing. */
@@ -149,14 +237,14 @@ declare function persistRunDist(force?: boolean): void;
 /** app3.js: banks the counter's second copy (LS.rundist2) from flushAux's trail-flush path (app1) - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so the two records fail independently (Beta 1.193, counter hardening). Returns nothing. */
 declare function bankRunDistMirror(): void;
 
-/** app2.js: the current stretch selection entries {name, idx, anchor}. app1 only forwards the array through GL_HOST's getter and never reads an entry's fields, so the entries are not field-typed here. */
-declare var selSet: any[];
+/** app2.js: the current stretch selection entries. */
+declare var selSet: (EngineSelection & { anchor: AnyPoint })[];
 
 /** app2.js: `let selStretch = null` - the anchor selection {name, idx} the paint engine reads. */
 declare var selStretch: { name: string, idx: number } | null;
 
-/** app2.js: normalizes basemap label layers for a map; app1 only forwards the function through GL_HOST's getter. Its map parameter is MapLibre's, unmodelled in this pilot (see `map` above). */
-declare function glUnifyLabels(m: any): void;
+/** app2.js: rebuilds basemap labels and, when requested, updates route titles. */
+declare function glUnifyLabels(options: { m: EngineMap, stack?: { newStack: boolean, data: EngineCollection, ids: string[], fontStack: string[] }, routeData?: EngineCollection }): void;
 
 /** app4.js: `const ICONS = {...}` - the icon mint table, filled by renderIcons; showBanner (app1) reads a named entry for the banner's chip. */
 declare var ICONS: { [key: string]: string };

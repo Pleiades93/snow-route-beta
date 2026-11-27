@@ -1,12 +1,15 @@
 const GLP = (() => {
   let H = GL_HOST; // the engine's only doorway to the app: everything arrives through this host object, live state via getters
+  /** @type {EngineMap|null} */
   let GLM = null;                 // the MapLibre map instance (recreated per setBasemap)
+  /** @type {EngineSelection|null} */
   let sel = null;                 // {name, idx} - fed from the app's selStretch
   let YELLOW = '#ffc233', RED = '#ef476f', GREEN = '#06d6a0';   // METRO, locked in the prototype (r26)
+  /** @type {(n: string) => string} */
   const pendingColor = n => H.PRIMARIES.has(n) ? YELLOW : RED;
   let fontStack = ['Noto Sans Regular']; // replaced per-style by GLP.setFont (the app adopts the basemap's own stack, prototype pickFont rule)
   const glowPreset = 1;   // SOFT - the locked selection preset (prototype r24)
-  let lastSig = null, lastNight = null;
+  let lastSig = /** @type {string | null} */ (null), lastNight = /** @type {boolean | null} */ (null);
   function pushSources() {
     if (!GLM || !CUR || !GLM.getSource('centres')) return;
     GLM.getSource('centres').setData(CUR.centres);
@@ -30,10 +33,14 @@ const GLP = (() => {
     if (GLM.getSource('selGlow')) GLM.getSource('selGlow').setData(buildSelGlow());
     managePulse();
   }
+/** @type {(p: AnyPoint) => AnyPoint} */
 const XYOf = p => [p[1] * H.MLNG, p[0] * H.MLAT];
+/** @param {AnyPoint[]} pts */
 function segLenM(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += H.jDistM(pts[i - 1], pts[i]); return L; }
+/** @type {(pts: AnyPoint[]) => AnyPoint[]} */
 const GJ = pts => pts.map(p => [p[1], p[0]]);   // [lat,lng] -> [lng,lat]
 // offset a [lat,lng] polyline by `m` metres (positive = left of travel), in the app's flat-metre space
+/** @param {AnyPoint[]} pts @param {number} m */
 function offsetLine(pts, m) {
   const P = pts.map(p => [p[1] * H.MLNG, p[0] * H.MLAT]);
   const out = [];
@@ -49,20 +56,26 @@ function offsetLine(pts, m) {
   return out;
 }
 
+/** @type {EngineFeature<{name:string},AnyPoint[]>[]} */
 const labelFeatures = [];
+/** @type {EngineFeature<{name:string,len:number,tier?:number},AnyPoint>[]} */
 const labelPointFeatures = [];
 const LABELS = { type: 'FeatureCollection', features: labelFeatures };
+/** @type {Record<string,EngineStreet>} */
 const GEO = {};
 // ===== TOPO: the one owner of run structure and the shared-vertex index; consumers ask its predicates, never re-derive
 const TOPO = {
-  _ranges: {},   // name -> [{start, end}] — each run's vertex-index range in GEO[n].stitched, in run order
-  _starts: {},   // name -> Set of the vertex indices that open a later run (the range starts after the first)
-  _verts: {},   // coordKey -> [{n, vi}] — every street/vertex at that point, in build order
-  _ends: {},   // 'name|vi' -> { kind, rec } — the classification of the run end at that vertex (stage 3)
+  _ranges: /** @type {Record<string, EngineRange[]>} */ ({}),   // name -> [{start, end}] — each run's vertex-index range in GEO[n].stitched, in run order
+  _starts: /** @type {Record<string, Set<number>>} */ ({}),   // name -> Set of the vertex indices that open a later run (the range starts after the first)
+  _verts: /** @type {Record<string, EngineVertex[]>} */ ({}),   // coordKey -> [{n, vi}] — every street/vertex at that point, in build order
+  _ends: /** @type {Record<string, {kind: string, rec: number[] | null}>} */ ({}),   // 'name|vi' -> { kind, rec } — the classification of the run end at that vertex (stage 3)
   reset() { this._ranges = {}; this._starts = {}; this._verts = {}; this._ends = {}; },
+  /** @param {string} n @param {EngineRange[]} ranges */
   seat(n, ranges) { this._ranges[n] = ranges; this._starts[n] = new Set(ranges.slice(1).map(r => r.start)); },
+  /** @param {string} n @param {AnyPoint[]} stitched */
   index(n, stitched) { stitched.forEach((pt, vi) => { const k = coordKey(pt); (this._verts[k] = this._verts[k] || []).push({ n, vi }); }); },
   verts() { return this._verts; },   // the whole shared-vertex index
+  /** @param {string} key */
   at(key) { return this._verts[key] || []; },   // the streets/vertices at one point
   // run ends classify once, here: 'junction' (a shared end vertex), else 'feather' with its record, else 'end'
   classifyEnds() {
@@ -77,14 +90,21 @@ const TOPO = {
       }
     }
   },
+  /** @param {string} n @param {number} vi */
   endAt(n, vi) { return this._ends[n + '|' + vi] || null; },   // the classification of the run end at vertex vi — null when vi is not a run end
+  /** @param {string} n */
   ranges(n) { return this._ranges[n] || []; },
+  /** @param {string} n @param {number} k */
   runStart(n, k) { const s = this._starts[n]; return !!s && s.has(k); },   // vertex k opens a later run of n
+  /** @param {string} n @param {number} si */
   segReal(n, si) { return !this.runStart(n, si + 1); },   // the segment si -> si+1 lies inside one run; the pair across a run boundary is not street
+  /** @param {string} n @param {number} vi @param {number} len */
   interior(n, vi, len) { return vi > 0 && vi < len - 1 && !this.runStart(n, vi) && !this.runStart(n, vi + 1); },   // vi sits inside a run, so the street runs through it - a run-end vertex terminates the street there
+  /** @param {string} n @param {number} vi @param {number} len */
   win(n, vi, len) { return [this.runStart(n, vi) ? vi : Math.max(0, vi - 1), this.runStart(n, vi + 1) ? vi : Math.min(len - 1, vi + 1)]; }   // the window at vi, clamped at its run ends: a neighbour across a gap hands a false direction
 };
 // Left/Right (Andrew): each street has one fixed direction (south-to-north or west-to-east); Left never flips with travel
+/** @type {Record<string,number>} */
 const LEFTBIT = {};
 function buildEngineGeometry() { // geometry builds here from current host data (eval, and per switch via rebuildRoute); containers refill in place
   for (const k of Object.keys(GEO)) delete GEO[k];
@@ -94,11 +114,11 @@ function buildEngineGeometry() { // geometry builds here from current host data 
 
   H.names.forEach(n => {
   // the stitched line, run by run: sectors are exact slices; offsets compute per run, never bridging
-  const stitched = [], cuts = [], ranges = [];
-  let off0 = [], off1 = [], offH0 = [], offH1 = [], stitchedLen = 0;
+  const stitched = /** @type {AnyPoint[]} */ ([]), cuts = /** @type {number[][]} */ ([]), ranges = /** @type {EngineRange[]} */ ([]);
+  let off0 = /** @type {AnyPoint[]} */ ([]), off1 = /** @type {AnyPoint[]} */ ([]), offH0 = /** @type {AnyPoint[]} */ ([]), offH1 = /** @type {AnyPoint[]} */ ([]), stitchedLen = 0;
   H.STRETCH[n].runs.forEach((run, ri) => {
     const rStart = stitched.length;
-    const base = stitched.length, rStitched = [];
+    const base = stitched.length, rStitched = /** @type {AnyPoint[]} */ ([]);
     run.parts.forEach((part, i) => {
       const a = i === 0 ? base : stitched.length - 1;
       if (i === 0) { stitched.push(...part); rStitched.push(...part); } else { stitched.push(...part.slice(1)); rStitched.push(...part.slice(1)); }
@@ -171,6 +191,7 @@ function nudgeFifth() {
 function assignTiers() {
   if (!labelPointFeatures.length) return; // no labels, no tiers - the quartile reads below would index lens[-1] and fail quietly
   const lens = labelPointFeatures.map(f => f.properties.len).sort((a, b) => a - b);
+  /** @type {(p:number)=>number} */
   const q = p => lens[Math.min(lens.length - 1, Math.floor(p * lens.length))];
   const q1 = q(0.25), q2 = q(0.5), q3 = q(0.75);
   labelPointFeatures.forEach(f => {
@@ -181,8 +202,10 @@ const LABELPTS = { type: 'FeatureCollection', features: labelPointFeatures };
 const ROUTEPOI = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }; // the centre is filled per load by buildEngineGeometry
 
 // ---- unified strands: touching same-colour slices merge into one polyline; completed stretches form the band family
+/** @param {string} n @param {number} bits */
 function colOf(n, bits) { return bits === 3 ? GREEN : (H.PRIMARIES.has(n) ? YELLOW : RED); }
 // everything rests muted (saturation cut); the selected sector renders full vibrant colour at the same glow spec
+/** @param {string} hex */
 function mute(hex) {
   const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
@@ -195,16 +218,19 @@ function mute(hex) {
   return '#' + rgb.map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
 }
 let MUGREEN = mute(GREEN);   // let: setScheme() recomputes it from the scheme's green
+/** @param {string} hex */
 function fadeGrad(hex) {   // the gradient (full colour at 0, clear at 1): literal rgba stops per colour, one layer each
   const c = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
   return ['interpolate', ['linear'], ['line-progress'], 0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)', 1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)'];
 }
+/** @param {AnyPoint} p1 @param {AnyPoint} p2 @param {AnyPoint} p3 @param {AnyPoint} p4 */
 function segCross(p1, p2, p3, p4) {
   const a = XYOf(p1), b = XYOf(p2), c = XYOf(p3), d = XYOf(p4);
-  const o = (x, y, z) => (y[0] - x[0]) * (z[1] - x[1]) - (y[1] - x[1]) * (z[0] - x[0]);
+  const o = /** @param {AnyPoint} x @param {AnyPoint} y @param {AnyPoint} z */ (x, y, z) => (y[0] - x[0]) * (z[1] - x[1]) - (y[1] - x[1]) * (z[0] - x[0]);
   const d1 = o(c, d, a), d2 = o(c, d, b), d3 = o(a, b, c), d4 = o(a, b, d);
   return d1 !== 0 && d2 !== 0 && d3 !== 0 && d4 !== 0 && ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
 }
+/** @param {AnyPoint} p1 @param {AnyPoint} p2 @param {AnyPoint} p3 @param {AnyPoint} p4 */
 function lineHit(p1, p2, p3, p4) {
   const a = XYOf(p1), b = XYOf(p2), c = XYOf(p3), d = XYOf(p4);
   const den = (b[0] - a[0]) * (d[1] - c[1]) - (b[1] - a[1]) * (d[0] - c[0]);
@@ -212,14 +238,16 @@ function lineHit(p1, p2, p3, p4) {
   const t = ((c[0] - a[0]) * (d[1] - c[1]) - (c[1] - a[1]) * (d[0] - c[0])) / den;
   return [(a[1] + t * (b[1] - a[1])) / H.MLAT, (a[0] + t * (b[0] - a[0])) / H.MLNG];
 }
+/** @type {(p: AnyPoint) => string} */
 const coordKey = p => p[0].toFixed(7) + ',' + p[1].toFixed(7);
 // ---- kerb model: a side line stops at a crossing road's edge, joining around the corner, never through
 const CORRIDOR = 5.2;   // metres: half the drawn road width
+/** @type {Record<string,EngineJunction[]>|null} */
 let JUNC = null;
 function buildJunctions() {
   JUNC = {}; H.names.forEach(n => { JUNC[n] = []; });
   const at = TOPO.verts();   // the index is TOPO's, built with the geometry in this same order: JUNC's contents and entry order unchanged
-  const dirAt = (n, vi) => {
+  const dirAt = /** @param {string} n @param {number} vi */ (n, vi) => {
     const st = GEO[n].stitched;
     const [lo, hi] = TOPO.win(n, vi, st.length); // the window clamps at the vertex's run ends: a neighbour across the gap hands a false direction
     const a = XYOf(st[lo]), b = XYOf(st[hi]);
@@ -236,7 +264,9 @@ function buildJunctions() {
   });
 }
 // ---- through-connection: both-arms lines run through unless another street claims a corner first
+/** @type {{V:AnyPoint,A:string,side:number,pts:AnyPoint[]}[]} */
 let THROUGH_SEGS = [];
+/** @param {string} A @param {number} side @param {EngineJunction} J @param {AnyPoint[]} runPts */
 function throughOK(A, side, J, runPts) {
   if (J.sin <= 0.42) return false;
   const V = J.V, vKey = coordKey(V);
@@ -246,6 +276,7 @@ function throughOK(A, side, J, runPts) {
   const off = (side === 0 ? GEO[A].off0 : GEO[A].off1)[J.viA];
   const sideSign = Math.sign((XYOf(off)[0] - Vx[0]) * nA[0] + (XYOf(off)[1] - Vx[1]) * nA[1]);
   if (!sideSign) return false;
+  /** @type {(pt: AnyPoint) => AnyPoint} */
   const signsOf = pt => { const w = XYOf(pt); return [Math.sign((w[0] - Vx[0]) * nA[0] + (w[1] - Vx[1]) * nA[1]), Math.sign((w[0] - Vx[0]) * nB[0] + (w[1] - Vx[1]) * nB[1])]; };
   // a raw crossing within 13 m of V blocks the through (it would paint an X)
   const pairsNow = PAIRS_CUR || junctionPairs();
@@ -287,19 +318,24 @@ function throughOK(A, side, J, runPts) {
   return true;
 }
 // cut one piece at a junction: the corridor part is removed, its ends landing on the boundary, tagged
+/** @param {EngineJunction} J1 @param {EngineJunction} J2 */
 function sameRoad(J1, J2) {
   if (H.jDistM(J1.V, J2.V) >= 2) return false;
   return Math.abs(J1.dB[0] * J2.dB[0] + J1.dB[1] * J2.dB[1]) > 0.95;
 }
+/** @param {EngineClipPiece} pc @param {EngineJunction} J @param {number} R */
 function clipOne(pc, J, R) {
   const Vx = XYOf(J.V), L = R / Math.max(J.sin, 0.42) + 9;
+  /** @type {(p:AnyPoint)=>number} */
   const W = p => { const q = XYOf(p); return (q[0] - Vx[0]) * J.nB[0] + (q[1] - Vx[1]) * J.nB[1]; };
+  /** @type {(p:AnyPoint)=>number} */
   const U = p => { const q = XYOf(p); return (q[0] - Vx[0]) * J.dB[0] + (q[1] - Vx[1]) * J.dB[1]; };
   // the 1e-6 margin is load-bearing: interpolated crossings carry ~1e-8 float noise and misclassify at 1e-9
+  /** @type {(p:AnyPoint)=>boolean} */
   const inside = p => Math.abs(W(p)) < R - 1e-6 && Math.abs(U(p)) < L - 1e-6;
   const aug = [pc.pts[0]];
   for (let i = 0; i + 1 < pc.pts.length; i++) {
-    const p = pc.pts[i], q = pc.pts[i + 1], wp = W(p), wq = W(q), up = U(p), uq = U(q), cr = [];
+    const p = pc.pts[i], q = pc.pts[i + 1], wp = W(p), wq = W(q), up = U(p), uq = U(q), cr = /** @type {{t: number, c: AnyPoint}[]} */ ([]);
     [R, -R].forEach(sv => {
       if ((wp - sv) * (wq - sv) < 0) {
         const t = (sv - wp) / (wq - wp);
@@ -340,9 +376,11 @@ function clipOne(pc, J, R) {
   if (cur) { cur.eTag = pc.eTag; res.push(cur); }
   return res;
 }
+/** @param {EngineClipPiece[]} piecesIn @param {string} A @param {number} R @param {Set<EngineJunction>} skip */
 function clipPieces(piecesIn, A, R = CORRIDOR, skip = null) {
   if (!JUNC) buildJunctions();
   let pieces = piecesIn;
+  /** @type {EngineJunction[]} */
   const seenCluster = [];
   for (const J of JUNC[A]) {
     if (seenCluster.some(u => sameRoad(u, J))) continue;   // one clip per physical road at a point: double vertices AND name-change twins
@@ -357,15 +395,19 @@ function clipPieces(piecesIn, A, R = CORRIDOR, skip = null) {
   return pieces;
 }
 // marked side runs for one street+side: consecutive marked stretches concatenated, then kerb-clipped at every junction. Returns strand
+/** @param {string} n @param {number} side @param {(idx:number)=>number|boolean} marked */
 function edgeRunSlices(n, side, marked) {
-  const g = GEO[n], off = side === 0 ? g.off0 : g.off1, out = [];
+  const g = GEO[n], off = side === 0 ? g.off0 : g.off1, out = /** @type {EngineStrand[]} */ ([]);
+  /** @type {{pts:AnyPoint[],firstIdx:number,lastIdx:number}|null} */
   let run = null;
   const flush = () => {
     if (!run) return;
     const startMeta = { n, vi: g.cuts[run.firstIdx][0], side }, endMeta = { n, vi: g.cuts[run.lastIdx][1], side };
+    /** @type {EngineMember[]} */
     const mem = []; for (let i = run.firstIdx; i <= run.lastIdx; i++) mem.push({ n, idx: i, side });
     if (!JUNC) buildJunctions();
     const skip = new Set();
+    /** @type {EngineJunction[]} */
     const seenJ = [];
     for (const J of JUNC[n]) {
       if (J.sin <= 0.42) continue;
@@ -380,7 +422,8 @@ function edgeRunSlices(n, side, marked) {
       if (otherArmBand) {
         // skip the clip only if following this line unclipped to the vertex crosses NO street's marked side line
         let crosses = false;
-        const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
+        const properX = /** @param {AnyPoint} a @param {AnyPoint} b @param {AnyPoint} c @param {AnyPoint} d */ (a, b, c, d) => {
+  if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
         for (let si = 0; si + 1 < run.pts.length && !crosses; si++) {
           if (H.ptSegM(J.V, run.pts[si], run.pts[si + 1]) > CORRIDOR + 6) continue;
           for (const dn of H.names) {
@@ -421,9 +464,10 @@ function edgeRunSlices(n, side, marked) {
   return out;
 }
 // pairing: the true corner is the two offset polylines' intersection, required to lie on both segments
+/** @param{string} n1 @param{number} side1 @param{string} n2 @param{number} side2 @param{AnyPoint} V @param{number} vi1 @param{number} vi2 */
 function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   const o1 = side1 === 0 ? GEO[n1].off0 : GEO[n1].off1, o2 = side2 === 0 ? GEO[n2].off0 : GEO[n2].off1;
-  const segsOf = (off, vi, n) => {
+  const segsOf = /** @param {AnyPoint[]} off @param {number} vi @param {string} n */ (off, vi, n) => {
     const segs = [];
     for (let i = 0; i + 1 < off.length; i++) { if (!TOPO.segReal(n, i)) continue; segs.push({ seg: [off[i], off[i + 1]], ext: false }); } // between-runs ground is not street: a corner found on it pairs sides at a nonexistent junction
     if (vi === 0 && off.length > 1) { const d = [off[0][0] - off[1][0], off[0][1] - off[1][1]], L = H.jDistM(off[0], off[1]) || 1; segs.push({ seg: [[off[0][0] + d[0] * 8 / L, off[0][1] + d[1] * 8 / L], off[0]], ext: true }); }
@@ -433,7 +477,7 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
     return segs;
   };
   // an extension corner is valid only if its leg stays on its own side of the other centreline
-  const legCrosses = (endPt, X, otherN) => {
+  const legCrosses = /** @param {AnyPoint} endPt @param {AnyPoint} X @param {string} otherN */ (endPt, X, otherN) => {
     const st = GEO[otherN].stitched;
     for (let si = 0; si + 1 < st.length; si++) { if (!TOPO.segReal(otherN, si)) continue; if (H.ptSegM(V, st[si], st[si + 1]) < 13 && segCross(endPt, X, st[si], st[si + 1])) return true; } // gap segments are not centreline
     return false;
@@ -454,6 +498,7 @@ function polyCorner(n1, side1, n2, side2, V, vi1, vi2) {
   return best;
 }
 // a bridge must not cross a line either (joined lines excluded; the corner touch is the join)
+/** @param {AnyPoint[]} pts @param {AnyPoint} J @param {Set<string>} excl @param {AnyPoint} cornerPt */
 function pathBadGreen(pts, J, excl, cornerPt) {
   for (const n2 of H.names) {
     const g2 = GEO[n2];
@@ -479,14 +524,16 @@ function pathBadGreen(pts, J, excl, cornerPt) {
 }
 function junctionPairs() {
   const at = TOPO.verts();   // the shared-vertex index is TOPO's: junctionPairs rebuilt its own copy on every call
+  /** @type {EnginePairs} */
   const pairs = {};
-  const link = (A, B, corner) => {
+  const link = /** @param {EngineEnd} A @param {EngineEnd} B @param {AnyPoint} corner */ (A, B, corner) => {
     const ka = A.n + '|' + A.vi + '|' + A.side, kb = B.n + '|' + B.vi + '|' + B.side;
     (pairs[ka] = pairs[ka] || []).push({ n2: B.n, vi2: B.vi, side2: B.side, corner });
     (pairs[kb] = pairs[kb] || []).push({ n2: A.n, vi2: A.vi, side2: A.side, corner });
   };
   Object.values(at).forEach(list => {
     if (new Set(list.map(e => e.n)).size < 2) return;
+    /** @type {(EngineEnd & {pt:AnyPoint})[]} */
     const cand = [];
     list.forEach(({ n, vi }) => {
       const g = GEO[n];
@@ -501,6 +548,7 @@ function junctionPairs() {
       if (H.jDistM(A.pt, B.pt) > 9.5) continue;
       const J = GEO[A.n].stitched[A.vi];
       const hitP = polyCorner(A.n, A.side, B.n, B.side, J, A.vi, B.vi);
+      /** @type {(pts: AnyPoint[]) => boolean} */
       const pathBad = pts => {
         for (let s2 = 0; s2 + 1 < pts.length; s2++) {
           if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;   // through the junction's middle = a mouth cut
@@ -525,7 +573,7 @@ function junctionPairs() {
   // coinciding corners at a junction snap to one point, so bridges land together instead of weaving crossings
   {
     const reps = new Map();
-    const repOf = (J, pt) => {
+    const repOf = /** @param {AnyPoint} J @param {AnyPoint} pt */ (J, pt) => {
       const key = coordKey(J);
       if (!reps.has(key)) reps.set(key, []);
       const list = reps.get(key);
@@ -542,7 +590,7 @@ function junctionPairs() {
   return pairs;
 }
 // join touching slices to a fixpoint; the bridge veto lives in one copy here, shared by both passes
-const pathBadNear = (pts, J) => {
+const pathBadNear = /** @param {AnyPoint[]} pts @param {AnyPoint} J */ (pts, J) => {
     for (let s2 = 0; s2 + 1 < pts.length; s2++) {
       if (H.ptSegM(J, pts[s2], pts[s2 + 1]) < 1.5) return true;
       for (const n2 of H.names) {
@@ -557,9 +605,12 @@ const pathBadNear = (pts, J) => {
     }
     return false;
 };
+/** @param {EngineStrand[]} slices @param {EnginePairs} pairs */
 function mergeStrands(slices, pairs) {
+  /** @type {(sl: EngineStrand) => EngineStrand} */
   const rev = sl => ({ pts: [...sl.pts].reverse(), key: sl.key, mem: sl.mem, e0: sl.e1, e1: sl.e0 });
-  const joinInfo = (a, b) => {
+  const joinInfo = /** @param {EngineStrand} a @param {EngineStrand} b */ (a, b) => {
+    /** @type {{score:number,merged:EngineStrand}[]} */
     const out = [];
     const aS = coordKey(a.pts[0]), aE = coordKey(a.pts[a.pts.length - 1]);
     [b, rev(b)].forEach(v => {
@@ -567,9 +618,10 @@ function mergeStrands(slices, pairs) {
       if (coordKey(v.pts[v.pts.length - 1]) === aS) out.push({ score: 2, merged: { pts: v.pts.concat(a.pts.slice(1)), key: a.key, mem: v.mem.concat(a.mem), e0: v.e0, e1: a.e1 } });
     });
     if (pairs) {
-      [[a.e1, true], [a.e0, false]].forEach(([meta, atEnd]) => {
+      /** @type {[EngineEnd | null | undefined, boolean][]} */ ([[a.e1, true], [a.e0, false]]).forEach(([meta, atEnd]) => {
         if (!meta) return;
         (pairs[meta.n + '|' + meta.vi + '|' + meta.side] || []).forEach(pr => {
+          /** @type {(m: EngineEnd) => boolean} */
           const match = m => m && m.n === pr.n2 && m.vi === pr.vi2 && m.side === pr.side2;
           const bo = match(b.e0) ? b : match(b.e1) ? rev(b) : null;
           if (!bo) return;
@@ -577,6 +629,7 @@ function mergeStrands(slices, pairs) {
           const J = GEO[pr.n2].stitched[pr.vi2];
           const aEnd = atEnd ? a.pts[a.pts.length - 1] : a.pts[0];
           const bStart = bo.pts[0];   // bo is oriented so its start carries the matching meta
+          /** @type {AnyPoint[]|null} */
           let bridge = null;
           const exclG = new Set([meta.n + '|' + meta.side, pr.n2 + '|' + pr.side2]);
           if (pr.corner) {
@@ -598,17 +651,18 @@ function mergeStrands(slices, pairs) {
   };
   const arr = slices.slice();
   // the winner scan prices only candidate pairs (ends touching or junction-paired); the winner rule is untouched
+  /** @type {(m: EngineEnd) => string} */
   const metaKey = m => m.n + '|' + m.vi + '|' + m.side;
   for (;;) {
     const byStart = new Map(), byEnd = new Map(), byMeta = new Map();
-    const index = (map, k, v) => { const l = map.get(k); if (l) l.push(v); else map.set(k, [v]); };
+    const index = /** @param {Map<string, number[]>} map @param {string} k @param {number} v */ (map, k, v) => { const l = map.get(k); if (l) l.push(v); else map.set(k, [v]); };
     arr.forEach((sl, ix) => {
       index(byStart, coordKey(sl.pts[0]), ix);
       index(byEnd, coordKey(sl.pts[sl.pts.length - 1]), ix);
       if (sl.e0) index(byMeta, metaKey(sl.e0), ix);
       if (sl.e1) index(byMeta, metaKey(sl.e1), ix);
     });
-    /** @type {{ i: number, j: number, score: number, merged: any } | null} */
+    /** @type {{ i: number, j: number, score: number, merged: EngineStrand } | null} */
     let best = null;
     for (let i = 0; i < arr.length && !(best && best.score === 2); i++) {
       const a = arr[i];
@@ -635,17 +689,20 @@ function mergeStrands(slices, pairs) {
   return arr;
 }
 // connection guarantee (Andrew): lines ending at the same corner connect - this pass joins stragglers geometrically
+/** @param {EngineStrand[]} chains @param {EnginePairs} pairs */
 function bridgeStragglers(chains, pairs) {
   // candidacy is geometric: two ends within 10 m of one junction point, same quadrant, within 13 m, bridge
   if (!JUNC) buildJunctions();
+  /** @type {(c: EngineStrand) => EngineStrand} */
   const revC = c => ({ pts: [...c.pts].reverse(), key: c.key, mem: c.mem, e0: c.e1, e1: c.e0 });
-  const dirLL = (n, vi) => {
+  const dirLL = /** @param {string} n @param {number} vi */ (n, vi) => {
     const st = GEO[n].stitched;
     const [lo, hi] = TOPO.win(n, vi, st.length); // same run clamp as buildJunctions' dirAt (the clamp is TOPO.win's - the two hand-written copies are one now)
     const a = XYOf(st[lo]), b = XYOf(st[hi]);
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
     return [dy / m / H.MLAT, dx / m / H.MLNG];
   };
+  /** @type {(pts: AnyPoint[]) => number} */
   const pathLen = pts => { let L = 0; for (let i = 0; i + 1 < pts.length; i++) L += H.jDistM(pts[i], pts[i + 1]); return L; };
   const verts = Object.values(TOPO.verts())
     .filter(list => new Set(list.map(e => e.n)).size >= 2)
@@ -654,6 +711,7 @@ function bridgeStragglers(chains, pairs) {
     let merged = false;
     outer:
     for (const V of verts) {
+      /** @type {{ci:number,at:string,pt:AnyPoint,meta:EngineEnd|null}[]} */
       const near = [];
       chains.forEach((c, ci) => {
         [{ at: 'e0', pt: c.pts[0], meta: c.e0 }, { at: 'e1', pt: c.pts[c.pts.length - 1], meta: c.e1 }].forEach(E => {
@@ -667,12 +725,13 @@ function bridgeStragglers(chains, pairs) {
         const J2 = (JUNC[E2.meta.n] || []).find(x => x.B === E1.meta.n && H.jDistM(x.V, V) < 2);
         if (!J1 || !J2) continue;
         const nA = J2.nB, nB = J1.nB, Vx = XYOf(V);
+        /** @type {(pt: AnyPoint) => AnyPoint} */
         const signs = pt => { const w = XYOf(pt); return [Math.sign((w[0] - Vx[0]) * nA[0] + (w[1] - Vx[1]) * nA[1]), Math.sign((w[0] - Vx[0]) * nB[0] + (w[1] - Vx[1]) * nB[1])]; };
         const s1 = signs(E1.pt), s2 = signs(E2.pt);
         const sameQ = !(s1[0] !== 0 && s2[0] !== 0 && s1[0] !== s2[0]) && !(s1[1] !== 0 && s2[1] !== 0 && s1[1] !== s2[1]);
         if (!sameQ) continue;
         const dA = dirLL(E1.meta.n, E1.meta.vi), dB = dirLL(E2.meta.n, E2.meta.vi);
-        const along = (pt, d) => [pt[0] + d[0], pt[1] + d[1]];
+        const along = /** @param {AnyPoint} pt @param {AnyPoint} d */ (pt, d) => [pt[0] + d[0], pt[1] + d[1]];
         const corner = lineHit(E1.pt, along(E1.pt, dA), E2.pt, along(E2.pt, dB));
         const box = lineHit(E1.pt, along(E1.pt, dB), E2.pt, along(E2.pt, dA));
         // true corners first: the pairs corner (both lines' polylines),
@@ -680,6 +739,7 @@ function bridgeStragglers(chains, pairs) {
         let pairCorner = null;
         if (pairs) (pairs[E1.meta.n + '|' + E1.meta.vi + '|' + E1.meta.side] || []).forEach(pr => { if (pr.n2 === E2.meta.n && pr.vi2 === E2.meta.vi && pr.side2 === E2.meta.side && pr.corner) pairCorner = pr.corner; });
         const polyC = polyCorner(E1.meta.n, E1.meta.side, E2.meta.n, E2.meta.side, V, E1.meta.vi, E2.meta.vi);
+        /** @type {AnyPoint[]|null} */
         let bridge = null;
         if (H.jDistM(E1.pt, E2.pt) < 1.2) bridge = [];
         else for (const cand of [pairCorner ? [pairCorner] : null, polyC ? [polyC] : null, corner ? [corner] : null, box ? [box] : null, []]) {
@@ -702,9 +762,10 @@ function bridgeStragglers(chains, pairs) {
   }
 }
 // when the partner runs through, this arm reaches the point on its line: a T-join, not a crossing
+/** @param {EngineStrand[]} chains @param {EnginePairs} pairs */
 function throughTouch(chains, pairs) {
   chains.forEach(c => {
-    /** @type {[string, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
+    /** @type {[EngineEndKey, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
       const meta = c[key];
       if (!meta) return;
       (pairs[meta.n + '|' + meta.vi + '|' + meta.side] || []).forEach(pr => {
@@ -724,9 +785,10 @@ function throughTouch(chains, pairs) {
   });
 }
 // an edge ending where the partner stretch is complete reaches onto the band's corner, flowing into the green
+/** @param {EngineStrand[]} edgeChains @param {EnginePairs} pairs */
 function extendIntoBands(edgeChains, pairs) {
   edgeChains.forEach(s => {
-    [[s.e1, true], [s.e0, false]].forEach(([meta, atEnd]) => {
+    /** @type {[EngineEnd | null | undefined, boolean][]} */ ([[s.e1, true], [s.e0, false]]).forEach(([meta, atEnd]) => {
       if (!meta) return;
       (pairs[meta.n + '|' + meta.vi + '|' + meta.side] || []).forEach(pr => {
         if (!pr.corner) return;
@@ -737,31 +799,36 @@ function extendIntoBands(edgeChains, pairs) {
     });
   });
 }
+/** @type {EnginePairs|null} */
 let PAIRS_CUR = null;   // the current build's junction pairs (throughOK reads them)
 // last-resort connector: an unjoined end joins the nearest beside geometry, if the join cuts no road's middle
+/** @param {EngineStrand[]} edges @param {EngineStrand[]} bands */
 function lastResortConnect(edges, bands) {
   if (!JUNC) buildJunctions();
   const jList = Object.values(TOPO.verts()).filter(l => new Set(l.map(e => e.n)).size >= 2)
     .map(l => ({ V: GEO[l[0].n].stitched[l[0].vi], streets: [...new Set(l.map(e => e.n))] }));
-  const frameFor = (V, A, B) => {
+  const frameFor = /** @param {AnyPoint} V @param {string} A @param {string} B */ (V, A, B) => {
     const J1 = (JUNC[A] || []).find(x => x.B === B && H.jDistM(x.V, V) < 2);
     const J2 = (JUNC[B] || []).find(x => x.B === A && H.jDistM(x.V, V) < 2);
     return (J1 && J2) ? { nA: J2.nB, nB: J1.nB } : null;
   };
-  const properCross = (a, b, c, d) => {
+  const properCross = /** @param {AnyPoint} a @param {AnyPoint} b @param {AnyPoint} c @param {AnyPoint} d */ (a, b, c, d) => {
     if (!segCross(a, b, c, d)) return false;
     const X = lineHit(a, b, c, d);
     return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35);
   };
   // local connectivity only: the fragment rules the gate audits with, mirrored - a route-long detour is not a connection
   const fragCache = new Map();
+  /** @type {(V: AnyPoint) => {frags: EngineFragment[], comp: number[]}} */
   const localFrags = V => {
     const key = coordKey(V);
     if (fragCache.has(key)) return fragCache.get(key);
     const all = edges.concat(bands);
+    /** @type {EngineFragment[]} */
     const frags = [];
     all.forEach((c, ci) => {
       const band = ci >= edges.length;
+      /** @type {EngineFragment|null} */
       let cur = null;
       const close = () => { if (cur && cur.pts.length >= 1) frags.push(cur); cur = null; };
       c.pts.forEach((p, pi) => {
@@ -779,9 +846,10 @@ function lastResortConnect(edges, bands) {
       close();
     });
     const parent = frags.map((_, i) => i);
+    /** @type {(x: number) => number} */
     const find = x => parent[x] === x ? x : (parent[x] = find(parent[x]));
-    const onLine = (p, f, thr) => { for (let s2 = 0; s2 + 1 < f.pts.length; s2++) if (H.ptSegM(p, f.pts[s2], f.pts[s2 + 1]) < thr) return true; return false; };
-    const touch = (A2, B2) => {
+    const onLine = /** @param {AnyPoint} p @param {EngineFragment} f @param {number} thr */ (p, f, thr) => { for (let s2 = 0; s2 + 1 < f.pts.length; s2++) if (H.ptSegM(p, f.pts[s2], f.pts[s2 + 1]) < thr) return true; return false; };
+    const touch = /** @param {EngineFragment} A2 @param {EngineFragment} B2 */ (A2, B2) => {
       const eA = [A2.pts[0], A2.pts[A2.pts.length - 1]], eB = [B2.pts[0], B2.pts[B2.pts.length - 1]];
       if (eA.some(p => eB.some(q => coordKey(p) === coordKey(q)))) return true;
       const thr = (A2.band || B2.band) ? SURF_HALF : 1.0;   // bands draw at the surface's width, so the band touch threshold is SURF_HALF itself
@@ -814,14 +882,17 @@ function lastResortConnect(edges, bands) {
       const A = streets[ai], B = streets[bi], fr = frameFor(V, A, B);
       if (!fr) continue;
       const Vx = XYOf(V);
+      /** @type {(pt: AnyPoint) => AnyPoint} */
       const signs = pt => { const w = XYOf(pt); return [Math.sign((w[0] - Vx[0]) * fr.nA[0] + (w[1] - Vx[1]) * fr.nA[1]), Math.sign((w[0] - Vx[0]) * fr.nB[0] + (w[1] - Vx[1]) * fr.nB[1])]; };
-      const inQ = (sg, q) => (q[0] === 0 || sg[0] === 0 || sg[0] === q[0]) && (q[1] === 0 || sg[1] === 0 || sg[1] === q[1]);
+      const inQ = /** @param {AnyPoint} sg @param {AnyPoint} q */ (sg, q) => (q[0] === 0 || sg[0] === 0 || sg[0] === q[0]) && (q[1] === 0 || sg[1] === 0 || sg[1] === q[1]);
+      /** @type {{ci:number,pn:AnyPoint[]}[]} */
       const nearChains = [];
       list.forEach((c, ci) => {
         if (!c.mem.some(m => m.n === A || m.n === B)) return;
         const pn = c.pts.filter(pt => H.jDistM(pt, V) < 11);
         if (pn.length) nearChains.push({ ci, pn });
       });
+      /** @type {{ci:number,pt:AnyPoint,meta:EngineEnd|null,atEnd:boolean}[]} */
       const ends = [];
       edges.forEach((c, ci) => {
         [{ pt: c.pts[0], meta: c.e0, atEnd: false }, { pt: c.pts[c.pts.length - 1], meta: c.e1, atEnd: true }].forEach(E => {
@@ -830,9 +901,10 @@ function lastResortConnect(edges, bands) {
       });
       for (const E of ends) {
         const sg = signs(E.pt);
+        /** @type {AnyPoint[]} */
         const quads = [];
         (sg[0] === 0 ? [1, -1] : [sg[0]]).forEach(sa => (sg[1] === 0 ? [1, -1] : [sg[1]]).forEach(sb => quads.push([sa, sb])));
-        let satisfied = false, partners = [];
+        let satisfied = false, partners = /** @type {typeof nearChains} */ ([]);
         const LF = localFrags(V);
         const myFrag = LF.frags.findIndex(f => f.ci === E.ci && (coordKey(f.pts[0]) === coordKey(E.pt) || coordKey(f.pts[f.pts.length - 1]) === coordKey(E.pt)));
         for (const q of quads) {
@@ -843,6 +915,7 @@ function lastResortConnect(edges, bands) {
           if (myFrag >= 0 && LF.frags.some((f, fi) => fi !== myFrag && LF.comp[fi] === LF.comp[myFrag] && list[f.ci].mem.some(m => m.n === (E.meta.n === A ? B : A)) && f.pts.some(pt => inQ(signs(pt), q)))) { satisfied = true; break; }
         }
         if (satisfied || !partners.length) continue;
+        /** @type {{d:number,np:AnyPoint,ci:number,si:number}[]} */
         const cands = [];
         partners.forEach(nc => {
           const c = list[nc.ci];
@@ -897,6 +970,7 @@ function lastResortConnect(edges, bands) {
 // touch slice ends to their corners before merging: a daisy-chain would steal the ends the corner join needs
 
 // the line's points between two points on it: a retraced bridge crosses only where the raw lines do
+/** @param {string} n @param {number} side @param {AnyPoint} fromPt @param {AnyPoint} toPt @param {AnyPoint} V */
 function rawPath(n, side, fromPt, toPt, V) {
   const off = side === 0 ? GEO[n].off0 : GEO[n].off1;
   let fi = -1;
@@ -921,12 +995,14 @@ function rawPath(n, side, fromPt, toPt, V) {
   }
   return null;
 }
+/** @param {EngineStrand[]} slices @param {EnginePairs} pairs */
 function cornerTouchSlices(slices, pairs) {
   const endKeys = new Set();
   slices.forEach(sl => { [sl.e0, sl.e1].forEach(m => { if (m) endKeys.add(m.n + '|' + m.vi + '|' + m.side); }); });
-  const properX = (a, b, c, d) => { if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
+  const properX = /** @param {AnyPoint} a @param {AnyPoint} b @param {AnyPoint} c @param {AnyPoint} d */ (a, b, c, d) => {
+    if (!segCross(a, b, c, d)) return false; const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35); };
   slices.forEach(sl => {
-    /** @type {[string, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
+    /** @type {[EngineEndKey, boolean][]} */ ([['e1', true], ['e0', false]]).forEach(([key, atEnd]) => {
       const meta = sl[key];
       if (!meta) return;
       const tried = new Set();
@@ -975,12 +1051,14 @@ function cornerTouchSlices(slices, pairs) {
 const WIDTH_K = 1.3;
 // ---- end trims: paint ending at a junction butts against the crossing paint, corners never poking past
 const SURF_HALF = 3.3 * WIDTH_K, HALF_HALF = 1.65 * WIDTH_K;   // all full-road paint shares one half-width (SURF_HALF); HALF_HALF is the one-side fill's own half-width
+/** @param {AnyPoint} p @param {AnyPoint} a @param {AnyPoint} b */
 function ptSegDistM(p, a, b) {
   const P = XYOf(p), A = XYOf(a), B = XYOf(b);
   const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
   let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / L2; t = Math.max(0, Math.min(1, t));
   return Math.hypot(P[0] - (A[0] + t * vx), P[1] - (A[1] + t * vy));
 }
+/** @param {AnyPoint[]} pts @param {boolean} atStart @param {number} half */
 function endCorners(pts, atStart, half) {
   const E = atStart ? pts[0] : pts[pts.length - 1];
   if (!E) return [];
@@ -995,6 +1073,7 @@ function endCorners(pts, atStart, half) {
   // true corners offset perpendicular to the heading: the perpendicular of (dx, dy) is (-dy, dx)
   return [[E[0] + (dx * half) / H.MLAT, E[1] + (-dy * half) / H.MLNG], [E[0] + (-dx * half) / H.MLAT, E[1] + (dy * half) / H.MLNG]];
 }
+/** @param {AnyPoint} cp @param {string} B */
 function nearestPaintM(cp, B) {
   // distance to B's centreline plus the owning cut's half: a corner judges against the arm it lies along
   const st = GEO[B].stitched;
@@ -1006,18 +1085,21 @@ function nearestPaintM(cp, B) {
   }
   return { d: bd, half, pt };
 }
+/** @param {AnyPoint} p @param {AnyPoint} a @param {AnyPoint} b */
 function nearestPtOnSeg(p, a, b) {
   const P = XYOf(p), A = XYOf(a), B = XYOf(b);
   const vx = B[0] - A[0], vy = B[1] - A[1], L2 = vx * vx + vy * vy || 1;
   let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / L2; t = Math.max(0, Math.min(1, t));
   return [(A[1] + t * vy) / H.MLAT, (A[0] + t * vx) / H.MLNG];
 }
+/** @param {AnyPoint} cp @param {string} B @param {AnyPoint} V */
 function pokeExcess(cp, B, V) {
   // poke past B's paint, or -1 in its end disc (nearest the shared vertex: beyond B's end)
   const np = nearestPaintM(cp, B);
   if (np.pt && H.jDistM(np.pt, V) < 0.05) return -1;
   return np.d - np.half;
 }
+/** @param {AnyPoint[]} pts @param {boolean} atStart @param {number} d */
 function pullbackEnd(pts, atStart, d) {
   // the slice with its end pulled back along its trace by d metres (interpolated on the trace)
   const work = atStart ? pts.slice() : pts.slice().reverse();   // end-first
@@ -1033,6 +1115,7 @@ function pullbackEnd(pts, atStart, d) {
   }
   return pts;
 }
+/** @param {string} B @param {number} viB @param {AnyPoint} Ix @param {AnyPoint} Vx */
 function capLineFor(B, viB, Ix, Vx) {
   // the crossing street's near paint edge as a line {px, py, nx, ny}, built from B's arms
   const st = GEO[B].stitched, Vp = st[viB];
@@ -1064,6 +1147,7 @@ function capLineFor(B, viB, Ix, Vx) {
   const Wbest = W.length === 2 && Math.hypot(W[1][0] - Vx[0], W[1][1] - Vx[1]) > Math.hypot(W[0][0] - Vx[0], W[0][1] - Vx[1]) ? W[1] : W[0];
   return { px: Wbest[0], py: Wbest[1], nx: Wbest[2], ny: Wbest[3] };
 }
+/** @param {string} n @param {number} vi @param {AnyPoint[]} pts @param {boolean} atStart @param {number} ownHalf */
 function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   // the edge clip (Andrew's rule): an end poking past a crossing street's edge is re-cut flush along that edge
   if (pts.length < 2) return pts;
@@ -1074,6 +1158,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   const grp = TOPO.at(coordKey(V));
   const end0 = atStart ? pts[0] : pts[pts.length - 1];
   // anchors at growing depths: a bending trace parallels the edge first, so a deeper one forms the cap
+  /** @type {AnyPoint[]} */
   const inners = [];
   { let cum = 0; const marks = [1, 4.5, 9, 14]; let mi = 0;
     for (let k = 1; k < pts.length && mi < marks.length; k++) { const p = atStart ? pts[k] : pts[pts.length - 1 - k]; cum += H.jDistM(p, atStart ? pts[k - 1] : pts[pts.length - k]); if (cum >= marks[mi]) { inners.push(p); mi++; } } }
@@ -1083,7 +1168,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   for (let round = 0; round < 3; round++) {
     const corners = endCorners(pts, atStart, ownHalf);
     if (corners.length < 2) return pts;
-    /** @type {{ J: any, ex: number, viB: number | null, bHalf: number } | null} */
+    /** @type {{ J: EngineJunction, ex: number, viB: number | null, bHalf: number } | null} */
     let worst = null;
     entries.forEach(J => {
       if (tried.has(J.B)) return;
@@ -1099,6 +1184,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
           inners.forEach(inp => {
             const capT = capLineFor(J.B, ge.vi, XYOf(inp), Vx);
             if (!capT) return;
+            /** @type {(p: AnyPoint) => number} */
             const sd = p => { const X = XYOf(p); return (X[0] - capT.px) * capT.nx + (X[1] - capT.py) * capT.ny; };
             exL = Math.max(exL, -Math.min(sd(end0), sd(corners[0]), sd(corners[1])));
           });
@@ -1152,6 +1238,7 @@ function clipEndAtJunction(n, vi, pts, atStart, ownHalf) {
   }
   return pts;
 }
+/** @param {EngineStrand[]} strands @param {number} half @param {(sl:EngineStrand,atStart:boolean)=>AnyPoint[]} [guideFor] @param {(sl:EngineStrand,atStart:boolean)=>boolean} [skipEnd] */
 function clipStrandEnds(strands, half, guideFor, skipEnd) {
   // post-merge: clip every strand end sitting exactly on a junction vertex
   strands.forEach(sl => {
@@ -1170,6 +1257,7 @@ function clipStrandEnds(strands, half, guideFor, skipEnd) {
     });
   });
 }
+/** @param {AnyPoint} p @param {AnyPoint[]} line */
 function nearestOnLine(p, line) {
   // the point on the polyline nearest p (flat-metre projection per segment)
   const P = XYOf(p);
@@ -1183,6 +1271,7 @@ function nearestOnLine(p, line) {
   }
   return best || p;
 }
+/** @param {string} n @param {number} vi @param {AnyPoint[]} pts @param {boolean} atStart @param {number} ownHalf @param {AnyPoint[]} line */
 function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
   // the generic solve drags an offset end centreline-ward: run it, then shift its pair onto this line
   const out = clipEndAtJunction(n, vi, pts, atStart, ownHalf);
@@ -1226,6 +1315,7 @@ function clipOnLine(n, vi, pts, atStart, ownHalf, line) {
   if (dd.length < 2) dd.push(res[res.length - 1]);
   return dd.length >= 2 ? dd : out;
 }
+/** @param {string} n @param {number} idx @param {number} side */
 function fillSlicePts(n, idx, side) {   // a one-side fill slice: the half-offset line, trimmed only where this side's fill ends
   const g = GEO[n], ab = g.cuts[idx];
   const line = side === 0 ? g.offH0 : g.offH1;
@@ -1235,23 +1325,26 @@ function fillSlicePts(n, idx, side) {   // a one-side fill slice: the half-offse
   if (idx === g.cuts.length - 1 || TOPO.runStart(n, g.cuts[idx + 1][0]) || !PAINT.fillCont(n, idx + 1, side)) pts = clipOnLine(n, ab[1], pts, false, HALF_HALF, line);
   return pts;
 }
+/** @param {EngineStrand[]} fills */
 function fillCornerLinks(fills) {
   // the corner wrap: where a side turns a corner into another's, a connector strand joins them at their intersection
   const verts = [];
   const svm = TOPO.verts();
   for (const k in svm) { const g = svm[k]; if (new Set(g.map(e => e.n)).size >= 2) verts.push(GEO[g[0].n].stitched[g[0].vi]); }
   if (!verts.length) return;
+  /** @type {{E:AnyPoint,Exy:AnyPoint,dir:AnyPoint,mem:EngineMember}[]} */
   const ends = [];
   fills.forEach(sl => {
     if (!sl.mem || !sl.mem.length || sl.pts.length < 2) return;
-    [[sl.mem[0], sl.pts[0], sl.pts[1]], [sl.mem[sl.mem.length - 1], sl.pts[sl.pts.length - 1], sl.pts[sl.pts.length - 2]]].forEach(([m, E, I]) => {
+    /** @type {[EngineMember,AnyPoint,AnyPoint][]} */ ([[sl.mem[0], sl.pts[0], sl.pts[1]],
+      [sl.mem[sl.mem.length - 1], sl.pts[sl.pts.length - 1], sl.pts[sl.pts.length - 2]]]).forEach(([m, E, I]) => {
       if (!m || m.side === undefined) return;
       const Exy = XYOf(E), Ixy = XYOf(I);
       const dx = Exy[0] - Ixy[0], dy = Exy[1] - Ixy[1], L = Math.hypot(dx, dy) || 1;
       ends.push({ E, Exy, dir: [dx / L, dy / L], mem: m });
     });
   });
-  const cross = (u, v) => u[0] * v[1] - u[1] * v[0];
+  const cross = /** @param {AnyPoint} u @param {AnyPoint} v */ (u, v) => u[0] * v[1] - u[1] * v[0];
   for (let i = 0; i < ends.length; i++) for (let j = i + 1; j < ends.length; j++) {
     const a = ends[i], b = ends[j];
     if (a.mem.n === b.mem.n) continue;
@@ -1271,13 +1364,16 @@ function fillCornerLinks(fills) {
 }
 // ===== boundary-end feathers (option C): paint ends at the join with a fade over the last 15 m
 const FADE_M = 15; // fade length is per-record data (element 5); this constant defaults a legacy 4-element record only
+/** @param {number[]} rec */
 function fadeMOf(rec) { return (rec && isFinite(rec[4]) && rec[4] > 0) ? rec[4] : FADE_M; }
+/** @param {string} n @param {AnyPoint} pt */
 function boundaryRecAt(n, pt) { // the street's end record (boundary or dead) whose END point is pt, or null
   const ends = H.STRETCH[n] && H.STRETCH[n].ends;
   if (!ends) return null;
   for (const r of ends) if (H.jDistM([r[0], r[1]], pt) <= 1.5) return r;
   return null;
 }
+/** @param {AnyPoint[]} pts @param {AnyPoint} join @param {boolean} atStart @param {number} fadeM */
 function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cut at the join, split the fade zone; either part can be null
   const fm = isFinite(fadeM) && fadeM > 0 ? fadeM : FADE_M;
   const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + H.jDistM(pts[i - 1], pts[i]));
@@ -1292,8 +1388,9 @@ function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cu
     if (dd < bestD) { bestD = dd; dJ = cum[i - 1] + Math.sqrt(L2) * t; }
   }
   if (dJ === null) return { solid: pts, fade: null };
-  const sub = (d0, d1) => { // the points between two along-distances, cut points interpolated (sliceLine's way)
+  const sub = /** @param {number} d0 @param {number} d1 */ (d0, d1) => { // the points between two along-distances, cut points interpolated (sliceLine's way)
     if (d1 - d0 < 0.05) return null;
+    /** @type {(d: number) => AnyPoint} */
     const at = d => { for (let i = 1; i < pts.length; i++) { if (d <= cum[i] || i === pts.length - 1) { const span = cum[i] - cum[i - 1] || 1; const t = Math.max(0,
       Math.min(1, (d - cum[i - 1]) / span)); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t,
       pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; } } return pts[pts.length - 1]; };
@@ -1306,8 +1403,9 @@ function splitBoundaryEnd(pts, join, atStart, fadeM) { // -> { solid, fade }: cu
   const fadePts = sub(dJ, Math.min(total, dJ + fm));
   return { solid: sub(Math.min(total, dJ + fm), total), fade: fadePts ? fadePts.reverse() : null }; // a run-start fade orders seam -> join like the rest: the slice runs join-first there, so it reverses
 }
+/** @param {string} n @param {AnyPoint} ab @param {AnyPoint[]} pts @param {string} kind @param {string} col @param {boolean} withCasing */
 function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades }: the split at both ends, judged through TOPO's run-end classification
-  let solid = pts; const fades = [];
+  let solid = pts; const fades = /** @type {EngineFade[]} */ ([]);
   for (const atStart of [true, false]) {
     if (!solid || solid.length < 2) break;
     const cls = TOPO.endAt(n, atStart ? ab[0] : ab[1]);   // only a feather end splits (with its record): a junction end never splits, whatever the pack says
@@ -1321,31 +1419,38 @@ function boundarySplit(n, ab, pts, kind, col, withCasing) { // -> { solid, fades
 }
 // ===== PAINT: the one owner of the paint inputs - classification, clip decisions, fill continuation live here
 const PAINT = {
-  strands: null,   // { centres, bands, edges, fills }: the last buildFamilies pass's merged strands; fills carry their corner provenance
+  strands: /** @type {Record<"centres" | "bands" | "edges" | "fills", EngineStrand[]> | null} */ (null),   // { centres, bands, edges, fills }: the last buildFamilies pass's merged strands; fills carry their corner provenance
+  /** @param {string} n @param {number} idx */
   classify(n, idx) {   // the one classification: a piece's bits, its band-ness, its centre-family key, and its street's family key
     const bits = H.pieces[n][idx];
     const isBand = bits === 3;
     const key = isBand ? 'band' : mute(colOf(n, bits));
+    /** @type {(i: number) => string} */
     const famKey = i => H.pieces[n][i] === 3 ? 'band' : mute(colOf(n, H.pieces[n][i]));
     return { bits, isBand, key, famKey };
   },
+  /** @param {string} n @param {number} idx @param {AnyPoint[]} pts @param {number} half @param {boolean} bandRule */
   clipEnds(n, idx, pts, half, bandRule) {   // clip an end only where the paint ends there: a continuing piece keeps its shared vertex, merging seamlessly
     const g = GEO[n], ab = g.cuts[idx], c = PAINT.classify(n, idx);
+    /** @type {(i:number)=>boolean} */
     const cont = bandRule ? (i => H.pieces[n][i] !== 0) : (i => c.famKey(i) === c.key);
     if (idx === 0 || TOPO.runStart(n, ab[0]) || !cont(idx - 1)) pts = clipEndAtJunction(n, ab[0], pts, true, half);
     if (idx === g.cuts.length - 1 || TOPO.runStart(n, g.cuts[idx + 1][0]) || !cont(idx + 1)) pts = clipEndAtJunction(n, ab[1], pts, false, half);
     return pts;
   },
+  /** @param {string} n @param {number} i @param {number} side */
   fillCont(n, i, side) {   // piece i continues a side's fill when it marks it (both-sides included: the band covers the side)
     const b = H.pieces[n][i];
     return !!((b & (1 << side)) || b === 3);
   }
 };
 // a street's slices are a pure function of its pieces: cached per street, handed out as fresh objects
+/** @type {Map<string,{sig:string,out:ReturnType<typeof buildStreetSlices>}>} */
 const SLICE_CACHE = new Map();
+/** @param {string} n */
 function buildStreetSlices(n) {
   const g = GEO[n];
-  const centres = [], bands = [], fills = [], fades = [];
+  const centres = /** @type {EngineStrand[]} */ ([]), bands = /** @type {EngineStrand[]} */ ([]), fills = /** @type {EngineStrand[]} */ ([]), fades = /** @type {EngineFade[]} */ ([]);
   g.cuts.forEach((ab, idx) => {
     const c = PAINT.classify(n, idx);   // the classification is the PAINT model's, computed once per piece
     const bits = c.bits, isBand = c.isBand, key = c.key;
@@ -1364,18 +1469,23 @@ function buildStreetSlices(n) {
   });
   return { centres, bands, fills, fades };
 }
+/** @param {string} n */
 function streetSlices(n) {
   const sig = H.pieces[n].join(',');
   let rec = SLICE_CACHE.get(n);
   if (!rec || rec.sig !== sig) { rec = { sig, out: buildStreetSlices(n) }; SLICE_CACHE.set(n, rec); }
-  const fresh = list => list.map(sl => ({ pts: sl.pts.slice(), key: sl.key, mem: sl.mem.map(m => ({ ...m })), e0: null, e1: null }));
+  /** @type {(list: EngineStrand[]) => EngineStrand[]} */
+  const fresh = list => list.map(/** @returns {EngineStrand} */ sl => ({ pts: sl.pts.slice(), key: sl.key, mem: sl.mem.map(m => ({ ...m })), e0: null, e1: null }));
   return { centres: fresh(rec.out.centres), bands: fresh(rec.out.bands), fills: fresh(rec.out.fills), fades: rec.out.fades.map(f => ({ pts: f.pts.slice(), k: f.k, col: f.col })) };
 }
 function buildFamilies() {
   THROUGH_SEGS = [];
   const pairs = junctionPairs();
   PAIRS_CUR = pairs;
-  const centreSlices = [], bandSlices = [], edgeSlices = [], fillSlices = [], fadeSlices = [];
+  const centreSlices = /** @type {EngineStrand[]} */ ([]),
+  bandSlices = /** @type {EngineStrand[]} */ ([]),
+  edgeSlices = /** @type {EngineStrand[]} */ ([]),
+  fillSlices = /** @type {EngineStrand[]} */ ([]), fadeSlices = /** @type {EngineFade[]} */ ([]);
   H.names.forEach(n => {
     const own = streetSlices(n);
     for (const sl of own.centres) centreSlices.push(sl);
@@ -1406,7 +1516,8 @@ function buildFamilies() {
   extendIntoBands(edges, pairs);
   lastResortConnect(edges, bands);
   PAINT.strands = { centres, bands, edges, fills };   // the merged strands publish into the model: buildSelFill reads the fills from it, not a module global
-  const fc = (list, colFn) => ({ type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
+  const fc = /** @param {EngineStrand[]} list @param {(sl:EngineStrand)=>string} colFn */ (list, colFn) => ({
+    type: 'FeatureCollection', features: list.map(sl => { const c = colFn(sl); return { type: 'Feature', properties: { col: c, colG: mute(c) }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } }; }) });
   return { centres: fc(centres, sl => sl.key),
     bands: fc(bands, () => MUGREEN),
     edges: fc(edges, () => MUGREEN),
@@ -1419,7 +1530,9 @@ function currentSelList() { // every selected stretch: the app's selSet when mul
 }
 function buildSelFill() {   // selected fills build by fillSlicePts, the board's rule, so a selected side paints vertex-for-vertex as the board's
   const feats = [];
+  /** @type {EngineMember[]} */
   const selSides = [];
+  /** @type {EngineFade[]} */
   const fades = [];
   for (const it of currentSelList()) {
     const bits = H.pieces[it.name][it.idx];
@@ -1445,7 +1558,9 @@ function buildSelFill() {   // selected fills build by fillSlicePts, the board's
   }
   return { fill: { type: 'FeatureCollection', features: feats }, fades };
 }
+/** @type {EngineCollection} */
 const EMPTYFC = { type: 'FeatureCollection', features: [] };
+/** @param {EngineSelection} it */
 function selectedGeom(it) {   // a selected stretch's painted slice: stitched points, edge-clipped at its junctions
   const s0 = it || sel;
   if (!s0) return null;
@@ -1470,25 +1585,34 @@ function buildSelC() {   // the selected sector's core: a vibrant BAND when comp
   }
   return { sel: selFeats.length ? { type: 'FeatureCollection', features: selFeats } : EMPTYFC, selBand: bandFeats.length ? { type: 'FeatureCollection', features: bandFeats } : EMPTYFC, selFades };
 }
+/** @param {EngineFade[]} triples */
 function fadeFC(triples) { // fade triples ({pts, k, col}) -> the selFades collection
   return triples.length ? { type: 'FeatureCollection', features: triples.map(sl => ({ type: 'Feature', properties: { col: sl.col, k: sl.k }, geometry: { type: 'LineString', coordinates: GJ(sl.pts) } })) } : EMPTYFC;
 }
+/** @type {EngineCollection} */
 const HIT = { type: 'FeatureCollection', features: [] }; // filled per load by buildEngineGeometry
 buildEngineGeometry(); // the eval pass builds the empty geometry (no route loaded yet): the structures exist, every reader safe
+/** @type {Record<"centres"|"bands"|"edges"|"fills"|"fades"|"sel"|"selBand"|"selFill"|"selFades",EngineCollection>|null} */
 let CUR = null;
 function rebuildData() { const F = buildFamilies(); const SC = buildSelC(); const SF = buildSelFill();
   // paint order: red strands sort before yellow (yellow paints over red); green bands sit below all centres
+  /** @type {(f: EngineFeature) => number} */
   const yRank = f => (f.properties.col === mute(YELLOW) || f.properties.col === YELLOW) ? 1 : 0;   // keys off the live scheme
   F.centres.features.sort((a, b) => yRank(a) - yRank(b));
   CUR = { centres: F.centres, bands: F.bands, edges: F.edges, fills: F.fills, fades: F.fades, sel: SC.sel, selBand: SC.selBand, selFill: SF.fill, selFades: fadeFC([...SC.selFades, ...SF.fades]) }; }
 
-function scaleW(curve) { return curve.map((v, i) => (i >= 4 && i % 2 === 0) ? +(v * WIDTH_K).toFixed(3) : v); }   // scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
+/** @param {WidthCurve} curve */
+function scaleW(curve) {
+  return /** @type {WidthCurve} */ (curve.map((v, i) => (i >= 4 && i % 2 === 0)
+    ? +(/** @type {number} */ (v) * WIDTH_K).toFixed(3) : v)); }   // scale an interpolate width curve by WIDTH_K (widths sit at even indices >= 4, the wPlus/wScale index rule)
 const surfW = scaleW(['interpolate', ['linear'], ['zoom'], 14, 2.5, 16, 7.63, 17, 15.25, 18, 30.5, 19, 61]);   // the z16-19 stops hold drawn width at the geographic surface width (2 x SURF_HALF)
 const surfCASE = scaleW(['interpolate', ['linear'], ['zoom'], 14, 4.5, 16, 10.13, 17, 18.25, 18, 33.99, 19, 65]);   // the surface's casing curve: completed bands draw at the surface's width, so their casing is this curve too
-const wPlus = (curve, d) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v + d * WIDTH_K : v);   // widen a width curve by d px per stop; the added px scale by WIDTH_K too
-const wScale = (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? v * f : v);   // scale an interpolate width curve (same index rule as wPlus)
+const wPlus = /** @param {WidthCurve} curve @param {number} d */ (curve, d) =>
+  curve.map((v, i) => (i >= 4 && i % 2 === 0) ? /** @type {number} */ (v) + d * WIDTH_K : v);   // widen a width curve by d px per stop; the added px scale by WIDTH_K too
+const wScale = /** @param {WidthCurve} curve @param {number} f */ (curve, f) => curve.map((v, i) => (i >= 4 && i % 2 === 0) ? /** @type {number} */ (v) * f : v);   // scale an interpolate width curve (same index rule as wPlus)
 // zoom-tapered glow: at low zoom the full-width glow creased into starburst rays, so glowW/glowB scale it down
 const GLOW_TAPER = [[14, 0.15], [15, 0.32], [16, 0.68], [16.5, 1]];
+/** @param {number} z */
 function taperAt(z) {
   if (z <= GLOW_TAPER[0][0]) return GLOW_TAPER[0][1];
   for (let i = 1; i < GLOW_TAPER.length; i++) {
@@ -1499,22 +1623,29 @@ function taperAt(z) {
   }
   return 1;
 }
+/** @param {WidthCurve} curve @param {number} z */
 function curveAt(curve, z) {
   if (z <= curve[3]) return curve[4];
   for (let i = 5; i < curve.length; i += 2) {
-    if (z <= curve[i]) return curve[i + 1] + (curve[i - 1] - curve[i + 1]) * (curve[i] - z) / (curve[i] - curve[i - 2]);
+    if (z <= /** @type {number} */ (curve[i]))
+      return /** @type {number} */ (curve[i + 1])
+        + (/** @type {number} */ (curve[i - 1]) - /** @type {number} */ (curve[i + 1])) * (/** @type {number} */ (curve[i]) - z) / (/** @type {number} */ (curve[i]) - /** @type {number} */ (curve[i - 2]));
   }
-  return curve[curve.length - 1];
+  return /** @type {number} */ (curve[curve.length - 1]);
 }
+/** @param {WidthCurve} curve @param {number} delta */
 function glowW(curve, delta) {
-  /** @type {any[]} */
+  /** @type {WidthCurve} */
   const ex = ['interpolate', ['linear'], ['zoom']];
   for (const z of [14, 15, 16, 16.5, 17, 18, 19]) ex.push(z, +(curveAt(curve, z) + delta * WIDTH_K * taperAt(z)).toFixed(2));   // the live glow's extra width scales by WIDTH_K, same as the initial stack's wPlus
   return ex;
 }
+/** @param {number} b */
 function glowB(b) { return ['interpolate', ['linear'], ['zoom'], 14, +(b * 0.35).toFixed(2), 15.5, +(b * 0.6).toFixed(2), 16.5, b]; }
+/** @param {string} hex @param {number} f */
 function lighten(hex, f) {   // mix a #rrggbb colour toward white by f (0..1) - the "hot core" colours for the glow presets
   const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  /** @type {(c:number)=>number} */
   const m = c => Math.round(c + (255 - c) * f);
   return '#' + [m(r), m(g), m(b)].map(c => c.toString(16).padStart(2, '0')).join('');
 }
@@ -1524,7 +1655,9 @@ function firstSymbolId() {
   return s ? s.id : undefined;
 }
 // place-name tuning: the styles already carry every place name with zoom bands and population-sorted thinning
+/** @type {Partial<Record<string,number>>} */
 const PLACE_EARLY = { suburb: 8, quarter: 8.5, neighbourhood: 9, hamlet: 8, village: 8, subplace: 9 }; // the one owner of place-label zooms (how early each settlement kind may appear); labels cap at 15.5
+/** @param {string} id */
 function placeClass(id) {
   if (id.includes('neighbourhood') || id.includes('neighborhood')) return 'neighbourhood';
   if (id.includes('quarter')) return 'quarter';
@@ -1549,6 +1682,7 @@ function tunePlaceLabels() {
   }
 }
 // ---- the layer catalogue: groups written once, in stack order; the text/stack lists derive from them
+/** @type {Record<"paint"|"poi"|"titles"|"glow",string[]> & Partial<Record<"text"|"stack",string[]>>} */
 const LAYERS = {
   paint: ['t1-casing',
     't1-casingb',
@@ -1594,8 +1728,10 @@ function addStack() {
     GLM.addSource('routepoi', { type: 'geojson', data: ROUTEPOI });
   }
   const before = firstSymbolId();
-  const add = (layer) => { if (!GLM.getLayer(layer.id)) GLM.addLayer(layer, before); };
-  const line = (id, source, paint, layout, filter) => { const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };
+  const add = /** @param {EngineLayer} layer */ (layer) => { if (!GLM.getLayer(layer.id)) GLM.addLayer(layer, before); };
+  const line = /** @param {string} id @param {string} source @param {Record<string, unknown>} paint @param {Record<string, unknown>} [layout] @param {unknown} [filter] */ (id, source, paint, layout, filter) => {
+    /** @type {EngineLayer} */
+    const o = { id, type: 'line', source, layout: Object.assign({ 'line-cap': 'round', 'line-join': 'miter' }, layout || {}), paint }; if (filter) o.filter = filter; return o; };
   // NOTE: a present-but-undefined `filter` key makes MapLibre silently drop the layer
   /* --- T1: the surface carries the state; red sorts before yellow, green bands above centres */
   add(line('t1-casing',
@@ -1680,7 +1816,9 @@ function addStack() {
   syncTheme();
 }
 // ---- selection glow (the five style toggle buttons were removed at Andrew's order) ----
+/** @type {number|null} */
 let pulseTimer = null;
+/** @type {{ op:Record<string,number[]>,road:number[] }} */
 let glowAnim = { op: {}, road: [0, 0] }; // declared: this was an implicit global (a ReferenceError waiting for strict mode); applyGlow replaces it wholesale
 function buildSelGlow() {
   const feats = []; // one glow feature per selected stretch (buildSel's iteration): a multi-select glows all, not just the anchor
@@ -1696,6 +1834,7 @@ function buildSelGlow() {
 // ---- glow presets (selection only, no road paint touched): per-layer specs over one fixed stack
 const PULSE_RATES = [0.04, 0.07, 0.11, 0.17];   // breathing phase step per 50ms tick: ~7.9s / ~4.5s / ~2.9s / ~1.9s per full cycle
 let pulseRate = PULSE_RATES[3];   // RAPID, locked as Andrew's final choice - the Pulse row is removed
+/** @type {{road:number[],layers:Record<string,EngineGlowLayer|null>}[]} */
 const GLOW = [
   { road: [0.74, 0.26], layers: {   // 0 Bloom - the original look
     'sel-glow1': { p: 17, b: 0, o: 0.10, a: 0.13 }, 'sel-glow2': { p: 9, b: 0, o: 0.16, a: 0.19 }, 'sel-glow3': { p: 4, b: 0, o: 0.24, a: 0.26 },
@@ -1739,7 +1878,7 @@ function managePulse() {
       if (typeof document !== 'undefined' && document.hidden) return; // no paint churn while the app is not on screen - the phase simply waits and resumes on return
       ph += pulseRate;
       const s = 0.5 + 0.5 * Math.sin(ph);   // 0..1 breathing cycle
-      const set = (id, v) => { if (GLM.getLayer(id)) GLM.setPaintProperty(id, 'line-opacity', v); };
+      const set = /** @param {string} id @param {number} v */ (id, v) => { if (GLM.getLayer(id)) GLM.setPaintProperty(id, 'line-opacity', v); };
       Object.keys(glowAnim.op).forEach(id => set(id, glowAnim.op[id][0] + glowAnim.op[id][1] * s));
       set('t1-sel', glowAnim.road[0] + glowAnim.road[1] * s); set('t1-selband', glowAnim.road[0] + glowAnim.road[1] * s);
     }, 50);
@@ -1747,6 +1886,7 @@ function managePulse() {
 }
   // ---- public API (the app's only handles on the engine) ----
   function stateSig() { return JSON.stringify(H.pieces); }
+  /** @param {EngineMap} gl @param {typeof GL_HOST} [host] */
   function init(gl, host) {
     GLM = gl;
     if (host) H = host; // adopt the passed host: the app passes the same GL_HOST it registered before this script evaluated
@@ -1790,6 +1930,7 @@ function managePulse() {
     pushSelSources();
   }
   function active() { return !!GLM; }
+  /** @param {string[]} stack */
   function setFont(stack) { if (Array.isArray(stack) && stack.length) { fontStack = stack.slice(); if (GLM) { for (const id of LAYERS.text) { if (GLM.getLayer(id)) { try { GLM.setLayoutProperty(id, 'text-font', fontStack); } catch (e) {} } } } } } // Beta 1.170 (Carbon fix round Phase 2, B-09): layers already on the map take the new stack too - through 1.169 setFont replaced only the variable FUTURE layers are built from, so a basemap restyle (which re-picks the font, then calls sync - not init) left the live label layers rendering the retired stack until the next full rebuild
   function syncTheme() {
     if (!GLM || !GLM.getLayer) return;
@@ -1800,11 +1941,15 @@ function managePulse() {
     if (GLM.getLayer('fade-casing')) { try { GLM.setPaintProperty('fade-casing', 'line-gradient', fadeGrad(casing)); } catch (e) {} } // the feather's casing gradient follows the theme with the casings
     for (const id of LAYERS.text) { if (GLM.getLayer(id)) { try { GLM.setPaintProperty(id, 'text-color', txt); GLM.setPaintProperty(id, 'text-halo-color', halo); } catch (e) {} } }
   }
+  /** @param {WidthCurve} curve @param {number} z */
   function evalCurvePx(curve, z) { // evaluate a scaleW curve at a zoom, in px (zooms at odd indices, widths at even)
     let prev = null;
-    for (let i = 3; i + 1 < curve.length; i += 2) { if (z <= curve[i]) { if (!prev) return curve[i + 1]; return prev[1] + (curve[i + 1] - prev[1]) * ((z - prev[0]) / (curve[i] - prev[0])); } prev = [curve[i], curve[i + 1]]; }
+    for (let i = 3; i + 1 < curve.length; i += 2) { if (z <= /** @type {number} */ (curve[i])) {
+      if (!prev) return /** @type {number} */ (curve[i + 1]);
+      return prev[1] + (/** @type {number} */ (curve[i + 1]) - prev[1]) * ((z - prev[0]) / (/** @type {number} */ (curve[i]) - prev[0])); } prev = [/** @type {number} */ (curve[i]), /** @type {number} */ (curve[i + 1])]; }
     return prev[1];
   }
+  /** @param {number} z */
   function tapTolPx(z) { return Math.max(24, evalCurvePx(surfCASE, z) / 2 + 2); } // tolerance follows the widest paint at the zoom, floored at 24 px: a tap on paint selects
   return { init, drop, sync, syncSel, syncTheme, active, setFont, rebuildRoute, tapTolPx, layers: LAYERS, mute }; // layers exported for cross-part readers; mute for create-pick's draft renderer (a bare call threw at init)
 })();

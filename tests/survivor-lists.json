@@ -729,6 +729,28 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-27 graft-b-boundaries"
+  },
+  {
+   "id": "s1-type-safety",
+   "kind": "no-cut",
+   "reason": "Annotation-only round: JSDoc comments and cast parens in parts/, declarations in scripts/app1-types.d.ts, tsconfig flags. Nothing is cut, moved or changed; annotated parts are token-identical minus cast parens (RECORD).",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r1",
+   "kind": "no-cut",
+   "reason": "Annotation-only round: JSDoc comments and cast parens in parts/, declarations in scripts/app1-types.d.ts, tsconfig flags. Nothing is cut, moved or changed; annotated parts are token-identical minus cast parens (RECORD).",
+   "changed": [
+    "parts/app1.js",
+    "parts/engine.js"
+   ],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "81b943dfa28e5456d0d305867440d26eac00bbbc907037c349e2c880cf491c61",
+  "canonical_registry_sha256": "2d12a1469a07f10993097441045d451efde09434e84407bd040980ef6362f897",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -3191,7 +3191,7 @@
    "file": "parts/engine.js",
    "fix": "DA-02 Codex verify cycle 2: polyCorner's segsOf enumerated phantom between-runs offset segments, inventing a junction pairing that does not exist; it now takes the street's gaps and skips gap-entering segments. (Rolled 2026-11-23 by arch11-stage1, Beta 1.283: the GEO gap set is retired - TOPO owns the run structure and the guard reads TOPO's predicates; this probe now pins the guard's TOPO-era line.)",
    "id": "beta-1144-gapguard-segsof",
-   "pattern": "const segsOf = (off, vi, n) => {",
+   "pattern": "const segsOf = /** @param {AnyPoint[]} off @param {number} vi @param {string} n */ (off, vi, n) => {",
    "type": "grep_present"
   },
   {
@@ -3816,7 +3816,7 @@
    "fix": "Beta 1.149 (Tranche 5, A1 pilot): the pilot tsconfig enables checkJs and scopes the check to parts/app1.js + scripts/app1-types.d.ts only. If this fails, the pilot scope or the checkJs enablement changed - restore the scoped pilot config.",
    "fix_id": "tranche5-a1-tscheck-pilot",
    "id": "tranche5-a1-tsconfig-scope",
-   "pattern": "\"checkJs\":true",
+   "pattern": "\"checkJs\": true",
    "type": "grep_present"
   },
   {
@@ -4502,7 +4502,7 @@
    "fix": "A-02: migrateLegacyRoute's decision reads go through rawRead's sentinel - a thrown read reads as UNKNOWN and blocks the migration commit for a next-boot retry, never as an absent key.",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-a02-migget",
-   "pattern": "const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : v; };",
+   "pattern": "const migGet = k => { const v = rawRead(k); return v === RAW_READ_FAILED ? undefined : /** @type {string | null} */ (v); };",
    "type": "grep_present"
   },
   {
@@ -4511,7 +4511,7 @@
    "fix": "A-03: loadSides' done-time inheritance fills MISSING piece stamps on partially-recorded streets (recorded stamps never overwritten), not only wholly-empty maps. Arch-2 roll (2026-11-19): the inheritance segment moved verbatim into BOARD.loadSides in parts/app1.js (PR #132); the only textual change is the shadowed loop variable renamed T -> T2 (it collided with the street loop's T inside the module) - behaviour proven identical by the round's old-vs-new round-trip harness over corrupt/partial stores. Claim unchanged.",
    "fix_id": "carbon-phase1",
    "id": "carbon-b169-a03-partial-inherit",
-   "pattern": "else { const T2 = pieceTimes[n], out = []; for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }",
+   "pattern": "else { const T2 = pieceTimes[n], out = /** @type {PieceTimePair[]} */ ([]); for (let i = 0; i < full.length; i++) { const cur = T2[i]; out[i] = [(cur && cur[0]) || full[i][0], (cur && cur[1]) || full[i][1]]; } pieceTimes[n] = out; }",
    "type": "grep_present"
   },
   {
@@ -6524,7 +6524,7 @@
    "fix": "mergeStrands dead-score fix (finding:mergestrands-score, 2026-11-14; judged round verdict NON-EMPTY geometry diff - edges/paint source only - Andrew approved shipping 2026-11-15), landed as maintenance PR #52, merge c755d2dc6294c01d6f55710c655a076f0afaef94 (no Beta bump; page still reads Beta 1.204): the mergeStrands winner object in parts/engine.js now stores its score, so score-2 exact joins beat score-1 junction bridges regardless of scan order (ties unchanged). engine.js joined the type check (scripts/tsconfig.json include, assembly order) with truthful JSDoc annotations - with the annotations and without the fix, tsc's sole engine error is the defect (TS2741 'score' missing); with the fix the expanded set is at zero. Pinning proof tests/proof/proof-mergestrands-score.mjs runs in build-and-test (fails on the unfixed engine, passes fixed). If a probe fails, the named piece has regressed or been reverted - restore the shipped form.",
    "fix_id": "mergestrands-score",
    "id": "mergestrands-winner-type",
-   "pattern": "score: number, merged: any",
+   "pattern": "score: number, merged: EngineStrand",
    "type": "grep_present"
   },
   {
