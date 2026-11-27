@@ -157,9 +157,9 @@ const S7 = JSON.parse(await ev(`(() => JSON.stringify({ night: document.body.cla
   barBg: getComputedStyle($('tabBar')).backgroundColor, countCol: getComputedStyle($('count')).color }))()`));
 ok('S7 night mode: chrome flips to dark glass with bright icons | ' + JSON.stringify(S7),
   S7.night === true && S7.listCol === 'rgb(242, 244, 248)' && S7.tabCol === 'rgb(221, 229, 236)' && S7.barBg === 'rgba(32, 33, 37, 0.94)' && S7.countCol === 'rgb(238, 244, 238)');
-const S7b = JSON.parse(await ev(`(() => { const l = map && map.getLayer('buildings-3d'); return JSON.stringify({ there: !!l, type: l && l.type, h: l && map.getPaintProperty('buildings-3d', 'fill-extrusion-height') }); })()`));
-ok('S7b the 3D buildings layer survives a basemap swap (Beta 1.90): a fill-extrusion on the buildings source-layer with the estimated-height ramp, still there after the theme flip rebuilt the style | ' + JSON.stringify(S7b),
-  S7b.there && S7b.type === 'fill-extrusion' && JSON.stringify(S7b.h).includes('coalesce'));
+const S7a = JSON.parse(await ev(`(() => { const l = map && map.getLayer('buildings-3d'); return JSON.stringify({ there: !!l, type: l && l.type, h: l && map.getPaintProperty('buildings-3d', 'fill-extrusion-height') }); })()`));
+ok('S7a the 3D buildings layer survives a basemap swap (Beta 1.90): a fill-extrusion on the buildings source-layer with the estimated-height ramp, still there after the theme flip rebuilt the style | ' + JSON.stringify(S7a),
+  S7a.there && S7a.type === 'fill-extrusion' && JSON.stringify(S7a.h).includes('coalesce'));
 ok('S7 night mode: the day/night button now offers Day - sun icon, state in agreement (transitions round: the swap crossfades - sun fully in, moon fully out)', S7.sunIcon === true && S7.sunOp === '1' && S7.moonOp === '0');
 await poll(`window.__fadeDone === true`, 8000);
 const FADE = JSON.parse(await ev(`JSON.stringify(window.__fade || [])`));

@@ -131,6 +131,22 @@ This wrapper makes both shapes impossible rather than discouraged:
           part); the mirrors that can be derived are derived, and
           the rest are checked here, on every push, against the
           prospective tree like the other gates.
+          Alongside those, the SURVIVORS GATE (Phase 2 prove-it
+          machinery, /correct 2026-11-26 Class 2 - the reopened
+          C7): a push that changes any parts/ file must be named
+          by a CURRENT survivor list in tests/survivor-lists.json
+          - the pre-cut enumeration of the behaviours that must
+          survive a removal, port or restructure, each row naming
+          the existing check that observes the behaviour and the
+          case text that check carries - or by a no-cut record
+          stating why the change cuts nothing. The checker
+          (scripts/check-survivors.py) verifies every named case
+          is a literal needle occurring in its named check file,
+          so a survivor naming a check that does not carry the
+          case certifies nothing; it verifies the list exists,
+          was pinned against this tree, and names real checks -
+          the completeness of the behaviour list remains the
+          review seat's spot-check, reading the author's own list.
           Then it delegates the transport to the connector helper
           (explicit --repo snow-route-beta and --branch, every pair
           local=remote identical), and VERIFIES THE PUSHED TREE:
@@ -334,6 +350,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = mirrors_gate(root, root)
         if err:
             return "the prospective remote tree fails the mirrors gate: " + err
+        err = survivors_gate(root, root, remote, local, resolved)
+        if err:
+            return "the prospective remote tree fails the survivors gate: " + err
         return parts_scan_gate(root, root)
     import base64
     import shutil
@@ -366,6 +385,9 @@ def preflight_prospective(root, gh, branch, resolved):
         err = mirrors_gate(tmp, root)
         if err:
             return ("the prospective remote tree fails the mirrors gate: " + err)
+        err = survivors_gate(tmp, root, remote, local, resolved)
+        if err:
+            return "the prospective remote tree fails the survivors gate: " + err
         err = parts_scan_gate(tmp, root)
         if err:
             return err
@@ -426,12 +448,32 @@ def census_gate(prospective_root, instrument_root, remote, local, resolved):
     re-derived there, so a census that would not land with this
     push, or that omits a sibling the pushed tree carries, cannot
     certify it. Returns an error string or None."""
-    script = instrument_root / "scripts" / "check-census.py"
+    return _record_gate("check-census.py", "CENSUS", prospective_root,
+                        instrument_root, remote, local, resolved)
+
+
+def survivors_gate(prospective_root, instrument_root, remote, local, resolved):
+    """A parts-changing push must be named by a CURRENT survivor
+    list whose rows' named cases verify in their checks (Class 2;
+    scripts/check-survivors.py owns the record rules). The logic
+    loads from the LOCAL tree, the ledger and parts read from the
+    PROSPECTIVE tree - the same instrument split as the census."""
+    return _record_gate("check-survivors.py", "SURVIVORS", prospective_root,
+                        instrument_root, remote, local, resolved)
+
+
+def _record_gate(checker, label, prospective_root, instrument_root,
+                 remote, local, resolved):
+    """The parts-record gates' shared loader: the checker named
+    loads from the LOCAL tree (the measuring instrument), its
+    ledger and the parts read from the PROSPECTIVE tree."""
+    script = instrument_root / "scripts" / checker
     if not script.is_file():
-        print("CENSUS GATE SKIPPED: scripts/check-census.py is not in "
+        print(f"{label} GATE SKIPPED: scripts/{checker} is not in "
               "this tree (it predates the gate)")
         return None
-    spec = importlib.util.spec_from_file_location("snow_check_census", script)
+    mod_name = "snow_" + checker[:-3].replace("-", "_")
+    spec = importlib.util.spec_from_file_location(mod_name, script)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     changed = [p for p in resolved if remote.get(p) != local.get(p)]

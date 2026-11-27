@@ -1,0 +1,13 @@
+{
+ "about": "Survivor lists for cut rounds (/correct 2026-11-26, Class 2). A cut record names each surviving behaviour, its observing check and the case text it carries; a no-cut record states why the round cut nothing.",
+ "rounds": [
+  {
+   "id": "phase2-prove-it",
+   "kind": "no-cut",
+   "reason": "Machinery and docs only: no parts/ surface changes. Adds the survivor-list gate and its push/CI wiring, extends TESTING.md rule 6, and renames drive125's colliding buildings case S7b to S7a (the crossfade keeps S7b).",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-26 phase2-prove-it"
+  }
+ ]
+}

@@ -17286,6 +17286,179 @@
    "red": "on the final form (Codex round applied): drive228 collapses to 4/21 - every route sub-pane stop fails on the away leg and the W20 coverage comparison fails with them; the pre-refactor form scored 5/21 twice",
    "green": "drive228 21/21 PASS on the shipped tree after the Codex round; W20 separately proven to observe: removing #setAboutPane from the live DOM fails W20 alone (20/21). Re-issued after a comment-only compression in create-fixture.mjs drifted a pinned hash; the drive file is byte-identical to the -r3 runs",
    "issued": "2026-11-26 snow-everywhere codex round"
+  },
+  {
+   "id": "phase2-drive125-s7a",
+   "check": "tests/browser/drive125.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive125.mjs": "8093f3f7855986ec53ae9d2f371dd90ffab0ffa29d058b82eaa398642c4290ea",
+    "parts/app4.js": "631c54f5d025ec84d553c73f96fda5cb7a1164567196ccf9309beaa5dbb95802",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc"
+   },
+   "mutation": "Two breaks, one per colliding case ID. (1) Crossfade: stampNightBtn (parts/app4.js) mutated to always re-stamp, the pre-PR-#221 behaviour the preserving stamp replaced. (2) Buildings: the buildings-3d layer id renamed to buildings-3d-off in both basemap styles (parts/pmstyles.js), so the layer the check reads is absent after the swap.",
+   "red": "(1) S7b fails alone, 28/29 - 13 sun-opacity samples, none mid, while the S7 terminal assertions still pass. (2) S7a fails alone on the isolating run, 28/29 - the layer read returns {there:false}; a first run under the same mutation also failed S7a directly while S7b co-failed on local-rig sampling jitter.",
+   "green": "Clean tree, drive125 29/29 locally (chromium-1254): S7a grades the buildings layer, S7b grades the crossfade - one case ID per check, the collision the phase was handed is gone.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-survivors-checker",
+   "check": "scripts/check-survivors.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "The new gate's verdicts exercised on synthetic trees, one break per documented failure shape: no ledger at all (the PR #217 port shape - a cut round that never wrote a list); a row naming a case text its check file does not carry (vacuous naming); a row naming a check file that does not exist; a pinned parts file edited after issue; the named case removed from its check file after issue.",
+   "red": "Every shape refused: the gate exits 1 with no ledger and again on the stale pin and the removed case; issue itself refuses the vacuous needle and the missing check file before any record is written.",
+   "green": "A valid cut record (row needle verified in its check) and a reasoned no-cut record both pass the gate on their paths; verify reports both CURRENT.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-judge-list",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "248bc127da0a7ea4b156a5f0d6acea88ecc777d3cbfe9dd128fd16038763eec3",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "scripts/check-survivors.py present on disk as a judging script (scripts/check-*.py) while JUDGE_PATHS does not name it - the pre-change state of this very edit.",
+   "red": "scripts/check-mirrors.py fails the tree: 'judges: scripts/check-survivors.py is a judging script but is not named in check-receipts.py's JUDGE_PATHS - a change to it would escape the mutation-receipt requirement silently'.",
+   "green": "With check-survivors.py named in JUDGE_PATHS, the mirrors gate passes every family including judges.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-push-wiring",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "7b18438ed749d2a47854502c032a7c3b92e32807cc6604898f885975fc1cb978",
+    "scripts/push.py": "af094e2732e8febd47480a3d108d5194a1ac26f2eff69f4ca4fa5a14980d35a8"
+   },
+   "mutation": "push.py's survivors_gate neutered to return None unconditionally - the wiring present, the gate never run (the born-dead shape of Class 5, applied to this round's own gate).",
+   "red": "The gate-fixtures suite convicts it exactly once: 'push: a parts change with a census but no survivor list is refused (survivors gate)' gets exit 0 against want 1; 146/147, no other case moves.",
+   "green": "Wiring restored: the full suite passes 147/147, including both survivors push cases, the twelve CLI verdicts, and the four worked-example pins.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-ci-step",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "52cc47ee4f615625e904acfb9471f4ab2f2f2fdc2fe0826181b41c4bae629203",
+    "scripts/gate-fixtures/run-fixtures.py": "7b18438ed749d2a47854502c032a7c3b92e32807cc6604898f885975fc1cb978",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "The Survivors gate step body extracted from the shipped checks.yml and executed against synthetic changed sets (the CI-wiring fixture method of issue #178): a set naming parts/a.js against an empty survivor ledger, a benign set, and a workflow_dispatch event.",
+   "red": "The parts set exits 1 through the step body - the refusal propagates out of the workflow step, not just the checker.",
+   "green": "The benign set exits 0 and workflow_dispatch skips cleanly at exit 0; all three Survivors step cases pass in the 147-case suite.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-push-wiring-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f9c4538e72551d46bfd053ca812f0e44927b921a29c7546b5fe19013727ba882",
+    "scripts/push.py": "af094e2732e8febd47480a3d108d5194a1ac26f2eff69f4ca4fa5a14980d35a8"
+   },
+   "mutation": "As phase2-push-wiring (survivors_gate neutered to return None); re-issued because the PR-limits gate required two comment blocks in the suite shortened after the first observation - the delta is comments only.",
+   "red": "The neutered wiring was convicted exactly once by the no-list push case (got 0, want 1), suite 146/147, on the pre-shortening bytes; no behaviour-bearing line differs since.",
+   "green": "Final bytes: the full suite passes 147/147, including both survivors push cases, the twelve CLI verdicts, and the four worked-example pins.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-ci-step-r2",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "52cc47ee4f615625e904acfb9471f4ab2f2f2fdc2fe0826181b41c4bae629203",
+    "scripts/gate-fixtures/run-fixtures.py": "f9c4538e72551d46bfd053ca812f0e44927b921a29c7546b5fe19013727ba882",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "As phase2-ci-step (the Survivors step body executed against synthetic changed sets); re-issued alongside phase2-push-wiring-r2 for the same comment-only delta in the suite.",
+   "red": "A changed set naming parts/a.js against an empty survivor ledger exits 1 through the step body extracted from the shipped checks.yml.",
+   "green": "Benign set and workflow_dispatch exit 0; all three Survivors step cases pass in the final 147-case suite.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-push-wiring-r3",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "51443394fb389fdc643653269752f8de79eccbd110e166b009883f370efd2e5e",
+    "scripts/push.py": "b9ead14d7d5a083ac495206d3423b4319c37d24f68a82644c55c138a45863a70"
+   },
+   "mutation": "Re-observation after the Codex P1 refactor: census_gate and survivors_gate now share the _record_gate loader; the survivors wrapper neutered to return None above the shared call.",
+   "red": "Exactly one fixture convicts it: 'push: a parts change with a census but no survivor list is refused (survivors gate)' gets exit 0 against want 1; suite 146/147.",
+   "green": "Restored: the full suite passes 147/147 on the final bytes, including both survivors push cases and both census push cases through the shared loader.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-ci-step-r3",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "52cc47ee4f615625e904acfb9471f4ab2f2f2fdc2fe0826181b41c4bae629203",
+    "scripts/gate-fixtures/run-fixtures.py": "51443394fb389fdc643653269752f8de79eccbd110e166b009883f370efd2e5e",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "Re-issued because run-fixtures.py changed under the Codex P1 fixes (worked-example pins strengthened and relabelled); checks.yml and check-survivors.py are byte-identical to the r2 observation.",
+   "red": "A changed set naming parts/a.js against an empty survivor ledger exits 1 through the Survivors step body extracted from the shipped checks.yml.",
+   "green": "Benign set and workflow_dispatch exit 0; all three Survivors step cases pass in the final 147-case suite.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-survivors-checker-r3",
+   "check": "scripts/check-survivors.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-survivors.py": "ef70b7145020969277df3371de2bce723126b9e804677a1a171f6565736d3b49",
+    "scripts/gate-fixtures/run-fixtures.py": "7c2edc736b2724375f41283f0b752a0e09aa79cd206f567345cb2efd8b9dbef7"
+   },
+   "mutation": "Codex P2 on PR #227: records could not represent a deleted parts file - _pins() refused an absent source, so no removal or rename round could ever be certified (observed red on a scratch tree: 'ISSUE REFUSED: changed path parts/b.js is not in the tree'). The fix pins intentional absence with the ABSENT sentinel.",
+   "red": "Before: a cut record over a deleted path refuses at issue; a hand-written absent pin is INVALID at verify. After (mutation sensitivity): a record whose absence claim the tree falsifies (the file restored) is STALE at the gate - the fixture 'an absence pin the tree falsifies is refused' carries it.",
+   "green": "A deletion round issues with the absent pin named in the output, the gate passes on the deleted path, a no-cut record naming a missing path still refuses, and the full gate-fixtures suite passes 151/151.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-push-wiring-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "7c2edc736b2724375f41283f0b752a0e09aa79cd206f567345cb2efd8b9dbef7",
+    "scripts/push.py": "b9ead14d7d5a083ac495206d3423b4319c37d24f68a82644c55c138a45863a70"
+   },
+   "mutation": "Re-issued because run-fixtures.py gained the four absence cases under the Codex P2 fix; push.py is byte-identical to the r3 observation, whose neutered-wrapper red stands.",
+   "red": "As r3: the neutered survivors wrapper is convicted by exactly the no-list push fixture (146/147 at r3's count).",
+   "green": "The full suite passes 151/151 on the final bytes, survivors and census push cases included.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-ci-step-r4",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "52cc47ee4f615625e904acfb9471f4ab2f2f2fdc2fe0826181b41c4bae629203",
+    "scripts/gate-fixtures/run-fixtures.py": "7c2edc736b2724375f41283f0b752a0e09aa79cd206f567345cb2efd8b9dbef7",
+    "scripts/check-survivors.py": "ef70b7145020969277df3371de2bce723126b9e804677a1a171f6565736d3b49"
+   },
+   "mutation": "Re-issued because run-fixtures.py and check-survivors.py changed under the Codex fixes; checks.yml is byte-identical to the r2/r3 observations.",
+   "red": "A changed set naming parts/a.js against an empty survivor ledger exits 1 through the Survivors step body extracted from the shipped checks.yml.",
+   "green": "Benign set and workflow_dispatch exit 0; all three Survivors step cases pass in the final 151-case suite.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-judge-list-r2",
+   "check": "scripts/check-receipts.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-receipts.py": "248bc127da0a7ea4b156a5f0d6acea88ecc777d3cbfe9dd128fd16038763eec3",
+    "scripts/check-survivors.py": "ef70b7145020969277df3371de2bce723126b9e804677a1a171f6565736d3b49"
+   },
+   "mutation": "Re-issue of phase2-judge-list: the JUDGE_PATHS edit itself is byte-identical, but its co-pinned file (scripts/check-survivors.py) moved twice after the original observation (pretty-print ledger write, then the ABSENT sentinel), staling the pair. The mirrors red/green stands as observed at the original issue.",
+   "red": "Before the JUDGE_PATHS edit, scripts/check-mirrors.py failed the tree naming the unnamed judge (check-survivors.py missing from JUDGE_PATHS); the full-PR receipts gate on PR #227 caught this receipt's staleness exactly as designed.",
+   "green": "With check-survivors.py named in JUDGE_PATHS the mirrors gate passes all families on the final tree, and the receipts gate over the full PR diff covers every changed check/judge path.",
+   "issued": "2026-11-26 phase2-prove-it"
   }
  ]
 }

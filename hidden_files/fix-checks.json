@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "51ae2084628d172cd8cfe8badda5a1b8d557588fc7a8b69697f03e113f015eab",
+  "canonical_registry_sha256": "d330e6eb6adac5be1b62956f00ead172e4649df09eed42ad8e1cf04f40a42861",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1601,
-   "included": 1571,
+   "canonical": 1607,
+   "included": 1577,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -13994,6 +13994,60 @@
    "fix_id": "snow-everywhere",
    "id": "snow-everywhere-walk-pane-roster",
    "pattern": "['rmMain', 'rmListPane', 'rmCreatePane', 'rmCityListPane', 'rmCityPane', 'rmNamePane']",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/check-survivors.py",
+   "fix": "Phase 2 prove-it machinery: the survivor-list checker owns the record rules - a parts change no current survivor list names is refused in the gate's own words, so the refusal text itself is pinned.",
+   "fix_id": "phase2-prove-it",
+   "id": "phase2-survivors-checker-refusal",
+   "pattern": "with no CURRENT survivor list naming",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/push.py",
+   "fix": "Phase 2 prove-it machinery: push.py runs the survivors gate in the prospective preflight beside the census, so a parts push cannot land without its survivor list or no-cut record.",
+   "fix_id": "phase2-prove-it",
+   "id": "phase2-push-survivors-wiring",
+   "pattern": "survivors_gate",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": ".github/workflows/checks.yml",
+   "fix": "Phase 2 prove-it machinery: the CI battery runs the survivors gate on the collected changed set, so the refusal does not depend on the local pusher's path.",
+   "fix_id": "phase2-prove-it",
+   "id": "phase2-ci-survivors-step",
+   "pattern": "Survivors gate",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive125.mjs",
+   "fix": "Phase 2: drive125's buildings case is S7a - the S7b collision is resolved, so a receipt or census note naming S7b can no longer certify the buildings check by accident.",
+   "fix_id": "phase2-prove-it",
+   "id": "phase2-drive125-buildings-s7a",
+   "pattern": "S7a the 3D buildings layer",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "tests/browser/drive125.mjs",
+   "fix": "Phase 2: S7b names the crossfade case alone in drive125 - every external reference to S7b (the transitions receipts, the census notes) means this check.",
+   "fix_id": "phase2-prove-it",
+   "id": "phase2-drive125-crossfade-s7b",
+   "pattern": "S7b the swap really crossfades",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-26",
+   "file": "scripts/check-survivors.py",
+   "fix": "Phase 2 (Codex P2, PR #227): a cut record pins a deleted parts path with the ABSENT sentinel - the absence is a claim the gate falsifies if the file stands again, so removal and rename rounds can be certified.",
+   "fix_id": "phase2-prove-it",
+   "id": "phase2-survivors-absent-sentinel",
+   "pattern": "ABSENT = \"absent\"",
    "type": "grep_present"
   }
  ]
