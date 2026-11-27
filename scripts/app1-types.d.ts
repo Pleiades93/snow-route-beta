@@ -323,16 +323,8 @@ type EngineGlowLayer = { p?: number, s?: number, b: number, o: number, a: number
 
 // ---- 2. Cross-part globals (home part named per declaration) ----
 
-/** S1 stage 2c: app5.js joined the type check and its mirrors
-retired (applyNight, migratePack, PACKMIG_KEY, packMigFingerprint,
-takePackWriteTurn). The applyNight mirror named app4.js, the
-function's earlier home, until /correct Phase 3 round (d) - the declaration's type was right and only its provenance had
-drifted, the direction tsc cannot see. */
-
-
-
-
-
+/** Section 2 names each global's real home part; a home that
+stops declaring it fails the mirrors check. */
 
 /** app3.js: `const SAMPLES = {}` - per-street coverage sample points, refilled by buildSamples. */
 declare var SAMPLES: { [street: string]: LatLng[] };

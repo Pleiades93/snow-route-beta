@@ -18619,6 +18619,77 @@
    "red": "FAIL: 2a: the PAINT model is declared in engine.js with its three decisions and the strand seat.",
    "green": "Restored: proof-paint-model passes 17/17. Re-issued because the 2a check line was wrapped for the PR line limit; the needle text is unchanged.",
    "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-snc-gate-r3",
+   "check": "scripts/check-snc.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/check-snc.py": "1a3ecaf6ab387d8f0b2e9500de0c4b7ea98e4a44aaf15e5d8966cd48ea6066bf",
+    "scripts/tsconfig.snc.json": "efac42a857280e490b96ea18f5aa784e51f9dcd79cbba7bf674e009ca6be8efd"
+   },
+   "mutation": "Two breaks, observed separately: (1) append a possibly-null dereference (const __sncY = (null).x;) to parts/app4.js; (2) point tsconfig.snc.json's extends at a missing file so tsc emits only a configuration diagnostic.",
+   "red": "(1) SNC GATE FAIL naming parts/app4.js TS2531 (Object is possibly 'null'). (2) SNC GATE FAIL: compiler/configuration diagnostics - error TS5083: Cannot read file '.../does-not-exist.json' (the pre-fix gate printed PASS here: the Codex P2 on PR #234).",
+   "green": "Both restored: SNC GATE PASS, storage files clean, backlog 196 of cap 196. The fix: diagnostics without a file position, and a nonzero tsc exit with no diagnostics, fail the gate.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-pack-cache-c01-r2",
+   "check": "tests/proof/proof-pack-cache-c01.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pack-cache-c01.mjs": "e3cdcd213d0e97e3fb42f0196706d64797956ccdfea32701f8cf5e2ea3d93f7f",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "tests/pack-turn.mjs": "bde143cde511664856787257a24c2fd4c29bd3d30403ae80a50192b1e4f492a9"
+   },
+   "mutation": "Flip the prune-proof test in the parts/app4.js download handler so a stored pack tile outside the manifest returns true (same mutation as s1-repin-proof-pack-cache-c01).",
+   "red": "FAIL: stored route outside the manifest: orphan survives (prune skipped, cache preserved).",
+   "green": "Restored: the proof passes in full. Re-issued because extractTurn moved to the shared tests/pack-turn.mjs (the Codex P1 on PR #234); the extracted source is byte-identical.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-pack-cache-c02-r2",
+   "check": "tests/proof/proof-pack-cache-c02.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pack-cache-c02.mjs": "ecbfaf66a5c23a082d31763b77e32dc0288fc0f096aacd5fc8246709ba8d78ef",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "tests/pack-turn.mjs": "bde143cde511664856787257a24c2fd4c29bd3d30403ae80a50192b1e4f492a9"
+   },
+   "mutation": "Replace await held with await Promise.resolve() in the Web Lock callback of takePackWriteTurn in parts/app5.js (same mutation as s1-repin-proof-pack-cache-c02).",
+   "red": "FAIL: delete waits while another writer holds the pack turn.",
+   "green": "Restored: the proof passes in full. Re-issued because extractTurn moved to the shared tests/pack-turn.mjs (the Codex P1 on PR #234); the extracted source is byte-identical.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-pack-cache-c01-r3",
+   "check": "tests/proof/proof-pack-cache-c01.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pack-cache-c01.mjs": "e3cdcd213d0e97e3fb42f0196706d64797956ccdfea32701f8cf5e2ea3d93f7f",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "tests/pack-turn.mjs": "773e3ec4917004bc568717a9b10f12cad27b86dc4b5cbe71e491fbdfedf9edd0"
+   },
+   "mutation": "Flip the prune-proof test in the parts/app4.js download handler so a stored pack tile outside the manifest returns true (same mutation as s1-repin-proof-pack-cache-c01).",
+   "red": "FAIL: stored route outside the manifest: orphan survives (prune skipped, cache preserved).",
+   "green": "Restored: the proof passes in full. Re-issued because the shared helper's header comment was trimmed one word for the PR comment limit; the code is unchanged.",
+   "issued": "2026-11-27"
+  },
+  {
+   "id": "s1-repin-proof-pack-cache-c02-r3",
+   "check": "tests/proof/proof-pack-cache-c02.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-pack-cache-c02.mjs": "ecbfaf66a5c23a082d31763b77e32dc0288fc0f096aacd5fc8246709ba8d78ef",
+    "parts/app5.js": "f11e29bf1b339e3cce3396924bead99f713b217dc8b0bb96e42fb71ac7dbee68",
+    "tests/pack-turn.mjs": "773e3ec4917004bc568717a9b10f12cad27b86dc4b5cbe71e491fbdfedf9edd0"
+   },
+   "mutation": "Replace await held with await Promise.resolve() in the Web Lock callback of takePackWriteTurn in parts/app5.js (same mutation as s1-repin-proof-pack-cache-c02).",
+   "red": "FAIL: delete waits while another writer holds the pack turn.",
+   "green": "Restored: the proof passes in full. Re-issued because the shared helper's header comment was trimmed one word for the PR comment limit; the code is unchanged.",
+   "issued": "2026-11-27"
   }
  ]
 }

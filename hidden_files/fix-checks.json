@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "2dfe74afe6af67b68ce8fa04424883ac344dc022fade90dda8b7886cb2925096",
+  "canonical_registry_sha256": "b84db46fa792144d7cde14c836be8782b138d9c858922be4296436d2763a81dc",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -11778,7 +11778,7 @@
    "fix": "/correct Phase 3 round (d): the app1-types.d.ts provenance fix - applyNight's declaration names its real home (app5.js), after the mirror named its earlier home app4.js through the 1.258 and 1.259 rounds (the type was right; only the provenance had drifted, the direction tsc cannot see). The mirrors check's types family now fails if any section-2 cross-part global's named home stops declaring it. If this probe fails, the stale provenance is back - fix the comment, not the probe.",
    "fix_id": "correct-phase3d-c4",
    "id": "correct-phase3d-types-provenance",
-   "pattern": "until /correct Phase 3 round (d) - the declaration",
+   "pattern": "names each global's real home part",
    "type": "grep_present"
   },
   {
