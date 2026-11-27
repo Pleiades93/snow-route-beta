@@ -63596,6 +63596,91 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 pinch-fix (r2: re-issued after the SURFACE-MAP review note landed; anchors and marks unchanged)"
+  },
+  {
+   "id": "s2-openclean",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "cleanView"
+    ],
+    "functions": [
+     "openClean",
+     "renderCleanSummary",
+     "renderCleanStreetRows",
+     "renderCleanNotedOnlyRows",
+     "createCleanDeleteControl"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:createCleanDeleteControl:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - createCleanDeleteControl() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "the change itself: openClean is createCleanDeleteControl's only caller; proof-1299 extracts both and pins the delete sequence the control binds."
+    },
+    {
+     "id": "caller:openClean:parts/app3.js:r:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openClean() is called from r:click in parts/app3.js",
+     "status": "covered",
+     "note": "the Saved cleans row click in the Pace pad - an entry path the split does not touch (host signature and seat unchanged); drive89's 'T5 clean detail opened from Saved cleans' exercises a row click into the detail."
+    },
+    {
+     "id": "caller:renderCleanNotedOnlyRows:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderCleanNotedOnlyRows() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "the change itself: openClean is the only caller, third in the frozen section order; proof-1299's children-order and noted-only checks pin the seat."
+    },
+    {
+     "id": "caller:renderCleanStreetRows:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderCleanStreetRows() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "the change itself: openClean is the only caller, second in the frozen section order; proof-1299's children-order and street-row checks pin the seat."
+    },
+    {
+     "id": "caller:renderCleanSummary:parts/app3.js:openClean",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderCleanSummary() is called from openClean in parts/app3.js",
+     "status": "covered",
+     "note": "the change itself: openClean is the only caller, first in the frozen section order; proof-1299's children-order and header/stats/meta checks pin the seat."
+    },
+    {
+     "id": "theme:cleanView",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #cleanView has a day rule and NO body.night rule",
+     "status": "na",
+     "note": "the split changes no stylesheet and no element: #cleanView keeps the day rule and night presentation it has today (its night face comes from the Pace sheet it lives in); drive88/187/188 read the detail's rendered text on the split tree."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e180e7f294843c6df60e4412ddcc07efdc4f65a2b43a56313989d65e35141e01",
+    "parts/head.html": "a85bc5416ab3763d5919d31a6f342c9fd1279c03a55f4a5586446446ee2cac80",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s2r1-openclean"
   }
  ]
 }

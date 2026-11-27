@@ -1363,6 +1363,105 @@
     "parts/whatsnew.js": "e180e7f294843c6df60e4412ddcc07efdc4f65a2b43a56313989d65e35141e01"
    },
    "issued": "2026-11-27 pinch-fix (r2: cut text shortened for the PR limits judge; rows unchanged)"
+  },
+  {
+   "id": "s2-openclean",
+   "kind": "cut",
+   "surface": "the clean-detail view inside the Pace sheet (parts/app3.js openClean and its rendered DOM)",
+   "cut": "openClean's body split into four sibling functions in the same part (renderCleanSummary, renderCleanStreetRows, renderCleanNotedOnlyRows, createCleanDeleteControl); no behaviour, state or storage change",
+   "changed": [
+    "parts/app3.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "Opening a clean seats the detail in the Pace sheet: old delete confirmation disarmed, pace content hidden, detail shown, scroll reset",
+     "case": "valid index disarms old confirmation and seats detail in Pace after deselection",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "the extracted openClean and its four sections in a vm: the deselect/detail/open event order, cleanIdx and disarm state, pane display values and cleanView scrollTop"
+    },
+    {
+     "behaviour": "The detail header, stats grid and meta line render the selected clean's own figures and intervals",
+     "case": "header, stats, and meta use the selected clean and its two intervals",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "the stub-DOM head/stats/meta nodes built by renderCleanSummary for a populated clean (title, stat cells, meta text)"
+    },
+    {
+     "behaviour": "A missing history index changes neither the selection nor the sheet",
+     "case": "missing index changes neither selection nor sheet",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "openClean(9) on a two-entry history: no events recorded, cleanIdx untouched, cleanView scrollTop untouched"
+    },
+    {
+     "behaviour": "An empty clean detail replaces the old rows and uses the missing-stat placeholders",
+     "case": "empty detail replaces old rows and uses missing-stat placeholders",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "openClean(0) on a trail-less clean after a populated one: five children, placeholder stat cells"
+    },
+    {
+     "behaviour": "Street rows distinguish span, one-moment, GPS/tap and unstamped-gap presentations",
+     "case": "street rows distinguish side span, one moment, and GPS or tap versus an unstamped gap",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "the .cvTm texts and detail lines renderCleanStreetRows builds for three street shapes"
+    },
+    {
+     "behaviour": "Noted streets stay read-only in the detail: note icon, preview, tap toggles the full note lines",
+     "case": "saved note icon, preview and read-only row toggle retain both lines",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "the note icon insertion, the '(+1 more)' preview and two row clicks flipping the detail block's display in the vm"
+    },
+    {
+     "behaviour": "The noted-only section renders with its pending-group dots and note lines",
+     "case": "noted-only section displays pending-group colors and lines",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "the section heading, dot-gold/dot-rose classes and note text built by renderCleanNotedOnlyRows"
+    },
+    {
+     "behaviour": "The two-tap delete arms for five seconds and cannot be confirmed by an invalid or 699ms second tap",
+     "case": "first tap arms for five seconds; invalid and 699ms taps cannot confirm",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "createCleanDeleteControl's button under synthetic clicks: armed class/text, the 5000ms timer, no delete events at NaN or +699ms"
+    },
+    {
+     "behaviour": "A confirming tap at 700ms runs delete, save, back, count in that order and cancels the arm timer",
+     "case": "700ms confirms in delete, save, back, count order and cancels the timer",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "the recorded event sequence ['delete:1','save','back','count'] and the empty timer map after the +700ms click"
+    },
+    {
+     "behaviour": "A failed delete save still returns to the list and banners before the recount",
+     "case": "failed save still returns to the list and reports possible reappearance before recount",
+     "check": "tests/proof/proof-1299.mjs",
+     "observes": "the event sequence with HIST.save stubbed false: delete, save, back, the 'Delete not saved' banner, count"
+    },
+    {
+     "behaviour": "In the real app the detail opens with the clean's totals and streets in mark order",
+     "case": "P3 detail opens with the clean totals",
+     "check": "tests/browser/drive88.mjs",
+     "observes": "a real boot: openClean(0), then #cleanView's title, sub-line, meta and row names read from the rendered DOM"
+    },
+    {
+     "behaviour": "In the real app a street row tap expands its details including the note",
+     "case": "P3 tapping a street expands its details incl. the note",
+     "check": "tests/browser/drive88.mjs",
+     "observes": "clicking the first .cvRow in the live page and polling the .cvDet block visible"
+    },
+    {
+     "behaviour": "In the real app the delete arms on the first tap and deletes and persists on the second",
+     "case": "P4 second tap deletes the clean and persists",
+     "check": "tests/browser/drive88.mjs",
+     "observes": "two real clicks on .cvDel in the live page (the first covered by 'P4 first tap arms the delete'), the clean gone and the deletion persisted"
+    },
+    {
+     "behaviour": "The Saved cleans list entry path opens the same detail",
+     "case": "T5 clean detail opened from Saved cleans",
+     "check": "tests/browser/drive89.mjs",
+     "observes": "a real .histRow click in the live page landing on the open clean detail (cvOpen true)"
+    }
+   ],
+   "files": {
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e"
+   },
+   "issued": "2026-11-27 s2r1-openclean"
   }
  ]
 }

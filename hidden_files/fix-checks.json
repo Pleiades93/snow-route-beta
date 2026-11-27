@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "74942e5e43f8d699ecec1b5b279dfa6e58f8e1ef73f705238b475ca8e4b4bdc9",
+  "canonical_registry_sha256": "2eb30c0f8afc029ffc15bb956308191b35f792b6103d7c4f650b4899e7afa214",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1655,
-   "included": 1625,
+   "canonical": 1661,
+   "included": 1631,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14478,6 +14478,60 @@
    "fix_id": "pinch-guard",
    "id": "pinch-guard-splash-touch-action",
    "pattern": "justify-content: center; touch-action: none; }",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app3.js",
+   "fix": "S2 ROUND 1 (2026-11-27): openClean's summary section is its own function - renderCleanSummary builds the detail header, stats grid and meta line. If this fails, the section was inlined or renamed - restore the seam; proof-1299 extracts it by this signature.",
+   "fix_id": "s2-openclean",
+   "id": "s2-openclean-summary-section",
+   "pattern": "function renderCleanSummary(cv, h, pd) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app3.js",
+   "fix": "S2 ROUND 1 (2026-11-27): openClean's cleaned-street rows are their own function - renderCleanStreetRows builds the Streets header and rows with their read-only note toggles. If this fails, the section was inlined or renamed - restore the seam; proof-1299 extracts it by this signature.",
+   "fix_id": "s2-openclean",
+   "id": "s2-openclean-street-rows-section",
+   "pattern": "function renderCleanStreetRows(cv, pd) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app3.js",
+   "fix": "S2 ROUND 1 (2026-11-27): openClean's noted-only section is its own function - renderCleanNotedOnlyRows builds the 'Notes on streets not cleaned' rows. If this fails, the section was inlined or renamed - restore the seam; proof-1299 extracts it by this signature.",
+   "fix_id": "s2-openclean",
+   "id": "s2-openclean-noted-section",
+   "pattern": "function renderCleanNotedOnlyRows(cv, pd) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app3.js",
+   "fix": "S2 ROUND 1 (2026-11-27): the clean-detail two-tap delete is its own function - createCleanDeleteControl builds the button and binds the arm/confirm sequence (700ms floor, 5s window, delete-save-back-count order). If this fails, the control was inlined or renamed - restore the seam; proof-1299 extracts it by this signature.",
+   "fix_id": "s2-openclean",
+   "id": "s2-openclean-delete-control",
+   "pattern": "function createCleanDeleteControl() {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app3.js",
+   "fix": "S2 ROUND 1 (2026-11-27): openClean seats the delete control by appending createCleanDeleteControl()'s return, after the three render sections and before SHEETS.open. If this fails, the host's section order moved - restore it; proof-1299's children-order checks judge the result.",
+   "fix_id": "s2-openclean",
+   "id": "s2-openclean-host-seats-delete",
+   "pattern": "cv.appendChild(createCleanDeleteControl());",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/proof/proof-1299.mjs",
+   "fix": "S2 ROUND 1 (2026-11-27): proof-1299 is openClean's characterization contract - it extracts the host plus all four sections and pins the display and deletion behaviour. If this fails, the proof no longer extracts the split shape - update the extraction list with the sections, never weaken the claims.",
+   "fix_id": "s2-openclean",
+   "id": "s2-openclean-proof-extracts-sections",
+   "pattern": "extractFn(app3, 'function renderCleanSummary(')",
    "type": "grep_present"
   }
  ]

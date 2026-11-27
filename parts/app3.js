@@ -241,15 +241,23 @@ function openClean(i) {
   cleanIdx = i; cleanDelArmed = false; cleanDelArmedAt = NaN;
   deselect();
   const pd = CLEAN.detail(h);
-  const d = pd.dur;
   // the detail lives inside the Pace sheet: the pace content yields, the detail takes its seat
-
   const ph = $('paceHead'); if (ph) ph.style.display = 'none';
   const pp = $('pacePad'); if (pp) pp.style.display = 'none';
   const cv = $('cleanView');
   cv.classList.remove('hidden');
   cv.style.display = '';
   cv.innerHTML = '';
+  renderCleanSummary(cv, h, pd);
+  renderCleanStreetRows(cv, pd);
+  renderCleanNotedOnlyRows(cv, pd);
+  cv.appendChild(createCleanDeleteControl());
+  SHEETS.open($('pacePanel'), null, true);
+  cv.scrollTop = 0;
+}
+/** @param {AppElement} cv @param {HistoryEntry} h @param {CleanDetail} pd @returns {void} */
+function renderCleanSummary(cv, h, pd) {
+  const d = pd.dur;
   const head = document.createElement('div'); head.className = 'cvHead';
   head.innerHTML = '<button class="cvBack">‹ Saved cleans</button><div class="cvTtlRow"><span class="cvTtl"></span><span class="cvSub"></span></div>';
   head.querySelector('.cvTtl').textContent = fmtDate3(h.at);
@@ -260,10 +268,8 @@ function openClean(i) {
   const stats = document.createElement('div'); stats.className = 'statgrid d2';
   const cpk = pd.paceKm;
   stats.innerHTML =
-    statCell('clock', d ? fmtHM(d.durMs) : '–', 'STREETS DONE IN') +
-    statCell('road', (pd.workM / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
-    statCell('gauge', cpk ? cpk + ' /km' : '–', 'PACE') +
-    statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '–', 'GPS TRAIL');
+    statCell('clock', d ? fmtHM(d.durMs) : '–', 'STREETS DONE IN') + statCell('road', (pd.workM / 2000).toFixed(1) + ' km', 'ROAD CLEARED') +
+    statCell('gauge', cpk ? cpk + ' /km' : '–', 'PACE') + statCell('trail', h.km ? (+h.km).toFixed(1) + ' km' : '–', 'GPS TRAIL');
   cv.appendChild(stats);
   const meta = document.createElement('div'); meta.className = 'cvMeta';
   const elapsedMs = pd.elapsedMs; // the total-elapsed interval is the detail projection's measure now (CLEAN.detail carries the RP-08 two-interval history)
@@ -272,24 +278,21 @@ function openClean(i) {
   meta.textContent = (d ? ('Streets done in ' + fmtDur(d.durMs) + ' · Total elapsed ' + fmtDur(Math.max(0, elapsedMs)) + ' · ') : '') +
     pd.count +
     ' streets' +
-    (h.km ? (' · ' + h.km + ' km of GPS trail') : '') +
-    (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') +
-    (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') +
-    (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') +
+    (h.km ? (' · ' + h.km + ' km of GPS trail') : '') + (h.pathShortened ? ' · saved GPS path shortened by the trail cap' : '') +
+    (paceRate ? (' · Pace ' + fmtRate(paceRate) + ' (work / total elapsed)') : '') + (h.startedAt ? (' · started ' + fmtClock(new Date(h.startedAt))) : '') +
     '\nPace divides the clean\'s recorded work by its total elapsed time (start to the Finish tap). Per-street span = first side marked to last side marked (includes any work in between). Tap a street for its details.';
   cv.appendChild(meta);
+}
+/** @param {AppElement} cv @param {CleanDetail} pd @returns {void} */
+function renderCleanStreetRows(cv, pd) {
   const secH = document.createElement('div'); secH.className = 'psec2'; secH.textContent = 'Streets'; cv.appendChild(secH);
   pd.streets.forEach(s => {
-    const n = s.name;
-    const t = s.tMs;
-    const dur = s.gapMs;
-    const stArr = s.stamps;
-    const span = s.spanMs;
+    const t = s.tMs, dur = s.gapMs, stArr = s.stamps, span = s.spanMs;
     const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
     const top = document.createElement('div'); top.className = 'cvTop';
     // cleaned rows wear the done dot; NO pin in the detail (pins are the live list's locate control)
     top.innerHTML = '<span class="dot dot-done"></span><div class="cvNm"></div><div class="cvTm"></div>';
-    top.querySelector('.cvNm').textContent = n;
+    top.querySelector('.cvNm').textContent = s.name;
     // one-moment sides (span 0) read as marked in one go; stamp-less falls back to a labelled gap
     top.querySelector('.cvTm').textContent = (!isNaN(t) ? fmtClock(new Date(t)) : '–') + ((span > 0) ? (' · span ' + fmtDur(span)) : (stArr.length ? ' · marked in one go' : (!isNaN(dur) ? (' · gap ' + fmtDur(dur)) : '')));
     rowEl.appendChild(top);
@@ -310,20 +313,24 @@ function openClean(i) {
     rowEl.onclick = () => { det.style.display = det.style.display === 'none' ? '' : 'none'; };
     cv.appendChild(rowEl);
   });
-  const notedOnly = pd.notedOnly;
-  if (notedOnly.length) {
+}
+/** @param {AppElement} cv @param {CleanDetail} pd @returns {void} */
+function renderCleanNotedOnlyRows(cv, pd) {
+  if (pd.notedOnly.length) {
     const sec = document.createElement('div'); sec.className = 'cvSec'; sec.textContent = 'Notes on streets not cleaned'; cv.appendChild(sec);
-    notedOnly.forEach(s => {
-      const n = s.name;
+    pd.notedOnly.forEach(s => {
       const rowEl = document.createElement('div'); rowEl.className = 'cvRow';
       const top = document.createElement('div'); top.className = 'cvTop';
       top.innerHTML = '<span class="dot ' + (s.primary ? 'dot-gold' : 'dot-rose') + '"></span><div class="cvNm"></div>'; // not-cleaned rows wear their group pending dot
-      top.querySelector('.cvNm').textContent = n;
+      top.querySelector('.cvNm').textContent = s.name;
       rowEl.appendChild(top);
       s.noteLines.forEach(L => { const p = document.createElement('div'); p.className = 'cvNt'; p.textContent = L; rowEl.appendChild(p); });
       cv.appendChild(rowEl);
     });
   }
+}
+/** @returns {AppElement} */
+function createCleanDeleteControl() {
   const del = document.createElement('button'); del.className = 'cvDel'; del.textContent = 'Delete this clean';
   del.onclick = ev => {
     const timestamp = ev?.timeStamp;
@@ -342,9 +349,7 @@ function openClean(i) {
     if (!okDel) showBanner('Delete not saved', 'The clean may come back on reload');
     updateCount();
   };
-  cv.appendChild(del);
-  SHEETS.open($('pacePanel'), null, true);
-  cv.scrollTop = 0;
+  return del;
 }
 /** @returns {void} */
 function backToCleans() {
