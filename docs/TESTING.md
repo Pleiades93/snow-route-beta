@@ -27,8 +27,9 @@ CI shape (`checks.yml`): a build-and-test job (the preflight: the
 build gate, a shard-coverage guard that fails if the runtime shard
 partition drifts from the drive roster, the service-worker suite, and
 the Node selftest gates — including the Tranche 2 judging-logic
-fixtures (`tests/browser/selftest-judging-fixtures.mjs`) and the
-foreign-write census (`tests/browser/selftest-foreign-writes.mjs`));
+fixtures (`tests/browser/selftest-judging-fixtures.mjs`), the
+foreign-write census (`tests/browser/selftest-foreign-writes.mjs`)
+and the boundary scanner fixtures (`tests/boundary-fixtures.cjs`));
 the browser battery split across eight shard jobs, each computing its
 share at runtime from the measured durations in
 `scripts/shard-durations.json` under the partition rule stated in

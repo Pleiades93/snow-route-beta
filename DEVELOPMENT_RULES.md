@@ -43,7 +43,15 @@ turn every discovered bug into a permanent regression test.
    body, or identical CSS block, fails against the standing pairs in
    scripts/parts-clone-baseline.json - regenerate that baseline only by
    command (`node scripts/scan-parts.cjs . --write-baseline`), never
-   by hand. The push path also runs `scripts/check-survivors.py`
+   by hand. The same scan runs the boundary pass
+   (`scripts/scan-boundaries.cjs`): a write to a state from outside
+   its owning part (the owner map is
+   `scripts/parts-boundary-owners.json`, the inventory is
+   docs/BOUNDARY-INVENTORY.md) reports against
+   `scripts/parts-boundary-baseline.json` - regenerate that baseline
+   only by command (`--write-boundary-baseline`), never by hand -
+   and a NEW foreign write to a state the map marks enforced fails
+   the push. The push path also runs `scripts/check-survivors.py`
    (Phase 2 prove-it machinery): a parts-changing push must be named
    by a current survivor list in `tests/survivor-lists.json` — one
    row per behaviour that must survive a removal, port or
