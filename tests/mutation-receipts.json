@@ -17682,6 +17682,113 @@
    "red": "fixed drive180 on the mutated tree x3: NOTILE2 fails every run - median 38 over 10 readings, the 12% point reading exactly rgb(27,47,182); NOTILE1/ICONSIZE pass",
    "green": "fixed drive180 on the clean tree x10: NOTILE2 passes every run - pooled medians 5,5,5,5,10,6,5,5,9,5 vs bound 14 (pools of 10-15 readings)",
    "issued": "2026-11-26 notile2-fresh-look"
+  },
+  {
+   "id": "phase5-repin-1229",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "1a5ae3cbb1cf2fcb6c424e1fe6e945804750312e7688ca1b4fa6462abf4d6307",
+    "parts/create-citydata.js": "5bccc0594de306ed59c2e577de63e6ef80afcbe6f4607266a8c8d5abd28f3f12"
+   },
+   "mutation": "crPrepWatchdog signature reverted to (prep, gen, session) in parts/create-citydata.js - the pre-port shape",
+   "red": "proof-1229 check 4e FAILS (32 passed, 1 failed), observed twice",
+   "green": "proof-1229 33 passed, 0 failed on the ported tree",
+   "issued": "2026-11-27 phase5-land-if-current"
+  },
+  {
+   "id": "phase5-repin-1235",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "ca7c53ef76838011782bc3b53384edd3f8a9570823b8b81ea5a6ba37929180e1",
+    "parts/create-pick.js": "4519f10d616e2f4c6ea04252fad56319fb6ccf805cf0b18bc943e7fe079fd5dc"
+   },
+   "mutation": "city-search catch guard changed from landError() (sequence only) to landSearch() (sequence + session) in parts/create-pick.js - the catch's deliberately weaker check strengthened",
+   "red": "proof-1235 check B11 FAILS (17 passed, 1 failed), observed twice",
+   "green": "proof-1235 18 passed, 0 failed on the ported tree",
+   "issued": "2026-11-27 phase5-land-if-current"
+  },
+  {
+   "id": "phase5-repin-1229-r2",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "1a5ae3cbb1cf2fcb6c424e1fe6e945804750312e7688ca1b4fa6462abf4d6307",
+    "parts/create-citydata.js": "f80d26bac88bd614c47acb2f100401a64cf357744a2f932db7b37270ad39b814",
+    "src/tracker-source.html": "abe1aa21113402daa22a2503f74c6b16952f101728d2af99c238b4e4f991b30e"
+   },
+   "mutation": "crPrepWatchdog's signature reverted from (prep, preparing) to the pre-port (prep, gen, session) in parts/create-citydata.js, page rebuilt",
+   "red": "proof-1229 check 4e FAILS (32 passed, 1 failed) - observed twice on the restructured tree",
+   "green": "proof-1229 passes 33/33 after restore and rebuild",
+   "issued": "2026-11-27 phase5-land-if-current fix round (Codex line-neutrality restructure; receipt re-issued for the folded capture line)"
+  },
+  {
+   "id": "phase5-repin-1235-r2",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "ca7c53ef76838011782bc3b53384edd3f8a9570823b8b81ea5a6ba37929180e1",
+    "parts/create-pick.js": "5c82c5f734a1c4f618d3441bb7aa6ca6a8634efec92970230a4021e94852a001",
+    "src/tracker-source.html": "abe1aa21113402daa22a2503f74c6b16952f101728d2af99c238b4e4f991b30e"
+   },
+   "mutation": "the fetch catch's guard swapped from landError() to landSearch() in parts/create-pick.js, page rebuilt",
+   "red": "proof-1235 check B11 FAILS (17 passed, 1 failed) - observed twice on the restructured tree",
+   "green": "proof-1235 passes 18/18 after restore and rebuild",
+   "issued": "2026-11-27 phase5-land-if-current fix round (Codex line-neutrality restructure; receipt re-issued for the folded capture lines)"
+  },
+  {
+   "id": "phase5-repin-208",
+   "check": "tests/browser/drive208.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive208.mjs": "215afdc63c44d9cbbfd6fc01785d5e37a73f93db062451984bf9096f32ab3f55",
+    "parts/create-cache.js": "0983841e10c36e1f56cc48da74b85ebe3426946a8576393096ea84ba592f85e2",
+    "src/tracker-source.html": "abe1aa21113402daa22a2503f74c6b16952f101728d2af99c238b4e4f991b30e"
+   },
+   "mutation": "drive208's staged grid records kept the pre-port record shape (a bare literal with no isCurrent capture), so the resume path's pump call threw on the staged record",
+   "red": "CI shard 2 on PR #229 head 079fb55e: drive208 9/9 checks, 1 exception - FAIL (TypeError: g.isCurrent is not a function at crGridPump, from crGridResume)",
+   "green": "drive208 passes locally 9/9, 0 exceptions after the staging installs the same landIfCurrent capture the constructor installs",
+   "issued": "2026-11-27 phase5-land-if-current fix round (drive staging re-point; the drive's W1-W4 claims unchanged)"
+  },
+  {
+   "id": "phase5-repin-1229-r3",
+   "check": "tests/proof/proof-1229.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1229.mjs": "1a5ae3cbb1cf2fcb6c424e1fe6e945804750312e7688ca1b4fa6462abf4d6307",
+    "parts/create-citydata.js": "f80d26bac88bd614c47acb2f100401a64cf357744a2f932db7b37270ad39b814"
+   },
+   "mutation": "crPrepWatchdog's signature reverted from (prep, preparing) to the pre-port (prep, gen, session) in parts/create-citydata.js, page rebuilt",
+   "red": "proof-1229 check 4e FAILS (32 passed, 1 failed) - observed twice on the restructured tree",
+   "green": "proof-1229 passes 33/33 after restore and rebuild",
+   "issued": "2026-11-27 phase5-land-if-current fix round (r3: file set without the generated tracker-source, which no prospective tree carries; evidence unchanged)"
+  },
+  {
+   "id": "phase5-repin-1235-r3",
+   "check": "tests/proof/proof-1235.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1235.mjs": "ca7c53ef76838011782bc3b53384edd3f8a9570823b8b81ea5a6ba37929180e1",
+    "parts/create-pick.js": "5c82c5f734a1c4f618d3441bb7aa6ca6a8634efec92970230a4021e94852a001"
+   },
+   "mutation": "the fetch catch's guard swapped from landError() to landSearch() in parts/create-pick.js, page rebuilt",
+   "red": "proof-1235 check B11 FAILS (17 passed, 1 failed) - observed twice on the restructured tree",
+   "green": "proof-1235 passes 18/18 after restore and rebuild",
+   "issued": "2026-11-27 phase5-land-if-current fix round (r3: file set without the generated tracker-source, which no prospective tree carries; evidence unchanged)"
+  },
+  {
+   "id": "phase5-repin-208-r2",
+   "check": "tests/browser/drive208.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive208.mjs": "215afdc63c44d9cbbfd6fc01785d5e37a73f93db062451984bf9096f32ab3f55",
+    "parts/create-cache.js": "0983841e10c36e1f56cc48da74b85ebe3426946a8576393096ea84ba592f85e2"
+   },
+   "mutation": "drive208's staged grid records kept the pre-port record shape (a bare literal with no isCurrent capture), so the resume path's pump call threw on the staged record",
+   "red": "CI shard 2 on PR #229 head 079fb55e: drive208 9/9 checks, 1 exception - FAIL (TypeError: g.isCurrent is not a function at crGridPump, from crGridResume)",
+   "green": "drive208 passes locally 9/9, 0 exceptions after the staging installs the same landIfCurrent capture the constructor installs",
+   "issued": "2026-11-27 phase5-land-if-current fix round (r2: file set without the generated tracker-source, which no prospective tree carries; evidence unchanged)"
   }
  ]
 }

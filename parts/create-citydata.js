@@ -209,8 +209,8 @@ function crResolve(osmName, lngLat, boundary) { // a run end is closed only insi
 }
 // the prep family's current-check under the one convention (at crSearchCurrent, create-pick.js); this family's true inputs are (gen, session)
 function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
-function crPrepWatchdog(prep, gen, session) { // the fallback's watchdog (the grid's mirror): past stallMs, force the failed landing, the wedged landing orphaned first
-  if (!crPrepCurrent(gen, session) || crPrep !== prep) return;
+function crPrepWatchdog(prep, preparing) { // the fallback's watchdog (the grid's mirror): past stallMs, force the failed landing, the wedged landing orphaned first
+  if (!preparing() || crPrep !== prep) return;
   if (Date.now() - prep.startedAt < CR_TIMING.stallMs) return;
   clearInterval(prep.ticker);
   crCovGen++;
@@ -226,14 +226,15 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
   if (crPrep) crAbortOp(crPrep.op); // a superseding preparation stops the old download outright (CG-PF-10)
   if (crGrid) crGridStop('superseded'); // a fallback over a live grid stops the grid first: otherwise its cells orphan in 'fetching', unresumable forever
   const session = crSession, gen = ++crCovGen;
+  const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen), preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
   crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to an outstanding offer (it clears inside crPrepBegin); the anchor stays this site's own
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
-  prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // every tick runs the progress watchdog before it renders
-  crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crPrepCurrent(gen, session), prep.op).then(res => {
+  prep.ticker = setInterval(() => { crPrepWatchdog(prep, preparing); if (preparing()) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // every tick runs the progress watchdog before it renders
+  crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, preparing, prep.op).then(res => {
     clearInterval(prep.ticker);
-    if (!creating || crSession !== session || crCovGen !== gen) return; // obsolete: land NOWHERE - not the draft, not the hint, not a newer operation's state (CG-PF-05)
+    if (!landPrep()) return; // obsolete: land NOWHERE - not the draft, not the hint, not a newer operation's state (CG-PF-05)
     if (crPrep === prep) crPrep = null;
     if (res.kind === 'stale') return; // superseded mid-flight; the newer operation owns the state
     if (res.ok) {

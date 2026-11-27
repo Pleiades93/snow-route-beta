@@ -78,7 +78,7 @@ check('4c: the grid watchdog + stall landing exist and settle through the existi
   cache.slice(cache.indexOf('function crGridStall(g)'), cache.indexOf('function crGridPump(g)')).includes('crGridFinish(g);'));
 check('4d: the heartbeat is armed at preparation entry, not only at the pump', cache.includes('crGridArmTicker(g); // the heartbeat runs from entry'));
 check('4e: the fallback box prep carries the mirror watchdog, orphaning its wedged landing by generation',
-  citydata.includes('function crPrepWatchdog(prep, gen, session)') && citydata.includes('crPrepWatchdog(prep, gen, session);'));
+  citydata.includes('function crPrepWatchdog(prep, preparing)') && citydata.includes('crPrepWatchdog(prep, preparing);'));
 
 // ---------- 5: Ontario only ----------
 check('5a: the Ontario bounds + filter exist', pick.includes('const CR_ON_BOUNDS = { s: 41.6, n: 56.9, w: -95.2, e: -74.3 };') && pick.includes('function crInOntario(it)'));

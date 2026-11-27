@@ -83,7 +83,7 @@ check('B9: a local row carries the service\'s own shape, so the pick flow is unc
 check('B10: the search answer renders through the one box swap (one render, rows built by the shared crCityResultRow)',
   pick.slice(pick.indexOf('async function crRunCitySearch()')).includes('places.forEach((it, i) => b.appendChild(crCityResultRow(it, i)));')
   && pick.includes("row.addEventListener('click', () => crPickCity(it));"));
-check('B11: a failed fetch still clears the box - no local fallback stands on a failure', pick.includes("} catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }"));
+check('B11: a failed fetch still clears the box - no local fallback stands on a failure', pick.includes("} catch (e) { if (landError() && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }"));
 
 
 console.log(`proof-1235: ${pass} passed, ${fail} failed`);

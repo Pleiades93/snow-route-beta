@@ -7,6 +7,10 @@ let glOk = false, mapNoteArmed = false, basemapDead = false, tilesOk = 0;
 let map = null;
 const __onMap = [];
 function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
+// Capture the token now and check it before the caller lands.
+function landIfCurrent(token, isCurrent) {
+  return land => { if (!isCurrent(token)) return false; if (land) land(); return true; };
+}
 function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();

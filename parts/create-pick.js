@@ -876,14 +876,15 @@ async function crRunCitySearch() {
   const input = $('crCityInput'), settledText = input.value;
   const q = settledText.trim();
   if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // a cleared query invalidates like every change (bump + abort via crResetCitySearch); the clear leaves through animation
-  const seq = ++crCitySeq, session = crSession;
+  const seq = ++crCitySeq, session = crSession, landError = landIfCurrent(seq, crCitySearchSeqCurrent), landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));
+  const landRequest = landIfCurrent(settledText, text => landSearch() && input.value === text);
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
   crCityShowSkeletons();
   try {
     const waitMs = 1000 - (Date.now() - crCityOnlineAt); // the service caps one request per second: a search inside the second waits out the remainder
     if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
-    if (!crCitySearchCurrent(seq, session) || input.value !== settledText) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
+    if (!landRequest()) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
     crCityOnlineAt = Date.now();
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w,
       CR_ON_BOUNDS.n,
@@ -893,7 +894,7 @@ async function crRunCitySearch() {
     // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
     const list = await r.json();
-    if (!crCitySearchCurrent(seq, session)) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
+    if (!landSearch()) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
     const places = (Array.isArray(list) ? list : []).filter(crIsPlace).filter(crInOntario);
     const seen = new Set(places.map(it => crCityGazKey(crCityNameOf(it)))); // the gazetteer fills only names the service did not return: a city the service named is never suggested twice
     for (const loc of crCityLocalMatches(q)) { if (places.length >= 6) break; const lk = crCityGazKey(loc.address.city); if (!seen.has(lk)) { seen.add(lk); places.push(loc); } }
@@ -904,7 +905,7 @@ async function crRunCitySearch() {
       if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
     });
   // a failed search resolves through the animation: the skeletons leave by the glide, never a pop, never stuck
-  } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }
+  } catch (e) { if (landError() && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }
 }
 
 // ---- geometry cache ---- stretches compute once per geometry change, shared by every consumer; invalidation keys on identity + generation
@@ -1358,8 +1359,8 @@ $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = n
 $('crCityInput').addEventListener('input', () => { // every input change invalidates at the event (bump + abort): no late answer renders into a moved-past field
   crResetCitySearch(); // the invalidation runs through crResetCitySearch, the one owner; the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the clear animates like every other results change
-  const armSeq = crCitySeq; // the invalidation settled the sequence; a search starting first bumps it again and the type-ahead stands down
-  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // the 500 ms debounce is the settle point: only a settled word can reach the service
+  const landTypeahead = landIfCurrent(crCitySeq, crCitySearchSeqCurrent); // a search starting first bumps the sequence and the type-ahead stands down
+  crCityTimer = setTimeout(() => { crCityTimer = null; landTypeahead(crRunCityTypeahead); }, 500); // the 500 ms debounce is the settle point: only a settled word can reach the service
 });
 $('crCityBack').addEventListener('click', () => {
   crResetCitySearch(); // leaving the pane kills a held city search too (request AND pending debounce), through crResetCitySearch, the one owner

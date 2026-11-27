@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-oYVEnltnO25Oaz64uuncorxVFKjxCA+k7hN+K1A2jN68G15uoYqvN/acsJqIVrOD' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-f2xgx2uWDlmjHTpidlJ6dpTFWGQHV81xT+bC++9pJCicTj75U6GX024UrIxoGcnC' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -3845,6 +3845,10 @@ let glOk = false, mapNoteArmed = false, basemapDead = false, tilesOk = 0;
 let map = null;
 const __onMap = [];
 function onMapReady(fn) { if (map) fn(); else __onMap.push(fn); }
+// Capture the token now and check it before the caller lands.
+function landIfCurrent(token, isCurrent) {
+  return land => { if (!isCurrent(token)) return false; if (land) land(); return true; };
+}
 function bootMap() {
   if (map) return;
   window.__bootAt = Date.now();
@@ -8587,8 +8591,8 @@ function crResolve(osmName, lngLat, boundary) { // a run end is closed only insi
 }
 // the prep family's current-check under the one convention (at crSearchCurrent, create-pick.js); this family's true inputs are (gen, session)
 function crPrepCurrent(gen, session) { return creating && crSession === session && crCovGen === gen && crPrepState === 'preparing'; }
-function crPrepWatchdog(prep, gen, session) { // the fallback's watchdog (the grid's mirror): past stallMs, force the failed landing, the wedged landing orphaned first
-  if (!crPrepCurrent(gen, session) || crPrep !== prep) return;
+function crPrepWatchdog(prep, preparing) { // the fallback's watchdog (the grid's mirror): past stallMs, force the failed landing, the wedged landing orphaned first
+  if (!preparing() || crPrep !== prep) return;
   if (Date.now() - prep.startedAt < CR_TIMING.stallMs) return;
   clearInterval(prep.ticker);
   crCovGen++;
@@ -8604,14 +8608,15 @@ function crStartPrep(anchor) { // the fallback preparation: one bounded box arou
   if (crPrep) crAbortOp(crPrep.op); // a superseding preparation stops the old download outright (CG-PF-10)
   if (crGrid) crGridStop('superseded'); // a fallback over a live grid stops the grid first: otherwise its cells orphan in 'fetching', unresumable forever
   const session = crSession, gen = ++crCovGen;
+  const landPrep = landIfCurrent({ gen, session }, token => creating && crSession === token.session && crCovGen === token.gen), preparing = landIfCurrent({ gen, session }, token => crPrepCurrent(token.gen, token.session));
   const outer = crBoxAround(anchor.lat, anchor.lng, CR_INNER_KM + CR_BUFFER_KM);
   crPrepBegin(); crPrepAnchor = anchor; // starting a preparation IS the answer to an outstanding offer (it clears inside crPrepBegin); the anchor stays this site's own
   const prep = crPrep = { gen, session, anchor, startedAt: Date.now(), ticker: null, op: {} };
   crRenderHint();
-  prep.ticker = setInterval(() => { crPrepWatchdog(prep, gen, session); if (crPrepCurrent(gen, session)) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // every tick runs the progress watchdog before it renders
-  crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crPrepCurrent(gen, session), prep.op).then(res => {
+  prep.ticker = setInterval(() => { crPrepWatchdog(prep, preparing); if (preparing()) crRenderHint(); else clearInterval(prep.ticker); }, 1000); // every tick runs the progress watchdog before it renders
+  crSourceExtract(outer, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, preparing, prep.op).then(res => {
     clearInterval(prep.ticker);
-    if (!creating || crSession !== session || crCovGen !== gen) return; // obsolete: land NOWHERE - not the draft, not the hint, not a newer operation's state (CG-PF-05)
+    if (!landPrep()) return; // obsolete: land NOWHERE - not the draft, not the hint, not a newer operation's state (CG-PF-05)
     if (crPrep === prep) crPrep = null;
     if (res.kind === 'stale') return; // superseded mid-flight; the newer operation owns the state
     if (res.ok) {
@@ -8767,12 +8772,12 @@ function crGridFinish(g) {
 function crGridArmTicker(g) { // the grid's heartbeat, armed at preparation entry: it renders the readout and runs the progress watchdog below
   if (g.ticker) clearInterval(g.ticker);
   g.ticker = setInterval(() => {
-    if (crGridCurrent(g) && crPrepState === 'preparing') { crGridWatchdog(g); if (crGridCurrent(g) && crPrepState === 'preparing') crRenderHint(); }
+    if (g.isCurrent() && crPrepState === 'preparing') { crGridWatchdog(g); if (g.isCurrent() && crPrepState === 'preparing') crRenderHint(); }
     else if (g.ticker) { clearInterval(g.ticker); g.ticker = null; }
   }, 1000);
 }
 function crGridWatchdog(g) { // the watchdog: past CR_TIMING.stallMs since anything landed, force the loud landing instead of a percentage that never moves
-  if (!crGridCurrent(g) || g.stopped || crPrepState !== 'preparing') return;
+  if (!g.isCurrent() || g.stopped || crPrepState !== 'preparing') return;
   if (Date.now() - (g.lastProgressAt || g.startedAt) < CR_TIMING.stallMs) return;
   crGridStall(g);
 }
@@ -8786,17 +8791,17 @@ function crGridStall(g) { // a stalled grid lands like a failed load: downloads 
   crGridFinish(g);
 }
 function crGridPump(g) { // at most CR_GRID_PARALLEL in flight; a failed cell retries once, then is marked failed while the rest continue
-  if (!crGridCurrent(g) || g.stopped) return;
+  if (!g.isCurrent() || g.stopped) return;
   while (g.active < CR_GRID_PARALLEL) {
     const cell = g.cells.find(c => c.state === 'pending');
     if (!cell) break;
     cell.state = 'fetching'; cell.tries++;
     g.active++;
     const op = {}; g.ops.add(op);
-    crSourceExtract(cell.box, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => crGridCurrent(g) && !g.stopped, op).then(res => {
+    crSourceExtract(cell.box, null, CR_TIMING.budgetMs, CR_TIMING.attempt1Ms, () => g.isCurrent() && !g.stopped, op).then(res => {
       if (!g.ops.has(op)) return; // stopped or superseded since launch: a late answer lands nowhere, even if this grid is later resumed
       g.ops.delete(op); g.active--;
-      if (!crGridCurrent(g)) return; // the session moved on: land nowhere (CG-PF-05)
+      if (!g.isCurrent()) return; // the session moved on: land nowhere (CG-PF-05)
       g.lastProgressAt = Date.now(); // a landed cell is progress: the watchdog's clock restarts here, whatever the answer was
       if (res.ok) {
         cell.state = 'done';
@@ -8827,17 +8832,18 @@ function crCityPrepare() { // load the picked city's whole extract: from the cac
   const cells = crGridCellsFor(bbox);
   // lastProgressAt restarts at every landing; ds is the grid's dataset identity, set when the pack resolve lands
   const g = crGrid = { name, bbox, cells, gen, session, startedAt: Date.now(), lastProgressAt: Date.now(), ticker: null, ops: new Set(), active: 0, fromCache: false, savedAt: null, stopped: null, lastFail: null, ds: null };
-  crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
+  // Resume re-adopts this record with a new generation.
+  g.isCurrent = landIfCurrent(g, crGridCurrent); crPrepBegin(); // crFailFromGrid clears here too; the entry bundle itself lives on crPrepBegin (create-fetch.js)
   crRenderHint();
   crGridArmTicker(g); // the heartbeat runs from entry: the read and the resolve below are inside the watchdog's reach from here
   // the resolve lands before the read: the fit test needs the dataset identity, which is the resolve's answer
   crPackResolveCity(name, bbox).then(pk => {
-    if (!crGridCurrent(g)) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
+    if (!g.isCurrent()) return; // the session moved on while the catalogue answered: land nowhere (CG-PF-05)
     g.lastProgressAt = Date.now(); // the pack resolve landing is progress: the read's and the pump's clocks start from here
     if (pk) { g.fromPack = pk.slug; crPackCtx = { slug: pk.slug, bbox: pk.bbox, failed: false }; }
     g.ds = crDatasetId(pk);
     crIdbGet(name).then(rec => {
-    if (!crGridCurrent(g)) return;
+    if (!g.isCurrent()) return;
     g.lastProgressAt = Date.now(); // the saved-grid read landing is progress, restored cells or none
     let restored = 0;
     if (!crCacheRecFits(rec, bbox, g.ds)) rec = null; // a record under another box or dataset is not this grid's cache: its cell keys would restore the wrong streets
@@ -9751,14 +9757,15 @@ async function crRunCitySearch() {
   const input = $('crCityInput'), settledText = input.value;
   const q = settledText.trim();
   if (q.length < 3) { crResetCitySearch(); crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // a cleared query invalidates like every change (bump + abort via crResetCitySearch); the clear leaves through animation
-  const seq = ++crCitySeq, session = crSession;
+  const seq = ++crCitySeq, session = crSession, landError = landIfCurrent(seq, crCitySearchSeqCurrent), landSearch = landIfCurrent({ seq, session }, token => crCitySearchCurrent(token.seq, token.session));
+  const landRequest = landIfCurrent(settledText, text => landSearch() && input.value === text);
   if (crCityCtl) { try { crCityCtl.abort(); } catch (e) {} }
   const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null; crCityCtl = ctl;
   crCityShowSkeletons();
   try {
     const waitMs = 1000 - (Date.now() - crCityOnlineAt); // the service caps one request per second: a search inside the second waits out the remainder
     if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
-    if (!crCitySearchCurrent(seq, session) || input.value !== settledText) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
+    if (!landRequest()) return; // typed on, cleared or picked during the wait: the settled word is gone, no request fires
     crCityOnlineAt = Date.now();
     const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&featuretype=city&limit=6&countrycodes=ca&viewbox=' + [CR_ON_BOUNDS.w,
       CR_ON_BOUNDS.n,
@@ -9768,7 +9775,7 @@ async function crRunCitySearch() {
     // Beta 1.229 (Andrew's standing rule): Canada-only at the service, Ontario-bounded - and the filter below is the guarantee on top
     if (!r.ok) throw new Error('city search HTTP ' + r.status);
     const list = await r.json();
-    if (!crCitySearchCurrent(seq, session)) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
+    if (!landSearch()) return; // superseded, or the creation it belonged to has closed (CG-PF-05)
     const places = (Array.isArray(list) ? list : []).filter(crIsPlace).filter(crInOntario);
     const seen = new Set(places.map(it => crCityGazKey(crCityNameOf(it)))); // the gazetteer fills only names the service did not return: a city the service named is never suggested twice
     for (const loc of crCityLocalMatches(q)) { if (places.length >= 6) break; const lk = crCityGazKey(loc.address.city); if (!seen.has(lk)) { seen.add(lk); places.push(loc); } }
@@ -9779,7 +9786,7 @@ async function crRunCitySearch() {
       if (!places.length) { const d = document.createElement('div'); d.className = 'rmNote'; d.textContent = 'No city matched that search. Check the spelling, or go Back and pick from the list.'; b.appendChild(d); }
     });
   // a failed search resolves through the animation: the skeletons leave by the glide, never a pop, never stuck
-  } catch (e) { if (crCitySearchSeqCurrent(seq) && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }
+  } catch (e) { if (landError() && !(e && e.name === 'AbortError')) { crCityBoxSwap(b => { b.innerHTML = ''; }); } }
 }
 
 // ---- geometry cache ---- stretches compute once per geometry change, shared by every consumer; invalidation keys on identity + generation
@@ -10233,8 +10240,8 @@ $('crDoorManual').addEventListener('click', () => { askDiscard(() => { draft = n
 $('crCityInput').addEventListener('input', () => { // every input change invalidates at the event (bump + abort): no late answer renders into a moved-past field
   crResetCitySearch(); // the invalidation runs through crResetCitySearch, the one owner; the seat's own remaining work is the re-arm below
   if ($('crCityInput').value.trim().length < 3) { crCityBoxSwap(b => { b.innerHTML = ''; }); return; } // the clear animates like every other results change
-  const armSeq = crCitySeq; // the invalidation settled the sequence; a search starting first bumps it again and the type-ahead stands down
-  crCityTimer = setTimeout(() => { crCityTimer = null; if (crCitySeq === armSeq) crRunCityTypeahead(); }, 500); // the 500 ms debounce is the settle point: only a settled word can reach the service
+  const landTypeahead = landIfCurrent(crCitySeq, crCitySearchSeqCurrent); // a search starting first bumps the sequence and the type-ahead stands down
+  crCityTimer = setTimeout(() => { crCityTimer = null; landTypeahead(crRunCityTypeahead); }, 500); // the 500 ms debounce is the settle point: only a settled word can reach the service
 });
 $('crCityBack').addEventListener('click', () => {
   crResetCitySearch(); // leaving the pane kills a held city search too (request AND pending debounce), through crResetCitySearch, the one owner
