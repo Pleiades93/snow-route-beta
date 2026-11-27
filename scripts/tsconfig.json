@@ -20,6 +20,7 @@
     "../parts/pmstyles.js",
     "app1-types.d.ts",
     "../parts/app4.js",
-    "../parts/create-packs.js"
+    "../parts/create-packs.js",
+    "../parts/app5.js"
   ]
 }

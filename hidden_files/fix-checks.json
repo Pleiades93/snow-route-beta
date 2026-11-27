@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "edfa9ff8381d1389462a9ccdce852c66265258ec2c3ea5a0e12ce1526d5b9ce1",
+  "canonical_registry_sha256": "8eb71d29baa28089de63163f48e71263a3348fa3823457c784d667ac4fdcbff0",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -194,7 +194,7 @@
    "file": "parts/app5.js",
    "fix": "syncViewport pays for a map resize ONLY when the container actually changed size (Beta 1.50 P10) \u2014 it fires on every viewport scroll tick, and an unconditional resize per tick was pure jank. (File rolled app4.js -> app5.js in Arch-1, round-release-stamp, 2026-11-18: the guarded code moved with app4's tail split at the What's New seam; the invariant is unchanged.)",
    "id": "beta-perf-resize-guard",
-   "pattern": "if (mw !== syncViewport._w || mh !== syncViewport._h)",
+   "pattern": "if (mw !== (/** @type {any} */ (syncViewport))._w || mh !== (/** @type {any} */ (syncViewport))._h)",
    "type": "grep_present"
   },
   {

@@ -174,6 +174,66 @@ type FixLogEntry = [
   run: number,
 ];
 
+/** A finished clean as buildSnap (app3) bakes it: a history entry plus its GPS-gap flag. */
+type ArchiveSnap = HistoryEntry & { gpsGap?: boolean };
+
+/** CLEAN.summary's projection (app3): the Pace surfaces' read of one clean. */
+type CleanSummary = { count: number, dur: { count: number, durMs: number, start: number } | null, workM: number, paceKm: string | null };
+
+/** One street row of CLEAN.detail's projection (app3). */
+type CleanStreet = { name: string, at: string | null, tMs: number, gapMs: number, stamps: number[], spanMs: number, via: string | undefined, noteLines: string[] };
+
+/** One noted-but-not-cleaned row of CLEAN.detail's projection (app3). */
+type CleanNoted = { name: string, primary: boolean, noteLines: string[] };
+
+/** CLEAN.detail's projection (app3): everything the clean-detail view renders. */
+type CleanDetail = { count: number, dur: { count: number, durMs: number, start: number } | null, workM: number, paceKm: string | null, elapsedMs: number, paceRate: number | null, streets: CleanStreet[], notedOnly: CleanNoted[] };
+
+/** One entry of the shipped-city catalogue the road-snap index reads (create-citydata). */
+type SnapCatEntry = { slug: string, name: string, bbox: number[] };
+
+/** One element of a shipped city pack (create-citydata): a named geometry. */
+type CrPackElement = { tags?: { name?: string }, geometry?: { lat: number, lon: number }[] };
+
+/** One axis of the position Kalman filter (app3): estimate, velocity, covariance terms. */
+type KfAxis = { p: number, v: number, a: number, b: number, c: number };
+
+/** The position Kalman filter's state (app3). */
+type KfState = { ox: number, oy: number, at: number, atF: number, x: KfAxis, y: KfAxis };
+
+/** The heading filter's state beside smHeading (app3). */
+type HeadFilter = { om: number, p00: number, p01: number, p10: number, p11: number, gate: number };
+
+/** The fixlog codec's byte writer (app3). */
+type FxWriter = { b: number[], u8: (v: number) => void, uv: (v: bigint) => void, sv: (n: bigint) => void };
+
+/** The fixlog codec's byte reader (app3). */
+type FxReader = { b: number[], i: number, u8: () => number, uv: () => bigint, sv: () => bigint };
+
+/** The delta state one fixlog entry leaves for the next (app3). */
+type FxState = { ts: number | null, latB: bigint | null, lngB: bigint | null, accB: bigint | null, spdB: bigint | null, hdgB: bigint | null, out: (number | null)[] | null, run: number };
+
+/** One polyline of the road-snap index (app3). */
+type SnapPoly = { name: string, pts: number[][] };
+
+/** The road-snap index (app3): polylines plus their segment grid. */
+type SnapGeo = { key: string, polys: SnapPoly[], grid: Map<string, number[]> };
+
+/** One run-distance counter record (schema, rundist): end is the anchor trail point or null. */
+type RunDistRec = { run: number, m: number, end: number[] | null };
+
+/** The geolocation coordinate surface the GPS code reads. */
+type GeolocationCoordinates = { latitude: number, longitude: number, accuracy: number, speed: number | null, heading: number | null };
+
+/** The geolocation fix object the watch callbacks receive. */
+type GeolocationPosition = { coords: GeolocationCoordinates, timestamp: number };
+
+/** The geolocation error object: only the code is read. */
+type GeolocationError = { code: number };
+
+/** The wake-lock sentinel surface syncWake (app3) uses. */
+type WakeLockSentinel = { release: () => void, addEventListener: (type: string, fn: () => void) => void };
+
 /** CODE-ONLY: partial pack recognition census written by migratePack (app5). */
 type PackMigrationCensus = { fp: string, set: string, n: number, bytes: number };
 
@@ -218,11 +278,20 @@ type EngineGlowLayer = { p?: number, s?: number, b: number, o: number, a: number
 
 // ---- 2. Cross-part globals (home part named per declaration) ----
 
+/** S1 stage 2c: app5.js joined the type check and its mirrors
+retired (applyNight, migratePack, PACKMIG_KEY, packMigFingerprint,
+takePackWriteTurn). The applyNight mirror named app4.js, the
+function's earlier home, until /correct Phase 3 round (d) - the declaration's type was right and only its provenance had
+drifted, the direction tsc cannot see. */
+
 /** app2.js: `let routeBox = null` - the active pack's bounding box, set by buildGeometry (app1) on every load. */
 declare var routeBox: RouteBox | null;
 
 /** app2.js: `const ROUTE_TILE_NAMES = []` - refilled in place by buildGeometry (app1) on every load. (Beta 1.263: the naming revert restored the pre-1.258 exclusion, which reads it at every zoom; removed in 1.258 with the retirement, restored in 1.261 for the pre-15 band.) */
 declare var ROUTE_TILE_NAMES: string[];
+
+
+
 
 /** app3.js: `const SAMPLES = {}` - per-street coverage sample points, refilled by buildSamples. */
 declare var SAMPLES: { [street: string]: LatLng[] };
@@ -233,8 +302,6 @@ declare function buildSamples(): void;
 /** app3.js: the last accepted GPS fix {ll, at}, or null before any fix. */
 declare var lastGood: { ll: number[], at: number } | null;
 
-/** app5.js: repaints the day/night theme; called by themeTick (app1) at a boundary. (The mirror named app4.js, the function's earlier home, until /correct Phase 3 round (d) - the declaration's type was right and only its provenance had drifted, the direction tsc cannot see.) */
-declare function applyNight(): void;
 
 /** app2.js: the MapLibre map instance or null. The pilot does not model MapLibre's API - app1 only null-tests the binding and passes it nowhere - so it is typed as any rather than given an invented class shape. */
 declare var map: any;
@@ -253,6 +320,9 @@ declare function persistRunDist(force?: boolean): void;
 /** app3.js: banks the counter's second copy (LS.rundist2) from flushAux's trail-flush path (app1) - a different writer, trigger and cadence from persistRunDist's per-fix direct write, so the two records fail independently (Beta 1.193, counter hardening). Returns nothing. */
 declare function bankRunDistMirror(): void;
 
+
+
+
 /** app2.js: the current stretch selection entries. */
 declare var selSet: (EngineSelection & { anchor: AnyPoint })[];
 
@@ -265,8 +335,19 @@ declare function glUnifyLabels(options: { m: EngineMap, stack?: { newStack: bool
 /** app2.js: re-renders the route lists in every .routeList element. */
 declare function renderRouteLists(): void;
 
-/** app5.js: migrates downloaded packs into the created-route store; self-gates when nothing was downloaded. */
-declare function migratePack(): Promise<void>;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** app3.js: GPS distance along the trail since the given epoch ms. */
 declare function trailKm(sinceMs: number): number;
@@ -307,19 +388,97 @@ declare var gpsDenied: boolean;
 /** app3.js: the live geolocation watch id, or null. */
 declare var watchId: number | null;
 
-/** app5.js: the pack-migration flag's storage key. */
-declare var PACKMIG_KEY: string;
 
-/** app5.js: the manifest fingerprint the migration flag certifies. */
-declare function packMigFingerprint(list: string[]): string;
 
-/** app5.js: takes the pack writers' turn; resolves to its release. */
-declare function takePackWriteTurn(): Promise<() => void>;
 
 /** app2.js: the day/night basemap style objects (pmstyles data). */
 declare var GL_STYLES: Record<string, any>;
 
+/** app2.js: the sheet stack owner (open/close with the shared animation). */
+declare var SHEETS: { open: (el: AppElement, cb?: (() => void) | null, keepOpen?: boolean) => void, close: (el: AppElement) => void };
+
+/** app2.js: clears the current stretch selection. */
+declare function deselect(): void;
+
+/** app2.js: closes every open sheet. */
+declare function closeSheets(): void;
+
+/** app2.js: true when exactly one side of the street is done. */
+declare function streetHalf(n: string): boolean;
+
+/** app2.js: refreshes the header counts. */
+declare function updateCount(): void;
+
+/** app2.js: re-renders the streets panel. */
+declare function renderPanel(): void;
+
+/** app2.js: re-renders the street list. */
+declare function renderStreets(): void;
+
+/** app2.js: the post-change save fan-out; returns the storage outcome. */
+declare function finishChange(): StorageOutcome;
+
+/** app2.js: the warned save-all; returns the storage outcome. */
+declare function saveAllWarned(): StorageOutcome;
+
+/** app2.js: registers a callback for when the map exists. */
+declare function onMapReady(cb: () => void): void;
+
+/** create-citydata.js: loads the shipped-city catalogue index; null when the library failed to load. */
+declare function crPackIndexLoad(): Promise<SnapCatEntry[] | null>;
+
+/** create-citydata.js: loads one shipped city pack's elements. */
+declare function crPackLoad(slug: string): Promise<CrPackElement[]>;
+
+/** app2.js: spends a tap (swallows the next click for ms). */
+declare function spendTap(ms: number): void;
+
+/** app2.js: builds the map at boot. */
+declare function bootMap(): void;
+
+/** app2.js: the Streets half of the route-switch session reset. */
+declare function resetStreetsSession(): void;
+
+/** app2.js: finalizes an open note draft against its street. */
+declare function collapseNoteEditor(): void;
+
+/** app2.js: adds the reference layers after a switch. */
+declare function addReferenceLayers(): void;
+
+/** app2.js: re-renders counts, panel and streets together. */
+declare function refreshAll(): void;
+
+/** app2.js: true once the GL layer stack is live. */
+declare var glOk: boolean;
+
+/** app2.js: shows one Routes-menu pane by id. */
+declare function showRmPane(id: string): void;
+
+/** create-pick.js: the create flow's shared confirmation. */
+declare function crConfirm(title: string, msg: string, cb: () => void, labels?: any): void;
+
+/** app3.js: hides the shared confirmation pill. */
+declare function hideConfirm(): void;
+
+/** app3.js: the stale-clean (over 12 hours) finish ask. */
+declare function checkStale(): void;
+
+/** app3.js: the run/history half of the route-switch session reset. */
+declare function resetNotesHistorySession(): void;
+
+/** app3.js: starts the geolocation watch (fromRun marks a recording watch). */
+declare function startGps(fromRun?: boolean, restart?: boolean): void;
+
+/** app3.js: stops the geolocation watch. */
+declare function stopGps(silent?: boolean): void;
+
+/** app3.js: true while the live watch is a recording (in-run) watch. */
+declare var gpsFromRun: boolean;
+
 // ---- 3. Browser surface actually used by the checked parts ----
+
+/** whatsnew.js: the current release's About notes (one version block). Declared in this section, not section 2: the mirrors checker's provenance list cannot name whatsnew.js. Retires when whatsnew.js joins the check (stage 3d). */
+declare var WHATSNEW: { v: string, items: string[] };
 
 /** Source-only title switch, provided by flags.js before the parts execute. */
 declare var ROUTE_TITLES_ON: boolean;
@@ -343,6 +502,16 @@ interface AppRect {
 }
 
 /** An element as app1 uses it: text content, its class list, and (Beta 1.221, placeToast) its inline bottom offset, its measured band and its running animations. */
+interface AppStyle {
+  display: string;
+  width: string;
+  setProperty(name: string, value: string): void;
+  [key: string]: string | ((name: string, value: string) => void);
+}
+
+/** The DOM Element name app5's standing JSDoc uses: the app's element surface. */
+type Element = AppElement;
+
 interface AppElement {
   textContent: string;
   innerHTML: string;
@@ -352,7 +521,7 @@ interface AppElement {
   _rmT: number;
   onanimationend: ((e: { animationName: string }) => void) | null;
   classList: AppClassList;
-  style: { [key: string]: string };
+  style: AppStyle;
   value: string;
   placeholder: string;
   readOnly: boolean;
@@ -363,11 +532,26 @@ interface AppElement {
   dataset: { [key: string]: string };
   setAttribute(name: string, value: string): void;
   getAttribute(name: string): string;
-  addEventListener(type: string, listener: (e: any) => void): void;
+  addEventListener(type: string, listener: (e: any) => void, opts?: any): void;
+  tagName: string;
+  matches(sel: string): boolean;
+  closest(sel: string): AppElement | null;
+  getBoundingClientRect(): AppRect;
+  contains(el: any): boolean;
+  dispatchEvent(ev: any): boolean;
+  offsetWidth: number;
+  onclick: ((e: any) => void) | null;
+  _subtleT?: number;
   click(): void;
   remove(): void;
   appendChild(child: any): void;
   querySelector(sel: string): AppElement;
+  querySelectorAll(sel: string): { forEach(cb: (e: AppElement) => void): void };
+  insertBefore(node: AppElement, ref: AppElement | null): void;
+  scrollTop: number;
+  replaceChildren(...nodes: any[]): void;
+  append(...nodes: any[]): void;
+  offsetHeight: number;
   getBoundingClientRect(): AppRect;
   getAnimations(): { animationName?: string }[];
 }
@@ -400,11 +584,13 @@ interface AppStorage {
 
 declare var document: {
   getElementById(id: string): AppElement;
+  querySelector(sel: string): AppElement | null;
+  activeElement: AppElement | null;
   createElement(tag: string): AppElement;
   querySelectorAll(sel: string): { forEach(cb: (e: HTMLElement) => void): void };
   body: AppElement;
   documentElement: AppElement;
-  addEventListener(type: string, listener: () => void, capture?: boolean | { capture?: boolean; passive?: boolean }): void;
+  addEventListener(type: string, listener: (e: any) => void, capture?: boolean | { capture?: boolean; passive?: boolean }): void;
   visibilityState: string;
   hidden: boolean;
 };
@@ -417,18 +603,30 @@ declare var navigator: {
   canShare(data: any): boolean;
   share(data: any): Promise<void>;
   vibrate(pattern: any): boolean;
-  storage: { estimate(): Promise<any> };
+  storage: { estimate(): Promise<any>, persist(): Promise<boolean> };
+  geolocation: { watchPosition: (ok: (p: GeolocationPosition) => void, err?: (e: GeolocationError) => void, opts?: any) => number, clearWatch: (id: number) => void };
+  wakeLock: { request: (type: string) => Promise<WakeLockSentinel> };
+  locks: { request: (name: string, fn: () => Promise<void>) => Promise<any> };
 };
 
 /** The media-query surface the overlay-exit helper reads: only the reduced-motion answer is modelled. */
 declare function matchMedia(query: string): { matches: boolean };
 
 declare var window: {
-  visualViewport: { height: number } | null;
+  visualViewport: { height: number, offsetTop: number, addEventListener: (type: string, fn: (e: any) => void, opts?: any) => void } | null;
   innerHeight: number;
+  innerWidth: number;
+  screen: { width: number, height: number };
+  scrollX: number;
+  scrollY: number;
+  scrollTo(x: number, y: number): void;
+  __warm: string;
+  __spriteWarm: string;
+  __tailAt: number;
   matchMedia: typeof matchMedia;
-  navigator: { userAgent: string; maxTouchPoints: number };
-  addEventListener(type: string, listener: () => void, capture?: boolean): void;
+  navigator: { userAgent: string; maxTouchPoints: number, standalone?: boolean };
+  addEventListener(type: string, listener: (e: any) => void, capture?: boolean): void;
+  removeEventListener(type: string, listener: (e: any) => void, capture?: boolean): void;
   /** The app's own paint host, assigned by engine.js (`window.GLP = GLP`) and read by app2.js. Typed as any like `map` above: its shape is engine's own returned object, not modelled here. */
   GLP: any;
   /** The device profile's state object, assigned by app1 (`window.__dp = DP`, Beta 1.230) and read by QA and the drives. Typed as any like `map` above: its shape is app1's own record, not modelled here. */
@@ -444,6 +642,8 @@ declare var window: {
   webkitAudioContext: any;
 };
 
+declare var MouseEvent: { new (type: string, init?: any): any };
+
 declare var localStorage: AppStorage;
 declare var sessionStorage: AppStorage;
 
@@ -457,6 +657,10 @@ declare var console: {
 /** The clock and frame surface the device profile's sampler uses (Beta 1.230). */
 declare var performance: { now(): number };
 declare function requestAnimationFrame(fn: (now: number) => void): number;
+declare function cancelAnimationFrame(id: number): void;
+/** The global isNaN coerces its argument (the parts pass Dates and strings). */
+declare function isNaN(number: any): boolean;
+declare var DeviceOrientationEvent: { requestPermission?: () => Promise<string> };
 
 declare function setTimeout(fn: (...args: any[]) => void, ms?: number): number;
 declare function clearTimeout(id: number): void;

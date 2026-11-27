@@ -37023,6 +37023,449 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r5",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "OPEN_FOCUS_EXEMPT_SEL",
+     "OPEN_ID_SEL",
+     "OPEN_MIN_MS",
+     "OPEN_ROW_SEL",
+     "PACKMIG_CENSUS_KEY",
+     "PACKMIG_KEY",
+     "__bootTail",
+     "__splashEl",
+     "__tailDone",
+     "anyPreloadRecord",
+     "applyNight",
+     "askDeleteRoute",
+     "deleteRoute",
+     "ensureFieldVisible",
+     "fullH",
+     "goHomeView",
+     "inStandalone",
+     "introToRoute",
+     "kbInSettle",
+     "kbSettle",
+     "kbShiftHost",
+     "kbShiftPx",
+     "kbSync",
+     "kbVisH",
+     "loadInGen",
+     "loadRoute",
+     "migratePack",
+     "openPendingEl",
+     "openPendingTimer",
+     "openPressRec",
+     "openerElOf",
+     "packCensusFingerprint",
+     "packMigFingerprint",
+     "packWriteChain",
+     "prefetchIntroTiles",
+     "pressRowEl",
+     "pressRowOff",
+     "renderAbout",
+     "resetSwitchSession",
+     "startKbSettle",
+     "syncViewport",
+     "takePackWriteTurn",
+     "unloadRouteToBoot"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app5.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:__bootTail:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - __bootTail() is called from top-level in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:__bootTail:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - __bootTail() is called from top-level in parts/create-save.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:anyPreloadRecord:parts/app5.js:migratePack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - anyPreloadRecord() is called from migratePack in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:applyNight:parts/app1.js:themeTick",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from themeTick in parts/app1.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:__bootTail",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from __bootTail in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:applyNight:parts/app5.js:nightBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - applyNight() is called from nightBtn:click in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:askDeleteRoute:parts/app2.js:container:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - askDeleteRoute() is called from container:click in parts/app2.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:deleteRoute:parts/app5.js:askDeleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - deleteRoute() is called from askDeleteRoute in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:ensureFieldVisible:parts/app5.js:document:focusin",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ensureFieldVisible() is called from document:focusin in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:ensureFieldVisible:parts/app5.js:visualViewport:resize",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - ensureFieldVisible() is called from visualViewport:resize in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:goHomeView:parts/app5.js:homeBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - goHomeView() is called from homeBtn:click in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:goHomeView:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - goHomeView() is called from loadRoute in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:introToRoute:parts/app5.js:loadRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - introToRoute() is called from loadRoute in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:kbSync:parts/app2.js:renderStreets",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - kbSync() is called from renderStreets in parts/app2.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:migratePack:parts/create-packs.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - migratePack() is called from top-level in parts/create-packs.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:openerElOf:parts/app5.js:document:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openerElOf() is called from document:click in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:openerElOf:parts/app5.js:document:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - openerElOf() is called from document:pointerdown in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:packCensusFingerprint:parts/app5.js:migratePack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - packCensusFingerprint() is called from migratePack in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:packMigFingerprint:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - packMigFingerprint() is called from xPre:click in parts/app4.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:packMigFingerprint:parts/app5.js:migratePack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - packMigFingerprint() is called from migratePack in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:packMigFingerprint:parts/app5.js:packCensusFingerprint",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - packMigFingerprint() is called from packCensusFingerprint in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:prefetchIntroTiles:parts/app5.js:introToRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - prefetchIntroTiles() is called from introToRoute in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:pressRowOff:parts/app5.js:document:pointercancel",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - pressRowOff is registered by reference as the document pointercancel handler in parts/app5.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:pressRowOff:parts/app5.js:document:pointerdown",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - pressRowOff() is called from document:pointerdown in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:pressRowOff:parts/app5.js:document:pointerup",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - pressRowOff is registered by reference as the document pointerup handler in parts/app5.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:pressRowOff:parts/app5.js:window:blur",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - pressRowOff is registered by reference as the window blur handler in parts/app5.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:renderAbout:parts/app5.js:aboutBtn:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - renderAbout() is called from aboutBtn:click in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:pack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from pack in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:resetSwitchSession:parts/app5.js:unloadRouteToBoot",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - resetSwitchSession() is called from unloadRouteToBoot in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:startKbSettle:parts/app5.js:document:focusout",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startKbSettle() is called from document:focusout in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:startKbSettle:parts/app5.js:kbSync",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - startKbSettle() is called from kbSync in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:document:visibilitychange",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from document:visibilitychange in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:step",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from step in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - syncViewport() is called from top-level in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport resize handler in parts/app5.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:visualViewport:scroll",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the visualViewport scroll handler in parts/app5.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:pageshow",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window pageshow handler in parts/app5.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:syncViewport:parts/app5.js:window:resize",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - syncViewport is registered by reference as the window resize handler in parts/app5.js; the event invokes it directly",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:takePackWriteTurn:parts/app4.js:stDel:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - takePackWriteTurn() is called from stDel:click in parts/app4.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:takePackWriteTurn:parts/app4.js:xPre:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - takePackWriteTurn() is called from xPre:click in parts/app4.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:takePackWriteTurn:parts/app5.js:migratePack",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - takePackWriteTurn() is called from migratePack in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "caller:unloadRouteToBoot:parts/app5.js:deleteRoute",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - unloadRouteToBoot() is called from deleteRoute in parts/app5.js",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:document:click",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document click handler in parts/app5.js touches openerElOf without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:document:focusin",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document focusin handler in parts/app5.js touches ensureFieldVisible without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:document:focusout",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document focusout handler in parts/app5.js touches startKbSettle without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:document:pointerdown",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document pointerdown handler in parts/app5.js touches pressRowOff without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:document:pointerdown#2",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document pointerdown handler in parts/app5.js touches openerElOf without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:document:visibilitychange",
+     "kind": "gesture",
+     "source": "derived: handler scan - the document visibilitychange handler in parts/app5.js touches syncViewport without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:window:pageshow",
+     "kind": "gesture",
+     "source": "derived: handler scan - the window pageshow handler in parts/app5.js touches inStandalone without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    },
+    {
+     "id": "gesture:parts/app5.js:window:resize",
+     "kind": "gesture",
+     "source": "derived: handler scan - the window resize handler in parts/app5.js touches inStandalone without dismissing it",
+     "status": "na",
+     "note": "annotation-only round: the anchor's JSDoc changed; its behaviour, signature and contract are byte-identical at runtime (AST-identity proof in the round RECORD), so this caller path is not affected. The full drive battery runs on the PR head regardless."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/app2.js": "716a167cbe267e0d5b7ebc8a7a770cf75f7ea8c144ae6b0478ecb2946f8d7100",
+    "parts/app3.js": "1db3d475ab360dd00f17f7ab3724e764ebc54d0d83501748ef0dad292abe5948",
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "8c198a73db70c427d987d703ff676253b7d8312cf8b314177f3ae87eb28b657b",
+    "parts/brand-snow.js": "fc0c6e0d99ce61d70026a680c9c7abced94508d083f2f8e296d0eb64b82afc7a",
+    "parts/create-cache.js": "0983841e10c36e1f56cc48da74b85ebe3426946a8576393096ea84ba592f85e2",
+    "parts/create-citydata.js": "f80d26bac88bd614c47acb2f100401a64cf357744a2f932db7b37270ad39b814",
+    "parts/create-fetch.js": "6641b4ea849551c4d1a7f2d2b035a01eda5a9d022f86973b6beb5d7325e90271",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/create-pick.js": "8b4ae01340a4ddb18f5caea1e886a458a0e461d8587a3c9c58a94d1c95aeede7",
+    "parts/create-save.js": "375f2e89fb3a51f6110ddc76fbeed38e7d8cf87a06941f4e307578607711522c",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

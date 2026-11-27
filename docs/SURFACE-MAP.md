@@ -12,6 +12,8 @@ reviewed against the change; no update needed.
 Stage 2a (app4, create-packs join the type check; data and app5
 touched by a cast and whitespace only): same verdict, no update
 needed.
+Stage 2c (app5 joins the type check): same verdict, no update
+needed.
 
 ## The snow rule (one rule, app-wide)
 
