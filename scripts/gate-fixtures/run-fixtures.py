@@ -7,8 +7,10 @@ scripts/check-proof-coverage.py,
 scripts/run-proofs.py, scripts/push.py (plan mode),
 scripts/sweep-check.py, scripts/check-receipts.py (the mutation-
 receipt gate, /correct Phase 3 round (b)),
-scripts/check-census.py (the sibling-census gate, round (c)) and
-scripts/check-mirrors.py (the mirrors gate, round (d)) all
+scripts/check-census.py (the sibling-census gate, round (c)),
+scripts/check-mirrors.py (the mirrors gate, round (d)) and
+scripts/check-survivors.py (the survivor-list gate, Phase 2
+prove-it machinery) all
 decide pass/fail for the gate. Running them
 against the real repository proves only their happy path; these
 fixtures run each script against synthetic trees in a temp directory
@@ -32,7 +34,10 @@ from the generated partition, a shard durations file missing a drive
 or naming a non-drive, a shard partition covering a drive twice, a
 runner partition disagreeing with the partition statement, a smoke
 list naming a non-roster drive, a judging script missing from the
-receipts gate's judge list, a push carrying a drifted mirror) fails.
+receipts gate's judge list, a push carrying a drifted mirror,
+a parts push with no survivor list, a survivor naming a case
+its check does not carry, a survivor list pinned before the
+cut surface moved) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -816,6 +821,119 @@ with tempfile.TemporaryDirectory() as td:
           0 if ("exit:parts/a.js:document:pointerdown" in gesture_rows
                 and "gesture:parts/a.js:document:pointerdown" in gesture_rows) else 1, 0)
 
+# ---------------------------------------------------------- survivor lists
+def run_survivors_cli(root, subcmd, extra):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-survivors.py"), subcmd,
+                           str(root)] + extra,
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+SURV_DRIVE = "ok('X1 the fixture behaviour holds', cond);\n"
+SURV_ROW = {"behaviour": "the fixture behaviour survives the cut",
+            "check": "tests/browser/drive9001.mjs",
+            "case": "X1 the fixture behaviour holds",
+            "observes": "the X1 assertion reads the behaviour directly"}
+
+
+def survivors_tree(base, *, drive=SURV_DRIVE):
+    w(base / "parts" / "a.js", "A body\n")
+    w(base / "parts" / "b.js", "B body\n")
+    w(base / "tests" / "browser" / "drive9001.mjs", drive)
+    return base
+
+
+def issue_survivors(root, rid, rows, changed=("parts/a.js",)):
+    rows_path = root / "survivor-rows.json"
+    w(rows_path, json.dumps(rows))
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-survivors.py"), "issue",
+                           str(root), "--id", rid, "--surface", "fixture surface",
+                           "--cut", "fixture cut"]
+                          + [a for p in changed for a in ("--changed", p)]
+                          + ["--rows", str(rows_path), "--issued", "gate-fixtures"],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    bare = survivors_tree(t / "bare")
+    check("survivors: a parts change with no survivor list is refused by the gate",
+          run_survivors_cli(bare, "gate", ["--changed", "parts/a.js"]), 1)
+    check("survivors: a docs-only change set passes the gate with no list at all",
+          run_survivors_cli(bare, "gate", ["--changed", "docs/x.md"]), 0)
+    good = survivors_tree(t / "good")
+    check("survivors: a cut record whose named case verifies in its check issues",
+          issue_survivors(good, "fixture-good", [SURV_ROW]), 0)
+    check("survivors: a current cut record passes the gate on its paths",
+          run_survivors_cli(good, "gate", ["--changed", "parts/a.js"]), 0)
+    check("survivors: the record does not cover paths it does not name",
+          run_survivors_cli(good, "gate", ["--changed", "parts/b.js"]), 1)
+    vac = survivors_tree(t / "vacuous")
+    check("survivors: a row naming a case its check does not carry is refused at issue (vacuous naming)",
+          issue_survivors(vac, "fixture-vacuous",
+                          [{**SURV_ROW, "case": "X9 no such case"}]), 1)
+    ghost = survivors_tree(t / "ghost")
+    check("survivors: a row naming a check file that does not exist is refused at issue",
+          issue_survivors(ghost, "fixture-ghost",
+                          [{**SURV_ROW, "check": "tests/browser/drive9999.mjs"}]), 1)
+    stale = survivors_tree(t / "stale")
+    issue_survivors(stale, "fixture-stale", [SURV_ROW])
+    w(stale / "parts" / "a.js", "A body edited after issue\n")
+    check("survivors: a list pinned before the cut surface moved is refused (stale pin)",
+          run_survivors_cli(stale, "gate", ["--changed", "parts/a.js"]), 1)
+    broken = survivors_tree(t / "broken")
+    issue_survivors(broken, "fixture-broken", [SURV_ROW])
+    w(broken / "tests" / "browser" / "drive9001.mjs", "ok('X2 a different case', cond);\n")
+    check("survivors: a list whose named case left its check is refused (broken evidence)",
+          run_survivors_cli(broken, "gate", ["--changed", "parts/a.js"]), 1)
+    nocut = survivors_tree(t / "nocut")
+    proc = subprocess.run([PY, str(ROOT / "scripts" / "check-survivors.py"), "issue-no-cut",
+                           str(nocut), "--id", "fixture-nocut", "--reason",
+                           "additive fixture change, nothing removed",
+                           "--changed", "parts/b.js", "--issued", "gate-fixtures"],
+                          capture_output=True, text=True, timeout=120)
+    check("survivors: a no-cut record with its reason passes the gate on its paths",
+          (proc.returncode, run_survivors_cli(nocut, "gate", ["--changed", "parts/b.js"])), (0, 0))
+    badledger = survivors_tree(t / "badledger2")
+    w(badledger / "tests" / "survivor-lists.json", "{not json\n")
+    check("survivors: a malformed ledger refuses the gate (a gate that cannot read its records)",
+          run_survivors_cli(badledger, "gate", ["--changed", "parts/a.js"]), 1)
+    reasonless = survivors_tree(t / "reasonless")
+    w(reasonless / "tests" / "survivor-lists.json", json.dumps({"rounds": [
+        {"id": "fixture-reasonless", "kind": "no-cut", "reason": "",
+         "changed": [], "files": {}, "issued": "gate-fixtures"}]}))
+    check("survivors: a no-cut record with no reason is invalid at verify",
+          run_survivors_cli(reasonless, "verify", []), 1)
+
+    # Push mode: the gate rides push.py's preflight like the census.
+    # (The trees are census_tree's, judge and evidence branch-carried.)
+    def surv_push_tree(name, *, with_list):
+        env = census_tree(name)
+        base = t / name
+        w(base / "scripts" / "check-survivors.py",
+          (ROOT / "scripts" / "check-survivors.py").read_text())
+        patch_branch(base, "scripts/check-survivors.py",
+                     (ROOT / "scripts" / "check-survivors.py").read_text())
+        w(base / "tests" / "browser" / "drive9001.mjs", SURV_DRIVE)
+        patch_branch(base, "tests/browser/drive9001.mjs", SURV_DRIVE)
+        if with_list:
+            rc = issue_survivors(base, "fixture-push", [SURV_ROW],
+                                 changed=("parts/a.js", "parts/b.js"))
+            assert rc == 0, "survivor issue failed in the push fixture tree"
+        return env
+    nolist_env = surv_push_tree("survnolist", with_list=False)
+    check("push: a parts change with a census but no survivor list is refused (survivors gate)",
+          run_push(t / "survnolist", ["parts/a.js", "parts/b.js", "index.html",
+                                      "tests/sibling-census.json"],
+                   mode="push", env_extra=nolist_env), 1)
+    list_env = surv_push_tree("survlist", with_list=True)
+    check("push: a parts change with a current survivor list pushes (survivors gate)",
+          run_push(t / "survlist", ["parts/a.js", "parts/b.js", "index.html",
+                                    "tests/sibling-census.json",
+                                    "tests/survivor-lists.json"],
+                   mode="push", env_extra=list_env), 0)
+
 # ------------------------------------------------------------- sweep check
 def run_sweep(root, olds):
     proc = subprocess.run([PY, str(ROOT / "scripts" / "sweep-check.py"), str(root),
@@ -1141,6 +1259,10 @@ def ci_wiring_tree(base):
       (ROOT / "scripts" / "check-receipts.py").read_text())
     w(base / "scripts" / "check-census.py",
       (ROOT / "scripts" / "check-census.py").read_text())
+    w(base / "scripts" / "check-survivors.py",
+      (ROOT / "scripts" / "check-survivors.py").read_text())
+    w(base / "tests" / "survivor-lists.json",
+      json.dumps({"about": "", "rounds": []}))
     w(base / "tests" / "mutation-receipts.json", json.dumps({"receipts": []}))
     w(base / "tests" / "sibling-census.json",
       (ROOT / "tests" / "sibling-census.json").read_text())
@@ -1166,6 +1288,8 @@ with tempfile.TemporaryDirectory() as td:
         "Receipts gate (refuse changed checks without current mutation receipts, class N1)")
     census_step = workflow_step_body(
         "Census gate (refuse parts changes without a current sibling census, class N2)")
+    survivors_step = workflow_step_body(
+        "Survivors gate (refuse parts changes without a current survivor list, Class 2)")
     rc, out = run_body(collect, tree, {
         "EVENT": "pull_request", "BASE_SHA": base_sha,
         "GITHUB_WORKSPACE": str(tree), "GITHUB_ENV": str(tree / ".gh-env")})
@@ -1194,6 +1318,16 @@ with tempfile.TemporaryDirectory() as td:
     check("ci wiring: the Census step runs on the collected set (a benign change passes)",
           run_body(census_step, tree, {"EVENT": "pull_request",
                                        "CHANGED_FILES": str(benign)})[0], 0)
+    check("ci wiring: the Survivors step runs on the collected set (a benign change passes)",
+          run_body(survivors_step, tree, {"EVENT": "pull_request",
+                                          "CHANGED_FILES": str(benign)})[0], 0)
+    parts_changed = tree / ".changed-parts"
+    parts_changed.write_bytes(b"parts/a.js\0")
+    check("ci wiring: the Survivors step refuses a parts change no survivor list names (refusal propagates)",
+          run_body(survivors_step, tree, {"EVENT": "pull_request",
+                                          "CHANGED_FILES": str(parts_changed)})[0], 1)
+    check("ci wiring: workflow_dispatch skips the Survivors step cleanly",
+          run_body(survivors_step, tree, {"EVENT": "workflow_dispatch"})[0], 0)
     rc1, _ = run_body(collect, tree, {
         "EVENT": "workflow_dispatch", "BASE_SHA": base_sha,
         "GITHUB_WORKSPACE": str(tree), "GITHUB_ENV": str(tree / ".gh-env2")})
@@ -1495,6 +1629,26 @@ with tempfile.TemporaryDirectory() as td:
     check("scan: a prepended listener keeps descendant identities",
           run_scan(s_tree), 0)
 
-total = 126
+# ------------------------------------------------- worked examples
+# TESTING.md rule 6's proof cases, pinned to their observation needles.
+def needle_in(rel, *needles):
+    text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+    return 0 if all(n in text for n in needles) else 1
+
+
+check("examples: E26d grades the migration through real boot (healed gap, earned flag)",
+      needle_in("tests/browser/e2e-offline.mjs",
+                "E26d a recordless all-manifest partial pack migrates at boot",
+                "d26.healed === true"), 0)
+check("examples: drive125 S7b samples the crossfade mid-flight, not its terminal state",
+      needle_in("tests/browser/drive125.mjs",
+                "S7b the swap really crossfades", "o > 0.05 && o < 0.95"), 0)
+check("examples: drive154 H3 grades the wired shipped-route Delete end to end",
+      needle_in("tests/browser/drive154.mjs", "H3 SHIPPED DELETE IS WIRED"), 0)
+check("examples: migratePack self-gates (the callee decides; no caller guard can strand it)",
+      needle_in("parts/app5.js",
+                "if (!evidence) return { ok: true, skipped: true }"), 0)
+
+total = 147
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

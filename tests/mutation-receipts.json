@@ -17325,6 +17325,60 @@
    "red": "scripts/check-mirrors.py fails the tree: 'judges: scripts/check-survivors.py is a judging script but is not named in check-receipts.py's JUDGE_PATHS - a change to it would escape the mutation-receipt requirement silently'.",
    "green": "With check-survivors.py named in JUDGE_PATHS, the mirrors gate passes every family including judges.",
    "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-push-wiring",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "7b18438ed749d2a47854502c032a7c3b92e32807cc6604898f885975fc1cb978",
+    "scripts/push.py": "af094e2732e8febd47480a3d108d5194a1ac26f2eff69f4ca4fa5a14980d35a8"
+   },
+   "mutation": "push.py's survivors_gate neutered to return None unconditionally - the wiring present, the gate never run (the born-dead shape of Class 5, applied to this round's own gate).",
+   "red": "The gate-fixtures suite convicts it exactly once: 'push: a parts change with a census but no survivor list is refused (survivors gate)' gets exit 0 against want 1; 146/147, no other case moves.",
+   "green": "Wiring restored: the full suite passes 147/147, including both survivors push cases, the twelve CLI verdicts, and the four worked-example pins.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-ci-step",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "52cc47ee4f615625e904acfb9471f4ab2f2f2fdc2fe0826181b41c4bae629203",
+    "scripts/gate-fixtures/run-fixtures.py": "7b18438ed749d2a47854502c032a7c3b92e32807cc6604898f885975fc1cb978",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "The Survivors gate step body extracted from the shipped checks.yml and executed against synthetic changed sets (the CI-wiring fixture method of issue #178): a set naming parts/a.js against an empty survivor ledger, a benign set, and a workflow_dispatch event.",
+   "red": "The parts set exits 1 through the step body - the refusal propagates out of the workflow step, not just the checker.",
+   "green": "The benign set exits 0 and workflow_dispatch skips cleanly at exit 0; all three Survivors step cases pass in the 147-case suite.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-push-wiring-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "f9c4538e72551d46bfd053ca812f0e44927b921a29c7546b5fe19013727ba882",
+    "scripts/push.py": "af094e2732e8febd47480a3d108d5194a1ac26f2eff69f4ca4fa5a14980d35a8"
+   },
+   "mutation": "As phase2-push-wiring (survivors_gate neutered to return None); re-issued because the PR-limits gate required two comment blocks in the suite shortened after the first observation - the delta is comments only.",
+   "red": "The neutered wiring was convicted exactly once by the no-list push case (got 0, want 1), suite 146/147, on the pre-shortening bytes; no behaviour-bearing line differs since.",
+   "green": "Final bytes: the full suite passes 147/147, including both survivors push cases, the twelve CLI verdicts, and the four worked-example pins.",
+   "issued": "2026-11-26 phase2-prove-it"
+  },
+  {
+   "id": "phase2-ci-step-r2",
+   "check": ".github/workflows/checks.yml",
+   "kind": "mutation",
+   "files": {
+    ".github/workflows/checks.yml": "52cc47ee4f615625e904acfb9471f4ab2f2f2fdc2fe0826181b41c4bae629203",
+    "scripts/gate-fixtures/run-fixtures.py": "f9c4538e72551d46bfd053ca812f0e44927b921a29c7546b5fe19013727ba882",
+    "scripts/check-survivors.py": "7c1167e83aebe1f7a0e25d1d356ab968e86de47281246396f82b82b6638aef8a"
+   },
+   "mutation": "As phase2-ci-step (the Survivors step body executed against synthetic changed sets); re-issued alongside phase2-push-wiring-r2 for the same comment-only delta in the suite.",
+   "red": "A changed set naming parts/a.js against an empty survivor ledger exits 1 through the step body extracted from the shipped checks.yml.",
+   "green": "Benign set and workflow_dispatch exit 0; all three Survivors step cases pass in the final 147-case suite.",
+   "issued": "2026-11-26 phase2-prove-it"
   }
  ]
 }

@@ -43,7 +43,13 @@ turn every discovered bug into a permanent regression test.
    body, or identical CSS block, fails against the standing pairs in
    scripts/parts-clone-baseline.json - regenerate that baseline only by
    command (`node scripts/scan-parts.cjs . --write-baseline`), never
-   by hand.
+   by hand. The push path also runs `scripts/check-survivors.py`
+   (Phase 2 prove-it machinery): a parts-changing push must be named
+   by a current survivor list in `tests/survivor-lists.json` — one
+   row per behaviour that must survive a removal, port or
+   restructure, naming the existing check and the case text it
+   carries — or by a no-cut record stating why the change cuts
+   nothing (TESTING.md rule 6, docs/SURVIVOR-LIST-TEMPLATE.md).
 8. **Document** — update the docs the change makes stale, in the same change.
 9. **Merge only when safe** — per §3 as restructured by the
    testing-efficiency rollout (2026-11-23, Andrew's decision — the tiers

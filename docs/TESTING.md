@@ -713,6 +713,38 @@ locally, first:
    longer depends on the push route. A check whose evidence
    is a rendered or manual measurement carries a receipt of kind
    `rendered` recording that evidence - never a fabricated mutation.
+
+   **Survivors are named before the first cut.** A removal, port or
+   restructure on a shared surface writes its [survivor list](SURVIVOR-LIST-TEMPLATE.md)
+   before the first cut, naming the existing check that observes each
+   behaviour that must survive and where it reads that behaviour. The PR
+   is not complete while any survivor lacks a named check. Since the
+   Phase 2 prove-it round (/correct 2026-11-26 pass, Class 2 - the
+   reopened C7: PR #98's three cuts, the 1.275 restructure's dropped
+   saveAll retry arm, PR #202's two changed restore semantics, and
+   PR #217's dropped `return`, the fourth cut that reopened the class),
+   the list is a gate artifact, not prose: it is recorded in
+   `tests/survivor-lists.json` via `scripts/check-survivors.py`, each
+   row's named case a literal needle that must occur in the named check
+   file, and `scripts/push.py` refuses a parts-changing push no CURRENT
+   list names. A round that cuts nothing records a no-cut declaration
+   with its reason in the same ledger.
+
+   **New behaviour is graded through the real path.** Drive the app
+   through the entry point that must trigger the behaviour and observe
+   the EFFECT end-to-end. A terminal state that can also be reached
+   without the effect cannot prove it. Guarded fixes are built so the
+   callee self-gates, and a caller cannot guard the fix off.
+
+   - PR #210 — the boot caller's guard made the migration fix unreachable.
+     Callees self-gate so a caller cannot guard a fix off. [E26d](../tests/browser/e2e-offline.mjs)
+     reloads through real boot and checks that the pack gap heals and the flag is earned.
+   - PR #221 — re-stamping the day/night glyph faces after the flip made
+     the crossfade impossible. [drive125 S7b](../tests/browser/drive125.mjs)
+     samples the incoming sun's mid-crossfade opacities during the flip.
+   - PR #167 — shipped-route Delete machinery was present but unwired.
+     [drive154 H3](../tests/browser/drive154.mjs) uses 5W's dropdown Delete,
+     confirms the prompt and checks that deletion survives reload.
 7. **Sibling paths are enumerated before the first push
    (/correct Phase 3 round (c), class N2).** A round that changes
    any `parts/` file ships a **sibling census** in

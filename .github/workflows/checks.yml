@@ -225,6 +225,18 @@ jobs:
           if [ "${#changed[@]}" -gt 0 ]; then
             python3 scripts/check-census.py gate . --changed "${changed[@]}"
           fi
+      - name: Survivors gate (refuse parts changes without a current survivor list, Class 2)
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "Survivors gate skipped: workflow_dispatch has no event diff."
+            exit 0
+          fi
+          mapfile -d '' -t changed < "$CHANGED_FILES"
+          if [ "${#changed[@]}" -gt 0 ]; then
+            python3 scripts/check-survivors.py gate . --changed "${changed[@]}"
+          fi
       - name: Mirrors gate (refuse drift from mirror sources, class C4)
         run: python3 scripts/check-mirrors.py .
       - name: Guidelines sync (vendored Codex review guidelines match their canonical copy)
