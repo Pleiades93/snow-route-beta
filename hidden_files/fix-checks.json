@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "14ecca18b73323254704aa049aa03bc9a6bb69cabcae903e17bc63b1568db235",
+  "canonical_registry_sha256": "a9b046536afcb7d07ca7791efdcaa0960730991b3a0ebf528e5b91510c5e697b",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -694,7 +694,7 @@
    "file": "parts/app2.js",
    "fix": "MapLibre is handed a COPY of the embedded styles, never the original (Beta 1.77): MapLibre rewrites fields of a style object it is handed \u2014 a night boot followed by a day flip rewrote the night style's own sprite and the offline preload then missed the dark sprites (893 files, not 897).",
    "id": "beta-styles-handed-to-maplibre-as-copies",
-   "pattern": "const glStyleFor = night => JSON.parse(JSON.stringify(GL_STYLES[night ? 'night' : 'day']));",
+   "pattern": "const glStyleFor = /** @type {(night: boolean) => any} */ (night =>",
    "type": "grep_present"
   },
   {
@@ -766,7 +766,7 @@
    "file": "parts/app2.js",
    "fix": "Sheet springs SETTLE via settleStop (spring the height to the stop; the end state is the snap's end state) \u2014 a settle that stops mid-travel leaves the sheet at a height no stop owns.",
    "id": "beta-sheet-spring-settle",
-   "pattern": "const settleStop = targetH => { // spring the height to a stop",
+   "pattern": "const settleStop = /** @type {(targetH: number) => void} */ (targetH => { // spring the height to a stop",
    "type": "grep_present"
   },
   {

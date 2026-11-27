@@ -35,6 +35,9 @@
 /** A map point as [lat, lng] - the pack/trail coordinate pair used throughout the schema. */
 type LatLng = [number, number];
 
+/** A projected screen point (map.project's shape). */
+type AppPoint = { x: number, y: number };
+
 /** Any point whose first two elements are [lat, lng]: distM and ptSegM read only those two, and both plain geometry points and trail triples (which carry a third, time, element) pass through them. Typed as a plain number array (retro-fixes round, 2026-11-14): the geometry code builds points dynamically, so the checker cannot prove tuple shape at those call sites - the [lat, lng] contract is prose, as it was at runtime all along. */
 type AnyPoint = number[];
 
@@ -323,11 +326,7 @@ takePackWriteTurn). The applyNight mirror named app4.js, the
 function's earlier home, until /correct Phase 3 round (d) - the declaration's type was right and only its provenance had
 drifted, the direction tsc cannot see. */
 
-/** app2.js: `let routeBox = null` - the active pack's bounding box, set by buildGeometry (app1) on every load. */
-declare var routeBox: RouteBox | null;
 
-/** app2.js: `const ROUTE_TILE_NAMES = []` - refilled in place by buildGeometry (app1) on every load. (Beta 1.263: the naming revert restored the pre-1.258 exclusion, which reads it at every zoom; removed in 1.258 with the retirement, restored in 1.261 for the pre-15 band.) */
-declare var ROUTE_TILE_NAMES: string[];
 
 
 
@@ -342,11 +341,7 @@ declare function buildSamples(): void;
 declare var lastGood: { ll: number[], at: number } | null;
 
 
-/** app2.js: the MapLibre map instance or null. The pilot does not model MapLibre's API - app1 only null-tests the binding and passes it nowhere - so it is typed as any rather than given an invented class shape. */
-declare var map: any;
 
-/** app2.js: re-applies the basemap style after a theme flip; called by themeTick (app1). */
-declare function setBasemap(): void;
 
 /** app3.js: persists the pre-Start snapshot (LS.snap); retried by flushAux (app1). Returns the storage outcome. */
 declare function saveSnap(): StorageOutcome;
@@ -362,17 +357,9 @@ declare function bankRunDistMirror(): void;
 
 
 
-/** app2.js: the current stretch selection entries. */
-declare var selSet: (EngineSelection & { anchor: AnyPoint })[];
 
-/** app2.js: `let selStretch = null` - the anchor selection {name, idx} the paint engine reads. */
-declare var selStretch: { name: string, idx: number } | null;
 
-/** app2.js: rebuilds basemap labels and, when requested, updates route titles. */
-declare function glUnifyLabels(options: { m: EngineMap, stack?: { newStack: boolean, data: EngineCollection, ids: string[], fontStack: string[] }, routeData?: EngineCollection }): void;
 
-/** app2.js: re-renders the route lists in every .routeList element. */
-declare function renderRouteLists(): void;
 
 
 
@@ -430,38 +417,16 @@ declare var watchId: number | null;
 
 
 
-/** app2.js: the day/night basemap style objects (pmstyles data). */
-declare var GL_STYLES: Record<string, any>;
 
-/** app2.js: the sheet stack owner (open/close with the shared animation). */
-declare var SHEETS: { open: (el: AppElement, cb?: (() => void) | null, keepOpen?: boolean) => void, close: (el: AppElement) => void };
 
-/** app2.js: clears the current stretch selection. */
-declare function deselect(): void;
 
-/** app2.js: closes every open sheet. */
-declare function closeSheets(): void;
 
-/** app2.js: true when exactly one side of the street is done. */
-declare function streetHalf(n: string): boolean;
 
-/** app2.js: refreshes the header counts. */
-declare function updateCount(): void;
 
-/** app2.js: re-renders the streets panel. */
-declare function renderPanel(): void;
 
-/** app2.js: re-renders the street list. */
-declare function renderStreets(): void;
 
-/** app2.js: the post-change save fan-out; returns the storage outcome. */
-declare function finishChange(): StorageOutcome;
 
-/** app2.js: the warned save-all; returns the storage outcome. */
-declare function saveAllWarned(): StorageOutcome;
 
-/** app2.js: registers a callback for when the map exists. */
-declare function onMapReady(cb: () => void): void;
 
 /** create-citydata.js: loads the shipped-city catalogue index; null when the library failed to load. */
 declare function crPackIndexLoad(): Promise<SnapCatEntry[] | null>;
@@ -469,29 +434,13 @@ declare function crPackIndexLoad(): Promise<SnapCatEntry[] | null>;
 /** create-citydata.js: loads one shipped city pack's elements. */
 declare function crPackLoad(slug: string): Promise<CrPackElement[]>;
 
-/** app2.js: spends a tap (swallows the next click for ms). */
-declare function spendTap(ms: number): void;
 
-/** app2.js: builds the map at boot. */
-declare function bootMap(): void;
 
-/** app2.js: the Streets half of the route-switch session reset. */
-declare function resetStreetsSession(): void;
 
-/** app2.js: finalizes an open note draft against its street. */
-declare function collapseNoteEditor(): void;
 
-/** app2.js: adds the reference layers after a switch. */
-declare function addReferenceLayers(): void;
 
-/** app2.js: re-renders counts, panel and streets together. */
-declare function refreshAll(): void;
 
-/** app2.js: true once the GL layer stack is live. */
-declare var glOk: boolean;
 
-/** app2.js: shows one Routes-menu pane by id. */
-declare function showRmPane(id: string): void;
 
 
 /** app3.js: hides the shared confirmation pill. */
@@ -524,17 +473,6 @@ declare var gpsFromRun: boolean;
 
 
 
-/** app2.js: formats a length in metres for display. */
-declare function fmtLenM(m: number): string;
-
-/** app2.js: opens the route menu. */
-declare function openRouteMenu(): void;
-
-/** app2.js: closes the route menu. */
-declare function closeRouteMenu(): void;
-
-/** app2.js: tiles drawn so far on the live map. */
-declare var tilesOk: number;
 
 
 
@@ -569,31 +507,53 @@ declare var tilesOk: number;
 
 
 
-/** app2.js: springs a sheet between two positions. */
-declare function springSheet(sheet: AppElement, q0: number, qT: number, v0: number, apply: (q: number) => void, finish: () => void): void;
 
-/** app2.js: cancels a sheet's spring. */
-declare function cancelSheetSpring(sheet: AppElement): void;
 
-/** app2.js: builds one route-list row shell. */
-declare function routeRowShell(tag: string, name: string, sub: string | null, opts?: any): AppElement;
 
-/** app2.js: settles a menu list's edge fade. */
-declare function menuListFade(el: AppElement): void;
 
-/** app2.js: hides or restores the loaded route's backdrop paint. */
-declare function setRouteBackdrop(m: any, on: boolean, updatePois: () => void): void;
 
-/** app2.js: true when a restack re-exposed route paint. */
-declare function routeBackdropNeedsHide(m: any): boolean;
+
+
+
 
 
 /** app3.js: true while GPS follow is paused. */
 declare var followPaused: boolean;
 
+/** app3.js: the displayed GPS position, or null. */
+declare var dispPos: any;
 
-/** app2.js: wraps a liveness check into a land-if-current function (G-B owner). */
-declare function landIfCurrent(token: any, isCurrent: (g: any) => boolean): (land?: () => void) => boolean;
+/** app3.js: the position the display currently shows. */
+declare function dispShownPos(): LatLng;
+
+/** app3.js: pushes the GPS features to the map. */
+declare function pushGps(): void;
+
+/** app3.js: the stats line for the count strip. */
+declare function statsLine(): string;
+
+/** app3.js: formats a stored timestamp for display. */
+declare function fmtWhen(iso: string): string;
+
+/** app3.js: formats a stored timestamp as an age. */
+declare function fmtAgo(iso: string): string;
+
+/** app3.js: a street's note text, or ''. */
+declare function noteTextOf(n: string): string;
+
+/** app3.js: sets a street's note text; returns the save outcome. */
+declare function setNoteText(n: string, txt: string | null): any;
+
+/** app3.js: opens the note modal for a street. */
+declare function openNote(name: string): void;
+
+/** app3.js: opens the pace panel. */
+declare function openPace(): void;
+
+/** app3.js: closes the pace panel. */
+declare function closePace(): void;
+
+
 
 // ---- 3. Browser surface actually used by the checked parts ----
 
@@ -651,7 +611,7 @@ interface AppElement {
   download: string;
   href: string;
   className: string;
-  dataset: { [key: string]: string };
+  dataset: { [key: string]: any };
   setAttribute(name: string, value: string): void;
   getAttribute(name: string): string;
   addEventListener(type: string, listener: (e: any) => void, opts?: any): void;
@@ -676,6 +636,23 @@ interface AppElement {
   firstChild: AppElement | null;
   nextSibling: AppElement | null;
   _crItem?: any;
+  _spring?: any;
+  _ddT?: any;
+  _ddPin?: boolean;
+  width: number;
+  height: number;
+  id: string;
+  alt: string;
+  src: string;
+  type: string;
+  scrollHeight: number;
+  clientHeight: number;
+  offsetTop: number;
+  offsetLeft: number;
+  parentElement: AppElement | null;
+  previousElementSibling: AppElement | null;
+  children: AppElement[];
+  getContext(kind: string): any;
   focus(): void;
   setPointerCapture(id: number): void;
   scrollTop: number;
@@ -699,6 +676,7 @@ interface AppComputedStyle {
   marginLeft: string;
   marginRight: string;
   marginBottom: string;
+  marginTop: string;
 }
 
 declare function getComputedStyle(el: any): AppComputedStyle;
@@ -721,10 +699,11 @@ declare var document: {
   querySelector(sel: string): AppElement | null;
   activeElement: AppElement | null;
   createElement(tag: string): AppElement;
-  querySelectorAll(sel: string): { forEach(cb: (e: HTMLElement) => void): void };
+  querySelectorAll(sel: string): { forEach(cb: (e: AppElement) => void): void };
   body: AppElement;
   documentElement: AppElement;
   addEventListener(type: string, listener: (e: any) => void, capture?: boolean | { capture?: boolean; passive?: boolean }): void;
+  removeEventListener(type: string, listener: (e: any) => void, capture?: boolean | { capture?: boolean; passive?: boolean }): void;
   visibilityState: string;
   hidden: boolean;
 };

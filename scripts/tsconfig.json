@@ -26,6 +26,7 @@
     "../parts/create-cache.js",
     "../parts/create-fetch.js",
     "../parts/create-citydata.js",
-    "../parts/create-pick.js"
+    "../parts/create-pick.js",
+    "../parts/app2.js"
   ]
 }
