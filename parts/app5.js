@@ -18,6 +18,15 @@ function renderAbout() {
 $('aboutBtn').addEventListener('click', () => { renderAbout(); showSetPane('setAboutPane'); });
 $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
 
+// Only WebKit emits these gesture events.
+/** @param {{target: AppElement|null, preventDefault: () => void}} e */
+function preventPagePinch(e) {
+  if (e.target?.closest?.('#map')) return;
+  e.preventDefault();
+}
+document.addEventListener('gesturestart', preventPagePinch);
+document.addEventListener('gesturechange', preventPagePinch);
+
 // click-away closes open menus; a dialog's backdrop tap is its Cancel (a plain hide, nothing committed)
 document.addEventListener('pointerdown', e => {
   const anySheet = !!document.querySelector('.sheet.open'); // any open sheet, read from the DOM: a hand-listed pair once missed one and the tap fell through

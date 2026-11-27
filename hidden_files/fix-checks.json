@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "11f9e26b54bc8439ef82ec19dab1d02356cccc81c46bc9fd5714b7f4546ed45c",
+  "canonical_registry_sha256": "74942e5e43f8d699ecec1b5b279dfa6e58f8e1ef73f705238b475ca8e4b4bdc9",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1652,
-   "included": 1622,
+   "canonical": 1655,
+   "included": 1625,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14451,6 +14451,33 @@
    "fix_id": "mound-edge",
    "id": "mound-edge-profile-formula",
    "pattern": "return maxH * (0.72 + 0.16 * Math.sin(x * 0.045 + 1.7) + 0.12 * Math.sin(x * 0.013 + 0.4));",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app5.js",
+   "fix": "PINCH-FIX (Beta 1.303, 2026-11-27): the page pinch guard's gesturestart registration stays in parts/app5.js - Safari ignores the viewport meta's no-zoom instruction in browser tabs, so this handler is the only defence. If this fails, the registration is gone or renamed - restore it, and keep the gesturechange registration beside it.",
+   "fix_id": "pinch-guard",
+   "id": "pinch-guard-handler-registered",
+   "pattern": "document.addEventListener('gesturestart', preventPagePinch);",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app5.js",
+   "fix": "PINCH-FIX (Beta 1.303, 2026-11-27): the pinch guard exempts gestures starting inside #map, where pinch belongs to MapLibre. If this fails, the exemption moved or vanished - the map's own pinch zoom must stay reachable, which drive230's map-canvas checks also judge.",
+   "fix_id": "pinch-guard",
+   "id": "pinch-guard-map-exempt",
+   "pattern": "if (e.target?.closest?.('#map')) return;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/head.html",
+   "fix": "PINCH-FIX (Beta 1.303, 2026-11-27): the #splash rule carries touch-action: none - the splash is the one full-screen surface that never scrolls, so it takes the CSS block as well as the gesture handler. If this fails, the property was dropped from the splash rule - restore it there, and never on the menus, which scroll.",
+   "fix_id": "pinch-guard",
+   "id": "pinch-guard-splash-touch-action",
+   "pattern": "justify-content: center; touch-action: none; }",
    "type": "grep_present"
   }
  ]

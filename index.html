@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-iK5fczymKXGNKDhn5vfCBcRAZLwMNUCFeUabv9F3TJDxtjn3/xT18GI6gFMmzm2q' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-N5gPkY31YT4p+Q4iwhtegGXpYUSnwSUBjcNucPEjy47qtt4j9yAyvmIhD3EYqWKu' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-46D7TOgt4Du7FO73oWlKQGj14ULAOydRNGiLjZXBw510Kz/p7DLPwKYbK9l8CptU' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-QVeGX7fzdgo7rqxGXLsAC9JJMc43+ppxd/suw6IHDm88rWy4OZ8U5vLwxldJEkTc' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -621,7 +621,7 @@
     to { visibility: hidden; transform: translateY(-130%); opacity: 0; } }
   #map { transition: transform .45s ease-in-out; }
 /* ===== SPLASH ===== the brand arrives and holds while the map loads behind it, then dissolves into the app */
-#splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; touch-action: none; }
 #splashBg { position: absolute; inset: -70px 0; background: linear-gradient(135deg, #3d65ef, #1b2fb6); } /* overshoots the screen 70px top and bottom, so no sliver of the app shows while the screen size settles */
 /* no will-change here: nothing transforms the icon. The title's slide starts at 1s, after the still-to-live handover */
 /* present from the first frame but not painted: the stills are blue, so nothing vanishes or doubles at the handover */
@@ -1009,7 +1009,7 @@ html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::aft
 <div id="hud">
   <div id="warn"><strong>Not saving</strong><br><span>Storage is full or blocked</span></div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.302</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.303</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -8017,8 +8017,8 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.302', items: [
-    "Snow mound no longer cut off at the right edge"
+  v: 'Beta 1.303', items: [
+    "Menus no longer pinch-zoom in the browser"
   ] }; // entries stay short: one plain line each (Beta 1.223 rule)
 
 /** @returns {void} */
@@ -8040,6 +8040,15 @@ function renderAbout() {
 }
 $('aboutBtn').addEventListener('click', () => { renderAbout(); showSetPane('setAboutPane'); });
 $('aboutBack').addEventListener('click', () => showSetPane('setMainPane'));
+
+// Only WebKit emits these gesture events.
+/** @param {{target: AppElement|null, preventDefault: () => void}} e */
+function preventPagePinch(e) {
+  if (e.target?.closest?.('#map')) return;
+  e.preventDefault();
+}
+document.addEventListener('gesturestart', preventPagePinch);
+document.addEventListener('gesturechange', preventPagePinch);
 
 // click-away closes open menus; a dialog's backdrop tap is its Cancel (a plain hide, nothing committed)
 document.addEventListener('pointerdown', e => {

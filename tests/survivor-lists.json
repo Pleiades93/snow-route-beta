@@ -1229,6 +1229,140 @@
     "parts/whatsnew.js": "4d9edbf3c798dbe9ff9ae25ffc164f8b5aba29cb054ef00f54daff4d79017aa6"
    },
    "issued": "2026-11-27 mound-fix"
+  },
+  {
+   "id": "pinch-fix",
+   "kind": "cut",
+   "surface": "page-level gesture handling (parts/app5.js) and the #splash style rule (parts/head.html)",
+   "cut": "Nothing is cut. The round ADDS a document-level gesture listener pair in parts/app5.js (preventPagePinch; gesturestart + gesturechange; #map targets exempt) and touch-action: none on the #splash rule in parts/head.html.",
+   "changed": [
+    "parts/app5.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The Routes city list scrolls inside the route menu exactly as before",
+     "case": "wheel input scrolls the Routes city list",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "a real CDP wheel event over the populated list's centre moving its scrollTop, the list first proven to overflow"
+    },
+    {
+     "behaviour": "The Settings menu itself still scrolls",
+     "case": "wheel input scrolls the Settings menu",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "a real CDP wheel event over the open Settings menu (status pane up, viewport shrunk to 380px so the menu genuinely overflows) moving its scrollTop"
+    },
+    {
+     "behaviour": "The route menu keeps its scrolling contract: no touch-action block lands on it or the settings menu",
+     "case": "#routeMenu touch-action is not none",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "the computed touch-action of #routeMenu (and #setMenu, same loop) on the fixed tree; the menus' internal scrollers are proven by the city-list and Settings rows"
+    },
+    {
+     "behaviour": "Sheets scroll as before: the sheet body keeps its pan-y contract and scrolls under wheel input",
+     "case": "wheel input scrolls the open sheet body",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "a real CDP wheel event over the open list sheet's body moving its scrollTop; the same drive pins the body's computed touch-action as still pan-y"
+    },
+    {
+     "behaviour": "Sheet dragging by the grab handle is unchanged (the gesture handler fires only on two-finger WebKit gesture events, never on single-pointer drags)",
+     "case": "D detents",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "real drags on the sheet's grab handle walking the detents half -> full -> half -> closed, in the standing battery"
+    },
+    {
+     "behaviour": "Pinch on the map still belongs to the map: the handler exempts any gesture whose target is inside #map",
+     "case": "gesturestart on the map canvas is not stopped",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "synthetic gesturestart and gesturechange dispatched on the map canvas ending NOT defaultPrevented, before and after a route loads"
+    },
+    {
+     "behaviour": "Double-tap and single-finger interactions are unchanged",
+     "case": "N9 the Routes tab opens the full-screen blue route menu, main pane up",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "tap-driven menu behaviour across the standing battery; drive230's own flow also reaches every surface by real clicks"
+    },
+    {
+     "behaviour": "The splash hands over as before; its new touch-action: none regresses nothing on it",
+     "case": "splash hands over to the route menu once the app is ready",
+     "check": "tests/browser/drive132.mjs",
+     "observes": "the splash-to-menu handover in the standing battery; drive230 pins the splash's computed touch-action as none"
+    }
+   ],
+   "files": {
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/head.html": "a85bc5416ab3763d5919d31a6f342c9fd1279c03a55f4a5586446446ee2cac80",
+    "parts/whatsnew.js": "e180e7f294843c6df60e4412ddcc07efdc4f65a2b43a56313989d65e35141e01"
+   },
+   "issued": "2026-11-27 pinch-fix"
+  },
+  {
+   "id": "pinch-fix-r2",
+   "kind": "cut",
+   "surface": "page-level gesture handling (parts/app5.js) and the #splash style rule (parts/head.html)",
+   "cut": "Nothing is cut. The round ADDS a document-level gesture listener pair in parts/app5.js (preventPagePinch; gesturestart + gesturechange; #map targets exempt) and touch-action: none on the #splash rule in parts/head.html.",
+   "changed": [
+    "parts/app5.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The Routes city list scrolls inside the route menu exactly as before",
+     "case": "wheel input scrolls the Routes city list",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "a real CDP wheel event over the populated list's centre moving its scrollTop, the list first proven to overflow"
+    },
+    {
+     "behaviour": "The Settings menu itself still scrolls",
+     "case": "wheel input scrolls the Settings menu",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "a real CDP wheel event over the open Settings menu (status pane up, viewport shrunk to 380px so the menu genuinely overflows) moving its scrollTop"
+    },
+    {
+     "behaviour": "The route menu keeps its scrolling contract: no touch-action block lands on it or the settings menu",
+     "case": "#routeMenu touch-action is not none",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "the computed touch-action of #routeMenu (and #setMenu, same loop) on the fixed tree; the menus' internal scrollers are proven by the city-list and Settings rows"
+    },
+    {
+     "behaviour": "Sheets scroll as before: the sheet body keeps its pan-y contract and scrolls under wheel input",
+     "case": "wheel input scrolls the open sheet body",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "a real CDP wheel event over the open list sheet's body moving its scrollTop; the same drive pins the body's computed touch-action as still pan-y"
+    },
+    {
+     "behaviour": "Sheet dragging by the grab handle is unchanged (the gesture handler fires only on two-finger WebKit gesture events, never on single-pointer drags)",
+     "case": "D detents",
+     "check": "tests/browser/drive192.mjs",
+     "observes": "real drags on the sheet's grab handle walking the detents half -> full -> half -> closed, in the standing battery"
+    },
+    {
+     "behaviour": "Pinch on the map still belongs to the map: the handler exempts any gesture whose target is inside #map",
+     "case": "gesturestart on the map canvas is not stopped",
+     "check": "tests/browser/drive230.mjs",
+     "observes": "synthetic gesturestart and gesturechange dispatched on the map canvas ending NOT defaultPrevented, before and after a route loads"
+    },
+    {
+     "behaviour": "Double-tap and single-finger interactions are unchanged",
+     "case": "N9 the Routes tab opens the full-screen blue route menu, main pane up",
+     "check": "tests/browser/drive145.mjs",
+     "observes": "tap-driven menu behaviour across the standing battery; drive230's own flow also reaches every surface by real clicks"
+    },
+    {
+     "behaviour": "The splash hands over as before; its new touch-action: none regresses nothing on it",
+     "case": "splash hands over to the route menu once the app is ready",
+     "check": "tests/browser/drive132.mjs",
+     "observes": "the splash-to-menu handover in the standing battery; drive230 pins the splash's computed touch-action as none"
+    }
+   ],
+   "files": {
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/head.html": "a85bc5416ab3763d5919d31a6f342c9fd1279c03a55f4a5586446446ee2cac80",
+    "parts/whatsnew.js": "e180e7f294843c6df60e4412ddcc07efdc4f65a2b43a56313989d65e35141e01"
+   },
+   "issued": "2026-11-27 pinch-fix (r2: cut text shortened for the PR limits judge; rows unchanged)"
   }
  ]
 }

@@ -63472,6 +63472,130 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 mound-fix"
+  },
+  {
+   "id": "pinch-fix",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "splash"
+    ],
+    "functions": [
+     "preventPagePinch"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app5.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:preventPagePinch:parts/app5.js:document:gesturechange",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - preventPagePinch is registered by reference as the document gesturechange handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the change itself: drive230 dispatches synthetic gesturechange on both menus (stopped) and on the map canvas (not stopped)."
+    },
+    {
+     "id": "caller:preventPagePinch:parts/app5.js:document:gesturestart",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - preventPagePinch is registered by reference as the document gesturestart handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the change itself: the registration is what drive230 observes - synthetic gesturestart dispatched on the splash, both menus, the sheet and the dock ends defaultPrevented, and on the map canvas does not."
+    },
+    {
+     "id": "theme:splash",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #splash has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the touch-action property lands in the splash's one rule, which no body.night rule overrides, so it holds identically in both themes; drive230 pins the computed value, and drive228's surface walk judges the splash standing in day and night modes."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "fac28d166656f385fa5b8c167a067eac7f1a4790f0e9bcde2b32e57ac8a2e9c6",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e180e7f294843c6df60e4412ddcc07efdc4f65a2b43a56313989d65e35141e01",
+    "parts/head.html": "a85bc5416ab3763d5919d31a6f342c9fd1279c03a55f4a5586446446ee2cac80",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 pinch-fix"
+  },
+  {
+   "id": "pinch-fix-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [
+     "splash"
+    ],
+    "functions": [
+     "preventPagePinch"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app5.js",
+    "parts/head.html",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:preventPagePinch:parts/app5.js:document:gesturechange",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - preventPagePinch is registered by reference as the document gesturechange handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the change itself: drive230 dispatches synthetic gesturechange on both menus (stopped) and on the map canvas (not stopped)."
+    },
+    {
+     "id": "caller:preventPagePinch:parts/app5.js:document:gesturestart",
+     "kind": "caller",
+     "source": "derived: handler scan of parts/ - preventPagePinch is registered by reference as the document gesturestart handler in parts/app5.js; the event invokes it directly",
+     "status": "covered",
+     "note": "the change itself: the registration is what drive230 observes - synthetic gesturestart dispatched on the splash, both menus, the sheet and the dock ends defaultPrevented, and on the map canvas does not."
+    },
+    {
+     "id": "theme:splash",
+     "kind": "theme",
+     "source": "derived: stylesheet scan of parts/head.html - #splash has a day rule and NO body.night rule",
+     "status": "covered",
+     "note": "the touch-action property lands in the splash's one rule, which no body.night rule overrides, so it holds identically in both themes; drive230 pins the computed value, and drive228's surface walk judges the splash standing in day and night modes."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "9278ba3082dd7eda6aaa00f686c52328e4daa52ee8fe8a44a961f2e38342533d",
+    "parts/app3.js": "fac28d166656f385fa5b8c167a067eac7f1a4790f0e9bcde2b32e57ac8a2e9c6",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "e180e7f294843c6df60e4412ddcc07efdc4f65a2b43a56313989d65e35141e01",
+    "parts/head.html": "a85bc5416ab3763d5919d31a6f342c9fd1279c03a55f4a5586446446ee2cac80",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 pinch-fix (r2: re-issued after the SURFACE-MAP review note landed; anchors and marks unchanged)"
   }
  ]
 }
