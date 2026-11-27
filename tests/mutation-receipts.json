@@ -18789,6 +18789,19 @@
    "red": "final drive229 on base d55052df: right-edge profile FAILS at 393 ([23, 12, 1] vs 34.4px) and at 430 ([21, 11, 1] vs 39.3px); passes at 390; bottom-row and mirror-guard checks pass at all widths",
    "green": "final drive229 on the fixed tree: 9/9 PASS (390, 393, 430 - profile, bottom-row and mirror-guard checks all true)",
    "issued": "2026-11-27 mound-fix"
+  },
+  {
+   "id": "mound-edge-drive229-r3",
+   "check": "tests/browser/drive229.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive229.mjs": "f67afb2bbddb8b5011fc51ae98040cd47415529f2f4c39bc6d9812954f29afa8",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477"
+   },
+   "mutation": "the shipped defect itself: base tree d55052df, whose render() closes the bank path with the chord lineTo(W, H). Supersedes mound-edge-drive229-r2 (Codex P1 on PR #236 trimmed the drive header to a pure why; comment-only, both directions re-run on the final bytes)",
+   "red": "final drive229 on base d55052df: right-edge profile FAILS at 393 and at 430 (2 false checks); passes at 390; bottom-row and mirror-guard checks pass at all widths",
+   "green": "final drive229 on the fixed tree: 9/9 PASS",
+   "issued": "2026-11-27 mound-fix"
   }
  ]
 }

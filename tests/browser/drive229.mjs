@@ -1,7 +1,7 @@
 import { launchDrive, finish } from './harness.mjs';
 
-// drive229: the snow bank's right edge (Beta 1.302) - the
-// closing chord sliced the crest; the paint now closes off-canvas.
+// drive229: check the right-edge profile so canvas closure
+// cannot slice the crest.
 
 const { proc, send, S, ev, poll } = await launchDrive();
 const R = { checks: [] };
