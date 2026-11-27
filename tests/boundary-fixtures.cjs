@@ -41,16 +41,18 @@ const loose = {
 const looseTree = ts.createSourceFile(file, sceneWrite, ts.ScriptTarget.Latest, true);
 eq(scan(looseTree, file, loose, [])[0].enforced, false);
 
-// Multi-token class writes: every add/remove token is checked, not just
-// the first argument (Codex P2 on PR #233).
+// Check every class token, not just the first.
 const awayMulti = check("function x() { $('brandLayer').classList.add('other', 'away'); }", file);
 eq(awayMulti.length, 1);
 eq(awayMulti[0].state, 'brand-away');
 eq(awayMulti[0].enforced, true);
 eq(check("function x() { $('brandLayer').classList.add('other', 'misc'); }", file).length, 0);
+const awayReplace = check("function x() { $('brandLayer').classList.replace('other', 'away'); }", file);
+eq(awayReplace.length, 1);
+eq(awayReplace[0].enforced, true);
+eq(check("function x() { $('brandLayer').classList.replace('away', 'other'); }", file).length, 1);
 
-// Stack-layer layout writes are recognized in any enclosing function,
-// not only inside the owner's functions (Codex P2 on PR #233).
+// Recognize stack-layer writes outside the owner functions.
 const stackHits = check("function other() { map.setLayoutProperty('t1-fill', 'visibility', 'none'); }", file);
 eq(stackHits.length, 1);
 eq(stackHits[0].state, 'route-stack-visibility');

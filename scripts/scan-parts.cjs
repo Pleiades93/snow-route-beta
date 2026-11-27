@@ -294,26 +294,6 @@ if (writeBaseline) {
   }
 }
 
-if (writeBoundaryBaseline && boundaryOn) {
-  if (failures - boundaryFailures > 0) {
-    console.error('boundary baseline refused: the tree failed the checks above. Fix those failures before regenerating.');
-    process.exitCode = 1;
-  } else {
-    // Recording the current seats is the deliberate act this flag exists for:
-    // boundary failures alone do not refuse it, they are what gets recorded.
-    failures -= boundaryFailures;
-    const seats = boundaryWrites.map(({ state, file, fn, occ }) => ({ state, file, fn, occ }));
-    seats.sort((a, b) => {
-      const ka = JSON.stringify([a.state, a.file, a.fn, a.occ]);
-      const kb = JSON.stringify([b.state, b.file, b.fn, b.occ]);
-      return ka < kb ? -1 : ka > kb ? 1 : 0;
-    });
-    const body = seats.map(seat => '  ' + JSON.stringify(seat)).join(',\n');
-    fs.writeFileSync(boundaryBaselineFile, `[\n${body}\n]\n`);
-    console.log(`boundary baseline written: ${seats.length} seats`);
-  }
-}
-
 if (boundaryOn) {
   const enforcedStates = boundaryOwners.states.filter(state => state.enforce === true).length;
   console.log(`boundaries: ${boundaryCounts.KNOWN} baselined, ${boundaryCounts.EXEMPT} exempted, ${boundaryCounts.NEW} new (${enforcedStates} states enforced)`);
@@ -329,6 +309,28 @@ for (const [pair, locations] of pairs) {
     fail(`Possible clone at ${locations.join(' and ')}: ${pair} share a body. Use a shared helper or group the selectors.`);
   }
 }
+
+// The boundary baseline is written only after every other check has run:
+// any non-boundary failure refuses the regeneration, file unchanged.
+if (writeBoundaryBaseline && boundaryOn) {
+  if (failures - boundaryFailures > 0) {
+    console.error('boundary baseline refused: the tree failed the checks above. Fix those failures before regenerating.');
+    process.exitCode = 1;
+  } else {
+    // Boundary failures alone do not refuse regeneration; they are what it records.
+    failures -= boundaryFailures;
+    const seats = boundaryWrites.map(({ state, file, fn, occ }) => ({ state, file, fn, occ }));
+    seats.sort((a, b) => {
+      const ka = JSON.stringify([a.state, a.file, a.fn, a.occ]);
+      const kb = JSON.stringify([b.state, b.file, b.fn, b.occ]);
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    const body = seats.map(seat => '  ' + JSON.stringify(seat)).join(',\n');
+    fs.writeFileSync(boundaryBaselineFile, `[\n${body}\n]\n`);
+    console.log(`boundary baseline written: ${seats.length} seats`);
+  }
+}
+
 if (!failures) {
   console.log(`parts scan: PASS (${pairs.size} clone pairs checked, ${exemptPairs} named clone exemptions, ${writeExemptions} write-safe exemptions, 0 source-ownership exemptions)`);
 }

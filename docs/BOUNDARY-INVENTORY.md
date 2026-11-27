@@ -185,6 +185,13 @@ evidence.
   (the route name) - a layout write to a stack layer, recorded
   here rather than silently permitted; 192 -> 193 seats, zero
   seats vanished.
+- Second review round: `classList.replace` writes joined the
+  same coverage (both token arguments checked; the seven
+  class rules that lacked `replace` gained it - the widened
+  census again found no new seats), and the baseline writer
+  moved after every other scan check, so a regeneration
+  refused for a non-boundary failure (a clone pair, say)
+  leaves the baseline file unchanged.
 
 ## Enforcement
 
@@ -231,7 +238,9 @@ only by command (`node scripts/scan-parts.cjs .
 --write-boundary-baseline`), never by hand; regeneration is
 refused when the scan fails for any reason other than the
 boundary seats it exists to record (an enforced NEW seat is
-exactly what a reviewed regeneration accepts). In scan output, KNOWN seats count
+exactly what a reviewed regeneration accepts); the write runs
+after every other check, so a refused regeneration leaves the
+file unchanged. In scan output, KNOWN seats count
 silently, NEW and EXEMPT seats print per write, and the totals
 line reports baselined / exempted / new plus the enforced-state
 count. An `exemptions` entry in the owner map names the exact

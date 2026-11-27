@@ -868,7 +868,7 @@
       "description": "Locate recording class",
       "recognition": [
         {
-          "call": "^\\$\\(['\\\"]gpsBtn['\\\"]\\)\\.classList\\.(?:add|remove|toggle)$",
+          "call": "^\\$\\(['\\\"]gpsBtn['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
           "arg": "^[\"']rec[\"']$"
         }
       ]
@@ -881,7 +881,7 @@
       "description": "Route menu open/tab classes",
       "recognition": [
         {
-          "call": "^rm\\.classList\\.(?:add|remove|toggle)$",
+          "call": "^rm\\.classList\\.(?:add|remove|toggle|replace)$",
           "arg": "^['\\\"](?:open|tab)['\\\"]$",
           "fn": "unloadRouteToBoot"
         }
@@ -1037,7 +1037,7 @@
           "target": "^\\$\\(['\\\"]pacePanel['\\\"]\\)\\.style\\.(?:height|maxHeight)$"
         },
         {
-          "call": "^\\$\\(['\\\"]pacePanel['\\\"]\\)\\.classList\\.(?:add|remove|toggle)$",
+          "call": "^\\$\\(['\\\"]pacePanel['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
           "arg": "^[\"']open[\"']$"
         }
       ],
@@ -1064,7 +1064,7 @@
       "description": "Create-from-boot parking class",
       "recognition": [
         {
-          "call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle)$",
+          "call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
           "arg": "^[\"']parked[\"']$"
         }
       ],
@@ -1078,7 +1078,7 @@
       "description": "Root intro class",
       "recognition": [
         {
-          "call": "^document\\.documentElement\\.classList\\.(?:add|remove|toggle)$",
+          "call": "^document\\.documentElement\\.classList\\.(?:add|remove|toggle|replace)$",
           "arg": "^[\"']boot[\"']$"
         }
       ]
@@ -1237,7 +1237,7 @@
       "description": "Route pane away state projected onto the brand layer",
       "recognition": [
         {
-          "call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle)$",
+          "call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
           "arg": "^[\"']away[\"']$"
         }
       ],
@@ -1254,7 +1254,7 @@
           "target": "^\\$\\(['\\\"]sheet['\\\"]\\)\\.style\\.(?:height|maxHeight|transform)$"
         },
         {
-          "call": "^\\$\\(['\\\"]sheet['\\\"]\\)\\.classList\\.(?:add|remove|toggle)$",
+          "call": "^\\$\\(['\\\"]sheet['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
           "arg": "^['\\\"](?:open|full|snapping|dragging)['\\\"]$"
         }
       ],

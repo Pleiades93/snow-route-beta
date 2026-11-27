@@ -1770,7 +1770,7 @@ with tempfile.TemporaryDirectory() as td:
     away_owners = {**BOUNDARY_OWNERS, "states": BOUNDARY_OWNERS["states"] + [
         {"id": "brand-away", "kind": "dom", "key": "#brandLayer.away",
          "owner": "parts/app2.js", "enforce": True,
-         "recognition": [{"call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle)$",
+         "recognition": [{"call": "^\\$\\(['\\\"]brandLayer['\\\"]\\)\\.classList\\.(?:add|remove|toggle|replace)$",
                           "arg": "^[\"']away[\"']$"}]}]}
     check("boundary: a planted multi-token write to an enforced state fails",
           run_scan(boundary_tree(t / "bmulti", owners=away_owners,
@@ -1785,6 +1785,21 @@ with tempfile.TemporaryDirectory() as td:
                 "fn": "paint", "occ": 1} in regen_baseline else 1, 0)
     check("boundary: a plain scan passes against the regenerated baseline",
           run_scan(regen), 0)
+    check("boundary: a planted replace write to an enforced state fails",
+          run_scan(boundary_tree(t / "breplace", owners=away_owners,
+                                 app3="function x() { $('brandLayer').classList.replace('other', 'away'); }\n")), 1)
+    clone_a = ("function fixtureCloneA() { const a = alphaOne(1); const b = betaTwo(2); const c = gammaThree(3); "
+               "if (a && b) return a + b + c; if (c > 9) return c * 3; "
+               "return deltaFour(a, b) + epsilonFive(b, c) + zetaSix(c, a); }\n")
+    clone_tree = boundary_tree(t / "bcloneregen", app3=SCENE_WRITE + clone_a)
+    w(clone_tree / "parts" / "brand-snow.js",
+      "function glow() { document.body.classList.add('snow-scene');"
+      " document.body.classList.add('lit'); }\n"
+      + clone_a.replace("fixtureCloneA", "fixtureCloneB"))
+    check("boundary: regeneration with a clone failure is refused",
+          run_scan(clone_tree, "--write-boundary-baseline"), 1)
+    check("boundary: the refused regeneration leaves the baseline unchanged",
+          0 if json.loads((clone_tree / "scripts" / "parts-boundary-baseline.json").read_text()) == [] else 1, 0)
 
 # ------------------------------------------------- worked examples
 # TESTING.md rule 6's proof cases, pinned to their observation needles.
@@ -1809,6 +1824,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 171
+total = 174
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)
