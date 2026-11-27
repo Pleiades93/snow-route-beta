@@ -38,6 +38,9 @@ type LatLng = [number, number];
 /** A projected screen point (map.project's shape). */
 type AppPoint = { x: number, y: number };
 
+/** One snow particle (brand-snow.js). CODE-ONLY: an engine particle, never stored. */
+type SnowFlake = { bx: number, y: number, r: number, v: number, phase: number, swayFreq: number, amp: number, o: number, tw?: number, twPhase?: number, age: number };
+
 /** Any point whose first two elements are [lat, lng]: distM and ptSegM read only those two, and both plain geometry points and trail triples (which carry a third, time, element) pass through them. Typed as a plain number array (retro-fixes round, 2026-11-14): the geometry code builds points dynamically, so the checker cannot prove tuple shape at those call sites - the [lat, lng] contract is prose, as it was at runtime all along. */
 type AnyPoint = number[];
 
@@ -559,8 +562,6 @@ declare function closePace(): void;
 
 
 
-/** whatsnew.js: the current release's About notes (one version block). Declared in this section, not section 2: the mirrors checker's provenance list cannot name whatsnew.js. Retires when whatsnew.js joins the check (stage 3d). */
-declare var WHATSNEW: { v: string, items: string[] };
 
 /** Source-only title switch, provided by flags.js before the parts execute. */
 declare var ROUTE_TITLES_ON: boolean;
@@ -737,6 +738,13 @@ declare var window: {
   __spriteWarm: string;
   __tailAt: number;
   __bootPickRoute: ((id: string) => void) | undefined;
+  __snow?: any;
+  devicePixelRatio: number;
+  requestAnimationFrame: (fn: (now: number) => void) => number;
+  cancelAnimationFrame: (id: number) => void;
+  setTimeout: (fn: () => void, ms: number) => number;
+  clearTimeout: (id: number) => void;
+  MutationObserver: any;
   matchMedia: typeof matchMedia;
   navigator: { userAgent: string; maxTouchPoints: number, standalone?: boolean };
   addEventListener(type: string, listener: (e: any) => void, capture?: boolean): void;
@@ -845,6 +853,7 @@ declare var caches: {
 declare function fetch(url: string, options?: any): Promise<any>;
 declare var TextDecoder: any;
 declare var maplibregl: any;
+declare var MutationObserver: any;
 declare var TextEncoder: any;
 
 /** The abort surface the preload fetch timeout uses. */

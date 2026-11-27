@@ -49893,6 +49893,80 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r16",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "WHATSNEW"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/app2.js": "0a8799df7e167d680317c4b1be80ed0642e8887d230278c9abf9eb585634a8b3",
+    "parts/app3.js": "1db3d475ab360dd00f17f7ab3724e764ebc54d0d83501748ef0dad292abe5948",
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "8c198a73db70c427d987d703ff676253b7d8312cf8b314177f3ae87eb28b657b",
+    "parts/brand-snow.js": "acb3f5f6a02a71b1a28ee7a061968fbfe264550ed82c063606ffd1500a3274fb",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "4514b06b458611c26b0740fedc279010ef709a0157df6f142e1a883a5ed14c83",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r17",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "WHATSNEW"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [],
+   "files": {
+    "parts/app1.js": "8769803f5d8c9e82c3e7e02fbb91913f5fe2874e4eea42166abcb760a31c3981",
+    "parts/app2.js": "0a8799df7e167d680317c4b1be80ed0642e8887d230278c9abf9eb585634a8b3",
+    "parts/app3.js": "1db3d475ab360dd00f17f7ab3724e764ebc54d0d83501748ef0dad292abe5948",
+    "parts/app4.js": "147e3c0eca8a21ceea1a54c3edc2a0b6fa20973f8f3967ae49b30d89b8ec1159",
+    "parts/app5.js": "8c198a73db70c427d987d703ff676253b7d8312cf8b314177f3ae87eb28b657b",
+    "parts/brand-snow.js": "2813303842a1243a7fc4fc0c076e3f237e7af1896d9b5ba26c6971addc919a14",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "ffa278f3e296118d1fd879dd738d919a2f5797bfc3f3b5cbc8df0a393a2dd4f1",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "4514b06b458611c26b0740fedc279010ef709a0157df6f142e1a883a5ed14c83",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "168a939b1fb15b6e20c1004894bb4326fb59cfc76828d85ede193aa9f391d4fb",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3",
+    "parts/head.html": "121a904d9376ec674630040dc9900a3ce334ed67b2b32c956494e6eaa4415308",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

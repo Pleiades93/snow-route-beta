@@ -921,6 +921,34 @@
     "parts/app2.js": "0a8799df7e167d680317c4b1be80ed0642e8887d230278c9abf9eb585634a8b3"
    },
    "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r15",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/brand-snow.js; parts/whatsnew.js unchanged (its shared-types declaration retired). Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/whatsnew.js"
+   ],
+   "files": {
+    "parts/brand-snow.js": "acb3f5f6a02a71b1a28ee7a061968fbfe264550ed82c063606ffd1500a3274fb",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3"
+   },
+   "issued": "2026-11-27 s1-type-safety"
+  },
+  {
+   "id": "s1-type-safety-r16",
+   "kind": "no-cut",
+   "reason": "Annotation-only stage: JSDoc and casts in parts/brand-snow.js; parts/whatsnew.js unchanged (its shared-types declaration retired). Nothing cut, moved or changed; AST-identical (RECORD).",
+   "changed": [
+    "parts/brand-snow.js",
+    "parts/whatsnew.js"
+   ],
+   "files": {
+    "parts/brand-snow.js": "2813303842a1243a7fc4fc0c076e3f237e7af1896d9b5ba26c6971addc919a14",
+    "parts/whatsnew.js": "41e80a5de087c58814dc6384bb2534fc1bcac2845f6d75b204459b24710aadc3"
+   },
+   "issued": "2026-11-27 s1-type-safety"
   }
  ]
 }

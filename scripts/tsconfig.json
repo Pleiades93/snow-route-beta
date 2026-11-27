@@ -27,6 +27,8 @@
     "../parts/create-fetch.js",
     "../parts/create-citydata.js",
     "../parts/create-pick.js",
-    "../parts/app2.js"
+    "../parts/app2.js",
+    "../parts/whatsnew.js",
+    "../parts/brand-snow.js"
   ]
 }
