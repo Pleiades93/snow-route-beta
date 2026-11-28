@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "67f76a17b752ca03dae86be286f6f962b3ec3413ec2d046cff2a8f899f802421",
+  "canonical_registry_sha256": "066bb7cc728f4dd5df7c7a575aceff54775488912bd1dab0cd34c153df7fedf0",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1728,
-   "included": 1696,
+   "canonical": 1732,
+   "included": 1700,
    "excluded_total": 32,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -15117,6 +15117,42 @@
    "fix_id": "gf2-snapshot-menus",
    "id": "gf2-release-entry",
    "pattern": "## Beta 1.305",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/BOOT-WATERFALL.md",
+   "fix": "GF3 (2026-11-28): the boot waterfall audit record exists - the measured phase chain for both cold-start legs. If this fails, the doc was removed or retitled; restore docs/BOOT-WATERFALL.md.",
+   "fix_id": "gf3-waterfall",
+   "id": "gf3-waterfall-doc",
+   "pattern": "# Boot waterfall audit (GF3)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/BOOT-WATERFALL.md",
+   "fix": "GF3 (2026-11-28): the waterfall's byte account section exists - every pre-picker request group with its need class, summing to the observed total. If this fails, the section was removed; restore it in docs/BOOT-WATERFALL.md.",
+   "fix_id": "gf3-waterfall",
+   "id": "gf3-byte-account",
+   "pattern": "## Byte account",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/BOOT-WATERFALL.md",
+   "fix": "GF3 (2026-11-28): the ranked proposals section exists - Andrew's pick list from the waterfall, each with its expected effect and judging A/B. If this fails, the section was removed; restore it in docs/BOOT-WATERFALL.md.",
+   "fix_id": "gf3-waterfall",
+   "id": "gf3-ranked-proposals",
+   "pattern": "## Ranked proposals",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/BOOT-WATERFALL.md",
+   "fix": "GF3 (2026-11-28): the cold-start budget stays unset until Andrew sets it - GF3 was diagnostic only and proposed no budget. If this fails, the budget line was set or removed outside Andrew's call; restore 'budget: null' in docs/BOOT-WATERFALL.md.",
+   "fix_id": "gf3-waterfall",
+   "id": "gf3-budget-null",
+   "pattern": "budget: null",
    "type": "grep_present"
   }
  ]

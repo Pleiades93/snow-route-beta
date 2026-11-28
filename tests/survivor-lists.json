@@ -2372,6 +2372,14 @@
     "parts/create-save.js": "5a40d66cfb9a6234322a6cd9595ad9bcdde70c6183c4a802f33fd0a020fdc7b5",
     "parts/whatsnew.js": "df5c2ed24abd1ca84285581f61a5bdb6e2e31a0f9730eeee5a8a00afc72b745e"
    }
+  },
+  {
+   "id": "gf3-waterfall",
+   "kind": "no-cut",
+   "reason": "Diagnostic only: no parts/ surface changes, nothing removed. Adds the --waterfall mode to tests/browser/coldstart.mjs (its other modes unchanged) and docs/BOOT-WATERFALL.md. The app stays byte-identical to Beta 1.305.",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-28 gf3-waterfall"
   }
  ]
 }

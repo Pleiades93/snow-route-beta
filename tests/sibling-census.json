@@ -316,6 +316,12 @@
     "scripts/check-census.py": "8e7b3058e57996be88f9286ff2d956d7598f202f2ee6526008061746366a5610"
    },
    "issued": "2026-11-28 gf2-snapshot-menus"
+  },
+  {
+   "id": "gf3-waterfall",
+   "kind": "machinery-exempt",
+   "reason": "Machinery and docs only: this round extends the cold-start measuring tool (tests/browser/coldstart.mjs --waterfall mode) and adds docs/BOOT-WATERFALL.md; it changes no parts/ surface, so there are no anchors to enumerate. The app stays byte-identical to Beta 1.305.",
+   "issued": "2026-11-28 gf3-waterfall"
   }
  ]
 }
