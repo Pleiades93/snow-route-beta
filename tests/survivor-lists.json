@@ -2293,6 +2293,14 @@
     "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207"
    },
    "issued": "2026-11-27 s2-round5"
+  },
+  {
+   "id": "gc-state-models",
+   "kind": "no-cut",
+   "reason": "Nothing is cut or restructured: the round adds the state-models doc, the formal spec, proof-1304 and drive232, plus ledger/registry records. App bytes are identical to base.",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-27 gc-state-models"
   }
  ]
 }

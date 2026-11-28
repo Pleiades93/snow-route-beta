@@ -119,11 +119,13 @@
   "drive86": 30.0,
   "drive88": 21.2,
   "drive89": 20.1,
-  "drive231": 21.2
+  "drive231": 21.2,
+  "drive232": 21.2
  },
  "unmeasured": [
   "drive229",
   "drive230",
-  "drive231"
+  "drive231",
+  "drive232"
  ]
 }
