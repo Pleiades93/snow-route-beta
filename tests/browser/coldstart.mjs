@@ -15,6 +15,7 @@ const pickerBudgetMs = null; // Fill from the measured baseline after Andrew acc
 const slow3G = { offline: false, latency: 2000, downloadThroughput: 50000, uploadThroughput: 50000 };
 const profile = process.argv.includes('--profile');
 const baseline = !profile && process.argv.includes('--baseline');
+const waterfall = !profile && !baseline && process.argv.includes('--waterfall');
 const results = { networkProfile: { name: 'slow-3g', ...slow3G }, cpuRate: 4, budgetMs: pickerBudgetMs, checks: [], exceptions: [], runs: [] };
 const check = (name, passed) => results.checks.push([name, passed === true]);
 
@@ -99,6 +100,89 @@ function observePicker() {
   }, { once: true });
 }
 
+// Waterfall mode only: keep the page's longtask entries so
+// main-thread busy spans can be charged to a boot phase.
+function observeWaterfall() {
+  window.__longTasks = [];
+  try {
+    new PerformanceObserver(list => {
+      for (const e of list.getEntries()) window.__longTasks.push({ start: e.startTime, duration: e.duration });
+    }).observe({ type: 'longtask', buffered: true });
+  } catch {}
+}
+
+// One request's waterfall family (docs/BOOT-WATERFALL.md).
+function requestCategory(request) {
+  const u = request.url;
+  if (u.includes('updprobe=1')) return 'update-probe';
+  if (request.type === 'Document') return 'shell-document';
+  if (u.includes('maplibre-gl')) return request.type === 'Script' ? 'maplibre-js' : 'maplibre-css';
+  if (u.includes('.mvt')) return 'tiles';
+  if (u.includes('/sprites/')) return 'sprites';
+  if (u.includes('/fonts/')) return 'glyphs';
+  if (u.includes('/packs/')) return 'city-catalogue';
+  if (u.includes('manifest.json') || u.includes('icon') || u.includes('favicon')) return 'icons-manifest';
+  if (u.endsWith('/sw.js')) return 'service-worker';
+  return 'other';
+}
+const categoryNeed = {
+  'shell-document': 'needed-before-picker', 'maplibre-js': 'needed-before-picker',
+  'maplibre-css': 'needed-before-picker', 'tiles': 'needed-before-map',
+  'sprites': 'needed-before-map', 'glyphs': 'needed-before-map',
+  'update-probe': 'not-needed-at-boot', 'city-catalogue': 'not-needed-at-boot',
+  'icons-manifest': 'not-needed-at-boot', 'service-worker': 'not-needed-at-boot',
+  'other': 'not-needed-at-boot'
+};
+
+// Phase rows and a byte account over one run's request table.
+function deriveWaterfall(run) {
+  const reqs = run.requests || [];
+  const byCat = {};
+  for (const r of reqs) {
+    const cat = requestCategory(r);
+    const row = byCat[cat] ||= { category: cat, need: categoryNeed[cat], requests: 0, bytes: 0, urls: [] };
+    row.requests++; row.bytes += r.bytes; if (row.urls.length < 6) row.urls.push(r.url);
+  }
+  const byteAccount = Object.values(byCat).sort((a, b) => b.bytes - a.bytes);
+  const spans = {};
+  for (const cat of Object.keys(byCat)) {
+    const rs = reqs.filter(r => requestCategory(r) === cat);
+    spans[cat] = { startMs: Math.min(...rs.map(r => r.startMs)),
+      endMs: rs.every(r => r.endMs !== undefined) ? Math.max(...rs.map(r => r.endMs)) : null };
+  }
+  const probeReq = reqs.find(r => requestCategory(r) === 'update-probe') || null;
+  const probe = probeReq ? { startMs: probeReq.startMs, endMs: probeReq.endMs ?? null,
+    durationMs: probeReq.endMs !== undefined ? probeReq.endMs - probeReq.startMs : null,
+    bytes: probeReq.bytes,
+    outcome: probeReq.failure === 'net::ERR_ABORTED' ? 'aborted' : probeReq.failure ? 'failed' :
+      probeReq.endMs !== undefined ? 'completed' : 'in-flight' } : null;
+  const s = run.splitsMs || {};
+  const phase = (id, startMs, endMs, waitedOn) => ({ id, startMs: startMs ?? null, endMs: endMs ?? null,
+    durationMs: (startMs != null && endMs != null) ? endMs - startMs : null, waitedOn });
+  const phases = [
+    phase('document', 0, s.responseEnd, 'the shell response on the profiled link'),
+    phase('maplibre-css', spans['maplibre-css']?.startMs, spans['maplibre-css']?.endMs, 'the CDN; the bundle script waits behind it in parser order'),
+    phase('maplibre-js', spans['maplibre-js']?.startMs, spans['maplibre-js']?.endMs, 'the CDN; the inline bundle waits behind it in parser order'),
+    phase('bundle-eval', s.responseEnd, s.bootTail, 'document parse, bundle evaluation, synchronous storage reads'),
+    phase('intro-tail-wait', s.bootTail, s.mapBoot, 'the splash icon animation end + 700 ms, or the 2,600 ms fallback'),
+    phase('map-to-reveal', s.mapBoot, run.revealAtMs, 'map construction and first render; style, sprite, glyph and tile fetches run inside it'),
+    phase('reveal-to-settled', run.revealAtMs, run.navigationToPickerMs, 'the reveal transitions and paint'),
+    phase('picker-total', 0, run.navigationToPickerMs, 'the primary interval: navigation to settled picker paint'),
+    phase('map-ready-branch', s.mapBoot, s.mapReady ?? run.mapReadyFinalMs, 'style load plus the first parsed tile; parallel to the picker, never gates it'),
+    phase('update-probe', probe?.startMs, probe?.endMs, 'nothing: it launches from the worker block and races the boot for the link'),
+    phase('catalogue-warm', spans['city-catalogue']?.startMs, spans['city-catalogue']?.endMs, 'the arm moment; the picker neither needs nor uses it'),
+    phase('idb-hydration', null, null, 'unobservable from outside: no stamp exists, and a fresh profile holds no user packs')
+  ];
+  // Only tasks inside the picker window count: the observer keeps
+  // recording through the tap proof and the map-ready wait.
+  const tasks = (run.longTasks || []).filter(task => task.start < run.navigationToPickerMs);
+  return { phases, byteAccount, probe,
+    accountBytes: byteAccount.reduce((t, r) => t + r.bytes, 0),
+    longTaskSummary: tasks.length ? { count: tasks.length,
+      totalMs: tasks.reduce((t, x) => t + x.duration, 0),
+      longestMs: Math.max(...tasks.map(x => x.duration)) } : null };
+}
+
 async function launch(proxyArg) {
   let rig = null, lastErr = null;
   for (let attempt = 0; attempt < 3 && !rig; attempt++) {
@@ -151,6 +235,7 @@ async function measure(throttled, run, bridge) {
       await command('Emulation.setCPUThrottlingRate', { rate: 4 });
     }
     await command('Page.addScriptToEvaluateOnNewDocument', { source: '(' + observePicker.toString() + ')()' });
+    if (waterfall) await command('Page.addScriptToEvaluateOnNewDocument', { source: '(' + observeWaterfall.toString() + ')()' });
     if (profile) {
       await command('Profiler.enable');
       await command('Profiler.start');
@@ -201,6 +286,11 @@ async function measure(throttled, run, bridge) {
     await command('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     run.tapOpenedRouteList = await rig.poll(
       "document.querySelector('#rmListPane.on #rmRoutes .routeRow') !== null", 5000);
+    if (waterfall) {
+      await rig.poll('window.__mapReadyAt != null', 10000);
+      run.mapReadyFinalMs = await rig.ev('window.__mapReadyAt ?? null');
+      run.longTasks = await rig.ev('window.__longTasks || []');
+    }
   } catch (error) {
     run.error = String(error);
   } finally {
@@ -238,7 +328,10 @@ async function measure(throttled, run, bridge) {
             request.bytes = Math.max(request.bytes, params.encodedDataLength);
             request.endMs = (params.timestamp - nav.timestamp) * 1000;
           }
-          if (method === 'Network.loadingFailed') request.failure = params.errorText;
+          if (method === 'Network.loadingFailed') {
+            request.failure = params.errorText;
+            request.endMs = (params.timestamp - nav.timestamp) * 1000;
+          }
         }
       }
       run.requests = [...requests.values()];
@@ -278,6 +371,7 @@ async function measure(throttled, run, bridge) {
       check(name + ' reached picker after map boot and a real touch opened the populated route list', interacted);
       check(name + ' boot completed without errors', healthy);
       run.valid = transferred && interacted && healthy;
+      if (waterfall) run.waterfall = deriveWaterfall(run);
       if (!baseline && !profile && pickerBudgetMs !== null) {
         check(name + ' met accepted navigation-to-picker budget (observed ' + run.navigationToPickerMs + ' ms)',
           run.valid && run.navigationToPickerMs <= pickerBudgetMs);
@@ -288,13 +382,20 @@ async function measure(throttled, run, bridge) {
 
 try {
   const bridge = await ensureProxyBridge();
-  for (let number = 1; number <= (baseline ? 5 : 1); number++) {
-    for (const leg of baseline ? ['slow-3g-cpu4', 'control'] : ['slow-3g-cpu4']) {
+  for (let number = 1; number <= ((baseline || waterfall) ? 5 : 1); number++) {
+    for (const leg of (baseline || waterfall) ? ['slow-3g-cpu4', 'control'] : ['slow-3g-cpu4']) {
       const run = { leg, number };
       results.runs.push(run);
       await measure(leg !== 'control', run, bridge);
     }
   }
+  const valueStats = values => {
+    const times = values.filter(v => typeof v === 'number' && Number.isFinite(v)).sort((a, b) => a - b);
+    if (!times.length) return null;
+    const middle = Math.floor(times.length / 2);
+    return { median: (times[middle] + times[Math.floor((times.length - 1) / 2)]) / 2,
+      min: times[0], max: times.at(-1), samples: times.length };
+  };
   if (baseline) {
     results.verdict = 'inconclusive';
     results.verdictReason = 'Review both ranges and establish the limiter from the request timeline and a separate diagnostic capture.';
@@ -304,18 +405,36 @@ try {
     const read = (run, key) => key.split('.').reduce((o, part) => o?.[part], run);
     results.baseline = ['slow-3g-cpu4', 'control'].map(leg => {
       const runs = results.runs.filter(run => run.leg === leg);
-      const stats = key => {
-        const times = runs.filter(run => run.valid).map(run => read(run, key)).filter(v => typeof v === 'number' && Number.isFinite(v)).sort((a, b) => a - b);
-        if (!times.length) return null;
-        const middle = Math.floor(times.length / 2);
-        return { median: (times[middle] + times[Math.floor((times.length - 1) / 2)]) / 2,
-          min: times[0], max: times.at(-1), samples: times.length };
-      };
+      const stats = key => valueStats(runs.filter(run => run.valid).map(run => read(run, key)));
       return { leg, attempted: runs.length, valid: runs.filter(run => run.valid).length,
         failedRequests: runs.reduce((sum, run) => sum + (run.failedRequests || 0), 0),
         exceptions: runs.reduce((sum, run) => sum + (run.exceptions || 0), 0),
         consoleErrors: runs.reduce((sum, run) => sum + (run.consoleErrors || 0), 0),
         milestonesMs: Object.fromEntries(statKeys.map(key => [key, stats(key)])) };
+    });
+  }
+  if (waterfall) {
+    const stats = valueStats;
+    results.waterfall = ['slow-3g-cpu4', 'control'].map(leg => {
+      const runs = results.runs.filter(run => run.leg === leg && run.valid && run.waterfall);
+      const phaseIds = [...new Set(runs.flatMap(run => run.waterfall.phases.map(p => p.id)))];
+      const cats = [...new Set(runs.flatMap(run => run.waterfall.byteAccount.map(c => c.category)))];
+      const catStat = (cat, field) => stats(runs.map(run => run.waterfall.byteAccount.find(x => x.category === cat)?.[field] ?? 0));
+      return { leg, validRuns: runs.length,
+        phases: Object.fromEntries(phaseIds.map(id => [id,
+          stats(runs.map(run => run.waterfall.phases.find(p => p.id === id)?.durationMs))])),
+        byteAccount: Object.fromEntries(cats.map(cat => [cat,
+          { bytes: catStat(cat, 'bytes'), requests: catStat(cat, 'requests'),
+            need: runs[0]?.waterfall.byteAccount.find(x => x.category === cat)?.need }])),
+        totalBytes: stats(runs.map(run => run.encodedBytes)),
+        accountMatchesTotal: runs.every(run => run.waterfall.accountBytes === run.encodedBytes),
+        probe: { seen: runs.filter(run => run.waterfall.probe).length,
+          aborted: runs.filter(run => run.waterfall.probe?.outcome === 'aborted').length,
+          bytes: stats(runs.map(run => run.waterfall.probe?.bytes)),
+          durationMs: stats(runs.map(run => run.waterfall.probe?.durationMs)) },
+        longTasks: { totalMs: stats(runs.map(run => run.waterfall.longTaskSummary?.totalMs)),
+          longestMs: stats(runs.map(run => run.waterfall.longTaskSummary?.longestMs)) },
+        mapReadyMs: stats(runs.map(run => run.mapReadyFinalMs ?? run.splitsMs.mapReady)) };
     });
   }
 } finally {
