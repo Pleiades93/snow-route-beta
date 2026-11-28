@@ -19,6 +19,7 @@ export async function launchCdp({ chrome, args = [], onEvent = null } = {}) {
     const to = setTimeout(() => { if (!settled) { settled = true; fail(new Error('no devtools url: ' + buf.slice(0, 300))); } }, 25000);
     proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m && !settled) { settled = true; clearTimeout(to); res(m[1]); } });
     proc.on('exit', (code, sig) => { if (!settled) { settled = true; clearTimeout(to); fail(new Error('chrome exited before devtools (code ' + code + ', signal ' + sig + ')')); } });
+    proc.on('error', e => { if (!settled) { settled = true; clearTimeout(to); fail(new Error('chrome spawn failed: ' + e.message)); } });
   });
   const ws = new WebSocket(wsUrl);
   try { await new Promise((r, j) => { const wto = setTimeout(() => j(new Error('ws open timeout')), 15000); ws.addEventListener('error', j, { once: true });
