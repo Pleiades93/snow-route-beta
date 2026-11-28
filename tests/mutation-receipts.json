@@ -1168,6 +1168,104 @@
    "red": "gate fixtures exit 1 with exactly 1 failure: 'recover refuses while the lock's owner is alive and leaves the torn bytes and journal alone' (208 pass, 1 fail)",
    "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail",
    "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
+  },
+  {
+   "id": "gc-drive232-f6",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "05a4cd7d558fffa900f30a9bdae62d4195db1f0d1f7d587da93d5f8912ad8845"
+   },
+   "mutation": "finishRun's archive-failure arm returns the snapshot (return snap) instead of returning nothing, so the finYes handler fires the gap advisory after a stopped finish",
+   "red": "drive232 local run: 18/19, failing exactly 'F6 the failed finish reports Finish stopped, never the gap advisory' (the advisory replaced Finish stopped)",
+   "green": "drive232 local run on the restored tree: 19/19 checks, 0 exceptions",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-f3",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "05a4cd7d558fffa900f30a9bdae62d4195db1f0d1f7d587da93d5f8912ad8845"
+   },
+   "mutation": "showBanner's superseded-timer clear (if (b._rmT) { clearTimeout(b._rmT); b._rmT = 0; }) removed, so a replaced banner's first reduced-motion timer stays armed",
+   "red": "drive232 local run: 18/19, failing exactly 'F3 under reduced motion the superseded timer cannot hide its replacement'",
+   "green": "drive232 local run on the restored tree: 19/19 checks, 0 exceptions",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-proof-1304-map",
+   "check": "tests/proof/proof-1304.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1304.mjs": "4f520f04e448abc4c9a471604e465095cd5ed165c18fceaf23cd8feb2b412fa3",
+    "docs/STATE-MODELS.md": "575a6d002886a82ee0d199169d64027b77ef0353a2146707162b32cc78b68692"
+   },
+   "mutation": "the F3 row deleted from the invariant map in docs/STATE-MODELS.md",
+   "red": "proof-1304 exit 1: 135 passed, 1 failed - 'map: F3 has exactly one row'",
+   "green": "proof-1304 on the restored tree: 139 passed, 0 failed",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-f6-r2",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "b44875e8e4e66b2361b0724672c56cbe13f5545c71ed8f58c7183433a3f8336d"
+   },
+   "mutation": "same break as gc-drive232-f6 (finishRun's archive-failure arm returns the snapshot); re-issued because comment and line-wrap edits changed the drive's bytes after the first issue",
+   "red": "drive232 local run under the break: 18/19, failing exactly 'F6 the failed finish reports Finish stopped, never the gap advisory'",
+   "green": "drive232 local run on the final bytes: 19/19 checks, 0 exceptions",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-f3-r2",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "b44875e8e4e66b2361b0724672c56cbe13f5545c71ed8f58c7183433a3f8336d"
+   },
+   "mutation": "same break as gc-drive232-f3 (showBanner's superseded-timer clear removed); re-issued alongside the f6 re-issue for the same byte change",
+   "red": "drive232 local run under the break: 18/19, failing exactly 'F3 under reduced motion the superseded timer cannot hide its replacement'",
+   "green": "drive232 local run on the final bytes: 19/19 checks, 0 exceptions",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-proof-1304-map-r2",
+   "check": "tests/proof/proof-1304.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1304.mjs": "d09562f9b3d2a85ba444c391511ffeb90eae0c6d0c2dfc6ba8c93597877608de",
+    "docs/STATE-MODELS.md": "575a6d002886a82ee0d199169d64027b77ef0353a2146707162b32cc78b68692"
+   },
+   "mutation": "same break as gc-proof-1304-map (the F3 row deleted from the map in docs/STATE-MODELS.md); re-issued because the proof's header comment was trimmed after the first issue",
+   "red": "proof-1304 exit 1: 135 passed, 1 failed - 'map: F3 has exactly one row'",
+   "green": "proof-1304 on the final bytes: 139 passed, 0 failed",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-f6-r3",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "72edb97117df0ee05776b2b4e606fb25d005db20dee1950c4625c01ccc9d4b05"
+   },
+   "mutation": "same break as gc-drive232-f6 (finishRun's archive-failure arm returns the snapshot); re-issued after comment-only edits changed the drive's bytes",
+   "red": "drive232 local run under the break: 18/19, failing exactly 'F6 the failed finish reports Finish stopped, never the gap advisory'",
+   "green": "drive232 local runs on the restored tree: 19/19 checks, 0 exceptions (three separate clean runs)",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-f3-r3",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "72edb97117df0ee05776b2b4e606fb25d005db20dee1950c4625c01ccc9d4b05"
+   },
+   "mutation": "same break as gc-drive232-f3 (showBanner's superseded-timer clear removed); re-issued alongside the f6 re-issue for the same byte change",
+   "red": "drive232 local run under the break: 18/19, failing exactly 'F3 under reduced motion the superseded timer cannot hide its replacement'",
+   "green": "drive232 local runs on the restored tree: 19/19 checks, 0 exceptions (three separate clean runs)",
+   "issued": "2026-11-27 gc-state-models"
   }
  ]
 }

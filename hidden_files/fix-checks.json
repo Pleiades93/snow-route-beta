@@ -4,17 +4,17 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "4b4f4d2b437d9825155f930a4c2ddebba48be0382895f588bdbe37fc873b7aa6",
+  "canonical_registry_sha256": "ee76c6878287d5f472d5082bacf49147e21dc6057f17d87400af4da6498ca090",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1701,
-   "included": 1671,
-   "excluded_total": 30,
+   "canonical": 1706,
+   "included": 1675,
+   "excluded_total": 31,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
-    "target outside the repo tree": 17,
+    "target outside the repo tree": 18,
     "cron_job: no scheduler in CI": 4
    }
   }
@@ -14892,6 +14892,42 @@
    "fix_id": "s3-ledger-archive",
    "id": "s3-archive-receipts-ledger-exists",
    "pattern": "\"receipts\": [",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "docs/STATE-MODELS.md",
+   "fix": "G-C (2026-11-27): the state models doc exists with its invariant-to-check map - the STD-07 contract for the clean lifecycle, finish/banner and label handover flows. If this fails, the models doc was removed or renamed; restore docs/STATE-MODELS.md and keep the map complete (proof-1304 grades its completeness).",
+   "fix_id": "gc-state-models",
+   "id": "gc-models-doc-map",
+   "pattern": "## Invariant-to-check map",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "docs/STATE-MODELS.md",
+   "fix": "G-C (2026-11-27): the models doc carries the formal trial's verdict (TLC, 1,705 distinct states, no error). If this fails, the verdict text was edited away; the trial's raw output lives in the G-C round folder and the verdict in the doc must match it.",
+   "fix_id": "gc-state-models",
+   "id": "gc-models-trial-verdict",
+   "pattern": "1,705 distinct",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/formal/FinishFlow.tla",
+   "fix": "G-C (2026-11-27): the TLA+ finish-flow spec exists with its six safety properties (F1-F6 over TypeOK). If this fails, the trial spec was removed or renamed; restore tests/formal/FinishFlow.tla and its .cfg.",
+   "fix_id": "gc-state-models",
+   "id": "gc-formal-spec-properties",
+   "pattern": "F5_AdvisoryRequiresStamp",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/browser/drive232.mjs",
+   "fix": "G-C (2026-11-27): drive232 carries the state-models round's new behavioural checks, including the F6 composition (a gap pending and the archive write failing releases no advisory). If this fails, the drive was removed or the case renamed; restore tests/browser/drive232.mjs.",
+   "fix_id": "gc-state-models",
+   "id": "gc-drive232-f6-case",
+   "pattern": "F6 the failed finish reports Finish stopped, never the gap advisory",
    "type": "grep_present"
   }
  ]

@@ -96,6 +96,12 @@
    "kind": "machinery-exempt",
    "reason": "S3 ledger-archiving round: gate tooling (check-census, check-receipts, check-pr-limits, archive-ledgers) and the receipts/census ledger move; no parts/ surface changed",
    "issued": "2026-11-27 s3-ledger-archive"
+  },
+  {
+   "id": "gc-state-models",
+   "kind": "machinery-exempt",
+   "reason": "G-C state-models round: docs (STATE-MODELS.md), a formal spec (tests/formal/), a proof and a drive; no parts/ surface changed, so there are no anchors to enumerate.",
+   "issued": "2026-11-27 gc-state-models"
   }
  ]
 }
