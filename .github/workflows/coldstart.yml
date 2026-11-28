@@ -1,0 +1,35 @@
+# Cold-start baseline: dispatch only, never a merge gate.
+name: coldstart
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  coldstart:
+    name: coldstart baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Generate assembled source (generated, never tracked)
+        run: python3 scripts/assemble.py
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+      - name: Locate Chrome
+        run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+      - name: Measure the baseline (five alternating pairs)
+        run: |
+          mkdir -p coldstart-out
+          node tests/browser/coldstart.mjs --baseline > coldstart-out/baseline.json
+      - name: Diagnostic profiling run (limiter evidence)
+        if: always()
+        run: node tests/browser/coldstart.mjs --profile > coldstart-out/diagnostic.json
+      - name: Retain the measurement artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coldstart-out
+          path: coldstart-out/
+          if-no-files-found: ignore

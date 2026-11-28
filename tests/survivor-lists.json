@@ -2317,6 +2317,14 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-28 ge-fuzz"
+  },
+  {
+   "id": "gf1-cold-start",
+   "kind": "no-cut",
+   "reason": "Nothing is cut, removed or restructured: the round adds the cold-start measurement, its dispatch workflow and its baseline doc, plus ledger/registry records. App bytes are identical to base.",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-28 gf1-cold-start"
   }
  ]
 }

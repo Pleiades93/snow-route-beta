@@ -114,6 +114,12 @@
    "kind": "machinery-exempt",
    "reason": "G-E fuzz round: adds tests/browser/fuzz.mjs, docs/FUZZ.md and .github/workflows/fuzz.yml plus ledger/registry records; no parts/ surface changed, so there are no anchors to enumerate.",
    "issued": "2026-11-28 ge-fuzz"
+  },
+  {
+   "id": "gf1-cold-start",
+   "kind": "machinery-exempt",
+   "reason": "GF1 cold-start baseline round: adds tests/browser/coldstart.mjs, .github/workflows/coldstart.yml and docs/COLD-START-BASELINE.md plus ledger/registry records; no parts/ surface changed, so there are no anchors to enumerate.",
+   "issued": "2026-11-28 gf1-cold-start"
   }
  ]
 }
