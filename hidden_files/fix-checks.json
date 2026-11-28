@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "fe4a9f9fd35c8dfd1f8d0c7916b426aada3274107ede337c7a7f837cf1331f54",
+  "canonical_registry_sha256": "67f76a17b752ca03dae86be286f6f962b3ec3413ec2d046cff2a8f899f802421",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1723,
-   "included": 1691,
+   "canonical": 1728,
+   "included": 1696,
    "excluded_total": 32,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -82,10 +82,10 @@
   {
    "added": "2026-11-05",
    "file": "parts/create-save.js",
-   "fix": "The boot gate waits for the map's intro conditions (GL ok + first tiles) or the 6 s escape before arming the route menu \u2014 the menu never arms over an unsettled first frame.",
+   "fix": "Re-pinned by GF2 (2026-11-28): the readiness gate this probe pinned (added 2026-11-05: the menu armed only on GL ok + first tiles, or the 6 s escape) was removed under Andrew's snapshot-first guarantee (2026-11-26) - the picker now arms on the intro floor alone, which keeps the probe's original intent (the menu never arms over an unsettled first frame; drive233 pins the floor's lower bound). This probe now guards the removal: if the gate condition returns to parts/create-save.js, the snapshot-first guarantee was breached; see docs/SNAPSHOT-FIRST.md.",
    "id": "beta-boot-waits-for-intro",
-   "pattern": "if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }",
-   "type": "grep_present"
+   "pattern": "tilesOk > 0) || Date.now() - t0 > 6000",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-01",
@@ -15072,6 +15072,51 @@
    "fix_id": "gf1-cold-start",
    "id": "gf1-coldstart-workflow",
    "pattern": "workflow_dispatch",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "parts/create-save.js",
+   "fix": "GF2 (2026-11-28): the boot picker arms on arm()'s intro floor alone - no readiness gate (glOk/tilesOk) stands in front of it. If this fails, the gate crept back or the fix was reverted; restore the snapshot-first arming in the splash IIFE (parts/create-save.js, docs/SNAPSHOT-FIRST.md).",
+   "fix_id": "gf2-snapshot-menus",
+   "id": "gf2-picker-arm-floor",
+   "pattern": "Snapshot-first: the picker arms on the intro floor alone; map readiness is not consulted.",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "parts/create-save.js",
+   "fix": "GF2 (2026-11-28): the pre-tail pick wrapper was removed in PR #249 review (Codex P1, upheld on measurement: the boot tail always lands before the picker's floor, so the wrapper handled an unreachable case). If this fails, the wrapper crept back into parts/create-save.js; remove it again - the pick handler keeps its original form (docs/SNAPSHOT-FIRST.md).",
+   "fix_id": "gf2-snapshot-menus",
+   "id": "gf2-pick-tail-guard",
+   "pattern": "bootPick(id);",
+   "type": "grep_absent"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "tests/browser/drive233.mjs",
+   "fix": "GF2 (2026-11-28): the snapshot-first guarantee check exists - it arms the picker in the all-requests-failed world and pins the floor timing. If this fails, drive233 was removed or its timing check renamed; restore tests/browser/drive233.mjs.",
+   "fix_id": "gf2-snapshot-menus",
+   "id": "gf2-guarantee-drive",
+   "pattern": "The picker arms at the intro floor, not the six-second escape",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/SNAPSHOT-FIRST.md",
+   "fix": "GF2 (2026-11-28): the snapshot-first survey record exists with every menu surface's state, including the two named Create gaps. If this fails, the doc was removed or restructured; restore docs/SNAPSHOT-FIRST.md.",
+   "fix_id": "gf2-snapshot-menus",
+   "id": "gf2-snapshot-doc",
+   "pattern": "## Surface states",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "CHANGELOG.md",
+   "fix": "GF2 (2026-11-28): the Beta 1.305 release entry exists - the picker change is a user-visible release, not a silent edit. If this fails, the entry was removed; restore the Beta 1.305 section of CHANGELOG.md.",
+   "fix_id": "gf2-snapshot-menus",
+   "id": "gf2-release-entry",
+   "pattern": "## Beta 1.305",
    "type": "grep_present"
   }
  ]

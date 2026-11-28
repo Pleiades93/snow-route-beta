@@ -120,6 +120,202 @@
    "kind": "machinery-exempt",
    "reason": "GF1 cold-start baseline round: adds tests/browser/coldstart.mjs, .github/workflows/coldstart.yml and docs/COLD-START-BASELINE.md plus ledger/registry records; no parts/ surface changed, so there are no anchors to enumerate.",
    "issued": "2026-11-28 gf1-cold-start"
+  },
+  {
+   "id": "gf2-snapshot-menus",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "__bootTail",
+     "__bootPickRoute",
+     "crWarmCityLibrary",
+     "loadRoute",
+     "WHATSNEW"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-save.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:__bootTail:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - __bootTail() is called from top-level in parts/app5.js",
+     "status": "covered",
+     "note": "drive132 S5 pins the boot tail's own scheduling (gates off animation end, not the fallback clock); every bootThrough drive exercises it"
+    },
+    {
+     "id": "caller:__bootTail:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - __bootTail() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "drive233: in the all-requests-failed world the four-second backstop fires and the pick still lands whole; drive115/drive168 boot in dead-map worlds"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "drive159 A2 pins the re-triggers as no-ops: exactly one catalogue request per session"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/app2.js:rmCreate:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from rmCreate:click in parts/app2.js",
+     "status": "covered",
+     "note": "drive159 A2: the Create walk renders the city rows with no fetch in flight at tap time"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/create-pick.js:openDoors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from openDoors in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive159 A2's walk passes through the create doors; the doors re-trigger is a no-op on the cached promise"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/create-save.js:arm",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from arm in parts/create-save.js",
+     "status": "covered",
+     "note": "drive159 A1 BOOT WARMTH pins this seat: the catalogue request starts during boot from the menu-arming slot; GF2 moves the slot earlier (the floor), A1 still passes"
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "drive145 exercises the menu pick into loadRoute; every bootThrough drive loads Route 5W through this wiring"
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "drive233's pick leg loads the seeded route through __bootPickRoute with no map at all; drive132 S3 pins the pick removing the splash"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "f44dbe7c5339c12062a31181811f53a77f1ce56e100e05ad7f8a32e9795d646c",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "fabfd153cad550e607fac4e11d6facc4ebbf029a55cb4c50ef770fc1373e9eb1",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "df5c2ed24abd1ca84285581f61a5bdb6e2e31a0f9730eeee5a8a00afc72b745e",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b",
+    "scripts/check-census.py": "8e7b3058e57996be88f9286ff2d956d7598f202f2ee6526008061746366a5610"
+   },
+   "issued": "2026-11-28 gf2-snapshot-menus"
+  },
+  {
+   "id": "gf2-snapshot-menus-r2",
+   "kind": "app",
+   "anchors": {
+    "functions": [
+     "__bootTail",
+     "__bootPickRoute",
+     "crWarmCityLibrary",
+     "loadRoute",
+     "WHATSNEW"
+    ],
+    "elements": [],
+    "guards": []
+   },
+   "changed": [
+    "parts/create-save.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:__bootTail:parts/app5.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - __bootTail() is called from top-level in parts/app5.js",
+     "status": "covered",
+     "note": "drive132 S5 pins the boot tail's own scheduling (gates off animation end, not the fallback clock); every bootThrough drive exercises it"
+    },
+    {
+     "id": "caller:__bootTail:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - __bootTail() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "drive233: in the all-requests-failed world the four-second backstop fires and the pick still lands whole; drive115/drive168 boot in dead-map worlds"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/app2.js:openRouteMenu",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from openRouteMenu in parts/app2.js",
+     "status": "covered",
+     "note": "drive159 A2 pins the re-triggers as no-ops: exactly one catalogue request per session"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/app2.js:rmCreate:click",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from rmCreate:click in parts/app2.js",
+     "status": "covered",
+     "note": "drive159 A2: the Create walk renders the city rows with no fetch in flight at tap time"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/create-pick.js:openDoors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from openDoors in parts/create-pick.js",
+     "status": "covered",
+     "note": "drive159 A2's walk passes through the create doors; the doors re-trigger is a no-op on the cached promise"
+    },
+    {
+     "id": "caller:crWarmCityLibrary:parts/create-save.js:arm",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - crWarmCityLibrary() is called from arm in parts/create-save.js",
+     "status": "covered",
+     "note": "drive159 A1 BOOT WARMTH pins this seat: the catalogue request starts during boot from the menu-arming slot; GF2 moves the slot earlier (the floor), A1 still passes"
+    },
+    {
+     "id": "caller:loadRoute:parts/app2.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/app2.js",
+     "status": "covered",
+     "note": "drive145 exercises the menu pick into loadRoute; every bootThrough drive loads Route 5W through this wiring"
+    },
+    {
+     "id": "caller:loadRoute:parts/create-save.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - loadRoute() is called from top-level in parts/create-save.js",
+     "status": "covered",
+     "note": "drive233's pick leg loads the seeded route through __bootPickRoute with no map at all; drive132 S3 pins the pick removing the splash"
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "5a40d66cfb9a6234322a6cd9595ad9bcdde70c6183c4a802f33fd0a020fdc7b5",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "fabfd153cad550e607fac4e11d6facc4ebbf029a55cb4c50ef770fc1373e9eb1",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "df5c2ed24abd1ca84285581f61a5bdb6e2e31a0f9730eeee5a8a00afc72b745e",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b",
+    "scripts/check-census.py": "8e7b3058e57996be88f9286ff2d956d7598f202f2ee6526008061746366a5610"
+   },
+   "issued": "2026-11-28 gf2-snapshot-menus"
   }
  ]
 }

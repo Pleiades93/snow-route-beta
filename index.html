@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-8djzZP/oCwkVmZQi3jRIsWaqjcmbQqlMi5ZGV0EUKxTLuZOjjwiAbOLbGhZwmjLp' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-ipaj5Z5yn/e87/r1yJngc8ErL/VxsGM4NebRVtF+L+bg/7w+EtVR61sgqPwi4Dk5' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-jSvBmGetYO8iPce5Oa9gdBZ9nGtBk7S40Gyin0qbMfBlQ4miVmcY5otC4ReD4vvx' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-ipaj5Z5yn/e87/r1yJngc8ErL/VxsGM4NebRVtF+L+bg/7w+EtVR61sgqPwi4Dk5' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1009,7 +1009,7 @@ html.theme-swap *:not(.nbIco), html.theme-swap *::before, html.theme-swap *::aft
 <div id="hud">
   <div id="warn"><strong>Not saving</strong><br><span>Storage is full or blocked</span></div>
   <div class="row">
-    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.304</div></div>
+    <div class="titleStack"><div class="title">Snow Route Beta</div><div class="ver" id="ver">Beta 1.305</div></div>
   </div>
   <div id="stats"></div>
 </div>
@@ -8038,8 +8038,8 @@ $('stDel').addEventListener('click', async ev => {
 });
 // ---- About ----
 const WHATSNEW = { // the curated in-app notes: plain words, LATEST RELEASE ONLY (Beta 1.114, Andrew: the accumulated list cluttered the About pane). A release REPLACES this entry with its own in the same change - it never accumulates; the full history lives in CHANGELOG.md, not the app
-  v: 'Beta 1.304', items: [
-    "The Streets and Pace menus are now fully solid"
+  v: 'Beta 1.305', items: [
+    "The route picker now opens right away, even before the map loads"
   ] }; // entries stay short: one plain line each (Beta 1.223 rule)
 
 /** @returns {void} */
@@ -11732,9 +11732,10 @@ async function saveDraftRoute() {
     setTimeout(() => { crWarmCityLibrary(); /* Beta 1.130: the catalogue download fires in this deferred boot slot, before Create ever opens */
       if (!gone) { const __bl = $('brandLayer'); if (__bl) __bl.classList.add('cut'); /* Beta 1.178: at the splash floor the brand cuts instantly (display:none) and never returns */
         sp.classList.add('menu'); $('routeMenu').classList.add('show'); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state also ends here, when the menu arms */ } }, wait); };
+  // Snapshot-first: the picker arms on the intro floor alone; map readiness is not consulted.
+  arm();
   const iv = setInterval(() => {
-    if (!map && Date.now() - t0 > 4000) __bootTail();
-    if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }
+    if (!map && Date.now() - t0 > 4000) { clearInterval(iv); __bootTail(); }
   }, 120);
   window.__bootPickRoute = id => { loadRoute(id); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state flips FIRST, while both blue layers are still opaque - the finished app (chrome included) paints beneath them, and the fade below reveals it whole, instead of the chrome popping in after the blue is gone (the 1.67 weirdness Andrew flagged) */ let faded = false; const fade = () => { if (faded) return; faded = true; sp.classList.add('go'); $('routeMenu').classList.add('bye'); const __bl2 = $('brandLayer'); if (__bl2) __bl2.classList.add('bye'); /* Beta 1.155: the landed title fades WITH the menu on a pick - its layer carries the same .bye shape (through 1.154 it faded as the menu's child) */ setTimeout(finish, 780); }; requestAnimationFrame(fade); setTimeout(fade, 150); }; // the boot-mode row pick (app2 wires the rows and the pane buttons): load the route, flip the boot state, fade both blue layers, then finish() removes the splash and parks the menu
 })();

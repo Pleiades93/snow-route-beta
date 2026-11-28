@@ -98,9 +98,10 @@ Since Beta 1.76 every boot ends at the route menu (no route is loaded
 until one is picked), so file:// drives call `bootThrough(ev, poll)`
 from the harness right after launch: it waits for the boot tail, clicks
 Choose a route → Route 5W, and waits until the route is loaded and the
-splash is gone. A route pick before the map exists is unreachable for a
-real user (the menu only appears at the readiness gate, after the boot
-tail), so `bootThrough` first waits for the boot to run — drives that
+splash is gone. Since Beta 1.305 the picker arms at the intro floor
+without waiting for the map (docs/SNAPSHOT-FIRST.md); the boot tail
+always lands before the floor, so a pick still lands whole;
+`bootThrough` first waits for the boot to run — drives that
 reload mid-test re-load the route after the reload (drive114's reload
 helper; drive121's seeded sessions). drive145 is the menu's own drive:
 the handover, both panes, the placeholder, the pick, the Settings order,

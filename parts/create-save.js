@@ -61,9 +61,10 @@ async function saveDraftRoute() {
     setTimeout(() => { crWarmCityLibrary(); /* Beta 1.130: the catalogue download fires in this deferred boot slot, before Create ever opens */
       if (!gone) { const __bl = $('brandLayer'); if (__bl) __bl.classList.add('cut'); /* Beta 1.178: at the splash floor the brand cuts instantly (display:none) and never returns */
         sp.classList.add('menu'); $('routeMenu').classList.add('show'); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state also ends here, when the menu arms */ } }, wait); };
+  // Snapshot-first: the picker arms on the intro floor alone; map readiness is not consulted.
+  arm();
   const iv = setInterval(() => {
-    if (!map && Date.now() - t0 > 4000) __bootTail();
-    if ((typeof glOk !== 'undefined' && glOk && typeof tilesOk !== 'undefined' && tilesOk > 0) || Date.now() - t0 > 6000) { clearInterval(iv); arm(); }
+    if (!map && Date.now() - t0 > 4000) { clearInterval(iv); __bootTail(); }
   }, 120);
   window.__bootPickRoute = id => { loadRoute(id); document.documentElement.classList.remove('boot'); /* Beta 1.86: the boot state flips FIRST, while both blue layers are still opaque - the finished app (chrome included) paints beneath them, and the fade below reveals it whole, instead of the chrome popping in after the blue is gone (the 1.67 weirdness Andrew flagged) */ let faded = false; const fade = () => { if (faded) return; faded = true; sp.classList.add('go'); $('routeMenu').classList.add('bye'); const __bl2 = $('brandLayer'); if (__bl2) __bl2.classList.add('bye'); /* Beta 1.155: the landed title fades WITH the menu on a pick - its layer carries the same .bye shape (through 1.154 it faded as the menu's child) */ setTimeout(finish, 780); }; requestAnimationFrame(fade); setTimeout(fade, 150); }; // the boot-mode row pick (app2 wires the rows and the pane buttons): load the route, flip the boot state, fade both blue layers, then finish() removes the splash and parks the menu
 })();
