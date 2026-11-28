@@ -25,8 +25,9 @@ Comment lines, by file type: '#' for .py/.yml/.yaml/.sh, '//',
 .html/.md. A comment's words are its whitespace-separated tokens
 after the marker.
 
-GENERATED_EXEMPT files (the vendored registry, the two ledgers,
-the built page) are skipped by the line-length and comment rules:
+GENERATED_EXEMPT files (the vendored registry, the two ledgers
+and their archives, the built page) are skipped by the
+line-length and comment rules:
 their lines are machine-written, and the limits govern
 hand-written lines. They are named here, not inferred.
 
@@ -59,7 +60,8 @@ PRODUCT_PATTERNS = ["parts/*", "src/sw.js", "flags.js"]
 
 GENERATED_EXEMPT = {
     "hidden_files/fix-checks.json", "tests/mutation-receipts.json",
-    "tests/sibling-census.json", "index.html", "sw.js",
+    "tests/sibling-census.json", "tests/archive/mutation-receipts.json",
+    "tests/archive/sibling-census.json", "index.html", "sw.js",
 }
 
 

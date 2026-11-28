@@ -8,9 +8,10 @@ scripts/run-proofs.py, scripts/push.py (plan mode),
 scripts/sweep-check.py, scripts/check-receipts.py (the mutation-
 receipt gate, /correct Phase 3 round (b)),
 scripts/check-census.py (the sibling-census gate, round (c)),
-scripts/check-mirrors.py (the mirrors gate, round (d)) and
+scripts/check-mirrors.py (the mirrors gate, round (d)),
 scripts/check-survivors.py (the survivor-list gate, Phase 2
-prove-it machinery) all
+prove-it machinery) and
+scripts/archive-ledgers.py (the ledger archiving tool, S3) all
 decide pass/fail for the gate. Running them
 against the real repository proves only their happy path; these
 fixtures run each script against synthetic trees in a temp directory
@@ -37,7 +38,12 @@ list naming a non-roster drive, a judging script missing from the
 receipts gate's judge list, a push carrying a drifted mirror,
 a parts push with no survivor list, a survivor naming a case
 its check does not carry, a survivor list pinned before the
-cut surface moved, an absence pin the tree falsifies) fails.
+cut surface moved, an absence pin the tree falsifies, an
+archived record asked to cover a gate, an archived id offered
+for re-issue, an archived record CURRENT again on the tree, a
+ledger move that would rewrite a record's bytes, an INVALID
+record offered to the move, a long line inside an archive
+ledger) fails.
 
 Run: python3 scripts/gate-fixtures/run-fixtures.py
 Exit 0 = every case produced its expected verdict.
@@ -1801,6 +1807,261 @@ with tempfile.TemporaryDirectory() as td:
     check("boundary: the refused regeneration leaves the baseline unchanged",
           0 if json.loads((clone_tree / "scripts" / "parts-boundary-baseline.json").read_text()) == [] else 1, 0)
 
+# ------------------------------------------------------- ledger archive
+# S3 ledger archive: history readers read active-then-archive;
+# the gates judge the active ledger only.
+def cli(script, *args):
+    proc = subprocess.run([PY, str(ROOT / "scripts" / script)]
+                          + [str(a) for a in args],
+                          capture_output=True, text=True, timeout=120)
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def archive_tree(base):
+    base.mkdir(parents=True, exist_ok=True)
+    w(base / "parts" / "a.js", CENSUS_PART_A)
+    w(base / "parts" / "b.js", CENSUS_PART_B)
+    for name in ("check-census.py", "check-receipts.py"):
+        w(base / "scripts" / name, (ROOT / "scripts" / name).read_text())
+    w(base / "tests" / "browser" / "drive9001.mjs", "drive v1\n")
+    return base
+
+
+def shift_to_archive(root, rel, key, rid):
+    """Move one record between ledger files by JSON surgery - the
+    post-move shape, posed directly rather than via the tool."""
+    data = json.loads((root / rel).read_text())
+    rec = next(r for r in data[key] if r["id"] == rid)
+    data[key] = [r for r in data[key] if r["id"] != rid]
+    w(root / rel, json.dumps(data, indent=1) + "\n")
+    arch_rel = "tests/archive/" + Path(rel).name
+    arch_path = root / arch_rel
+    arch = (json.loads(arch_path.read_text()) if arch_path.is_file()
+            else {"about": "", key: []})
+    arch[key].append(rec)
+    w(arch_path, json.dumps(arch, indent=1) + "\n")
+
+
+def issue_census_fully_marked(root, rid, carry=None):
+    anchors = root / "anchors.json"
+    w(anchors, json.dumps(CENSUS_ANCHORS))
+    rc, out = cli("check-census.py", "derive", root, "--anchors", anchors)
+    assert rc == 0, out
+    rows = json.loads(out)["rows"]
+    marks = {r["id"]: {"status": "covered", "note": "fixture mark"}
+             for r in rows}
+    marks_path = root / "marks.json"
+    w(marks_path, json.dumps(marks))
+    extra = ["--marks", marks_path] if carry is None else ["--carry", carry]
+    return cli("check-census.py", "issue", root, "--id", rid,
+               "--anchors", anchors, "--changed", "parts/a.js",
+               "--changed", "parts/b.js", "--issued", "gate-fixtures",
+               *extra)
+
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    tree = archive_tree(t / "history")
+    rc, _ = cli("check-census.py", "issue-exempt", tree, "--id", "arch-exempt",
+                "--reason", "fixture exemption", "--issued", "gate-fixtures")
+    assert rc == 0
+    rc, out = issue_census_fully_marked(tree, "arch-app")
+    assert rc == 0, out
+    check("archive: a current, fully-marked census in the active ledger "
+          "passes the census gate",
+          run_census_cli(tree, "gate", ["--changed", "parts/a.js",
+                                        "parts/b.js"]), 0)
+    issue_receipt(tree, "arch-rcpt", "tests/browser/drive9001.mjs",
+                  "mutation", ["tests/browser/drive9001.mjs"])
+    check("archive: a current receipt in the active ledger covers its check",
+          run_receipts(tree, ["tests/browser/drive9001.mjs"]), 0)
+    shift_to_archive(tree, "tests/sibling-census.json", "rounds", "arch-app")
+    shift_to_archive(tree, "tests/mutation-receipts.json", "receipts",
+                     "arch-rcpt")
+    rc, out = cli("check-census.py", "verify", tree)
+    check("archive: census verify reads the archive (an archived current "
+          "record still reports CURRENT)",
+          0 if rc == 0 and "CURRENT: arch-app" in out else 1, 0)
+    rc, out = cli("check-receipts.py", "verify", tree)
+    check("archive: receipts verify reads the archive (an archived current "
+          "receipt still reports CURRENT)",
+          0 if rc == 0 and "CURRENT: arch-rcpt" in out else 1, 0)
+    rc, out = cli("check-census.py", "gate", tree, "--changed",
+                  "parts/a.js", "parts/b.js")
+    check("archive: an archived census gone CURRENT again refuses the "
+          "census gate and names the restore",
+          0 if rc == 1 and "archive-ledgers.py restore" in out else 1, 0)
+    rc, out = cli("check-receipts.py", "gate", tree, "--changed",
+                  "tests/browser/drive9001.mjs")
+    check("archive: an archived receipt gone CURRENT again refuses the "
+          "receipts gate and names the restore",
+          0 if rc == 1 and "archive-ledgers.py restore" in out else 1, 0)
+    rc, out = issue_census_fully_marked(tree, "arch-app-2", carry="arch-app")
+    check("archive: census --carry finds an archived record",
+          rc, 0)
+    active = json.loads((tree / "tests" / "sibling-census.json").read_text())
+    carried = next((r for r in active["rounds"] if r["id"] == "arch-app-2"),
+                   None)
+    check("archive: the record issued by --carry carries the archived "
+          "record's marks",
+          0 if carried and carried["rows"] and all(
+              r["status"] in ("covered", "na") for r in carried["rows"])
+          else 1, 0)
+    rc, _ = cli("check-census.py", "issue-exempt", tree, "--id", "arch-app",
+                "--reason", "fixture exemption", "--issued", "gate-fixtures")
+    check("archive: a census id that exists only in the archive stays "
+          "reserved", rc, 1)
+    rc, _ = cli("check-receipts.py", "issue", tree, "--id", "arch-rcpt",
+                "--check", "tests/browser/drive9001.mjs", "--kind",
+                "mutation", "--mutation", "m", "--red", "r", "--green", "g",
+                "--issued", "gate-fixtures", "--file",
+                "tests/browser/drive9001.mjs")
+    check("archive: a receipt id that exists only in the archive stays "
+          "reserved", rc, 1)
+    rc, _ = cli("archive-ledgers.py", "restore", tree, "--id", "arch-app",
+                "--id", "arch-rcpt")
+    check("archive: restore moves the named records back to active",
+          rc, 0)
+    check("archive: the restored census covers the gate again",
+          run_census_cli(tree, "gate", ["--changed", "parts/a.js",
+                                        "parts/b.js"]), 0)
+    check("archive: the restored receipt covers its check again",
+          run_receipts(tree, ["tests/browser/drive9001.mjs"]), 0)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    tree = archive_tree(t / "badarchive")
+    w(tree / "tests" / "archive" / "sibling-census.json",
+      json.dumps({"about": "", "rounds": [
+          {"id": "arch-bad", "kind": "machinery-exempt", "reason": "",
+           "issued": "gate-fixtures"}]}, indent=1) + "\n")
+    rc, _ = cli("check-census.py", "verify", tree)
+    check("archive: census verify refuses on an INVALID archived record",
+          rc, 1)
+    w(tree / "tests" / "archive" / "mutation-receipts.json", "{not json\n")
+    rc, _ = cli("check-receipts.py", "verify", tree)
+    check("archive: a malformed archive ledger refuses the history read",
+          rc, 1)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    tree = archive_tree(t / "move")
+    w(tree / "tests" / "sibling-census.json",
+      json.dumps({"about": "", "rounds": []}, indent=1) + "\n")
+    import hashlib
+    drive_sha = hashlib.sha256(
+        (tree / "tests" / "browser" / "drive9001.mjs").read_bytes()).hexdigest()
+
+    def rec(rid, pin_path, pin, mutation="m"):
+        return ('{"id": "%s", "check": "tests/browser/drive9001.mjs", '
+                '"kind": "mutation", "mutation": "%s", "red": "r", '
+                '"green": "g", "issued": "gate-fixtures", '
+                '"files": {"%s": "%s"}}' % (rid, mutation, pin_path, pin))
+
+    ledger_text = (
+        '{\n "about": "",\n "receipts": [\n  '
+        + rec("keep-cur", "tests/browser/drive9001.mjs", drive_sha)
+        + ",\n  "
+        + rec("move-stale", "tests/browser/drive9001.mjs", "0" * 64,
+              mutation="probe \\u0041nd \\/ escape")
+        + ",\n  "
+        + ('{"id": "move-broken", "check": "tests/browser/drive9001.mjs", '
+           '"kind": "mutation", "mutation": "m", "red": "r", '
+           '"green": "g", "issued": "gate-fixtures", '
+           '"files": {"tests/browser/drive9001.mjs": "' + drive_sha
+           + '", "tests/browser/drive9999.mjs": "' + "1" * 64 + '"}}')
+        + "\n ]\n}\n")
+    w(tree / "tests" / "mutation-receipts.json", ledger_text)
+    rc_before, _ = cli("check-receipts.py", "verify", tree)
+    rc, _ = cli("archive-ledgers.py", "preview", tree)
+    check("archive: preview writes nothing (no archive appears, the "
+          "ledger is untouched)",
+          0 if rc == 0 and not (tree / "tests" / "archive").exists()
+          and (tree / "tests" / "mutation-receipts.json").read_text()
+          == ledger_text else 1, 0)
+    rc, _ = cli("archive-ledgers.py", "apply", tree)
+    check("archive: apply moves the stale and broken records out",
+          rc, 0)
+    active = json.loads(
+        (tree / "tests" / "mutation-receipts.json").read_text())
+    check("archive: after apply the active ledger holds only the "
+          "CURRENT record",
+          0 if [r["id"] for r in active["receipts"]] == ["keep-cur"]
+          else 1, 0)
+    arch_path = tree / "tests" / "archive" / "mutation-receipts.json"
+    arch = (json.loads(arch_path.read_text()) if arch_path.is_file()
+            else {"receipts": []})
+    check("archive: the archive holds the moved records in order",
+          0 if [r["id"] for r in arch["receipts"]]
+          == ["move-stale", "move-broken"] else 1, 0)
+    arch_bytes = arch_path.read_bytes() if arch_path.is_file() else b""
+    check("archive: a moved record's bytes are bit-identical (its raw "
+          "escape forms survive the move)",
+          0 if b"probe \\u0041nd \\/ escape" in arch_bytes else 1, 0)
+    rc_after, _ = cli("check-receipts.py", "verify", tree)
+    check("archive: receipts verify's verdict is unchanged by the move "
+          "(the broken record still counts, from the archive)",
+          0 if rc_before == 1 and rc_after == 1 else 1, 0)
+    rc, _ = cli("archive-ledgers.py", "verify", tree)
+    check("archive: the tool's own pair verify passes after the move",
+          rc, 0)
+    active_bytes = (tree / "tests" / "mutation-receipts.json").read_bytes()
+    rc, _ = cli("archive-ledgers.py", "apply", tree)
+    check("archive: a second apply is a no-op (idempotent)",
+          0 if rc == 0 and (tree / "tests" / "mutation-receipts.json")
+          .read_bytes() == active_bytes else 1, 0)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    tree = archive_tree(t / "invalid")
+    w(tree / "tests" / "sibling-census.json",
+      json.dumps({"about": "", "rounds": []}, indent=1) + "\n")
+    bad_text = json.dumps({"about": "", "receipts": [
+        {"id": "bad-rec", "check": "tests/browser/drive9001.mjs",
+         "kind": "mutation", "mutation": "m", "green": "g",
+         "issued": "gate-fixtures",
+         "files": {"tests/browser/drive9001.mjs": "0" * 64}}]},
+        indent=1) + "\n"
+    w(tree / "tests" / "mutation-receipts.json", bad_text)
+    rc, _ = cli("archive-ledgers.py", "apply", tree)
+    check("archive: apply refuses a ledger carrying an INVALID record "
+          "and writes nothing",
+          0 if rc == 1 and (tree / "tests" / "mutation-receipts.json")
+          .read_text() == bad_text
+          and not (tree / "tests" / "archive").exists() else 1, 0)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    tree = archive_tree(t / "recover")
+    good = json.dumps({"about": "", "receipts": []}, indent=1) + "\n"
+    bak_rel = "tests/archive/.archive-backup/tests_mutation-receipts.json"
+    w(tree / bak_rel, good)
+    w(tree / "tests" / "mutation-receipts.json", "torn mid-transaction\n")
+    w(tree / "tests" / "archive" / ".archive-journal.json",
+      json.dumps({"op": "apply",
+                  "files": {"tests/mutation-receipts.json": bak_rel}},
+                 indent=1) + "\n")
+    rc, _ = cli("archive-ledgers.py", "recover", tree)
+    check("archive: recover rolls a torn ledger back to its "
+          "pre-transaction bytes",
+          0 if rc == 0 and (tree / "tests" / "mutation-receipts.json")
+          .read_text() == good else 1, 0)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    long_line = "x" * 300
+    repo, b = git_repo(t / "archlimit", [("arch", {
+        "tests/archive/mutation-receipts.json":
+            '{"receipts": ["' + long_line + '"]}\n'})])
+    check("archive: a long machine-written line in an archive ledger "
+          "is exempt from the line limit",
+          run_limits(repo, b), 0)
+    repo, b = git_repo(t / "plainlimit", [("plain", {
+        "docs/long.txt": long_line + "\n"})])
+    check("archive: the same long line in a hand-written file is "
+          "still refused (control)",
+          run_limits(repo, b), 1)
+
 # ------------------------------------------------- worked examples
 # TESTING.md rule 6's proof cases, pinned to their observation needles.
 def needle_in(rel, *needles):
@@ -1824,6 +2085,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 174
+total = 202
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

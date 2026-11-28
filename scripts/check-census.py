@@ -68,8 +68,10 @@ Usage:
       Append a machinery-exempt record (no parts/ surface).
   python3 scripts/check-census.py verify <root>
       Print each record's state (CURRENT / STALE / BROKEN /
-      INVALID) and its unmarked-row count. Exit 1 on a malformed
-      census file, a broken record, or an invalid one.
+      INVALID) and its unmarked-row count, over the active ledger
+      and its archive (tests/archive/, where stale and broken
+      records move - scripts/archive-ledgers.py). Exit 1 on a
+      malformed census file, a broken record, or an invalid one.
   python3 scripts/check-census.py gate <root> --changed <path>...
       The push gate: every changed parts/ path must be named by a
       CURRENT app record whose derived rows all carry marks.
@@ -82,6 +84,7 @@ import sys
 from pathlib import Path
 
 CENSUS_REL = "tests/sibling-census.json"
+ARCHIVE_REL = "tests/archive/sibling-census.json"
 TOOL_REL = "scripts/check-census.py"
 SCAN_GLOBS = ("parts/*.js", "parts/head.html")
 
@@ -648,6 +651,62 @@ def load_census(root):
     return data, None
 
 
+def load_census_archive(root):
+    """(data, error) for the archive ledger - load_census's semantics
+    under ARCHIVE_REL: missing is an empty ledger, malformed refuses."""
+    f = Path(root) / ARCHIVE_REL
+    if not f.is_file():
+        return {"about": "", "rounds": []}, None
+    try:
+        data = json.loads(f.read_text())
+    except (OSError, ValueError) as e:
+        return None, f"{ARCHIVE_REL} is unreadable: {e}"
+    if not isinstance(data, dict) or not isinstance(data.get("rounds"), list):
+        return None, f"{ARCHIVE_REL} does not carry a rounds list"
+    return data, None
+
+
+def load_census_history(root):
+    """(rounds, error): active records then archived ones - the
+    history readers' view (verify, issue, --carry). The gate's
+    verdict path never reads this; it judges the active ledger."""
+    data, err = load_census(root)
+    if err:
+        return None, err
+    arch, err = load_census_archive(root)
+    if err:
+        return None, err
+    return data["rounds"] + arch["rounds"], None
+
+
+def reactivated(root):
+    """Archived records this tree makes CURRENT again (a revert or
+    re-pin can resurrect a stale record's pins). The classifier is
+    record_state itself; a pin pre-filter only skips records whose
+    pins already mismatch, which record_state calls STALE/BROKEN
+    before it ever derives. Exempt records are CURRENT by rule."""
+    arch, err = load_census_archive(root)
+    if err:
+        return None, err
+    pins = None
+    found = []
+    for rec in arch["rounds"]:
+        if not isinstance(rec, dict):
+            continue
+        if rec.get("kind") == "machinery-exempt":
+            found.append(rec.get("id", "?"))
+            continue
+        if rec.get("kind") != "app" or not isinstance(rec.get("files"), dict):
+            continue
+        if pins is None:
+            pins = pin_map(root)
+        if any(pins.get(rel) != want for rel, want in rec["files"].items()):
+            continue
+        if record_state(root, rec) == "CURRENT":
+            found.append(rec.get("id", "?"))
+    return found, None
+
+
 def pin_map(root):
     root = Path(root)
     pins = {}
@@ -744,6 +803,15 @@ def gate(root, changed):
     data, err = load_census(root)
     if err:
         return "the sibling-census gate cannot run: " + err
+    back, err = reactivated(root)
+    if err:
+        return "the sibling-census gate cannot run: " + err
+    if back:
+        return ("archived census record(s) are CURRENT on this tree but sit in "
+                + ARCHIVE_REL + ": " + ", ".join(back)
+                + " - restore them before gating (python3 "
+                "scripts/archive-ledgers.py restore . --id "
+                + " --id ".join(back) + ")")
     best = None
     for rec in data["rounds"]:
         if rec.get("kind") != "app":
@@ -793,7 +861,11 @@ def cmd_issue(root, args):
     if err:
         print("ISSUE REFUSED: " + err)
         return 1
-    if any(r.get("id") == args.id for r in data["rounds"]):
+    history, err = load_census_history(root)
+    if err:
+        print("ISSUE REFUSED: " + err)
+        return 1
+    if any(r.get("id") == args.id for r in history):
         print(f"ISSUE REFUSED: census id '{args.id}' already exists - the ledger is "
               "append-only; a re-derivation gets a new id")
         return 1
@@ -803,7 +875,7 @@ def cmd_issue(root, args):
         marks = json.loads(Path(args.marks).read_text())
     carried = {}
     if args.carry:
-        prior = next((r for r in data["rounds"] if r.get("id") == args.carry), None)
+        prior = next((r for r in history if r.get("id") == args.carry), None)
         if prior is None:
             print(f"ISSUE REFUSED: --carry names no record '{args.carry}'")
             return 1
@@ -861,7 +933,11 @@ def cmd_issue_exempt(root, args):
     if err:
         print("ISSUE REFUSED: " + err)
         return 1
-    if any(r.get("id") == args.id for r in data["rounds"]):
+    history, err = load_census_history(root)
+    if err:
+        print("ISSUE REFUSED: " + err)
+        return 1
+    if any(r.get("id") == args.id for r in history):
         print(f"ISSUE REFUSED: census id '{args.id}' already exists")
         return 1
     rec = {"id": args.id, "kind": "machinery-exempt", "reason": args.reason,
@@ -880,15 +956,15 @@ def cmd_issue_exempt(root, args):
 
 
 def cmd_verify(root):
-    data, err = load_census(root)
+    rounds, err = load_census_history(root)
     if err:
         print("CENSUS ERROR: " + err)
         return 1
-    if not data["rounds"]:
+    if not rounds:
         print("CENSUS: no rounds recorded")
         return 0
     bad = 0
-    for rec in data["rounds"]:
+    for rec in rounds:
         state = record_state(root, rec)
         if state in ("BROKEN", "INVALID"):
             bad += 1

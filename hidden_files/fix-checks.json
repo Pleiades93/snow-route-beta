@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "a13df795a223ba0c6e985eff0ad64094163f5944a01117096bc8a8cd1a9fe687",
+  "canonical_registry_sha256": "4b4f4d2b437d9825155f930a4c2ddebba48be0382895f588bdbe37fc873b7aa6",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1692,
-   "included": 1662,
+   "canonical": 1701,
+   "included": 1671,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -11711,8 +11711,8 @@
   },
   {
    "added": "2026-11-21",
-   "file": "tests/mutation-receipts.json",
-   "fix": "/correct Phase 3 round (b): the receipts ledger exists on the branch carrying the round's retrofit receipts (push-judges neuter, receipts neuter, sweep-check historical shapes, drive213 B3 stub, proof-1261 seam mutations, drive214 rendered mix) plus the PR #155 fix-round receipts. If this probe fails, the ledger or its newest receipt is missing from the tree the registry reads - restore tests/mutation-receipts.json from the merged branch. [Marker re-pinned 2026-11-23, testing-efficiency rollout commit 12: the select-tier ride-along receipts were removed from the ledger with their deleted subject (tier removal); the marker is now a current rollout receipt.]",
+   "file": "tests/archive/mutation-receipts.json",
+   "fix": "/correct Phase 3 round (b): the receipts ledger exists on the branch carrying the round's retrofit receipts (push-judges neuter, receipts neuter, sweep-check historical shapes, drive213 B3 stub, proof-1261 seam mutations, drive214 rendered mix) plus the PR #155 fix-round receipts. If this probe fails, the ledger or its newest receipt is missing from the tree the registry reads - restore tests/mutation-receipts.json from the merged branch. [Marker re-pinned 2026-11-23, testing-efficiency rollout commit 12: the select-tier ride-along receipts were removed from the ledger with their deleted subject (tier removal); the marker is now a current rollout receipt.] [Marker re-pinned 2026-11-27, S3 ledger archiving: the marker receipt is STALE on the current tree and moved to tests/archive/mutation-receipts.json in the first archive move; the probe now reads its archive home - the guard is unchanged: the round's receipts must exist in the tree the registry reads.]",
    "fix_id": "correct-phase3b-n1",
    "id": "correct-phase3b-receipts-ledger",
    "pattern": "\"id\": \"testing-rollout-receipts-judges\"",
@@ -14811,6 +14811,87 @@
    "fix_id": "s2-mergerestore",
    "id": "s2-mergerestore-proof-extracts-region",
    "pattern": "app4.indexOf('const own = (o, k)')",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/archive-ledgers.py",
+   "fix": "S3 (2026-11-27): the ledger archiving tool exists with its transactional apply - it moves STALE/BROKEN receipts and census records to tests/archive/ as raw byte slices. If this fails, the tool was removed or renamed - restore scripts/archive-ledgers.py; the active ledgers will bloat again without it.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-tool-apply",
+   "pattern": "def cmd_apply(root):",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/archive-ledgers.py",
+   "fix": "S3 (2026-11-27): the archiving tool imports the gates' own state classifiers instead of re-implementing them - one source of truth for what CURRENT means. If this fails, a private copy of the classification crept in - remove it and import.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-classifiers-imported",
+   "pattern": "_load_gate(\"check-census\")",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-census.py",
+   "fix": "S3 (2026-11-27): census verify, issue and --carry read active-then-archive while the gate judges active only. If this fails, the history view was removed - archived census records would vanish from verify and their ids could be re-issued.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-census-history-reader",
+   "pattern": "def load_census_history(root):",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-receipts.py",
+   "fix": "S3 (2026-11-27): receipts verify and issue read active-then-archive while coverage judges active only. If this fails, the history view was removed - archived receipts would vanish from verify and their ids could be re-issued.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-receipts-history-reader",
+   "pattern": "def load_receipts_history(root):",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-census.py",
+   "fix": "S3 (2026-11-27): the census gate's reactivation refusal - an archived record this tree makes CURRENT again refuses the push and names the restore. If this fails, the scan was removed; a reverted tree would then meet a bare 'no current census' refusal with no path back.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-census-reactivation",
+   "pattern": "archived census record(s) are CURRENT on this tree",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-receipts.py",
+   "fix": "S3 (2026-11-27): the receipts gate's reactivation refusal in uncovered(), the seat push.py and the CLI gate share. If this fails, the scan was removed; a reverted pin would silently uncover a changed judge file.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-receipts-reactivation",
+   "pattern": "archived receipt(s) are CURRENT on this tree",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "scripts/check-pr-limits.py",
+   "fix": "S3 (2026-11-27): the archive ledgers sit in GENERATED_EXEMPT beside the active ledgers, so their machine-written lines escape the line/comment limits. If this fails, the first archive-touching PR will be refused on ledger lines it did not write.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-pr-limits-exempt",
+   "pattern": "\"tests/archive/mutation-receipts.json\"",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/archive/sibling-census.json",
+   "fix": "S3 (2026-11-27): the census archive ledger exists under the same envelope - the moved history's home. If this fails, the archive was deleted or renamed; the gates' history readers expect tests/archive/sibling-census.json.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-census-ledger-exists",
+   "pattern": "\"rounds\": [",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/archive/mutation-receipts.json",
+   "fix": "S3 (2026-11-27): the receipts archive ledger exists under the same envelope - the moved history's home. If this fails, the archive was deleted or renamed; the gates' history readers expect tests/archive/mutation-receipts.json.",
+   "fix_id": "s3-ledger-archive",
+   "id": "s3-archive-receipts-ledger-exists",
+   "pattern": "\"receipts\": [",
    "type": "grep_present"
   }
  ]

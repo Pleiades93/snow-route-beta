@@ -714,6 +714,11 @@ locally, first:
    longer depends on the push route. A check whose evidence
    is a rendered or manual measurement carries a receipt of kind
    `rendered` recording that evidence - never a fabricated mutation.
+   Stale and broken receipts move to `tests/archive/` under the same
+   ledger name (S3, `docs/LEDGER-ARCHIVE.md`): coverage judges the
+   active ledger only, while verify and issue read active-then-archive,
+   and an archived receipt this tree makes CURRENT again refuses the
+   gate until it is restored.
 
    **Survivors are named before the first cut.** A removal, port or
    restructure on a shared surface writes its [survivor list](SURVIVOR-LIST-TEMPLATE.md)
@@ -778,6 +783,11 @@ locally, first:
    the tree being pushed, and is fully marked; it cannot verify
    the marks are true - the review seat spot-checks them, reading
    the author's own enumeration instead of producing it.
+   Stale and broken census records move to `tests/archive/` under
+   the same ledger name (S3, `docs/LEDGER-ARCHIVE.md`): the gate
+   judges the active ledger only, while verify, issue and --carry
+   read active-then-archive, and an archived record this tree
+   makes CURRENT again refuses the gate until it is restored.
 8. **Mirrors are derived or checked, never hand-kept on trust
    (/correct Phase 3 round (d), class C4 generalized).** A
    hand-maintained mirror - a file or list whose content duplicates
