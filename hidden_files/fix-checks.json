@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "ee76c6878287d5f472d5082bacf49147e21dc6057f17d87400af4da6498ca090",
+  "canonical_registry_sha256": "fb0995bbbc4355ea9b9f39d903507a753b5b85e46214fd4fb4c8dcb1e7bfe8ca",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -14909,7 +14909,7 @@
    "fix": "G-C (2026-11-27): the models doc carries the formal trial's verdict (TLC, 1,705 distinct states, no error). If this fails, the verdict text was edited away; the trial's raw output lives in the G-C round folder and the verdict in the doc must match it.",
    "fix_id": "gc-state-models",
    "id": "gc-models-trial-verdict",
-   "pattern": "1,705 distinct",
+   "pattern": "3,496 distinct",
    "type": "grep_present"
   },
   {

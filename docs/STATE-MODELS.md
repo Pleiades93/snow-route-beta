@@ -243,9 +243,11 @@ own emissions are what the invariants below govern.
   archiving produces no advisory.
 - **F6 - A failed save releases no advisory.** With a
   gap pending and the archive write failing, the finish
-  stops, "Finish stopped" shows, the clean stays intact,
-  and no gap advisory fires - at any transaction step,
-  including a degraded rollback.
+  stops, "Finish stopped" shows, the clean stays intact
+  for a retry, and no gap advisory fires for the failed
+  attempt - at any transaction step, including a
+  degraded rollback. A later successful finish of the
+  same clean advises on its own outcome.
 - **F7 - Banner lifecycle and faces.** The drop is .55 s
   with the recoil settle, the stay ends into a .4 s exit
   at 3.55 s, reduced motion holds a plain 3 s stay, the
@@ -426,7 +428,10 @@ confirming / saving / returned), the banner (hidden /
 showing, one kind at a time - the single-carrier shape
 F3 asserts, carried in TypeOK), the pending gap flag and
 the archive stamp, save outcomes committed / failed /
-degraded, clean identity (ids never reused), and one
+degraded (a failed save returns to the live clean -
+finishRun returns before RUN.end, so the same clean
+can be finished again), clean identity (ids never
+reused), and one
 nondeterministic ordinary-notification action enabled in
 every phase, modelling the as-is absence of an exclusion.
 Out of the model: map rendering, CSS interpolation and
@@ -441,19 +446,28 @@ the moment of emission): F1 the advisory for a clean
 never shows while that clean's finish is in flight; F2
 it rests on that clean's commit; F4 it never belongs to
 a cancelled clean; F5 it rests on that clean's stamp;
-F6 a failed finish's clean is never the advisory's.
+F6 the advisory's own attempt committed - a failed
+attempt releases none, and a successful retry of the
+same clean advises on its own outcome.
 
 Result, as run (raw output in the G-C round folder,
 reproduction command in its RECORD.md): TLC, exit 0 -
-no error found; 5,508 states generated, 1,705 distinct
-states, state-graph depth 20, all six invariants holding
+no error found; 12,111 states generated, 3,496 distinct
+states, state-graph depth 23, all six invariants holding
 (TypeOK + F1, F2, F4, F5, F6). The properties were also
-run against two deliberately broken variants of the
+run against three deliberately broken variants of the
 spec: an advisory allowed inside the save window fails
 F1 (violating state: phase "saving", the gap banner up
-for clean 1 with no commit recorded), and an advisory
+for clean 1 with no commit recorded), an advisory
 allowed without the stamp fails F5 (the gap banner up
-for a clean whose snapshot was never stamped). A
+for a clean whose snapshot was never stamped), and a
+failed save masquerading as a completed finish fails
+F6 (the gap banner up for clean 1 with its commit and
+stamp bases both reading clean 1, but the emitting
+attempt's outcome "failed" - a history-based F6, which
+asks only whether the clean ever failed, cannot state
+this, and it would also have forbidden the legitimate
+advisory after a successful retry). A
 successful run proves the finite model under its
 abstractions - not production refinement, not rendering,
 not the real event loop. The numbered invariants stay

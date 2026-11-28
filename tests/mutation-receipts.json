@@ -1302,6 +1302,19 @@
    "red": "drive232 local run under the break: 18/19, failing exactly 'F3 under reduced motion the superseded timer cannot hide its replacement'",
    "green": "drive232 local runs on the restored tree: 20/20 checks, 0 exceptions",
    "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-proof-1304-map-r3",
+   "check": "tests/proof/proof-1304.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1304.mjs": "d09562f9b3d2a85ba444c391511ffeb90eae0c6d0c2dfc6ba8c93597877608de",
+    "docs/STATE-MODELS.md": "af5b86986e4f3353d0a6866b0ed7f5f77f8d974fefaba7bd0727874c53b073fa"
+   },
+   "mutation": "same break as gc-proof-1304-map (the F3 row deleted from the map in docs/STATE-MODELS.md); re-issued because the Codex P2 model-fidelity fix rewrote the doc's trial section",
+   "red": "proof-1304 exit 1: 135 passed, 1 failed - 'map: F3 has exactly one row'",
+   "green": "proof-1304 on the final bytes: 139 passed, 0 failed",
+   "issued": "2026-11-27 gc-state-models"
   }
  ]
 }
