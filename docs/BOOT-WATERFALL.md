@@ -218,7 +218,32 @@ win), plus the full PR gate. Nothing here is built; Andrew picks.
    Judged by: coldstart waterfall mode (mapReadyMs and picker,
    both legs) and the frame-rate drives that guard the menus.
 
-3. **Move the update probe out of the boot window.**
+3. **Stop making the bundle wait for the library script.**
+   Effect: the library's script tag is parser-blocking and sits
+   before the inline bundle (parts/head.html), so wherever the
+   library lands after the document, the bundle, and with it the
+   picker's arming, waits for it. Measured on the fast leg: the
+   document lands at 92 ms, the library at 1,815 ms, and ~1,670 ms
+   of the 1,840 ms bundle phase is that wait. Loading the library
+   without blocking the parser (async, or its tag moved after the
+   bundle) shifts the fast leg's picker chain earlier by up to
+   ~1.7 s. On the slow leg nothing moves: the library lands at
+   13,324 ms, inside the document's own stream (ends 15,213 ms),
+   and before the intro-gated map start (18,216 ms) either way.
+   What GF2 proved is narrower than this: the picker does not wait
+   for map readiness (style load, first tile); it does wait for
+   the library to load, on the legs where the library lands last.
+   Risk: the map's constructor must wait for the library when it
+   has not landed yet, and a library that never arrives must fail
+   as loudly as it does today (today the bundle never runs, which
+   is unmissable). Verified on this tree: the bundle touches
+   `maplibregl` in exactly two places, both inside functions
+   called after boot (parts/app2.js in bootMap, parts/create-pick.js),
+   never during evaluation.
+   Judged by: coldstart profile mode, picker medians both legs,
+   plus the full gate.
+
+4. **Move the update probe out of the boot window.**
    Effect: start the probe after the picker settles (or at first
    idle). Measured basis above: in-window it is guaranteed futile on
    slow links (0 bytes, aborted at 1,500 ms against a 2,000 ms round
@@ -233,7 +258,7 @@ win), plus the full PR gate. Nothing here is built; Andrew picks.
    Judged by: coldstart waterfall mode (the probe no longer appears
    before settle) with picker and map-ready medians compared.
 
-4. **Inline the MapLibre stylesheet into the shell.**
+5. **Inline the MapLibre stylesheet into the shell.**
    Effect: the stylesheet is 8,314 wire bytes but a 3,022 ms span on
    the slow leg (separate origin: connection plus 2,000 ms latency),
    and the library script's fetch starts behind it. Its `url()`
@@ -248,7 +273,7 @@ win), plus the full PR gate. Nothing here is built; Andrew picks.
    which is a build step.
    Judged by: coldstart waterfall mode (library span, mapReadyMs).
 
-5. **Self-host the MapLibre library script.**
+6. **Self-host the MapLibre library script.**
    Effect: the library is 175,275 wire bytes on a separate origin;
    its slow-leg span is 8,996 ms including its own connection and
    latency. Served from the app's own origin (GitHub Pages, HTTP/2)
@@ -261,7 +286,7 @@ win), plus the full PR gate. Nothing here is built; Andrew picks.
    trust, the same trust the shell itself already has.
    Judged by: coldstart waterfall mode (library span, mapReadyMs).
 
-6. **Trim the two icon files the browser fetches at boot.**
+7. **Trim the two icon files the browser fetches at boot.**
    Effect: favicon.svg (10,585) and icon-192.png (21,270) transfer
    inside the boot window (slow leg: ~16,100-18,800 ms), sharing the
    link with the map's first fetches. They block nothing; halving
@@ -290,12 +315,7 @@ win), plus the full PR gate. Nothing here is built; Andrew picks.
 - **Let the update probe finish (raise its 1,500 ms abort).** Killed
   by the probe's own numbers: anywhere it can finish, it transfers
   the whole 472,344-byte shell inside the boot window. The fix
-  direction is out of the window (proposal 3), not a longer leash.
-- **Defer the MapLibre library until after the picker.** Killed by
-  GF2's measurement: the picker no longer waits for the library
-  (drive233 arms it with every request failing), so deferring buys
-  the picker nothing and delays map readiness by the library's whole
-  span.
+  direction is out of the window (proposal 4), not a longer leash.
 - **Cache headers / repeat-visit tuning.** Out of scope by method:
   this waterfall is the cold first load; repeat visits are served by
   the service worker and are a different measurement.
