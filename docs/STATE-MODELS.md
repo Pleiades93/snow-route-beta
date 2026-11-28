@@ -387,12 +387,13 @@ the trial checks the model, the checks check the app.
 | L5 | existing | drive216 P1; proof-1304 (tier + ramp pins) | - |
 | L6 | existing | drive219 phase N reads; proof-1259 check 12 | - |
 | L7 | existing | drive219 phase Z (Z1 + filter reads) | - |
-| L8 | new | proof-1304 (handover predicate pin); behavioural: GAP-2 | - |
+| L8 | new | proof-1304 (handover predicate pin); fuzz registry L8 witness (G-E) | - |
 | L9 | existing | drive216 P3, P4, P6 | - |
 
 Counts: 24 invariants - 16 observed by existing checks,
 8 observed by checks new in this round, 0 wholly
-unobserved. Two sub-arms are gaps (below).
+unobserved. Two sub-arms were gaps; GAP-2 closed by the
+G-E fuzz registry (2026-11-28) - one sub-arm remains.
 
 ### Gaps
 
@@ -400,15 +401,16 @@ unobserved. Two sub-arms are gaps (below).
   scenario finishes a created short route at full
   completion and reads its archive. The arm is one
   clause of finishRun's archiving expression, pinned
-  verbatim at the source seat by proof-1304; the
-  behavioural witness belongs to the G-E registry.
-- **GAP-2 (L8, create-mode clone absence).** No drive
-  asserts clone absence / exclusion lift while create
-  mode is open (the create drives exercise naming
-  through the originals end-to-end, but never read the
-  clone set mid-create). The handover predicate is
-  pinned at the source seat by proof-1304; the
-  behavioural witness belongs to the G-E registry.
+  verbatim at the source seat by proof-1304. The G-E
+  registry did not take it - the fuzz fixture is Route
+  5W, and a created short route finished in full is a
+  fixture of its own - so the gap stays recorded.
+- **GAP-2 (L8, create-mode clone absence) - CLOSED by
+  G-E (2026-11-28).** The fuzz registry's L8 witness
+  (tests/browser/fuzz.mjs, inside the Discard action)
+  asserts clone absence and exclusion lift while create
+  mode is open, and their restoration on exit,
+  behaviourally in the browser.
 
 ## The formal-verification trial
 

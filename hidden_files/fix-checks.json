@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "b84becafe747bbfa6ac33342a7dcdc55d76dfe25781866f887702b70d471faed",
+  "canonical_registry_sha256": "96041a18ed8c0dc9dca4ccc2e57c281ba26f65eeb4881d439811de5203422b28",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1712,
-   "included": 1680,
+   "canonical": 1718,
+   "included": 1686,
    "excluded_total": 32,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14973,6 +14973,60 @@
    "fix_id": "gd-live-loop",
    "id": "gd-live-loop-command",
    "pattern": "node scripts/live-walk.mjs",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "tests/browser/fuzz.mjs",
+   "fix": "G-E (2026-11-28): the nightly fuzzer exists and its G-C invariant registry is the plug-in point docs/STATE-MODELS.md names. If this fails, the fuzzer or its registry was removed or renamed; restore tests/browser/fuzz.mjs (docs/FUZZ.md owns the design).",
+   "fix_id": "ge-fuzz",
+   "id": "ge-fuzz-script",
+   "pattern": "export const invariants",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "tests/browser/fuzz.mjs",
+   "fix": "G-E (2026-11-28): the fuzzer's replay mode is present - a failure file reproduces its run exactly. If this fails, replay was removed or renamed; restore the --replay path in tests/browser/fuzz.mjs.",
+   "fix_id": "ge-fuzz",
+   "id": "ge-fuzz-replay",
+   "pattern": "--replay",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "tests/browser/fuzz.mjs",
+   "fix": "G-E (2026-11-28): the fuzzer's per-seed wall-clock bound is present; a run that hits it reports incomplete coverage, never a finding. If this fails, the bound was removed; restore --deadline in tests/browser/fuzz.mjs.",
+   "fix_id": "ge-fuzz",
+   "id": "ge-fuzz-deadline",
+   "pattern": "--deadline",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": ".github/workflows/fuzz.yml",
+   "fix": "G-E (2026-11-28): the fuzz workflow runs on workflow_dispatch only and is not part of the merge gate. If this fails, the wiring was removed or retargeted; restore .github/workflows/fuzz.yml as dispatch-only.",
+   "fix_id": "ge-fuzz",
+   "id": "ge-fuzz-workflow",
+   "pattern": "workflow_dispatch",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/FUZZ.md",
+   "fix": "G-E (2026-11-28): the fuzz doc exists and names the invariant registry as the G-C plug-in point. If this fails, the doc was removed or the registry section rewritten away; restore docs/FUZZ.md.",
+   "fix_id": "ge-fuzz",
+   "id": "ge-fuzz-doc",
+   "pattern": "invariant registry",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/STATE-MODELS.md",
+   "fix": "G-E (2026-11-28): GAP-2 stands closed in the state-models map, closed by the fuzz registry's L8 witness. If this fails, the closure record was edited away; restore the GAP-2 entry in docs/STATE-MODELS.md and re-check the L8 witness in tests/browser/fuzz.mjs.",
+   "fix_id": "ge-fuzz",
+   "id": "ge-fuzz-gap2-closed",
+   "pattern": "GAP-2 (L8, create-mode clone absence) - CLOSED by",
    "type": "grep_present"
   }
  ]

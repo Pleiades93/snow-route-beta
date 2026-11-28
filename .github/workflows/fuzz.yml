@@ -1,0 +1,48 @@
+# Nightly fuzz (docs/FUZZ.md): dispatch only, never a merge
+# gate; failures are findings with replay artifacts attached.
+name: fuzz
+on:
+  workflow_dispatch:
+    inputs:
+      seed_base:
+        description: 'First seed (default: UTC epoch day x 4)'
+        required: false
+        type: string
+      steps:
+        description: 'Step budget per seed'
+        required: false
+        default: '100'
+        type: string
+permissions:
+  contents: read
+jobs:
+  fuzz:
+    name: fuzz seed offset ${{ matrix.offset }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        offset: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Generate assembled source (generated, never tracked)
+        run: python3 scripts/assemble.py
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+      - name: Locate Chrome
+        run: echo "CHROME_BIN=$(command -v google-chrome || command -v chromium || command -v chromium-browser)" >> "$GITHUB_ENV"
+      - name: Fuzz one seed
+        run: |
+          base="${{ inputs.seed_base }}"
+          if [ -z "$base" ]; then base=$(( $(date -u +%s) / 86400 * 4 )); fi
+          node tests/browser/fuzz.mjs --seed $(( base + ${{ matrix.offset }} )) --steps "${{ inputs.steps }}" --deadline 480 --work fuzz-out
+      - name: Retain replay artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fuzz-out-offset-${{ matrix.offset }}
+          path: fuzz-out/
+          if-no-files-found: ignore
