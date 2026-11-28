@@ -67,7 +67,10 @@ What the walk does, in order:
    real touch input. At every stop it checks that the
    surface is visible, that no uncaught page error has
    occurred, and that the snow is running with frames
-   advancing.
+   advancing AND rendering: the canvas laid out and
+   visible, the menu transparent over it. Frames
+   advancing on a canvas nobody can see is not snow
+   standing.
 4. **Checks the rendered label** in the browser against
    the expected label, so a build the fetch-side wait
    accepted but the browser renders differently is

@@ -143,16 +143,22 @@ const visible = id => `(() => { const e = document.getElementById(${JSON.stringi
   + `return e.checkVisibility() && r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })()`;
 let walkRig = null;
 async function checkErrors() { if (errors().length) { await finding('no uncaught page errors', errors()); throw new Error('page error'); } }
-async function snowOk() {
+async function snowOk(menuId) {
   await walkRig.poll(`!!window.__snow && window.__snow.running()`, 15000, 100);
+  // Rendering, not just running: canvas laid out,
+  // menu transparent over it (drive228's trio + display).
   const sample = `(() => { const h = window.__snow; const cv = document.getElementById('snowCv'); if (!h || !cv) return { missing: true }; `
     + `let o = 1, n = cv; while (n && n.nodeType === 1) { o *= parseFloat(getComputedStyle(n).opacity); if (n === document.documentElement) break; n = n.parentElement; } `
-    + `return { running: h.running(), frames: h.frames(), vis: getComputedStyle(cv).visibility, away: cv.classList.contains('away'), op: Math.round(o * 1000) / 1000 }; })()`;
+    + `const cs = getComputedStyle(cv), r = cv.getBoundingClientRect(), menu = ${menuId ? `document.getElementById('${menuId}')` : 'null'}; `
+    + `return { running: h.running(), frames: h.frames(), vis: cs.visibility, disp: cs.display, laidOut: r.width > 0 && r.height > 0, away: cv.classList.contains('away'), `
+    + `op: Math.round(o * 1000) / 1000, menuBg: menu ? getComputedStyle(menu).backgroundImage : 'skip' }; })()`;
   const before = await walkRig.ev(sample);
   await sleep(600);
   const after = await walkRig.ev(sample);
-  const good = before && after && !before.missing && before.running === true && after.running === true && after.frames > before.frames && before.vis === 'visible' && before.away === false && before.op >= 0.99;
-  if (!good) await finding('running snow with advancing frames', { before, after });
+  const base = before && after && !before.missing && before.running === true && after.running === true && after.frames > before.frames;
+  const seen = base && before.vis === 'visible' && before.disp !== 'none' && before.laidOut === true && before.away === false && before.op >= 0.99;
+  const good = seen && (before.menuBg === 'skip' || before.menuBg === 'none');
+  if (!good) await finding('snow standing and rendering', { before, after });
   return good;
 }
 async function stop(name, paneId, extra) {
@@ -166,7 +172,7 @@ async function stop(name, paneId, extra) {
   if (!report.surfaces.includes(name)) report.surfaces.push(name);
   if (extra) await extra();
   step = 'snow advances';
-  await snowOk();
+  await snowOk(paneId ? 'routeMenu' : null);
   await checkErrors();
 }
 async function tap(id, paneId) {
