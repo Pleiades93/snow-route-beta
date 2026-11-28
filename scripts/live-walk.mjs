@@ -1,10 +1,10 @@
 // Post-ship live walk: a cold-session visit to the live
 // page after a ship (docs/LIVE-LOOP.md owns the procedure).
-import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import { ensureProxyBridge } from '../tests/browser/proxy-bridge.mjs';
+import { launchCdp } from '../tests/browser/cdp-client.mjs';
 import path from 'node:path';
 
 const LIVE_URL = 'https://pleiades93.github.io/snow-route-beta/';
@@ -72,67 +72,35 @@ for (;;) {
 // ---------- transport ----------
 // The browser rides the drives' own proxy bridge: it
 // cannot authenticate to this VM's egress proxy itself.
-const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-let bridge = null, proc = null, ws = null, profile = null;
-const consoleLog = [];
+let bridge = null, profile = null;
 async function launch(proxyArg) {
   profile = fs.mkdtempSync(path.join(os.tmpdir(), 'live-walk-'));
-  const flags = ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--remote-debugging-port=0', '--user-data-dir=' + profile, '--window-size=420,900'];
-  if (proxyArg) flags.push('--ignore-certificate-errors', '--proxy-server=' + proxyArg);
-  else flags.push('--no-proxy-server');
-  flags.push('about:blank');
-  let lastErr = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    proc = spawn(CHROME, flags, { stdio: ['ignore', 'pipe', 'pipe'] });
-    try {
-      const wsUrl = await new Promise((res, rej) => {
-        let buf = ''; proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); });
-        setTimeout(() => rej(new Error('no devtools line')), 25000);
-      });
-      ws = new WebSocket(wsUrl);
-      await new Promise((r, j) => { ws.addEventListener('open', r, { once: true }); ws.addEventListener('error', j, { once: true }); setTimeout(() => j(new Error('ws open timeout')), 15000); });
-      lastErr = null; break;
-    } catch (e) { lastErr = e; try { proc.kill('SIGKILL'); } catch {} proc = null; ws = null; }
-  }
-  if (lastErr) throw lastErr;
-  let nextId = 1; const pending = new Map();
+  const args = ['--disable-gpu', '--hide-scrollbars', '--user-data-dir=' + profile, '--window-size=420,900'];
+  if (proxyArg) args.push('--ignore-certificate-errors', '--proxy-server=' + proxyArg);
+  else args.push('--no-proxy-server');
   const doc = { requestId: null };
-  ws.addEventListener('message', ev => {
-    const msg = JSON.parse(ev.data);
-    if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
-    if (msg.method === 'Runtime.exceptionThrown') { const d = msg.params.exceptionDetails; consoleLog.push({ type: 'EXCEPTION', text: String((d.exception && d.exception.description) || d.text).slice(0, 300) }); }
-    else if (msg.method === 'Network.responseReceived' && msg.params.type === 'Document') doc.requestId = msg.params.requestId;
-  });
-  const send = (method, params = {}, sessionId) => { const id = nextId++; return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); }); };
-  const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
-  const S = (await send('Target.attachToTarget', { targetId, flatten: true })).result.sessionId;
-  await send('Page.enable', {}, S);
-  await send('Runtime.enable', {}, S);
-  await send('Network.enable', {}, S);
-  await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
-  const ev = async expr => {
-    const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, S);
-    if (r.result && r.result.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 300));
-    return r.result && r.result.result ? r.result.result.value : undefined;
-  };
-  const poll = async (expr, ms, step) => {
-    const t0 = Date.now();
-    while (Date.now() - t0 < (ms || 30000)) { let v; try { v = await ev(expr); } catch { v = undefined; } if (v === true) return true; await sleep(step || 200); }
-    return false;
-  };
-  const shot = async name => { const r = await send('Page.captureScreenshot', { format: 'png' }, S); fs.writeFileSync(name, Buffer.from(r.result.data, 'base64')); };
-  return { send, S, ev, poll, shot, doc };
+  const onEvent = msg => { if (msg.method === 'Network.responseReceived' && msg.params.type === 'Document') doc.requestId = msg.params.requestId; };
+  let rig = null, lastErr = null;
+  for (let attempt = 0; attempt < 3 && !rig; attempt++) {
+    try { rig = await launchCdp({ args, onEvent }); } catch (e) { lastErr = e; }
+  }
+  if (!rig) throw lastErr || new Error('chrome launch failed');
+  rig.doc = doc;
+  await rig.send('Page.enable', {}, rig.S);
+  await rig.send('Runtime.enable', {}, rig.S);
+  await rig.send('Network.enable', {}, rig.S);
+  await rig.send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, rig.S);
+  return rig;
 }
 function cleanup() {
-  try { proc && proc.kill('SIGKILL'); } catch {}
-  try { ws && ws.close(); } catch {}
+  try { walkRig && walkRig.close(); } catch {}
   try { profile && fs.rmSync(profile, { recursive: true, force: true }); } catch {}
 }
 
 // ---------- the walk ----------
 let surface = 'startup', step = 'launch', finished = false;
-const errors = () => consoleLog.filter(x => x.type === 'EXCEPTION');
+const errors = () => (walkRig ? walkRig.consoleLog : []).filter(x => x.type === 'EXCEPTION');
 async function finding(expectedValue, observed) {
   const f = { surface, step, expected: expectedValue, observed, pageErrors: errors(), screenshot: null };
   report.findings.push(f); write();
