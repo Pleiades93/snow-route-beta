@@ -1266,6 +1266,42 @@
    "red": "drive232 local run under the break: 18/19, failing exactly 'F3 under reduced motion the superseded timer cannot hide its replacement'",
    "green": "drive232 local runs on the restored tree: 19/19 checks, 0 exceptions (three separate clean runs)",
    "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-c4wake",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "4e486f6e866c1123ece1e78f36ba02748022b2507ee562ebf835308b925fb08c"
+   },
+   "mutation": "syncWake's release seat loses the actual release call (wakeLock = null kept, w.release() deleted) - the break Codex's PR #245 review named against the old reference-only check",
+   "red": "drive232 local run under the break: 19/20, failing exactly 'C4 hiding the page releases the held wake lock'",
+   "green": "drive232 local run on the restored tree: 20/20 checks, 0 exceptions",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-f6-r4",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "4e486f6e866c1123ece1e78f36ba02748022b2507ee562ebf835308b925fb08c"
+   },
+   "mutation": "same break as gc-drive232-f6 (finishRun's archive-failure arm returns the snapshot); re-issued after the Codex-fix edit changed the drive's bytes",
+   "red": "drive232 local run under the break: 18/19, failing exactly 'F6 the failed finish reports Finish stopped, never the gap advisory'",
+   "green": "drive232 local runs on the restored tree: 20/20 checks, 0 exceptions",
+   "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gc-drive232-f3-r4",
+   "check": "tests/browser/drive232.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/browser/drive232.mjs": "4e486f6e866c1123ece1e78f36ba02748022b2507ee562ebf835308b925fb08c"
+   },
+   "mutation": "same break as gc-drive232-f3 (showBanner's superseded-timer clear removed); re-issued alongside the f6 re-issue for the same byte change",
+   "red": "drive232 local run under the break: 18/19, failing exactly 'F3 under reduced motion the superseded timer cannot hide its replacement'",
+   "green": "drive232 local runs on the restored tree: 20/20 checks, 0 exceptions",
+   "issued": "2026-11-27 gc-state-models"
   }
  ]
 }

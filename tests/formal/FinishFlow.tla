@@ -1,10 +1,5 @@
 ---- MODULE FinishFlow ----
-\* The finish-flow / banner model (docs/STATE-MODELS.md, model 2).
-\* Actors: the finish transaction (parts/app3.js finishRun and the
-\* finYes handler), the one banner (parts/app1.js showBanner), the
-\* in-memory gap flag (gpsGapRuns) and the archive stamp (snap.gpsGap).
-\* Out of scope: rendering, timing constants, storage internals,
-\* GPS accuracy, the real event loop (see STATE-MODELS.md).
+\* Finish/banner ordering model; assumptions and scope live in docs/STATE-MODELS.md.
 EXTENDS Integers
 
 CONSTANT MaxClean

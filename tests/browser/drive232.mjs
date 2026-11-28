@@ -28,18 +28,24 @@ ok('C3 fixes keep recording the trail while following is paused',
   await poll(`trail.length > ${t0}`, 10000) === true);
 
 // ---- C4: hidden page flushes and preserves the clean ----
-await ev(`(() => { window.__feed.on = false; settings.awake = true; syncWake(); return true; })()`);
+await ev(`(() => { window.__feed.on = false; settings.awake = false; syncWake(); return true; })()`); // drop any real lock first, so the stub below is the only request path
+await sleep(300);
+await ev(`(() => { window.__wake = { reqs: 0, rels: 0, held: false }; Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request: async () => { window.__wake.reqs++; window.__wake.held = true;`
+  + ` const lk = { released: false, __fn: null, addEventListener: (t, fn) => { lk.__fn = fn; }, release: () => { if (lk.released) return; lk.released = true; window.__wake.rels++; window.__wake.held = false; if (lk.__fn) lk.__fn(); } };`
+  + ` return lk; } } }); settings.awake = true; syncWake(); return true; })()`); // the sentinel stub is drive123's pattern
+const acquired = await poll(`window.__wake && window.__wake.held === true`, 8000);
+ok('C4 the wake lock is acquired for the awake clean', acquired === true);
 await sleep(1400); // let any in-flight fix land before the trail snapshot
 const runBefore = await J(`runStart`);
-const heldBefore = await J(`wakeLock !== null`);
+const relsBefore = await J(`window.__wake.rels`);
 const trailNow = await J(`({ n: trail.length, last: trail.length ? trail[trail.length - 1][2] : 0 })`);
 await ev(`(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); return true; })()`);
-await sleep(400);
-const afterHide = await J(`({ run: runStart, lock: wakeLock !== null, stored: (() => { try { const t = JSON.parse(localStorage.getItem(LS.trail) || '[]');`
+const released = await poll(`window.__wake.rels > ${relsBefore} && window.__wake.held === false`, 8000);
+const afterHide = await J(`({ run: runStart, stored: (() => { try { const t = JSON.parse(localStorage.getItem(LS.trail) || '[]');`
   + ` return { n: t.length, last: t.length ? t[t.length - 1][2] : 0 }; } catch (e) { return { n: -1, last: -1 }; } })() })`);
 ok('C4 hiding the page leaves the clean identity untouched', afterHide.run === runBefore && runBefore !== 0);
 ok('C4 hiding the page flushes the pending trail to storage', afterHide.stored.n === trailNow.n && afterHide.stored.last === trailNow.last);
-ok('C4 a held wake lock is released while hidden', heldBefore === false || afterHide.lock === false);
+ok('C4 hiding the page releases the held wake lock', released === true);
 await ev(`(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')); return true; })()`);
 
 // ---- C5: a reload loses the pending gap flag, keeps the clean ----
