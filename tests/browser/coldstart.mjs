@@ -173,7 +173,9 @@ function deriveWaterfall(run) {
     phase('catalogue-warm', spans['city-catalogue']?.startMs, spans['city-catalogue']?.endMs, 'the arm moment; the picker neither needs nor uses it'),
     phase('idb-hydration', null, null, 'unobservable from outside: no stamp exists, and a fresh profile holds no user packs')
   ];
-  const tasks = run.longTasks || [];
+  // Only tasks inside the picker window count: the observer keeps
+  // recording through the tap proof and the map-ready wait.
+  const tasks = (run.longTasks || []).filter(task => task.start < run.navigationToPickerMs);
   return { phases, byteAccount, probe,
     accountBytes: byteAccount.reduce((t, r) => t + r.bytes, 0),
     longTaskSummary: tasks.length ? { count: tasks.length,
@@ -326,7 +328,10 @@ async function measure(throttled, run, bridge) {
             request.bytes = Math.max(request.bytes, params.encodedDataLength);
             request.endMs = (params.timestamp - nav.timestamp) * 1000;
           }
-          if (method === 'Network.loadingFailed') request.failure = params.errorText;
+          if (method === 'Network.loadingFailed') {
+            request.failure = params.errorText;
+            request.endMs = (params.timestamp - nav.timestamp) * 1000;
+          }
         }
       }
       run.requests = [...requests.values()];
@@ -384,6 +389,13 @@ try {
       await measure(leg !== 'control', run, bridge);
     }
   }
+  const valueStats = values => {
+    const times = values.filter(v => typeof v === 'number' && Number.isFinite(v)).sort((a, b) => a - b);
+    if (!times.length) return null;
+    const middle = Math.floor(times.length / 2);
+    return { median: (times[middle] + times[Math.floor((times.length - 1) / 2)]) / 2,
+      min: times[0], max: times.at(-1), samples: times.length };
+  };
   if (baseline) {
     results.verdict = 'inconclusive';
     results.verdictReason = 'Review both ranges and establish the limiter from the request timeline and a separate diagnostic capture.';
@@ -393,13 +405,7 @@ try {
     const read = (run, key) => key.split('.').reduce((o, part) => o?.[part], run);
     results.baseline = ['slow-3g-cpu4', 'control'].map(leg => {
       const runs = results.runs.filter(run => run.leg === leg);
-      const stats = key => {
-        const times = runs.filter(run => run.valid).map(run => read(run, key)).filter(v => typeof v === 'number' && Number.isFinite(v)).sort((a, b) => a - b);
-        if (!times.length) return null;
-        const middle = Math.floor(times.length / 2);
-        return { median: (times[middle] + times[Math.floor((times.length - 1) / 2)]) / 2,
-          min: times[0], max: times.at(-1), samples: times.length };
-      };
+      const stats = key => valueStats(runs.filter(run => run.valid).map(run => read(run, key)));
       return { leg, attempted: runs.length, valid: runs.filter(run => run.valid).length,
         failedRequests: runs.reduce((sum, run) => sum + (run.failedRequests || 0), 0),
         exceptions: runs.reduce((sum, run) => sum + (run.exceptions || 0), 0),
@@ -408,13 +414,7 @@ try {
     });
   }
   if (waterfall) {
-    const stats = values => {
-      const times = values.filter(v => typeof v === 'number' && Number.isFinite(v)).sort((a, b) => a - b);
-      if (!times.length) return null;
-      const middle = Math.floor(times.length / 2);
-      return { median: (times[middle] + times[Math.floor((times.length - 1) / 2)]) / 2,
-        min: times[0], max: times.at(-1), samples: times.length };
-    };
+    const stats = valueStats;
     results.waterfall = ['slow-3g-cpu4', 'control'].map(leg => {
       const runs = results.runs.filter(run => run.leg === leg && run.valid && run.waterfall);
       const phaseIds = [...new Set(runs.flatMap(run => run.waterfall.phases.map(p => p.id)))];
