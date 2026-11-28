@@ -93,7 +93,7 @@ observe register there.
 | --- | --- |
 | L1 | The wrong label carrier renders no route names on each side of the 15.2 crossing. |
 | L2 | A positive witness: with route geometry in view at or above 13.98, the owning carrier renders at least one route name (an empty side fails - the drive216 P3 blindness). |
-| L4 | No route name renders on both carriers at once (no overlap at the instant switch). |
+| L4 | No fade ramp at the crossing: each carrier's text-opacity spec evaluates the same just below and just above 15.2. The crossover sampling itself stays with drive219 phase V. |
 | L3 | Style reads: the clone layers exist, their filters carry the route-name inclusion, and the originals' filters carry the exclusion. |
 | L8 | Inside the Discard action: while creating, the clones are absent and the exclusion is lifted; after exit, both are restored. This is GAP-2's behavioural witness. |
 | F3 | Exactly one `#banner` element exists - the single carrier. |

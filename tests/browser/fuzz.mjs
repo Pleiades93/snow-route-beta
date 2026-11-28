@@ -131,7 +131,7 @@ async function runAction(action) {
     case 'zoom-crossing': {
       const target = await h.ev(`map.getZoom() < ${crossing} ? 15.7 : ${lowerZoom}`);
       await h.ev(`map.zoomTo(${target}, { duration: 900 }); true`);
-      await waitFor('zoomCrossingLanded', `${loadedMap} && Math.abs(map.getZoom() - ${target}) < ${zoomTolerance}`);
+      await waitFor('zoomCrossingLanded', `!!window.map && !map.isMoving() && Math.abs(map.getZoom() - ${target}) < ${zoomTolerance}`);
       return;
     }
     case 'clearBtn':
@@ -245,10 +245,28 @@ export const invariants = [
       }
     } },
   { id: 'L4', run: async () => {
-      const { titles, clones } = await labelFrame();
-      const overlaps = titles.filter(title => clones.some(clone =>
-        clone === title || clone.startsWith(title + ' ') || (title === 'Fifth' && clone === '5th Avenue')));
-      assert('L4', [], overlaps);
+      // No fade ramp at the crossing: each carrier's text-opacity
+      // spec evaluates the same just below and just above 15.2.
+      const eff = await read(`(() => {
+        const effOf = (v, z) => {
+          if (v === undefined) return 1;
+          if (typeof v === 'number') return v;
+          if (Array.isArray(v)) {
+            if (v[0] === 'interpolate') { let pI = v[3], pO = v[4]; if (z <= pI) return pO;
+              for (let i = 5; i + 1 < v.length; i += 2) { const zi = v[i], zo = v[i + 1];
+                if (z <= zi) { const k = zi === pI ? 1 : (z - pI) / (zi - pI); return pO + (zo - pO) * k; }
+                pI = zi; pO = zo; } return pO; }
+            if (v[0] === 'step') { let out = v[2]; for (let i = 3; i + 1 < v.length; i += 2) { if (z >= v[i]) out = v[i + 1]; } return out; }
+            if (v[0] === '*') return effOf(v[1], z) * v[2];
+          }
+          return 1;
+        };
+        const ids = ['streetnamespt1', 'streetnamespt2', 'streetnamespt3', 'streetnamespt4',
+          'roads_labels_major-route', 'roads_labels_minor-route'];
+        return ids.filter(id => map.getLayer(id)).map(id => { const spec = map.getPaintProperty(id, 'text-opacity');
+          return { id, below: effOf(spec, ${crossing} - 0.01), above: effOf(spec, ${crossing} + 0.01) }; });
+      })()`);
+      assert('L4', [], eff.filter(e => e.below !== e.above).map(e => e.id));
     } },
   { id: 'L3', run: async () => {
       const facts = await read(styleFacts);
