@@ -19155,6 +19155,58 @@
    "red": "proof-1302 exit 1 under each of the 17 mutations on the unmodified tree, on the split tree and on the final bytes, each failing its named check (run-mutations-unmod.py and run-mutations.py: 17/17 BITE)",
    "green": "proof-1302 on the final split tree: 9 passed, 0 failed (exit 0)",
    "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-mergerestore-proof1303",
+   "check": "tests/proof/proof-1303.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1303.mjs": "e26bc31895430cf13d45708197b248d39b4a956624a2686ef944b3a24048f9d7",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744"
+   },
+   "mutation": "parts/app4.js mergeRestoreEntries value set (22 mutations run by the builder in the round scratch tree): cluster admission resident-equal arm dropped; cleanTrail latitude bound 90 to 180; session seat [] to [0]; note identity text-presence bit dropped; notes merge resident text note forgotten; legacy history identity raw key order instead of upCanon; history interleave comparison inverted; dedupe seen-test dropped; field merge backup overwrites resident; sides merge resident-marked protection dropped; F06 derived side 3 to 0; finclean discharge null to undefined; theme pair lands despite expiry conflict; settings fill overwrites resident keys; migration-pending throw removed; failed resident read returns null instead of throwing; snapshot fold takes imported cell over resident mark; cluster archive run stamp compared to -1; history exclusion forgets the newly admitted run stamp; runless-trail import ignores resident session; done merge resident-marked protection dropped; start without trail keeps carried session",
+   "red": "proof-1303 run against each mutated parts/app4.js in the scratch tree: 22/22 mutations failed their named check (run-mutations.py output in the round record)",
+   "green": "proof-1303 on the unmodified tree: 29 passed, 0 failed; full proof suite 100/100",
+   "issued": "2026-11-27 s2-round5"
+  },
+  {
+   "id": "s2-mergerestore-proof1303-r2",
+   "check": "tests/proof/proof-1303.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1303.mjs": "f4b3dd31a7b6cd578ec5441474df3ee09381c29b5346a594c4b241cd386316e9",
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207"
+   },
+   "mutation": "parts/app4.js mergeRestoreEntries value set (22 mutations, run on the final split bytes in the round scratch tree): cluster admission resident-equal arm dropped; cleanTrail latitude bound 90 to 180; session seat [] to [0]; note identity text-presence bit dropped; notes merge resident text note forgotten; legacy history identity raw key order instead of upCanon; history interleave comparison inverted; dedupe seen-test dropped; field merge backup overwrites resident; sides merge resident-marked protection dropped; F06 derived side 3 to 0; finclean discharge null to undefined; theme pair lands despite expiry conflict; settings fill overwrites resident keys; migration-pending throw removed; failed resident read returns null instead of throwing; snapshot fold takes imported cell over resident mark; cluster archive run stamp compared to -1; history exclusion forgets the newly admitted run stamp; runless-trail import ignores resident session; done merge resident-marked protection dropped; start without trail keeps carried session",
+   "red": "proof-1303 against each mutated parts/app4.js: 22/22 mutations failed their named check on the final split bytes (also 22/22 on the unmodified tree and on the split tree before the own-brace form change)",
+   "green": "proof-1303 on the final tree: 29 passed, 0 failed; full proof suite 100/100",
+   "issued": "2026-11-27 s2-round5"
+  },
+  {
+   "id": "s2-mergerestore-proof1272-sesscap",
+   "check": "tests/proof/proof-1272.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1272.mjs": "a24881252aba945f746e7bd445bd5b61663af53897ed7e7b5d8b9fce03c11ab1",
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207"
+   },
+   "mutation": "parts/app4.js: the session-marker cap cs.slice(Math.max(0, cs.length - TRAIL_MAX)) mutated to cs.slice(0, TRAIL_MAX) (the restore-172 mutation, re-observed on the split tree after proof-1272's extraction re-point)",
+   "red": "proof-1272 43 passed 1 failed: the C11 control (cap keeps the newest markers) fails, first marker 1762000000 instead of 1762000005",
+   "green": "proof-1272 passes 44/44 on the final tree",
+   "issued": "2026-11-27 s2-round5"
+  },
+  {
+   "id": "s2-mergerestore-proof1272-startband",
+   "check": "tests/proof/proof-1272.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1272.mjs": "a24881252aba945f746e7bd445bd5b61663af53897ed7e7b5d8b9fce03c11ab1",
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207"
+   },
+   "mutation": "parts/app4.js: RESTORE.plan's start band lower bound 946684800000 mutated to 0 in pushField, so a crafted start of '1' plans instead of refusing",
+   "red": "proof-1272 43 passed 1 failed: 'refuses: start scalar below the band (the 1.150 case)' - the mutated tree returns a plan",
+   "green": "proof-1272 passes 44/44 on the final tree",
+   "issued": "2026-11-27 s2-round5"
   }
  ]
 }

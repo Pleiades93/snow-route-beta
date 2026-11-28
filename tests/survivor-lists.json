@@ -2083,6 +2083,216 @@
     "parts/engine.js": "fabfd153cad550e607fac4e11d6facc4ebbf029a55cb4c50ef770fc1373e9eb1"
    },
    "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-mergerestore",
+   "kind": "cut",
+   "surface": "the restore merge planner in parts/app4.js (mergeRestoreEntries, its eight hoisted helpers and its four extracted sections)",
+   "cut": "mergeRestoreEntries' section blocks move to sibling functions in the same part; its eight helper closures hoist to top-level consts there; no behaviour or storage change; RESTORE.plan and RESTORE.execute untouched",
+   "changed": [
+    "parts/app4.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "A valid backup restores exactly (the absorbed drive66 suite: round-trip restores the street, the flag note and the history entry)",
+     "case": "T8 round-trip restores the completed street",
+     "check": "tests/browser/drive118.mjs",
+     "observes": "the live app after a real backup/restore round-trip on the real storage path: the restored board equals the backed-up board"
+    },
+    {
+     "behaviour": "A restore write failure rolls back verified and reports the rollback; current data stays intact",
+     "case": "T5 failed restore reports the rollback through the banner",
+     "check": "tests/browser/drive118.mjs",
+     "observes": "the live app under a fault-injected restore write: the failure is reported and the pre-restore data is intact afterwards"
+    },
+    {
+     "behaviour": "An unverifiable rollback is reported honestly, never as success",
+     "case": "T6 unverifiable rollback is reported honestly",
+     "check": "tests/browser/drive118.mjs",
+     "observes": "the live app when the rollback's own write also fails: the report says the rollback could not be verified"
+    },
+    {
+     "behaviour": "A restore whose browser is killed inside the reload pause still lands the restored state after relaunch",
+     "case": "S3 interrupted restore still landed state B",
+     "check": "tests/browser/drive121.mjs",
+     "observes": "the relaunched app after the browser was killed mid-restore: the restored state is present and stable across the next boot"
+    },
+    {
+     "behaviour": "A failed restore discharges nothing: the armed finclean obligation and the original slot data survive a fault-injected restore",
+     "case": "P1 the rollback leaves the original slot data and the still-armed record intact",
+     "check": "tests/browser/drive176.mjs",
+     "observes": "the live app with removeItem refusing only the finclean key: the restore fails honestly, the rollback restores the slot, the obligation stays armed"
+    },
+    {
+     "behaviour": "No write lands inside the post-restore fence window; the restored board is exact after reload",
+     "case": "FENCE PASS: after the direct fenced call the reloaded board is still exactly the union",
+     "check": "tests/browser/drive169.mjs",
+     "observes": "the live app across a restore with in-window mark attempts forced three ways; locally the drive's reload-poll case fails identically on the untouched base tree on this rig, so CI is its judging run"
+    },
+    {
+     "behaviour": "Resident-first merge: resident values win, backup-only streets join, exact stored values",
+     "case": "resident and backup-only streets survive together",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the write plan in the vm for the times/via/cov fields against planted resident records"
+    },
+    {
+     "behaviour": "The notes singleton and note identity: a resident text note wins; missing, empty and null text are distinct identities",
+     "case": "resident text note wins, and missing versus empty text have distinct identities",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the merged notes lists in the vm, including the missing-text versus text:null pair the identity bit separates"
+    },
+    {
+     "behaviour": "Board protection: resident marks and legacy completion beat backup sides and done; the F06 derivation fills only true filler",
+     "case": "resident marks and legacy completion beat backup sides and done; filler can be filled",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the merged done list and sides maps in the vm, including the derived D row built from the merged times stamp"
+    },
+    {
+     "behaviour": "History identity and order: legacy duplicates skip by canonical fingerprint; additions interleave chronologically, residents in place",
+     "case": "legacy exact duplicates skip despite key reorder; same-stamp distinct cleans survive",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the merged history array in the vm for reordered, distinct and duplicate legacy entries"
+    },
+    {
+     "behaviour": "Run-cluster admission is all-or-nothing: a resident run, a conflicting orphan or a matching archive withholds the whole cluster",
+     "case": "resident live run, conflicting orphan session or matching archive withholds cluster",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the write plan in the vm across the three withholding shapes - no cluster key is staged in any of them"
+    },
+    {
+     "behaviour": "The imported Cancel baseline folds in resident board progress cell by cell",
+     "case": "imported Cancel baseline folds in resident board progress",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the folded snapshot staged in the vm: resident marks, times, via and coverage win their cells over the imported snapshot"
+    },
+    {
+     "behaviour": "Fail closed: unreadable or malformed resident slots and a pending legacy migration abort the plan with the same errors",
+     "case": "unreadable or malformed current slots and pending legacy migration abort the plan",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the thrown errors in the vm for the four abort shapes, including the 'Route 5W migration pending' message verbatim"
+    },
+    {
+     "behaviour": "The planner boundary refuses malformed backups and plans valid ones (proof-1272, extraction re-pointed to the split region)",
+     "case": "control: a valid v2 backup plans",
+     "check": "tests/proof/proof-1272.mjs",
+     "observes": "the whole RESTORE planner in the vm: 28 refusal cases and 11 control cases over the re-pointed extraction"
+    },
+    {
+     "behaviour": "The characterization proof's 29 checks, claims unmodified, green before and after the split",
+     "case": "proof-merge-restore-entries:",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the proof's own pass line in the proof runner output"
+    }
+   ],
+   "files": {
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207"
+   },
+   "issued": "2026-11-27 s2-round5"
+  },
+  {
+   "id": "s2-mergerestore-r2",
+   "kind": "cut",
+   "surface": "the restore merge planner in parts/app4.js (mergeRestoreEntries, its eight hoisted helpers and its four extracted sections)",
+   "cut": "mergeRestoreEntries' section blocks move to sibling functions in the same part; its eight helper closures hoist to top-level consts there; no behaviour or storage change; RESTORE.plan and RESTORE.execute untouched",
+   "changed": [
+    "parts/app4.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "A valid backup restores exactly (the absorbed drive66 suite: round-trip restores the street, the flag note and the history entry)",
+     "case": "T8 round-trip restores the completed street",
+     "check": "tests/browser/drive118.mjs",
+     "observes": "the live app after a real backup/restore round-trip on the real storage path: the restored board equals the backed-up board"
+    },
+    {
+     "behaviour": "A restore write failure rolls back verified and reports the rollback; current data stays intact",
+     "case": "T5 failed restore reports the rollback through the banner",
+     "check": "tests/browser/drive118.mjs",
+     "observes": "the live app under a fault-injected restore write: the failure is reported and the pre-restore data is intact afterwards"
+    },
+    {
+     "behaviour": "An unverifiable rollback is reported honestly, never as success",
+     "case": "T6 unverifiable rollback is reported honestly",
+     "check": "tests/browser/drive118.mjs",
+     "observes": "the live app when the rollback's own write also fails: the report says the rollback could not be verified"
+    },
+    {
+     "behaviour": "A restore whose browser is killed inside the reload pause still lands the restored state after relaunch",
+     "case": "S3 interrupted restore still landed state B",
+     "check": "tests/browser/drive121.mjs",
+     "observes": "the relaunched app after the browser was killed mid-restore: the restored state is present and stable across the next boot"
+    },
+    {
+     "behaviour": "A failed restore discharges nothing: the armed finclean obligation and the original slot data survive a fault-injected restore",
+     "case": "P1 the rollback leaves the original slot data and the still-armed record intact",
+     "check": "tests/browser/drive176.mjs",
+     "observes": "the live app with removeItem refusing only the finclean key: the restore fails honestly, the rollback restores the slot, the obligation stays armed"
+    },
+    {
+     "behaviour": "No write lands inside the post-restore fence window; the restored board is exact after reload",
+     "case": "FENCE PASS: after the direct fenced call the reloaded board is still exactly the union",
+     "check": "tests/browser/drive169.mjs",
+     "observes": "the live app across a restore with in-window mark attempts forced three ways; locally the drive's reload-poll case fails identically on the untouched base tree on this rig, so CI is its judging run"
+    },
+    {
+     "behaviour": "Resident-first merge: resident values win, backup-only streets join, exact stored values",
+     "case": "resident and backup-only streets survive together",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the write plan in the vm for the times/via/cov fields against planted resident records"
+    },
+    {
+     "behaviour": "The notes singleton and note identity: a resident text note wins; missing, empty and null text are distinct identities",
+     "case": "resident text note wins, and missing versus empty text have distinct identities",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the merged notes lists in the vm, including the missing-text versus text:null pair the identity bit separates"
+    },
+    {
+     "behaviour": "Board protection: resident marks and legacy completion beat backup sides and done; the F06 derivation fills only true filler",
+     "case": "resident marks and legacy completion beat backup sides and done; filler can be filled",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the merged done list and sides maps in the vm, including the derived D row built from the merged times stamp"
+    },
+    {
+     "behaviour": "History identity and order: legacy duplicates skip by canonical fingerprint; additions interleave chronologically, residents in place",
+     "case": "legacy exact duplicates skip despite key reorder; same-stamp distinct cleans survive",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the merged history array in the vm for reordered, distinct and duplicate legacy entries"
+    },
+    {
+     "behaviour": "Run-cluster admission is all-or-nothing: a resident run, a conflicting orphan or a matching archive withholds the whole cluster",
+     "case": "resident live run, conflicting orphan session or matching archive withholds cluster",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the write plan in the vm across the three withholding shapes - no cluster key is staged in any of them"
+    },
+    {
+     "behaviour": "The imported Cancel baseline folds in resident board progress cell by cell",
+     "case": "imported Cancel baseline folds in resident board progress",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the folded snapshot staged in the vm: resident marks, times, via and coverage win their cells over the imported snapshot"
+    },
+    {
+     "behaviour": "Fail closed: unreadable or malformed resident slots and a pending legacy migration abort the plan with the same errors",
+     "case": "unreadable or malformed current slots and pending legacy migration abort the plan",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the thrown errors in the vm for the four abort shapes, including the 'Route 5W migration pending' message verbatim"
+    },
+    {
+     "behaviour": "The planner boundary refuses malformed backups and plans valid ones (proof-1272, extraction re-pointed to the split region)",
+     "case": "control: a valid v2 backup plans",
+     "check": "tests/proof/proof-1272.mjs",
+     "observes": "the whole RESTORE planner in the vm: 28 refusal cases and 11 control cases over the re-pointed extraction"
+    },
+    {
+     "behaviour": "The characterization proof's 29 checks, claims unmodified, green before and after the split",
+     "case": "proof-merge-restore-entries:",
+     "check": "tests/proof/proof-1303.mjs",
+     "observes": "the proof's own pass line in the proof runner output"
+    }
+   ],
+   "files": {
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207"
+   },
+   "issued": "2026-11-27 s2-round5"
   }
  ]
 }

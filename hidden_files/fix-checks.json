@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "aaa2f823aecdf8b2d89144420f3618b43c8f1891a98a0dde7cfa8f28b52cef7d",
+  "canonical_registry_sha256": "a13df795a223ba0c6e985eff0ad64094163f5944a01117096bc8a8cd1a9fe687",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1685,
-   "included": 1655,
+   "canonical": 1692,
+   "included": 1662,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14748,6 +14748,69 @@
    "fix_id": "s2-lastresort",
    "id": "s2-lastresort-proof-extracts-sections",
    "pattern": "'buildLocalFragmentComponents', 'findLocalRepairCandidates', 'allowsJunctionRepair', 'lastResortConnect'",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app4.js",
+   "fix": "S2 ROUND 5 (2026-11-27): the restore merge's run-cluster section is its own function - mergeRestoreRunCluster carries the live-run cluster admission and the runless-trail import. If this fails, the section was inlined or renamed - restore the seam; proof-1303 extracts the merge region by its seats.",
+   "fix_id": "s2-mergerestore",
+   "id": "s2-mergerestore-cluster-section",
+   "pattern": "function mergeRestoreRunCluster(rk, pack, incoming, merged, liveStart) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app4.js",
+   "fix": "S2 ROUND 5 (2026-11-27): the restore merge's history section is its own function - mergeRestoreHist carries the legacy-fingerprint dedupe and the chronological interleave. If this fails, the section was inlined or renamed - restore the seam; proof-1303 extracts the merge region by its seats.",
+   "fix_id": "s2-mergerestore",
+   "id": "s2-mergerestore-hist-section",
+   "pattern": "function mergeRestoreHist(rk, incoming, merged, liveStart) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app4.js",
+   "fix": "S2 ROUND 5 (2026-11-27): the restore merge's fields section is its own function - mergeRestoreFields carries the times/via/cov/notes resident-first merge and the text-note singleton. If this fails, the section was inlined or renamed - restore the seam; proof-1303 extracts the merge region by its seats.",
+   "fix_id": "s2-mergerestore",
+   "id": "s2-mergerestore-fields-section",
+   "pattern": "function mergeRestoreFields(rk, incoming, merged) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app4.js",
+   "fix": "S2 ROUND 5 (2026-11-27): the restore merge's board section is its own function - mergeRestoreBoard carries the resident-completion protection and the F06 side derivation. If this fails, the section was inlined or renamed - restore the seam; proof-1303 extracts the merge region by its seats.",
+   "fix_id": "s2-mergerestore",
+   "id": "s2-mergerestore-board-section",
+   "pattern": "function mergeRestoreBoard(rk, pack, incoming, merged) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app4.js",
+   "fix": "S2 ROUND 5 (2026-11-27): the restore merge's helpers are hoisted top-level consts in app4.js - own, read, object, decode, noteId, cleanId, histId and newEntries sit above the sections under their existing names. If this fails, a helper was renamed or re-inlined - restore the hoist; proofs 1272 and 1303 extract the merge region from const own onward.",
+   "fix_id": "s2-mergerestore",
+   "id": "s2-mergerestore-helpers-hoisted",
+   "pattern": "const newEntries = (current, backup, identity) => {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/app4.js",
+   "fix": "S2 ROUND 5 (2026-11-27): the host mergeRestoreEntries keeps the finclean discharge, writing null (the delete marker) for a slot the restore actually changed. If this fails, the discharge seat or its null value moved - restore it; proof-1303's finclean check and drive176 judge the result.",
+   "fix_id": "s2-mergerestore",
+   "id": "s2-mergerestore-finclean-discharge",
+   "pattern": "merged.set(rk.finclean, null)",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/proof/proof-1303.mjs",
+   "fix": "S2 ROUND 5 (2026-11-27): proof-1303 is mergeRestoreEntries' characterization contract - it extracts the contiguous merge region (helpers, four sections, host) and pins the write plan's values. If this fails, the proof no longer extracts the split shape - update the extraction with the region, never weaken the claims.",
+   "fix_id": "s2-mergerestore",
+   "id": "s2-mergerestore-proof-extracts-region",
+   "pattern": "app4.indexOf('const own = (o, k)')",
    "type": "grep_present"
   }
  ]

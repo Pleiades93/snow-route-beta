@@ -230,48 +230,229 @@ function canonicalFixLog(raw) { // the fixlog validator: loader rules, canonical
   return out;
 }
 // merge against raw resident records; unchanged records keep their exact strings; unmergeable shapes fail closed
+/** @param {any} o @param {string} k @returns {boolean} */
+const own = (o, k) => { return Object.prototype.hasOwnProperty.call(o, k); };
+/** @param {string} key @returns {string|null} */
+const read = key => { const raw = rawRead(key); if (raw === RAW_READ_FAILED) throw new Error(key); return /** @type {string|null} */ (raw); };
+/** @param {any} v @returns {boolean} */
+const object = v => v && typeof v === 'object' && !Array.isArray(v);
+/** @param {string} key @param {string|null} raw @param {(v: any) => boolean} accepts @returns {any} */
+const decode = (key, raw, accepts) => { const value = parseJ(raw, null); if (!accepts(value)) throw new Error(key); return value; };
+/** @param {any} entry @returns {string|null} */
+const noteId = entry => entry && typeof entry.k === 'string'
+  ? JSON.stringify([entry.k, entry.at, own(entry, 'text'), entry.text]) : null;
+/** @param {any} entry @returns {string|null} */
+const cleanId = entry => entry && typeof entry.at === 'string' && Number.isFinite(Date.parse(entry.at))
+  && entry.items && typeof entry.items === 'object' && Number.isFinite(entry.runId) && entry.runId > 0
+  ? JSON.stringify([entry.at, entry.runId]) : null;
+// a no-ID legacy entry is identified by its full stamped data
+/** @param {any} entry @returns {string|null} */
+const histId = entry => cleanId(entry) ?? (entry && typeof entry === 'object' && typeof entry.at === 'string'
+  && Number.isFinite(Date.parse(entry.at)) ? 'legacy:' + upCanon(entry) : null);
+/** @param {any[]} current @param {any[]} backup @param {(entry: any) => string|null} identity @returns {any[]} */
+const newEntries = (current, backup, identity) => {
+  const seen = new Set(current.map(identity));
+  return backup.filter(entry => {
+    const id = identity(entry);
+    if (id === null || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+};
+/** @param {ReturnType<typeof routeKeys>} rk @param {RoutePack} pack @param {Map<string,any>} incoming @param {Map<string,string|null>} merged @param {string|null} liveStart */
+function mergeRestoreRunCluster(rk, pack, incoming, merged, liveStart) {
+  /** @param {string} raw @returns {any[]} */
+  const cleanTrail = raw => /** @type {any[]} */ (JSON.parse(raw)).filter(q => Array.isArray(q) && q.length === 3
+    && q.every(Number.isFinite) && q[2] >= 946684800 && q[2] <= 4102444800
+    && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180);
+
+  // A live run fills as one cluster; C06/C-01 apply inside the backup; conflicting orphan keys withhold it.
+  if (incoming.has(rk.start) && liveStart === null) {
+    const cluster = ['start', 'snap', 'trail', 'sess'];
+    const start = +incoming.get(rk.start);
+    const hist = parseJ(read(rk.hist), []);
+    const trailRaw = incoming.get(rk.trail);
+    if (trailRaw !== undefined) {
+      incoming.set(rk.trail, JSON.stringify(trailWindow(cleanTrail(trailRaw), start)));
+      if (!incoming.has(rk.sess)) incoming.set(rk.sess, '[]');
+    } else incoming.delete(rk.sess);
+    // The imported snapshot is the run's Cancel baseline: fold the resident board in, so Cancel cannot erase resident marks.
+    if (incoming.has(rk.snap)) {
+      const snapObj = parseJ(incoming.get(rk.snap), null);
+      const resSides = parseJ(read(rk.sides), null);
+      const resP = resSides && typeof resSides === 'object' ? (resSides.p || resSides) : null;
+      const resDoneRaw = parseJ(read(rk.done), []);
+      /** @param {any} v @returns {boolean} */
+      const marked = v => v === 1 || v === 2 || v === 3;
+      const hasProgress = (Array.isArray(resDoneRaw) && resDoneRaw.length > 0)
+        || (resP && Object.values(resP).some(a => Array.isArray(a) && a.some(marked)));
+      if (snapObj && snapObj.pieces && hasProgress) {
+        const G = packGeometry(pack);
+        const resT = (resSides && resSides.t) || {};
+        const pieces = /** @type {Record<string,any>} */ ({}), pieceTimes = /** @type {Record<string,any>} */ ({});
+        for (const n of G.names) {
+          const sp = /** @type {any[]} */ (snapObj.pieces[n] || []), st = /** @type {any[]} */ (snapObj.pieceTimes[n] || []);
+          const rp = (resP && resP[n]) || [], rt = sanitizePieceTimes(resT[n], G.stretch[n].parts.length);
+          pieces[n] = sp.map((v, i) => (marked(rp[i]) ? rp[i] : v));
+          pieceTimes[n] = sp.map((v, i) => (marked(rp[i]) ? rt[i] : (st[i] || [null, null])));
+        }
+        const times = { ...snapObj.times };
+        for (const [n, v] of Object.entries(parseJ(read(rk.times), {}))) if (G.set.has(n) && typeof v === 'string' && !isNaN(Date.parse(v))) times[n] = v;
+        const via = { ...snapObj.via };
+        for (const [n, v] of Object.entries(parseJ(read(rk.via), {}))) if (G.set.has(n) && typeof v === 'string') via[n] = v;
+        const cov = { ...snapObj.cov };
+        for (const [n, arr] of Object.entries(parseJ(read(rk.cov), {}))) {
+          if (!G.set.has(n) || !Array.isArray(arr)) continue;
+          cov[n] = [...new Set([...(cov[n] || []), ...arr.filter(i => Number.isInteger(i) && i >= 0 && i < G.samples[n].length)])];
+        }
+        const done = [...new Set([...snapObj.done, ...(Array.isArray(resDoneRaw) ? resDoneRaw.filter(n => G.set.has(n)) : [])])];
+        incoming.set(rk.snap, BOARD.serialiseSnap({ pieces, pieceTimes, done, times, via, cov }, start));
+      }
+    }
+    const current = cluster.map(f => read(/** @type {Record<string,string>} */ (rk)[f]));
+    // A finished archive with this run stamp makes boot reconciliation
+    // interpret the imported start as an interrupted finish.
+    if (!(Array.isArray(hist) && hist.some(h => h && +h.runId === start))
+      && cluster.every((f, i) => current[i] === null || current[i] === incoming.get(/** @type {Record<string,string>} */ (rk)[f]))) {
+      for (const [i, f] of cluster.entries()) {
+        if (current[i] === null && incoming.has(/** @type {Record<string,string>} */ (rk)[f])) merged.set(/** @type {Record<string,string>} */ (rk)[f], incoming.get(/** @type {Record<string,string>} */ (rk)[f]));
+      }
+    }
+  }
+  // A trail carried without its start lands windowed only into a slot with no run-state remnants.
+  if (incoming.has(rk.trail) && !incoming.has(rk.start) && liveStart === null && read(rk.trail) === null
+    && (read(rk.sess) === null || read(rk.sess) === '[]')) {
+    merged.set(rk.trail, JSON.stringify(trailWindow(cleanTrail(incoming.get(rk.trail)), 0)));
+  }
+}
+/** @param {ReturnType<typeof routeKeys>} rk @param {Map<string,any>} incoming @param {Map<string,string|null>} merged @param {string|null} liveStart */
+function mergeRestoreHist(rk, incoming, merged, liveStart) {
+  if (incoming.has(rk.hist)) {
+    const raw = read(rk.hist);
+    const current = raw === null ? [] : decode(rk.hist, raw, Array.isArray);
+    const backup = /** @type {any[]} */ (JSON.parse(incoming.get(rk.hist)));
+    const start = +(liveStart || /** @type {string} */ (merged.get(rk.start)));
+    const candidates = backup.filter(h => !(start && h && +h.runId === start));
+    // Legacy entries match by fingerprint (histId); only exact duplicates skip.
+    const additions = newEntries(current, candidates, histId);
+    if (additions.length || (raw === null && !backup.length)) {
+      // HIST consumes chronological order, reconciling from the raw tail: insert in time order, residents stay in place
+      const result = /** @type {any[]} */ ([]);
+      if (current.length) additions.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+      let next = 0;
+      for (const h of current) {
+        while (next < additions.length && Date.parse(additions[next].at) < Date.parse(h?.at)) result.push(additions[next++]);
+        result.push(h);
+      }
+      for (; next < additions.length; next++) result.push(additions[next]);
+      merged.set(rk.hist, JSON.stringify(result));
+    }
+  }
+}
+/** @param {ReturnType<typeof routeKeys>} rk @param {Map<string,any>} incoming @param {Map<string,string|null>} merged */
+function mergeRestoreFields(rk, incoming, merged) {
+const fields = /** @type {('times'|'via'|'cov'|'notes')[]} */ (['times', 'via', 'cov', 'notes']);
+  for (const f of fields) {
+    if (!incoming.has(rk[f])) continue;
+    const key = rk[f], raw = read(key);
+    const current = raw === null ? {} : decode(key, raw, object);
+    const backup = JSON.parse(incoming.get(key));
+    // The text note is a singleton per street: a backup version never joins a resident one.
+    /** @param {any[]} list @param {boolean} resident @returns {any[]} */
+    const noteGuard = (list, resident) => {
+      let taken = resident;
+      return list.filter(e => { if (e && e.k === 'note') { if (taken) return false; taken = true; } return true; });
+    };
+    const additions = [];
+    for (const [name, value] of Object.entries(backup)) {
+      if (!own(current, name)) additions.push([name, f === 'notes' && Array.isArray(value) ? noteGuard(value, false) : value]);
+      else if (f === 'notes' && Array.isArray(current[name]) && Array.isArray(value)) {
+        const guarded = noteGuard(value, current[name].some(e => e && e.k === 'note'));
+        const notesAdded = newEntries(current[name], guarded, noteId);
+        if (notesAdded.length) additions.push([name, [...current[name], ...notesAdded]]);
+      }
+    }
+    if (raw === null) {
+      if (f === 'notes') {
+        let dropped = false;
+        const guardedObj = /** @type {Record<string,any>} */ ({});
+        for (const [n, v] of Object.entries(backup)) { const g = Array.isArray(v) ? noteGuard(v, false) : v; if (Array.isArray(v) && g.length !== v.length) dropped = true; guardedObj[n] = g; }
+        merged.set(key, dropped ? JSON.stringify(guardedObj) : incoming.get(key));
+      } else merged.set(key, incoming.get(key));
+    }
+    else if (additions.length) merged.set(key, JSON.stringify({ ...current, ...Object.fromEntries(additions) }));
+  }
+}
+/** @param {ReturnType<typeof routeKeys>} rk @param {RoutePack} pack @param {Map<string,any>} incoming @param {Map<string,string|null>} merged */
+function mergeRestoreBoard(rk, pack, incoming, merged) {
+  if (incoming.has(rk.done) || incoming.has(rk.sides)) {
+    const rawSides = read(rk.sides);
+    /** @param {string|null} raw @param {boolean} resident @returns {{p:any,t:any,wrapped:boolean,raw:any}} */
+    const split = (raw, resident) => {
+      const v = decode(rk.sides, raw, object);
+      if (!v.p) return { p: v, t: {}, wrapped: false, raw: v };
+      if (resident && (!object(v.p) || (own(v, 't') && !object(v.t)))) throw new Error(rk.sides);
+      return { p: object(v.p) ? v.p : {}, t: object(v.t) ? v.t : {}, wrapped: true, raw: v };
+    };
+    const empty = { p: {}, t: {}, wrapped: true, raw: {} };
+    const current = rawSides === null ? empty : split(rawSides, true);
+    /** @param {{p: any, t: any}} side @param {string} name @returns {boolean} */
+    const hasSide = (side, name) => own(side.p, name) || own(side.t, name);
+    const hasBackupSides = incoming.has(rk.sides);
+    const backup = hasBackupSides ? split(incoming.get(rk.sides), false) : empty;
+    const p = Object.assign(Object.create(null), current.p), t = Object.assign(Object.create(null), current.t);
+    let sidesAdded = false, sidesDerived = false;
+    const rawDone = read(rk.done);
+    const currentDone = rawDone === null ? [] : decode(rk.done, rawDone, Array.isArray);
+    const done = new Set(currentDone);
+
+    // An entry with no marks and no stamps is saver filler, not a record.
+    /** @param {any} side @param {string} name @returns {boolean} */
+    const entryMarked = (side, name) => {
+      const bp = side.p[name], bt = side.t[name];
+      return (Array.isArray(bp) && bp.some(v => v))
+        || (bt && Object.values(bt).some(s => Array.isArray(s) && s.some(x => x)));
+    };
+    // A legacy completion is a resident board value; a backup side entry cannot un-complete it.
+    for (const name of new Set([...Object.keys(backup.p), ...Object.keys(backup.t)])) {
+      if (entryMarked(current, name) || done.has(name)) continue;
+      if (!entryMarked(backup, name)) continue;
+      if (own(backup.p, name)) p[name] = backup.p[name];
+      if (own(backup.t, name)) t[name] = backup.t[name];
+      sidesAdded = true;
+    }
+    if (incoming.has(rk.done)) {
+      const { set, stretch } = packGeometry(pack);
+      /** @type {Record<string,any>|undefined} */
+      let times;
+      const added = [];
+      const backupDone = JSON.parse(incoming.get(rk.done));
+      for (const name of backupDone) {
+        if (done.has(name) || entryMarked(current, name) || !set.has(name)) continue;
+        done.add(name);
+        added.push(name);
+        // F06: derive sides only for a newly added street without incoming sides, from the merged stamp.
+        if (!entryMarked(backup, name)) {
+          if (!times) times = parseJ(merged.get(rk.times) ?? read(rk.times), {});
+          p[name] = stretch[name].parts.map(() => 3);
+          t[name] = stretch[name].parts.map(() => [(/** @type {Record<string, any>} */ (times))[name] || null, (/** @type {Record<string, any>} */ (times))[name] || null]);
+          sidesAdded = true;
+          sidesDerived = true;
+        }
+      }
+      if (added.length || (rawDone === null && !backupDone.length)) merged.set(rk.done, JSON.stringify([...currentDone, ...added]));
+    }
+    if (rawSides === null && hasBackupSides && !currentDone.length && !sidesDerived) {
+      merged.set(rk.sides, incoming.get(rk.sides));
+    } else if (sidesAdded) {
+      merged.set(rk.sides, JSON.stringify({ ...(current.wrapped ? current.raw : {}), p, t }));
+    }
+  }
+}
 /** @param {[string,string][]} entries @param {RoutePack[]} allPacks @returns {[string,string|null][]} */
 function mergeRestoreEntries(entries, allPacks) {
-  /** @param {any} o @param {string} k @returns {boolean} */
-  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   const incoming = /** @type {Map<string,any>} */ (new Map(entries));
   const merged = /** @type {Map<string,string|null>} */ (new Map());
-  /** @param {string} key @returns {string|null} */
-  const read = key => {
-    const raw = rawRead(key);
-    if (raw === RAW_READ_FAILED) throw new Error(key);
-    return /** @type {string|null} */ (raw);
-  };
-  /** @param {any} v @returns {boolean} */
-  const object = v => v && typeof v === 'object' && !Array.isArray(v);
-  /** @param {string} key @param {string|null} raw @param {(v: any) => boolean} accepts @returns {any} */
-  const decode = (key, raw, accepts) => {
-    const value = parseJ(raw, null);
-    if (!accepts(value)) throw new Error(key);
-    return value;
-  };
-  /** @param {any} entry @returns {string|null} */
-  const noteId = entry => entry && typeof entry.k === 'string'
-    ? JSON.stringify([entry.k, entry.at, own(entry, 'text'), entry.text]) : null;
-  /** @param {any} entry @returns {string|null} */
-  const cleanId = entry => entry && typeof entry.at === 'string' && Number.isFinite(Date.parse(entry.at))
-    && entry.items && typeof entry.items === 'object' && Number.isFinite(entry.runId) && entry.runId > 0
-    ? JSON.stringify([entry.at, entry.runId]) : null;
-  // a no-ID legacy entry is identified by its full stamped data
-  /** @param {any} entry @returns {string|null} */
-  const histId = entry => cleanId(entry) ?? (entry && typeof entry === 'object' && typeof entry.at === 'string'
-    && Number.isFinite(Date.parse(entry.at)) ? 'legacy:' + upCanon(entry) : null);
-  /** @param {any[]} current @param {any[]} backup @param {(entry: any) => string|null} identity @returns {any[]} */
-  const newEntries = (current, backup, identity) => {
-    const seen = new Set(current.map(identity));
-    return backup.filter(entry => {
-      const id = identity(entry);
-      if (id === null || seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    });
-  };
-  const fields = /** @type {('times'|'via'|'cov'|'notes')[]} */ (['times', 'via', 'cov', 'notes']);
   for (const pack of allPacks) {
     const rk = routeKeys(/** @type {string} */ (pack.id));
     if (![...ROUTE_FIELDS, 'snap'].some(f => incoming.has(/** @type {Record<string,string>} */ (rk)[f]))) continue;
@@ -280,186 +461,10 @@ function mergeRestoreEntries(entries, allPacks) {
       throw new Error('Route 5W migration pending');
     }
     const liveStart = read(rk.start);
-    /** @param {string} raw @returns {any[]} */
-    const cleanTrail = raw => /** @type {any[]} */ (JSON.parse(raw)).filter(q => Array.isArray(q) && q.length === 3
-      && q.every(Number.isFinite) && q[2] >= 946684800 && q[2] <= 4102444800
-      && Math.abs(q[0]) <= 90 && Math.abs(q[1]) <= 180);
-
-    // A live run fills as one cluster; C06/C-01 apply inside the backup; conflicting orphan keys withhold it.
-    if (incoming.has(rk.start) && liveStart === null) {
-      const cluster = ['start', 'snap', 'trail', 'sess'];
-      const start = +incoming.get(rk.start);
-      const hist = parseJ(read(rk.hist), []);
-      const trailRaw = incoming.get(rk.trail);
-      if (trailRaw !== undefined) {
-        incoming.set(rk.trail, JSON.stringify(trailWindow(cleanTrail(trailRaw), start)));
-        if (!incoming.has(rk.sess)) incoming.set(rk.sess, '[]');
-      } else incoming.delete(rk.sess);
-      // The imported snapshot is the run's Cancel baseline: fold the resident board in, so Cancel cannot erase resident marks.
-      if (incoming.has(rk.snap)) {
-        const snapObj = parseJ(incoming.get(rk.snap), null);
-        const resSides = parseJ(read(rk.sides), null);
-        const resP = resSides && typeof resSides === 'object' ? (resSides.p || resSides) : null;
-        const resDoneRaw = parseJ(read(rk.done), []);
-        /** @param {any} v @returns {boolean} */
-        const marked = v => v === 1 || v === 2 || v === 3;
-        const hasProgress = (Array.isArray(resDoneRaw) && resDoneRaw.length > 0)
-          || (resP && Object.values(resP).some(a => Array.isArray(a) && a.some(marked)));
-        if (snapObj && snapObj.pieces && hasProgress) {
-          const G = packGeometry(pack);
-          const resT = (resSides && resSides.t) || {};
-          const pieces = /** @type {Record<string,any>} */ ({}), pieceTimes = /** @type {Record<string,any>} */ ({});
-          for (const n of G.names) {
-            const sp = /** @type {any[]} */ (snapObj.pieces[n] || []), st = /** @type {any[]} */ (snapObj.pieceTimes[n] || []);
-            const rp = (resP && resP[n]) || [], rt = sanitizePieceTimes(resT[n], G.stretch[n].parts.length);
-            pieces[n] = sp.map((v, i) => (marked(rp[i]) ? rp[i] : v));
-            pieceTimes[n] = sp.map((v, i) => (marked(rp[i]) ? rt[i] : (st[i] || [null, null])));
-          }
-          const times = { ...snapObj.times };
-          for (const [n, v] of Object.entries(parseJ(read(rk.times), {}))) if (G.set.has(n) && typeof v === 'string' && !isNaN(Date.parse(v))) times[n] = v;
-          const via = { ...snapObj.via };
-          for (const [n, v] of Object.entries(parseJ(read(rk.via), {}))) if (G.set.has(n) && typeof v === 'string') via[n] = v;
-          const cov = { ...snapObj.cov };
-          for (const [n, arr] of Object.entries(parseJ(read(rk.cov), {}))) {
-            if (!G.set.has(n) || !Array.isArray(arr)) continue;
-            cov[n] = [...new Set([...(cov[n] || []), ...arr.filter(i => Number.isInteger(i) && i >= 0 && i < G.samples[n].length)])];
-          }
-          const done = [...new Set([...snapObj.done, ...(Array.isArray(resDoneRaw) ? resDoneRaw.filter(n => G.set.has(n)) : [])])];
-          incoming.set(rk.snap, BOARD.serialiseSnap({ pieces, pieceTimes, done, times, via, cov }, start));
-        }
-      }
-      const current = cluster.map(f => read(/** @type {Record<string,string>} */ (rk)[f]));
-      // A finished archive with this run stamp makes boot reconciliation
-      // interpret the imported start as an interrupted finish.
-      if (!(Array.isArray(hist) && hist.some(h => h && +h.runId === start))
-        && cluster.every((f, i) => current[i] === null || current[i] === incoming.get(/** @type {Record<string,string>} */ (rk)[f]))) {
-        for (const [i, f] of cluster.entries()) {
-          if (current[i] === null && incoming.has(/** @type {Record<string,string>} */ (rk)[f])) merged.set(/** @type {Record<string,string>} */ (rk)[f], incoming.get(/** @type {Record<string,string>} */ (rk)[f]));
-        }
-      }
-    }
-    // A trail carried without its start lands windowed only into a slot with no run-state remnants.
-    if (incoming.has(rk.trail) && !incoming.has(rk.start) && liveStart === null && read(rk.trail) === null
-      && (read(rk.sess) === null || read(rk.sess) === '[]')) {
-      merged.set(rk.trail, JSON.stringify(trailWindow(cleanTrail(incoming.get(rk.trail)), 0)));
-    }
-
-    if (incoming.has(rk.hist)) {
-      const raw = read(rk.hist);
-      const current = raw === null ? [] : decode(rk.hist, raw, Array.isArray);
-      const backup = /** @type {any[]} */ (JSON.parse(incoming.get(rk.hist)));
-      const start = +(liveStart || /** @type {string} */ (merged.get(rk.start)));
-      const candidates = backup.filter(h => !(start && h && +h.runId === start));
-      // Legacy entries match by fingerprint (histId); only exact duplicates skip.
-      const additions = newEntries(current, candidates, histId);
-      if (additions.length || (raw === null && !backup.length)) {
-        // HIST consumes chronological order, reconciling from the raw tail: insert in time order, residents stay in place
-        const result = /** @type {any[]} */ ([]);
-        if (current.length) additions.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-        let next = 0;
-        for (const h of current) {
-          while (next < additions.length && Date.parse(additions[next].at) < Date.parse(h?.at)) result.push(additions[next++]);
-          result.push(h);
-        }
-        for (; next < additions.length; next++) result.push(additions[next]);
-        merged.set(rk.hist, JSON.stringify(result));
-      }
-    }
-
-    for (const f of fields) {
-      if (!incoming.has(rk[f])) continue;
-      const key = rk[f], raw = read(key);
-      const current = raw === null ? {} : decode(key, raw, object);
-      const backup = JSON.parse(incoming.get(key));
-      // The text note is a singleton per street: a backup version never joins a resident one.
-      /** @param {any[]} list @param {boolean} resident @returns {any[]} */
-      const noteGuard = (list, resident) => {
-        let taken = resident;
-        return list.filter(e => { if (e && e.k === 'note') { if (taken) return false; taken = true; } return true; });
-      };
-      const additions = [];
-      for (const [name, value] of Object.entries(backup)) {
-        if (!own(current, name)) additions.push([name, f === 'notes' && Array.isArray(value) ? noteGuard(value, false) : value]);
-        else if (f === 'notes' && Array.isArray(current[name]) && Array.isArray(value)) {
-          const guarded = noteGuard(value, current[name].some(e => e && e.k === 'note'));
-          const notesAdded = newEntries(current[name], guarded, noteId);
-          if (notesAdded.length) additions.push([name, [...current[name], ...notesAdded]]);
-        }
-      }
-      if (raw === null) {
-        if (f === 'notes') {
-          let dropped = false;
-          const guardedObj = /** @type {Record<string,any>} */ ({});
-          for (const [n, v] of Object.entries(backup)) { const g = Array.isArray(v) ? noteGuard(v, false) : v; if (Array.isArray(v) && g.length !== v.length) dropped = true; guardedObj[n] = g; }
-          merged.set(key, dropped ? JSON.stringify(guardedObj) : incoming.get(key));
-        } else merged.set(key, incoming.get(key));
-      }
-      else if (additions.length) merged.set(key, JSON.stringify({ ...current, ...Object.fromEntries(additions) }));
-    }
-
-    if (incoming.has(rk.done) || incoming.has(rk.sides)) {
-      const rawSides = read(rk.sides);
-      /** @param {string|null} raw @param {boolean} resident @returns {{p:any,t:any,wrapped:boolean,raw:any}} */
-      const split = (raw, resident) => {
-        const v = decode(rk.sides, raw, object);
-        if (!v.p) return { p: v, t: {}, wrapped: false, raw: v };
-        if (resident && (!object(v.p) || (own(v, 't') && !object(v.t)))) throw new Error(rk.sides);
-        return { p: object(v.p) ? v.p : {}, t: object(v.t) ? v.t : {}, wrapped: true, raw: v };
-      };
-      const empty = { p: {}, t: {}, wrapped: true, raw: {} };
-      const current = rawSides === null ? empty : split(rawSides, true);
-      /** @param {{p: any, t: any}} side @param {string} name @returns {boolean} */
-      const hasSide = (side, name) => own(side.p, name) || own(side.t, name);
-      const hasBackupSides = incoming.has(rk.sides);
-      const backup = hasBackupSides ? split(incoming.get(rk.sides), false) : empty;
-      const p = Object.assign(Object.create(null), current.p), t = Object.assign(Object.create(null), current.t);
-      let sidesAdded = false, sidesDerived = false;
-      const rawDone = read(rk.done);
-      const currentDone = rawDone === null ? [] : decode(rk.done, rawDone, Array.isArray);
-      const done = new Set(currentDone);
-
-      // An entry with no marks and no stamps is saver filler, not a record.
-      /** @param {any} side @param {string} name @returns {boolean} */
-      const entryMarked = (side, name) => {
-        const bp = side.p[name], bt = side.t[name];
-        return (Array.isArray(bp) && bp.some(v => v))
-          || (bt && Object.values(bt).some(s => Array.isArray(s) && s.some(x => x)));
-      };
-      // A legacy completion is a resident board value; a backup side entry cannot un-complete it.
-      for (const name of new Set([...Object.keys(backup.p), ...Object.keys(backup.t)])) {
-        if (entryMarked(current, name) || done.has(name)) continue;
-        if (!entryMarked(backup, name)) continue;
-        if (own(backup.p, name)) p[name] = backup.p[name];
-        if (own(backup.t, name)) t[name] = backup.t[name];
-        sidesAdded = true;
-      }
-      if (incoming.has(rk.done)) {
-        const { set, stretch } = packGeometry(pack);
-        /** @type {Record<string,any>|undefined} */
-        let times;
-        const added = [];
-        const backupDone = JSON.parse(incoming.get(rk.done));
-        for (const name of backupDone) {
-          if (done.has(name) || entryMarked(current, name) || !set.has(name)) continue;
-          done.add(name);
-          added.push(name);
-          // F06: derive sides only for a newly added street without incoming sides, from the merged stamp.
-          if (!entryMarked(backup, name)) {
-            if (!times) times = parseJ(merged.get(rk.times) ?? read(rk.times), {});
-            p[name] = stretch[name].parts.map(() => 3);
-            t[name] = stretch[name].parts.map(() => [(/** @type {Record<string, any>} */ (times))[name] || null, (/** @type {Record<string, any>} */ (times))[name] || null]);
-            sidesAdded = true;
-            sidesDerived = true;
-          }
-        }
-        if (added.length || (rawDone === null && !backupDone.length)) merged.set(rk.done, JSON.stringify([...currentDone, ...added]));
-      }
-      if (rawSides === null && hasBackupSides && !currentDone.length && !sidesDerived) {
-        merged.set(rk.sides, incoming.get(rk.sides));
-      } else if (sidesAdded) {
-        merged.set(rk.sides, JSON.stringify({ ...(current.wrapped ? current.raw : {}), p, t }));
-      }
-    }
+    mergeRestoreRunCluster(rk, pack, incoming, merged, liveStart);
+    mergeRestoreHist(rk, incoming, merged, liveStart);
+    mergeRestoreFields(rk, incoming, merged);
+    mergeRestoreBoard(rk, pack, incoming, merged);
     if (incoming.has(rk.flip) && read(rk.flip) === null) merged.set(rk.flip, incoming.get(rk.flip));
 
     // The outstanding finish cleanup could erase merged notes/coverage at
