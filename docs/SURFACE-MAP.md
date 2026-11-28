@@ -91,6 +91,16 @@ exactly as before - same writes, order and refusals,
 pinned by proof-1303. No surface, element or snow
 status changed. Map reviewed; no update needed beyond
 this note.
+GF2 (Beta 1.305, 2026-11-28): the boot route picker arms
+on the splash intro floor alone - the readiness gate
+(style loaded + first tile) and its six-second escape are
+deleted (parts/create-save.js), and a pick ahead of the
+boot tail runs the tail first. The route menu's main pane
+and the Choose-a-route pane are reached sooner on a slow
+or stalled connection; no surface, element or snow status
+changed. The full snapshot-first survey is
+docs/SNAPSHOT-FIRST.md. Map reviewed; no update needed
+beyond this note.
 
 ## The snow rule (one rule, app-wide)
 

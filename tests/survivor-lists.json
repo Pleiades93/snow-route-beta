@@ -2325,6 +2325,53 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-28 gf1-cold-start"
+  },
+  {
+   "id": "gf2-snapshot-menus",
+   "kind": "cut",
+   "surface": "the boot route picker's arming: when the splash hands over to the picker, and what a boot pick runs first",
+   "cut": "the splash IIFE's readiness gate (parts/create-save.js) was deleted: the picker arms on the intro floor alone, and __bootPickRoute is wrapped so a pick ahead of the boot tail runs it first",
+   "changed": [
+    "parts/create-save.js",
+    "parts/whatsnew.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "The picker still waits out the intro floor before arming - it never appears early",
+     "case": "The picker arms at the intro floor, not the six-second escape",
+     "check": "tests/browser/drive233.mjs",
+     "observes": "the arm timestamp against the seeded document's start (lower bound 2,500 ms)"
+    },
+    {
+     "behaviour": "The splash still hands over to the route menu and never traps the user in the brand animation",
+     "case": "splash hands over to the route menu once the app is ready",
+     "check": "tests/browser/drive132.mjs",
+     "observes": "the splash gaining its menu class at the handover"
+    },
+    {
+     "behaviour": "Picking a route still removes the splash for good",
+     "case": "picking a route removes the splash and it never comes back",
+     "check": "tests/browser/drive132.mjs",
+     "observes": "the splash element's absence after a pick"
+    },
+    {
+     "behaviour": "The catalogue warm-up still fires from the menu-arming moment during boot",
+     "case": "BOOT WARMTH: from a cold open, with no tap at all, the catalogue request starts during BOOT",
+     "check": "tests/browser/drive159.mjs",
+     "observes": "the catalogue request's start with no tap, from a cold page"
+    },
+    {
+     "behaviour": "A boot pick still loads the picked route whole, now also with no map at all",
+     "case": "Real taps load the stored route and open Settings under the same stall",
+     "check": "tests/browser/drive233.mjs",
+     "observes": "the active route and the removed splash after real taps in the all-requests-failed world"
+    }
+   ],
+   "issued": "2026-11-28 gf2-snapshot-menus",
+   "files": {
+    "parts/create-save.js": "f44dbe7c5339c12062a31181811f53a77f1ce56e100e05ad7f8a32e9795d646c",
+    "parts/whatsnew.js": "df5c2ed24abd1ca84285581f61a5bdb6e2e31a0f9730eeee5a8a00afc72b745e"
+   }
   }
  ]
 }

@@ -1315,6 +1315,19 @@
    "red": "proof-1304 exit 1: 135 passed, 1 failed - 'map: F3 has exactly one row'",
    "green": "proof-1304 on the final bytes: 139 passed, 0 failed",
    "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gf2-drive233-arm",
+   "check": "tests/browser/drive233.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive233.mjs": "f56a743f09aa0b9a94b670fb1f5ffbe70b615e5147d3385cadd0fd030de3c142",
+    "parts/create-save.js": "f44dbe7c5339c12062a31181811f53a77f1ce56e100e05ad7f8a32e9795d646c"
+   },
+   "mutation": "the shipped state itself: base tree 24847292, whose splash IIFE arms the picker only when glOk && tilesOk > 0 or after the 6 s escape, so in the all-requests-failed world the picker arms at the escape (measured t0+6,305 ms), not at the intro floor",
+   "red": "drive233 (final bytes) on base 24847292: 6 checks, exactly 1 FAIL - 'The picker arms at the intro floor, not the six-second escape'; the other five legs PASS on base (they pin survivor behaviour)",
+   "green": "drive233 (final bytes) on the fixed tree: 6/6 PASS, run twice",
+   "issued": "2026-11-28 gf2-snapshot-menus"
   }
  ]
 }
