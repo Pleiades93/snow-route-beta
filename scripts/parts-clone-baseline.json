@@ -700,7 +700,7 @@
     ],
     [
       "parts/create-pick.js/<callback:addEventListener:click>#14/<callback>@1c05fac9",
-      "parts/engine.js/<callback>/lastResortConnect/localFrags/<callback>@1c05fac9"
+      "parts/engine.js/<callback>/buildLocalFragmentComponents/<callback>@1c05fac9"
     ],
     [
       "parts/create-pick.js/<callback:addEventListener:input>/<callback>@e33454ee",
@@ -716,7 +716,7 @@
     ],
     [
       "parts/create-pick.js/chosenSet/<callback>@1c05fac9",
-      "parts/engine.js/<callback>/lastResortConnect/localFrags/<callback>@1c05fac9"
+      "parts/engine.js/<callback>/buildLocalFragmentComponents/<callback>@1c05fac9"
     ],
     [
       "parts/create-pick.js/crLineLen",
@@ -944,7 +944,7 @@
     ],
     [
       "parts/engine.js/<callback>/cornerTouchSlices/properX",
-      "parts/engine.js/<callback>/lastResortConnect/properCross"
+      "parts/engine.js/<callback>/properCross"
     ],
     [
       "parts/engine.js/<callback>/cornerTouchSlices/properX/<callback>@308738d0",
@@ -952,15 +952,15 @@
     ],
     [
       "parts/engine.js/<callback>/cornerTouchSlices/properX/<callback>@308738d0",
-      "parts/engine.js/<callback>/lastResortConnect/properCross/<callback>@308738d0"
+      "parts/engine.js/<callback>/properCross/<callback>@308738d0"
     ],
     [
       "parts/engine.js/<callback>/edgeRunSlices/flush/properX",
-      "parts/engine.js/<callback>/lastResortConnect/properCross"
+      "parts/engine.js/<callback>/properCross"
     ],
     [
       "parts/engine.js/<callback>/edgeRunSlices/flush/properX/<callback>@308738d0",
-      "parts/engine.js/<callback>/lastResortConnect/properCross/<callback>@308738d0"
+      "parts/engine.js/<callback>/properCross/<callback>@308738d0"
     ],
     [
       "parts/engine.js/<callback>/fillCornerLinks/<callback>@76163de7",

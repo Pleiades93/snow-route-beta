@@ -2,7 +2,7 @@
 <html lang="en" class="boot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-Rzg8h04/JXaZSRzQ8vqp24GTjQCPa202lPtgGk90T7PsADZRxgEVd/UArBBaCtAN' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-ipaj5Z5yn/e87/r1yJngc8ErL/VxsGM4NebRVtF+L+bg/7w+EtVR61sgqPwi4Dk5' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha384-y4N2Ubuc9/rDoD2y3/BiNuoIouSDkj9SvCC3T/1Fm4k1yY5GpiV2y4y3dOnk2wWa' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js; style-src-elem 'sha384-ipaj5Z5yn/e87/r1yJngc8ErL/VxsGM4NebRVtF+L+bg/7w+EtVR61sgqPwi4Dk5' https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://tiles.basemaps.cartocdn.com https://protomaps.github.io; connect-src 'self' https://tiles.basemaps.cartocdn.com https://protomaps.github.io https://nominatim.openstreetmap.org https://overpass-api.de https://overpass.kumi.systems; worker-src blob: 'self'; child-src blob: 'self'; font-src 'none'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2852,85 +2852,127 @@ function extendIntoBands(edgeChains, pairs) {
 }
 /** @type {EnginePairs|null} */
 let PAIRS_CUR = null;   // the current build's junction pairs (throughOK reads them)
+/** @typedef {{d: number, np: AnyPoint, ci: number, si: number}} RepairCand */
+/** @typedef {{ci: number, pt: AnyPoint, meta: EngineEnd|null, atEnd: boolean}} RepairEnd */
+/** @param {AnyPoint} V @param {string} A @param {string} B */
+function junctionPairFrame(V, A, B) {
+  const J1 = (JUNC[A] || []).find(x => x.B === B && H.jDistM(x.V, V) < 2); const J2 = (JUNC[B] || []).find(x => x.B === A && H.jDistM(x.V, V) < 2);
+  return (J1 && J2) ? { nA: J2.nB, nB: J1.nB } : null;
+}
+/** @param {AnyPoint} a @param {AnyPoint} b @param {AnyPoint} c @param {AnyPoint} d */
+function properCross(a, b, c, d) {
+  if (!segCross(a, b, c, d)) return false;
+  const X = lineHit(a, b, c, d); return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35);
+}
+// local connectivity only: the fragment rules the gate audits with - a long detour is not a connection
+/** @param {EngineStrand[]} edges @param {EngineStrand[]} bands @param {AnyPoint} V
+ * @param {Map<string, {frags: EngineFragment[], comp: number[]}>} fragCache */
+function buildLocalFragmentComponents(edges, bands, V, fragCache) {
+  const key = coordKey(V); if (fragCache.has(key)) return /** @type {{frags: EngineFragment[], comp: number[]}} */ (fragCache.get(key));
+  const all = edges.concat(bands);
+  /** @type {EngineFragment[]} */
+  const frags = [];
+  all.forEach((c, ci) => {
+    const band = ci >= edges.length;
+    /** @type {EngineFragment|null} */
+    let cur = null;
+    const close = () => { if (cur && cur.pts.length >= 1) frags.push(cur); cur = null; };
+    c.pts.forEach((p, pi) => {
+      if (H.jDistM(p, V) < 15) {
+        if (!cur) {
+          cur = { ci, band, pts: [] };
+          if (pi > 0 && H.ptSegM(V, c.pts[pi - 1], p) < 15) cur.pts.push(c.pts[pi - 1]);
+        }
+        cur.pts.push(p);
+      } else if (pi > 0 && H.ptSegM(V, c.pts[pi - 1], p) < 15) {
+        if (cur) { cur.pts.push(p); close(); }
+        else frags.push({ ci, band, pts: [c.pts[pi - 1], p] });
+      } else close();
+    });
+    close();
+  });
+  const parent = frags.map((_, i) => i);
+  /** @type {(x: number) => number} */
+  const find = x => parent[x] === x ? x : (parent[x] = find(parent[x]));
+  const onLine = /** @param {AnyPoint} p @param {EngineFragment} f @param {number} thr */ (p, f, thr) => { for (let s2 = 0; s2 + 1 < f.pts.length; s2++) if (H.ptSegM(p, f.pts[s2], f.pts[s2 + 1]) < thr) return true; return false; };
+  const touch = /** @param {EngineFragment} A2 @param {EngineFragment} B2 */ (A2, B2) => {
+    const eA = [A2.pts[0], A2.pts[A2.pts.length - 1]], eB = [B2.pts[0], B2.pts[B2.pts.length - 1]];
+    if (eA.some(p => eB.some(q => coordKey(p) === coordKey(q)))) return true;
+    const thr = (A2.band || B2.band) ? SURF_HALF : 1.0;   // bands draw at the surface's width, so the band touch threshold is SURF_HALF itself
+    return eA.some(p => onLine(p, B2, thr)) || eB.some(p => onLine(p, A2, thr));
+  };
+  frags.forEach((A2, i) => frags.forEach((B2, j) => { if (j > i && touch(A2, B2)) parent[find(i)] = find(j); }));
+  const byChain = new Map(); frags.forEach((f, i) => { if (!byChain.has(f.ci)) byChain.set(f.ci, []); byChain.get(f.ci).push(i); });
+  byChain.forEach(idxs => {
+    for (let k = 0; k + 1 < idxs.length; k++) {
+      const A2 = frags[idxs[k]], B2 = frags[idxs[k + 1]];
+      const chain = all[A2.ci];
+      const ia = chain.pts.findIndex(p => coordKey(p) === coordKey(A2.pts[A2.pts.length - 1]));
+      const ib = chain.pts.findIndex(p => coordKey(p) === coordKey(B2.pts[0]));
+      if (ia < 0 || ib < 0 || ib <= ia) continue;
+      const mid = chain.pts.slice(ia + 1, ib);
+      if (mid.length <= 3 && mid.every(p => H.jDistM(p, V) <= 30) && H.ptSegM(V, A2.pts[A2.pts.length - 1], B2.pts[0]) <= 15) parent[find(idxs[k])] = find(idxs[k + 1]);
+    }
+  });
+  const out = { frags, comp: frags.map((_, i) => find(i)) }; fragCache.set(key, out); return out;
+}
+/** @param {EngineStrand[]} list @param {{ci:number,pn:AnyPoint[]}[]} partners @param {RepairEnd} E @returns {RepairCand[]} */
+function findLocalRepairCandidates(list, partners, E) {
+  /** @type {{d:number,np:AnyPoint,ci:number,si:number}[]} */
+  const cands = [];
+  partners.forEach(nc => {
+    const c = list[nc.ci];
+    for (let si = 0; si + 1 < c.pts.length; si++) {
+      const a = c.pts[si], b = c.pts[si + 1], ax = XYOf(a), bx = XYOf(b), ex = XYOf(E.pt);
+      const dx = bx[0] - ax[0], dy = bx[1] - ax[1], L2 = dx * dx + dy * dy || 1;
+      let t = ((ex[0] - ax[0]) * dx + (ex[1] - ax[1]) * dy) / L2; t = Math.max(0, Math.min(1, t));
+      const np = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      cands.push({ d: H.jDistM(E.pt, np), np, ci: nc.ci, si });
+    }
+  });
+  cands.sort((x, y) => x.d - y.d); return cands;
+}
+/** @param {AnyPoint[]} seg @param {RepairCand} cand @param {number} endCi @param {AnyPoint} V @param {EngineStrand[]} edges @returns {boolean} */
+function allowsJunctionRepair(seg, cand, endCi, V, edges) {
+  // through the centre mid-segment: vetoed. Ending differs: a band ending at V lands only at V
+  let badPath = H.ptSegM(V, seg[0], seg[1]) < 1.5 && H.jDistM(cand.np, V) > 0.5;
+  if (!badPath) for (const n2 of H.names) {
+    const st = GEO[n2].stitched;
+    for (let si = 0; si + 1 < st.length && !badPath; si++) {
+      if (!TOPO.segReal(n2, si)) continue; // not a real segment
+      if (H.ptSegM(V, st[si], st[si + 1]) >= 13 || !segCross(seg[0], seg[1], st[si], st[si + 1])) continue;
+      const X = lineHit(seg[0], seg[1], st[si], st[si + 1]);
+      if (!X) continue;
+      // landing ON the target's centreline is the join itself, not a crossing of the road
+      if (H.jDistM(X, cand.np) < 1.5) continue;
+      if (H.jDistM(X, V) > 6) badPath = true;
+    }
+  }
+  if (badPath) return false; let badGreen = false;
+  edges.forEach((c2, ci2) => {
+    if (ci2 === endCi || badGreen) return;
+    for (let si = 0; si + 1 < c2.pts.length; si++) {
+      if (ci2 === cand.ci && si === cand.si) continue;
+      if (properCross(seg[0], seg[1], c2.pts[si], c2.pts[si + 1])) { badGreen = true; break; }
+    }
+  });
+  return !badGreen;
+}
 // last-resort connector: an unjoined end joins the nearest beside geometry, if the join cuts no road's middle
 /** @param {EngineStrand[]} edges @param {EngineStrand[]} bands */
 function lastResortConnect(edges, bands) {
   if (!JUNC) buildJunctions();
   const jList = Object.values(TOPO.verts()).filter(l => new Set(l.map(e => e.n)).size >= 2)
     .map(l => ({ V: GEO[l[0].n].stitched[l[0].vi], streets: [...new Set(l.map(e => e.n))] }));
-  const frameFor = /** @param {AnyPoint} V @param {string} A @param {string} B */ (V, A, B) => {
-    const J1 = (JUNC[A] || []).find(x => x.B === B && H.jDistM(x.V, V) < 2);
-    const J2 = (JUNC[B] || []).find(x => x.B === A && H.jDistM(x.V, V) < 2);
-    return (J1 && J2) ? { nA: J2.nB, nB: J1.nB } : null;
-  };
-  const properCross = /** @param {AnyPoint} a @param {AnyPoint} b @param {AnyPoint} c @param {AnyPoint} d */ (a, b, c, d) => {
-    if (!segCross(a, b, c, d)) return false;
-    const X = lineHit(a, b, c, d);
-    return !!X && [a, b, c, d].every(pt => H.jDistM(X, pt) >= 0.35);
-  };
-  // local connectivity only: the fragment rules the gate audits with, mirrored - a route-long detour is not a connection
+
   const fragCache = new Map();
-  /** @type {(V: AnyPoint) => {frags: EngineFragment[], comp: number[]}} */
-  const localFrags = V => {
-    const key = coordKey(V);
-    if (fragCache.has(key)) return fragCache.get(key);
-    const all = edges.concat(bands);
-    /** @type {EngineFragment[]} */
-    const frags = [];
-    all.forEach((c, ci) => {
-      const band = ci >= edges.length;
-      /** @type {EngineFragment|null} */
-      let cur = null;
-      const close = () => { if (cur && cur.pts.length >= 1) frags.push(cur); cur = null; };
-      c.pts.forEach((p, pi) => {
-        if (H.jDistM(p, V) < 15) {
-          if (!cur) {
-            cur = { ci, band, pts: [] };
-            if (pi > 0 && H.ptSegM(V, c.pts[pi - 1], p) < 15) cur.pts.push(c.pts[pi - 1]);
-          }
-          cur.pts.push(p);
-        } else if (pi > 0 && H.ptSegM(V, c.pts[pi - 1], p) < 15) {
-          if (cur) { cur.pts.push(p); close(); }
-          else frags.push({ ci, band, pts: [c.pts[pi - 1], p] });
-        } else close();
-      });
-      close();
-    });
-    const parent = frags.map((_, i) => i);
-    /** @type {(x: number) => number} */
-    const find = x => parent[x] === x ? x : (parent[x] = find(parent[x]));
-    const onLine = /** @param {AnyPoint} p @param {EngineFragment} f @param {number} thr */ (p, f, thr) => { for (let s2 = 0; s2 + 1 < f.pts.length; s2++) if (H.ptSegM(p, f.pts[s2], f.pts[s2 + 1]) < thr) return true; return false; };
-    const touch = /** @param {EngineFragment} A2 @param {EngineFragment} B2 */ (A2, B2) => {
-      const eA = [A2.pts[0], A2.pts[A2.pts.length - 1]], eB = [B2.pts[0], B2.pts[B2.pts.length - 1]];
-      if (eA.some(p => eB.some(q => coordKey(p) === coordKey(q)))) return true;
-      const thr = (A2.band || B2.band) ? SURF_HALF : 1.0;   // bands draw at the surface's width, so the band touch threshold is SURF_HALF itself
-      return eA.some(p => onLine(p, B2, thr)) || eB.some(p => onLine(p, A2, thr));
-    };
-    frags.forEach((A2, i) => frags.forEach((B2, j) => { if (j > i && touch(A2, B2)) parent[find(i)] = find(j); }));
-    const byChain = new Map();
-    frags.forEach((f, i) => { if (!byChain.has(f.ci)) byChain.set(f.ci, []); byChain.get(f.ci).push(i); });
-    byChain.forEach(idxs => {
-      for (let k = 0; k + 1 < idxs.length; k++) {
-        const A2 = frags[idxs[k]], B2 = frags[idxs[k + 1]];
-        const chain = all[A2.ci];
-        const ia = chain.pts.findIndex(p => coordKey(p) === coordKey(A2.pts[A2.pts.length - 1]));
-        const ib = chain.pts.findIndex(p => coordKey(p) === coordKey(B2.pts[0]));
-        if (ia < 0 || ib < 0 || ib <= ia) continue;
-        const mid = chain.pts.slice(ia + 1, ib);
-        if (mid.length <= 3 && mid.every(p => H.jDistM(p, V) <= 30) && H.ptSegM(V, A2.pts[A2.pts.length - 1], B2.pts[0]) <= 15) parent[find(idxs[k])] = find(idxs[k + 1]);
-      }
-    });
-    const out = { frags, comp: frags.map((_, i) => find(i)) };
-    fragCache.set(key, out);
-    return out;
-  };
   for (let round = 0; round < 60; round++) {
     const list = edges.concat(bands);
     fragCache.clear();
     let acted = false;
     outer:
     for (const { V, streets } of jList) for (let ai = 0; ai < streets.length; ai++) for (let bi = ai + 1; bi < streets.length; bi++) {
-      const A = streets[ai], B = streets[bi], fr = frameFor(V, A, B);
+      const A = streets[ai], B = streets[bi], fr = junctionPairFrame(V, A, B);
       if (!fr) continue;
       const Vx = XYOf(V);
       /** @type {(pt: AnyPoint) => AnyPoint} */
@@ -2956,7 +2998,7 @@ function lastResortConnect(edges, bands) {
         const quads = [];
         (sg[0] === 0 ? [1, -1] : [sg[0]]).forEach(sa => (sg[1] === 0 ? [1, -1] : [sg[1]]).forEach(sb => quads.push([sa, sb])));
         let satisfied = false, partners = /** @type {typeof nearChains} */ ([]);
-        const LF = localFrags(V);
+        const LF = buildLocalFragmentComponents(edges, bands, V, fragCache);
         const myFrag = LF.frags.findIndex(f => f.ci === E.ci && (coordKey(f.pts[0]) === coordKey(E.pt) || coordKey(f.pts[f.pts.length - 1]) === coordKey(E.pt)));
         for (const q of quads) {
           partners = nearChains.filter(nc => nc.ci !== E.ci && nc.pn.some(pt => inQ(signs(pt), q)));
@@ -2966,47 +3008,13 @@ function lastResortConnect(edges, bands) {
           if (myFrag >= 0 && LF.frags.some((f, fi) => fi !== myFrag && LF.comp[fi] === LF.comp[myFrag] && list[f.ci].mem.some(m => m.n === (E.meta.n === A ? B : A)) && f.pts.some(pt => inQ(signs(pt), q)))) { satisfied = true; break; }
         }
         if (satisfied || !partners.length) continue;
-        /** @type {{d:number,np:AnyPoint,ci:number,si:number}[]} */
-        const cands = [];
-        partners.forEach(nc => {
-          const c = list[nc.ci];
-          for (let si = 0; si + 1 < c.pts.length; si++) {
-            const a = c.pts[si], b = c.pts[si + 1], ax = XYOf(a), bx = XYOf(b), ex = XYOf(E.pt);
-            const dx = bx[0] - ax[0], dy = bx[1] - ax[1], L2 = dx * dx + dy * dy || 1;
-            let t = ((ex[0] - ax[0]) * dx + (ex[1] - ax[1]) * dy) / L2;
-            t = Math.max(0, Math.min(1, t));
-            const np = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-            cands.push({ d: H.jDistM(E.pt, np), np, ci: nc.ci, si });
-          }
-        });
-        cands.sort((x, y) => x.d - y.d);
+
+        const cands = findLocalRepairCandidates(list, partners, E);
         for (const cand of cands) {
           if (cand.d > 13 || cand.d < 0.3) continue;
           const seg = [E.pt, cand.np];
-          // through the centre mid-segment: vetoed. Ending differs: a band ending at V lands only at V
-          let badPath = H.ptSegM(V, seg[0], seg[1]) < 1.5 && H.jDistM(cand.np, V) > 0.5;
-          if (!badPath) for (const n2 of H.names) {
-            const st = GEO[n2].stitched;
-            for (let si = 0; si + 1 < st.length && !badPath; si++) {
-              if (!TOPO.segReal(n2, si)) continue; // not a real segment
-              if (H.ptSegM(V, st[si], st[si + 1]) >= 13 || !segCross(seg[0], seg[1], st[si], st[si + 1])) continue;
-              const X = lineHit(seg[0], seg[1], st[si], st[si + 1]);
-              if (!X) continue;
-              // landing ON the target's centreline is the join itself, not a crossing of the road
-              if (H.jDistM(X, cand.np) < 1.5) continue;
-              if (H.jDistM(X, V) > 6) badPath = true;
-            }
-          }
-          if (badPath) continue;
-          let badGreen = false;
-          edges.forEach((c2, ci2) => {
-            if (ci2 === E.ci || badGreen) return;
-            for (let si = 0; si + 1 < c2.pts.length; si++) {
-              if (ci2 === cand.ci && si === cand.si) continue;
-              if (properCross(seg[0], seg[1], c2.pts[si], c2.pts[si + 1])) { badGreen = true; break; }
-            }
-          });
-          if (badGreen) continue;
+          if (!allowsJunctionRepair(seg, cand, E.ci, V, edges)) continue;
+
           const chain = edges[E.ci];
           if (E.atEnd) chain.pts.push(cand.np); else chain.pts.unshift(cand.np);
           acted = true;

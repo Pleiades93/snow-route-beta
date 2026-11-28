@@ -1840,6 +1840,249 @@
     "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e"
    },
    "issued": "2026-11-27 s2r3-addgpslayers"
+  },
+  {
+   "id": "s2-lastresort",
+   "kind": "cut",
+   "surface": "The last-resort junction repair inside buildFamilies' paint build in parts/engine.js (lastResortConnect and its five extracted sections)",
+   "cut": "lastResortConnect's body is split into five sibling functions in the same part; no behaviour, state or storage change",
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "A route's paint builds identically: junctions joined the same way, strands published the same",
+     "case": "C7 junction run-through intact",
+     "check": "tests/browser/drive214.mjs",
+     "observes": "the rendered route on real data: Velmar's centre paint passing through the Astona W junction vertex after the full buildFamilies pipeline runs lastResortConnect"
+    },
+    {
+     "behaviour": "The full route-load pipeline, paint build included, completes as shipped",
+     "case": "THE TITLE BUILD IS LIVE AS SHIPPED",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "the live app after a real route load: the labelpts source and title layers the load produces, downstream of the paint build"
+    },
+    {
+     "behaviour": "An unjoined end lands on the nearest band interior, exact coordinates, head and tail",
+     "case": "lands on the nearest band interior at the",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the mutated chain point lists in the vm: the exact landing point, the prepend/append seat, and the target left untouched"
+    },
+    {
+     "behaviour": "Band-touch satisfaction: an endpoint already touching a band is not extended",
+     "case": "band touch satisfies the endpoint without extending it",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm across the fragment-component build at the SURF_HALF touch threshold"
+    },
+    {
+     "behaviour": "Quadrant exclusion: a partner in an opposite quadrant offers no candidate",
+     "case": "opposite quadrant offers no candidate",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm for partners across both frame axes"
+    },
+    {
+     "behaviour": "The 11 m candidate window holds at its exact boundary",
+     "case": "endpoint exactly 11 metres away is outside the candidate window",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm for an endpoint exactly 11 m from the junction"
+    },
+    {
+     "behaviour": "The green-paint crossing veto holds",
+     "case": "a proper crossing of unrelated green paint vetoes an otherwise-valid landing",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm when an unrelated edge properly crosses the join segment"
+    },
+    {
+     "behaviour": "The centreline crossing veto holds past 6 m from the junction",
+     "case": "crossing a real centreline beyond six metres vetoes the repair",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm when the join segment crosses a real centreline beyond the 6 m arm"
+    },
+    {
+     "behaviour": "Junction warm-up happens once; a missing reciprocal frame skips the pair",
+     "case": "missing reciprocal junction leaves the endpoint in place",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm with one junction direction removed, and the build counter for the warm-up check"
+    },
+    {
+     "behaviour": "Boot and route pick behave as today",
+     "case": "S3 picking a route removes the splash and it never comes back",
+     "check": "tests/browser/drive132.mjs",
+     "observes": "the live app across boot and a route pick; locally its S2 handover case fails identically on the untouched base tree on this rig, so CI is its judging run"
+    },
+    {
+     "behaviour": "The characterization proof's 9 checks, claims unmodified, green before and after the split",
+     "case": "proof-last-resort-connect:",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the proof's own pass line in the proof runner output"
+    }
+   ],
+   "files": {
+    "parts/engine.js": "f8bf92cb4d23cd36b9e468b8331fdd8412863ae7e5067754b7f90e343016b062"
+   },
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-r2",
+   "kind": "cut",
+   "surface": "The last-resort junction repair inside buildFamilies' paint build in parts/engine.js (lastResortConnect and its five extracted sections)",
+   "cut": "lastResortConnect's body is split into five sibling functions in the same part; no behaviour, state or storage change",
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "A route's paint builds identically: junctions joined the same way, strands published the same",
+     "case": "C7 junction run-through intact",
+     "check": "tests/browser/drive214.mjs",
+     "observes": "the rendered route on real data: Velmar's centre paint passing through the Astona W junction vertex after the full buildFamilies pipeline runs lastResortConnect"
+    },
+    {
+     "behaviour": "The full route-load pipeline, paint build included, completes as shipped",
+     "case": "THE TITLE BUILD IS LIVE AS SHIPPED",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "the live app after a real route load: the labelpts source and title layers the load produces, downstream of the paint build"
+    },
+    {
+     "behaviour": "An unjoined end lands on the nearest band interior, exact coordinates, head and tail",
+     "case": "lands on the nearest band interior at the",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the mutated chain point lists in the vm: the exact landing point, the prepend/append seat, and the target left untouched"
+    },
+    {
+     "behaviour": "Band-touch satisfaction: an endpoint already touching a band is not extended",
+     "case": "band touch satisfies the endpoint without extending it",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm across the fragment-component build at the SURF_HALF touch threshold"
+    },
+    {
+     "behaviour": "Quadrant exclusion: a partner in an opposite quadrant offers no candidate",
+     "case": "opposite quadrant offers no candidate",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm for partners across both frame axes"
+    },
+    {
+     "behaviour": "The 11 m candidate window holds at its exact boundary",
+     "case": "endpoint exactly 11 metres away is outside the candidate window",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm for an endpoint exactly 11 m from the junction"
+    },
+    {
+     "behaviour": "The green-paint crossing veto holds",
+     "case": "a proper crossing of unrelated green paint vetoes an otherwise-valid landing",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm when an unrelated edge properly crosses the join segment"
+    },
+    {
+     "behaviour": "The centreline crossing veto holds past 6 m from the junction",
+     "case": "crossing a real centreline beyond six metres vetoes the repair",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm when the join segment crosses a real centreline beyond the 6 m arm"
+    },
+    {
+     "behaviour": "Junction warm-up happens once; a missing reciprocal frame skips the pair",
+     "case": "missing reciprocal junction leaves the endpoint in place",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm with one junction direction removed, and the build counter for the warm-up check"
+    },
+    {
+     "behaviour": "Boot and route pick behave as today",
+     "case": "S3 picking a route removes the splash and it never comes back",
+     "check": "tests/browser/drive132.mjs",
+     "observes": "the live app across boot and a route pick; locally its S2 handover case fails identically on the untouched base tree on this rig, so CI is its judging run"
+    },
+    {
+     "behaviour": "The characterization proof's 9 checks, claims unmodified, green before and after the split",
+     "case": "proof-last-resort-connect:",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the proof's own pass line in the proof runner output"
+    }
+   ],
+   "files": {
+    "parts/engine.js": "2e6286f69a39aa4a5a21d3d30203c26f1382e2357d006c6029e444c0000f8226"
+   },
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-r3",
+   "kind": "cut",
+   "surface": "The last-resort junction repair inside buildFamilies' paint build in parts/engine.js (lastResortConnect and its five extracted sections)",
+   "cut": "lastResortConnect's body is split into five sibling functions in the same part; no behaviour, state or storage change",
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "behaviour": "A route's paint builds identically: junctions joined the same way, strands published the same",
+     "case": "C7 junction run-through intact",
+     "check": "tests/browser/drive214.mjs",
+     "observes": "the rendered route on real data: Velmar's centre paint passing through the Astona W junction vertex after the full buildFamilies pipeline runs lastResortConnect"
+    },
+    {
+     "behaviour": "The full route-load pipeline, paint build included, completes as shipped",
+     "case": "THE TITLE BUILD IS LIVE AS SHIPPED",
+     "check": "tests/browser/drive219.mjs",
+     "observes": "the live app after a real route load: the labelpts source and title layers the load produces, downstream of the paint build"
+    },
+    {
+     "behaviour": "An unjoined end lands on the nearest band interior, exact coordinates, head and tail",
+     "case": "lands on the nearest band interior at the",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the mutated chain point lists in the vm: the exact landing point, the prepend/append seat, and the target left untouched"
+    },
+    {
+     "behaviour": "Band-touch satisfaction: an endpoint already touching a band is not extended",
+     "case": "band touch satisfies the endpoint without extending it",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm across the fragment-component build at the SURF_HALF touch threshold"
+    },
+    {
+     "behaviour": "Quadrant exclusion: a partner in an opposite quadrant offers no candidate",
+     "case": "opposite quadrant offers no candidate",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm for partners across both frame axes"
+    },
+    {
+     "behaviour": "The 11 m candidate window holds at its exact boundary",
+     "case": "endpoint exactly 11 metres away is outside the candidate window",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm for an endpoint exactly 11 m from the junction"
+    },
+    {
+     "behaviour": "The green-paint crossing veto holds",
+     "case": "a proper crossing of unrelated green paint vetoes an otherwise-valid landing",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm when an unrelated edge properly crosses the join segment"
+    },
+    {
+     "behaviour": "The centreline crossing veto holds past 6 m from the junction",
+     "case": "crossing a real centreline beyond six metres vetoes the repair",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm when the join segment crosses a real centreline beyond the 6 m arm"
+    },
+    {
+     "behaviour": "Junction warm-up happens once; a missing reciprocal frame skips the pair",
+     "case": "missing reciprocal junction leaves the endpoint in place",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the chain point count in the vm with one junction direction removed, and the build counter for the warm-up check"
+    },
+    {
+     "behaviour": "Boot and route pick behave as today",
+     "case": "S3 picking a route removes the splash and it never comes back",
+     "check": "tests/browser/drive132.mjs",
+     "observes": "the live app across boot and a route pick; locally its S2 handover case fails identically on the untouched base tree on this rig, so CI is its judging run"
+    },
+    {
+     "behaviour": "The characterization proof's 9 checks, claims unmodified, green before and after the split",
+     "case": "proof-last-resort-connect:",
+     "check": "tests/proof/proof-1302.mjs",
+     "observes": "the proof's own pass line in the proof runner output"
+    }
+   ],
+   "files": {
+    "parts/engine.js": "fabfd153cad550e607fac4e11d6facc4ebbf029a55cb4c50ef770fc1373e9eb1"
+   },
+   "issued": "2026-11-27 s2r4-lastresort"
   }
  ]
 }
