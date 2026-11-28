@@ -82,6 +82,15 @@ in the same part. The junction repairs land exactly as
 before - same landings, order and vetoes, pinned by
 proof-1302. No surface, element or snow status changed.
 Map reviewed; no update needed beyond this note.
+S2 ROUND 5 (2026-11-27): mergeRestoreEntries in app4.js
+is split into its four sections (run cluster, history,
+fields, board) as sibling functions in the same part,
+and its eight helper closures are hoisted to top-level
+consts in the same part. The restore merge plans
+exactly as before - same writes, order and refusals,
+pinned by proof-1303. No surface, element or snow
+status changed. Map reviewed; no update needed beyond
+this note.
 
 ## The snow rule (one rule, app-wide)
 

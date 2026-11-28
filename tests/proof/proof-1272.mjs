@@ -73,7 +73,9 @@ const srcs = [
   extractFn(app4, 'countUnknownNames(parsed, packs = ROUTE_PACKS)'),
   extractFn(app4, 'canonicalSettings(raw)'),
   extractFn(app4, 'canonicalFixLog(raw)'),
-  extractFn(app4, 'mergeRestoreEntries(entries, allPacks)'),
+  // the merge region: the hoisted helpers, the four sections and the host are contiguous in app4
+  app4.slice(app4.indexOf('const own = (o, k)'),
+    app4.indexOf('function mergeRestoreEntries(entries, allPacks)') + extractFn(app4, 'mergeRestoreEntries(entries, allPacks)').length),
   extractFn(packsSrc, 'upCanon(v)'),
   extractObj(app4, 'RESTORE'),
 ].join('\n');

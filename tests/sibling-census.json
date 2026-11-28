@@ -64251,6 +64251,237 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-mergerestore",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "mergeRestoreEntries",
+     "mergeRestoreRunCluster",
+     "mergeRestoreHist",
+     "mergeRestoreFields",
+     "mergeRestoreBoard",
+     "own",
+     "read",
+     "object",
+     "decode",
+     "noteId",
+     "cleanId",
+     "histId",
+     "newEntries"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/app4.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:cleanId:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - cleanId() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:decode:parts/app4.js:fields",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - decode() is called from fields in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:decode:parts/app4.js:mergeRestoreBoard",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - decode() is called from mergeRestoreBoard in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:decode:parts/app4.js:mergeRestoreEntries",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - decode() is called from mergeRestoreEntries in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:decode:parts/app4.js:mergeRestoreHist",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - decode() is called from mergeRestoreHist in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:decode:parts/app4.js:split",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - decode() is called from split in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:mergeRestoreBoard:parts/app4.js:incoming",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - mergeRestoreBoard() is called from incoming in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: mergeRestoreEntries is the board section's only caller, fourth in the pack loop, exactly where the inline done/sides block stood; proof-1303's board checks pin the seat."
+    },
+    {
+     "id": "caller:mergeRestoreEntries:parts/app4.js:packPriors",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - mergeRestoreEntries() is called from packPriors in parts/app4.js",
+     "status": "covered",
+     "note": "the host's own seat, unmoved: RESTORE.plan's finishPlan is mergeRestoreEntries' only caller (the census keys the seat by its enclosing scope); proof-1272 runs the whole planner through this seat, and the restore drives pin it end to end."
+    },
+    {
+     "id": "caller:mergeRestoreFields:parts/app4.js:incoming",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - mergeRestoreFields() is called from incoming in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: mergeRestoreEntries is the fields section's only caller, third in the pack loop, exactly where the inline fields loop stood; proof-1303's field checks pin the seat."
+    },
+    {
+     "id": "caller:mergeRestoreHist:parts/app4.js:incoming",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - mergeRestoreHist() is called from incoming in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: mergeRestoreEntries is the history section's only caller, second in the pack loop, exactly where the inline history block stood; proof-1303's history checks pin the seat."
+    },
+    {
+     "id": "caller:mergeRestoreRunCluster:parts/app4.js:incoming",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - mergeRestoreRunCluster() is called from incoming in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: mergeRestoreEntries is the cluster section's only caller, first in the pack loop, exactly where the inline cluster block stood; proof-1303's cluster checks pin the seat."
+    },
+    {
+     "id": "caller:newEntries:parts/app4.js:fields",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - newEntries() is called from fields in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:newEntries:parts/app4.js:mergeRestoreHist",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - newEntries() is called from mergeRestoreHist in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:object:parts/app4.js:split",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - object() is called from split in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:own:parts/app4.js:fields",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - own() is called from fields in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:own:parts/app4.js:mergeRestoreBoard",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - own() is called from mergeRestoreBoard in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:own:parts/app4.js:mergeRestoreEntries",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - own() is called from mergeRestoreEntries in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:own:parts/app4.js:split",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - own() is called from split in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:own:parts/app4.js:top-level",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - own() is called from top-level in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:read:parts/app4.js:fields",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - read() is called from fields in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:read:parts/app4.js:hasProgress",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - read() is called from hasProgress in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:read:parts/app4.js:incoming",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - read() is called from incoming in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:read:parts/app4.js:mergeRestoreBoard",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - read() is called from mergeRestoreBoard in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:read:parts/app4.js:mergeRestoreEntries",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - read() is called from mergeRestoreEntries in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:read:parts/app4.js:mergeRestoreHist",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - read() is called from mergeRestoreHist in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    },
+    {
+     "id": "caller:read:parts/app4.js:mergeRestoreRunCluster",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - read() is called from mergeRestoreRunCluster in parts/app4.js",
+     "status": "covered",
+     "note": "the change itself: a hoisted merge helper called from the split's own sections, host or inner closures in parts/app4.js, at the seats the inline closures served; proof-1303 and proof-1272 pin the behaviour at those seats."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "ab3c0ce85fa217320d2ea5cd850fde549bd768255efaa62a4a47dc7b9adf2207",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "fabfd153cad550e607fac4e11d6facc4ebbf029a55cb4c50ef770fc1373e9eb1",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1c351ded63faa6094218b3b7ab25d1b535583659c7714cdec98dd8c25024e8a7",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s2-round5"
   }
  ]
 }
