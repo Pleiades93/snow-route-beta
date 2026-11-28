@@ -4,17 +4,17 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "fb0995bbbc4355ea9b9f39d903507a753b5b85e46214fd4fb4c8dcb1e7bfe8ca",
+  "canonical_registry_sha256": "b84becafe747bbfa6ac33342a7dcdc55d76dfe25781866f887702b70d471faed",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1706,
-   "included": 1675,
-   "excluded_total": 31,
+   "canonical": 1712,
+   "included": 1680,
+   "excluded_total": 32,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
-    "target outside the repo tree": 18,
+    "target outside the repo tree": 19,
     "cron_job: no scheduler in CI": 4
    }
   }
@@ -14928,6 +14928,51 @@
    "fix_id": "gc-state-models",
    "id": "gc-drive232-f6-case",
    "pattern": "F6 the failed finish reports Finish stopped, never the gap advisory",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "scripts/live-walk.mjs",
+   "fix": "G-D (2026-11-28): the post-ship live walk exists and targets the live Pages URL. If this fails, the walk was removed or retargeted; restore scripts/live-walk.mjs and its live URL (docs/LIVE-LOOP.md owns the procedure).",
+   "fix_id": "gd-live-loop",
+   "id": "gd-live-walk-target",
+   "pattern": "https://pleiades93.github.io/snow-route-beta/",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "scripts/live-walk.mjs",
+   "fix": "G-D (2026-11-28): the walk waits for the expected build before walking (the wait step). If this fails, the wait was removed or renamed and the walk could grade a stale page; restore the wait in scripts/live-walk.mjs.",
+   "fix_id": "gd-live-loop",
+   "id": "gd-live-walk-wait",
+   "pattern": "wait for the expected build",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "scripts/live-walk.mjs",
+   "fix": "G-D (2026-11-28): a wait that expires is reported as a TIMEOUT, never as a pass. If this fails, the timeout wording was edited away; restore it in scripts/live-walk.mjs so a stale live page can never read as a clean walk.",
+   "fix_id": "gd-live-loop",
+   "id": "gd-live-walk-timeout",
+   "pattern": "TIMEOUT waiting for",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/LIVE-LOOP.md",
+   "fix": "G-D (2026-11-28): the live-loop procedure doc exists and states the cold-session scope limit in its own section. If this fails, the doc was removed or the section renamed; restore docs/LIVE-LOOP.md with the limit stated.",
+   "fix_id": "gd-live-loop",
+   "id": "gd-live-loop-doc",
+   "pattern": "## Scope limit",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/LIVE-LOOP.md",
+   "fix": "G-D (2026-11-28): the procedure doc carries the exact command the shipper runs after each ship. If this fails, the command line was edited away; restore the How section of docs/LIVE-LOOP.md.",
+   "fix_id": "gd-live-loop",
+   "id": "gd-live-loop-command",
+   "pattern": "node scripts/live-walk.mjs",
    "type": "grep_present"
   }
  ]

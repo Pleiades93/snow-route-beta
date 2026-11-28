@@ -102,6 +102,12 @@
    "kind": "machinery-exempt",
    "reason": "G-C state-models round: docs (STATE-MODELS.md), a formal spec (tests/formal/), a proof and a drive; no parts/ surface changed, so there are no anchors to enumerate.",
    "issued": "2026-11-27 gc-state-models"
+  },
+  {
+   "id": "gd-live-loop",
+   "kind": "machinery-exempt",
+   "reason": "G-D live-loop round: adds scripts/live-walk.mjs and docs/LIVE-LOOP.md plus ledger/registry records; no parts/ surface changed, so there are no anchors to enumerate.",
+   "issued": "2026-11-28 gd-live-loop"
   }
  ]
 }
