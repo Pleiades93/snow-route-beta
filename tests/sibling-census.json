@@ -63999,6 +63999,258 @@
     "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
    },
    "issued": "2026-11-27 s2r3-addgpslayers"
+  },
+  {
+   "id": "s2-lastresort",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "lastResortConnect",
+     "junctionPairFrame",
+     "properCross",
+     "buildLocalFragmentComponents",
+     "findLocalRepairCandidates",
+     "allowsJunctionRepair"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:allowsJunctionRepair:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - allowsJunctionRepair() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is allowsJunctionRepair's only caller, at the frozen acceptance seat (after the 13 / 0.3 distance window); proof-1302's two veto checks pin the seat."
+    },
+    {
+     "id": "caller:buildLocalFragmentComponents:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildLocalFragmentComponents() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is buildLocalFragmentComponents' only caller, once per unsatisfied end, with the host-owned fragCache passed in; proof-1302's band-touch check pins the seat."
+    },
+    {
+     "id": "caller:findLocalRepairCandidates:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - findLocalRepairCandidates() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is findLocalRepairCandidates' only caller, after the satisfied logic; proof-1302's nearest-interior landing checks pin the seat and the ordering."
+    },
+    {
+     "id": "caller:junctionPairFrame:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - junctionPairFrame() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is junctionPairFrame's only caller, once per junction street pair; proof-1302's warm-up, landing and missing-reciprocal checks pin the seat."
+    },
+    {
+     "id": "caller:lastResortConnect:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lastResortConnect() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "the host's own seat, unmoved: buildFamilies calls lastResortConnect(edges, bands) after extendIntoBands and publishes PAINT.strands from the repaired chains; drive214's junction run-through and drive219's full load pipeline pin the outcome on real route data."
+    },
+    {
+     "id": "caller:properCross:parts/engine.js:allowsJunctionRepair",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - properCross() is called from allowsJunctionRepair in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: allowsJunctionRepair is properCross's only caller, inside the green-paint veto pass; proof-1302's green-crossing veto check pins the seat."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "f8bf92cb4d23cd36b9e468b8331fdd8412863ae7e5067754b7f90e343016b062",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1c351ded63faa6094218b3b7ab25d1b535583659c7714cdec98dd8c25024e8a7",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-r2",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "lastResortConnect",
+     "junctionPairFrame",
+     "properCross",
+     "buildLocalFragmentComponents",
+     "findLocalRepairCandidates",
+     "allowsJunctionRepair"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:allowsJunctionRepair:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - allowsJunctionRepair() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is allowsJunctionRepair's only caller, at the frozen acceptance seat (after the 13 / 0.3 distance window); proof-1302's two veto checks pin the seat."
+    },
+    {
+     "id": "caller:buildLocalFragmentComponents:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildLocalFragmentComponents() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is buildLocalFragmentComponents' only caller, once per unsatisfied end, with the host-owned fragCache passed in; proof-1302's band-touch check pins the seat."
+    },
+    {
+     "id": "caller:findLocalRepairCandidates:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - findLocalRepairCandidates() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is findLocalRepairCandidates' only caller, after the satisfied logic; proof-1302's nearest-interior landing checks pin the seat and the ordering."
+    },
+    {
+     "id": "caller:junctionPairFrame:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - junctionPairFrame() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is junctionPairFrame's only caller, once per junction street pair; proof-1302's warm-up, landing and missing-reciprocal checks pin the seat."
+    },
+    {
+     "id": "caller:lastResortConnect:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lastResortConnect() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "the host's own seat, unmoved: buildFamilies calls lastResortConnect(edges, bands) after extendIntoBands and publishes PAINT.strands from the repaired chains; drive214's junction run-through and drive219's full load pipeline pin the outcome on real route data."
+    },
+    {
+     "id": "caller:properCross:parts/engine.js:allowsJunctionRepair",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - properCross() is called from allowsJunctionRepair in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: allowsJunctionRepair is properCross's only caller, inside the green-paint veto pass; proof-1302's green-crossing veto check pins the seat."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "2e6286f69a39aa4a5a21d3d30203c26f1382e2357d006c6029e444c0000f8226",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1c351ded63faa6094218b3b7ab25d1b535583659c7714cdec98dd8c25024e8a7",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-r3",
+   "kind": "app",
+   "anchors": {
+    "elements": [],
+    "functions": [
+     "lastResortConnect",
+     "junctionPairFrame",
+     "properCross",
+     "buildLocalFragmentComponents",
+     "findLocalRepairCandidates",
+     "allowsJunctionRepair"
+    ],
+    "guards": []
+   },
+   "changed": [
+    "parts/engine.js"
+   ],
+   "rows": [
+    {
+     "id": "caller:allowsJunctionRepair:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - allowsJunctionRepair() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is allowsJunctionRepair's only caller, at the frozen acceptance seat (after the 13 / 0.3 distance window); proof-1302's two veto checks pin the seat."
+    },
+    {
+     "id": "caller:buildLocalFragmentComponents:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - buildLocalFragmentComponents() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is buildLocalFragmentComponents' only caller, once per unsatisfied end, with the host-owned fragCache passed in; proof-1302's band-touch check pins the seat."
+    },
+    {
+     "id": "caller:findLocalRepairCandidates:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - findLocalRepairCandidates() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is findLocalRepairCandidates' only caller, after the satisfied logic; proof-1302's nearest-interior landing checks pin the seat and the ordering."
+    },
+    {
+     "id": "caller:junctionPairFrame:parts/engine.js:lastResortConnect",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - junctionPairFrame() is called from lastResortConnect in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: lastResortConnect is junctionPairFrame's only caller, once per junction street pair; proof-1302's warm-up, landing and missing-reciprocal checks pin the seat."
+    },
+    {
+     "id": "caller:lastResortConnect:parts/engine.js:buildFamilies",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - lastResortConnect() is called from buildFamilies in parts/engine.js",
+     "status": "covered",
+     "note": "the host's own seat, unmoved: buildFamilies calls lastResortConnect(edges, bands) after extendIntoBands and publishes PAINT.strands from the repaired chains; drive214's junction run-through and drive219's full load pipeline pin the outcome on real route data."
+    },
+    {
+     "id": "caller:properCross:parts/engine.js:allowsJunctionRepair",
+     "kind": "caller",
+     "source": "derived: call-site scan of parts/ - properCross() is called from allowsJunctionRepair in parts/engine.js",
+     "status": "covered",
+     "note": "the change itself: allowsJunctionRepair is properCross's only caller, inside the green-paint veto pass; proof-1302's green-crossing veto check pins the seat."
+    }
+   ],
+   "files": {
+    "parts/app1.js": "1bfc59cdd76e825312af43a7e5390d53d048a6dbb3c2092afb4b1fc6106c471a",
+    "parts/app2.js": "ed33fa5214128d1c6d9b4288d5cca11c505e4af54733968d6eb2e01ad23eff4e",
+    "parts/app3.js": "a7132c6c0895b9be59226eff5428289a9922bb1f83a9feb3717d5b5bea139a2e",
+    "parts/app4.js": "78c00ba861f398ec54e13e3c0c5c39cd2811384711ecb6d5be85ebfd00b71744",
+    "parts/app5.js": "e5462450f882e987275344e84002aa13c2e35da343dac791ecec64a35cc30d26",
+    "parts/brand-snow.js": "56628dc1a8cbba88838bcd74e4d483b20a3323bb0180c813987459c0fd316477",
+    "parts/create-cache.js": "71e37185252ee6560596d75b148f8271d3b7ec554f899d519c82834cb6e70b00",
+    "parts/create-citydata.js": "ff0010526851d6ea4fc98dab4d0d8f564642175dbfe62f27360b121864d98ed3",
+    "parts/create-fetch.js": "e92303dca2dcf323438ba055ed567bc393639c855a30d4989ac628d9fe6504fd",
+    "parts/create-packs.js": "6870ba2462fdc054360db129c613f0d8f1a4f23dac53f87f05b8a26aa3885b35",
+    "parts/create-pick.js": "e624b6d0d5e442911c562f3cbbd0463effaae1c2d9047dfe9a81727ce041c806",
+    "parts/create-save.js": "0e7c0355033b89e0fdbb7328b3064a1cb16c7680c84787359e86fa7aef6e01ae",
+    "parts/data.js": "b0ba66e297ee43e1caa4339ee607775ebf38cfeafd5c15bd8c0efcc0fae75545",
+    "parts/engine.js": "fabfd153cad550e607fac4e11d6facc4ebbf029a55cb4c50ef770fc1373e9eb1",
+    "parts/pmstyles.js": "f3501db9c16dbc6a5fa8c901089101e4913772384de1f069accb23a614bb90fc",
+    "parts/whatsnew.js": "1c351ded63faa6094218b3b7ab25d1b535583659c7714cdec98dd8c25024e8a7",
+    "parts/head.html": "158f3f184d22be7dae7e223e420b6b4412aa4746b82b97aeeeb150aa015d2b9b",
+    "scripts/check-census.py": "80de5294f6e463f1a2805fdb348aa3abbcea9300736617bb18895a32fdfa53fd"
+   },
+   "issued": "2026-11-27 s2r4-lastresort"
   }
  ]
 }

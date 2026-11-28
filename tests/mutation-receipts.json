@@ -19064,6 +19064,97 @@
    "red": "proof-1301 exit 1 under each of the 14 mutations on the unmodified tree AND on the split tree, each failing its named check (run-mutations.py + run-mutations-unmod.py: ALL BITES on both shapes, re-run on the final wrapped bytes). The final three mutations are the Codex PR #241 finding's own experiments: on the r2 proof they passed 10/10 (the hole); on the strengthened proof each fails check 1",
    "green": "strengthened proof-1301 on the unmodified tree: 10 passed, 0 failed (exit 0); on the split tree: 10 passed, 0 failed (exit 0)",
    "issued": "2026-11-27 s2r3-addgpslayers"
+  },
+  {
+   "id": "s2-lastresort-proof1302",
+   "check": "tests/proof/proof-1302.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1302.mjs": "06c78f8640c7eab786e3f75c2a75878a86e8329e49286aa5a0f713b842b5f2a8",
+    "parts/engine.js": "96464f6070bbeb55c3487b5bc00e5b50db09c0d29a038422c3cb4d612f35817d"
+   },
+   "mutation": "parts/engine.js: 17-mutation value set against lastResortConnect (warm-up fires every call; frame second axis from the wrong record; frame match window 2->1; reciprocal lookup wrong direction; frame returned from one direction alone; ends window 11->21; near-chain window 11->5; candidate cap 13->4; candidate floor 0.3->6; fragment clip+bridge radius 15->4; band touch threshold SURF_HALF->1.0; candidate order reversed; prepend/append swapped; proper-cross clearance 0.35->3; centreline veto arm 6->60; centreline reach 13->0; rounds disabled)",
+   "red": "proof-1302 exit 1 under each of the 17 mutations on the unmodified tree, each failing its named check (run-mutations-unmod.py: 17/17 BITE)",
+   "green": "proof-1302 on the unmodified tree: 9 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-proof1302-r2",
+   "check": "tests/proof/proof-1302.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1302.mjs": "7396cf6a7fd2993bc6a6ccef84d0d36f03475d48b127479b965e099f8e26dce4",
+    "parts/engine.js": "d6288272fdda6a6fbd44a0f56a04767f42f763460d4f6ea3002ae48cec327695"
+   },
+   "mutation": "parts/engine.js: 17-mutation value set against lastResortConnect and its five extracted sections (warm-up fires every call; frame second axis from the wrong record; frame match window 2->1; reciprocal lookup wrong direction; frame returned from one direction alone; ends window 11->21; near-chain window 11->5; candidate cap 13->4; candidate floor 0.3->6; fragment clip+bridge radius 15->4; band touch threshold SURF_HALF->1.0; candidate order reversed; prepend/append swapped; proper-cross clearance 0.35->3; centreline veto arm 6->60; centreline reach 13->0; rounds disabled)",
+   "red": "proof-1302 exit 1 under each of the 17 mutations on BOTH the unmodified and the split tree, each failing its named check (run-mutations-unmod.py and run-mutations.py: 17/17 BITE)",
+   "green": "proof-1302 on the split tree: 9 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-proof1302-r3",
+   "check": "tests/proof/proof-1302.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1302.mjs": "7396cf6a7fd2993bc6a6ccef84d0d36f03475d48b127479b965e099f8e26dce4",
+    "parts/engine.js": "f8bf92cb4d23cd36b9e468b8331fdd8412863ae7e5067754b7f90e343016b062"
+   },
+   "mutation": "parts/engine.js: 17-mutation value set against lastResortConnect and its five extracted sections (warm-up fires every call; frame second axis from the wrong record; frame match window 2->1; reciprocal lookup wrong direction; frame returned from one direction alone; ends window 11->21; near-chain window 11->5; candidate cap 13->4; candidate floor 0.3->6; fragment clip+bridge radius 15->4; band touch threshold SURF_HALF->1.0; candidate order reversed; prepend/append swapped; proper-cross clearance 0.35->3; centreline veto arm 6->60; centreline reach 13->0; rounds disabled)",
+   "red": "proof-1302 exit 1 under each of the 17 mutations on the unmodified tree, on the split tree and on the final compressed bytes, each failing its named check (run-mutations-unmod.py and run-mutations.py: 17/17 BITE)",
+   "green": "proof-1302 on the final split tree: 9 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-proof1302-r4",
+   "check": "tests/proof/proof-1302.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1302.mjs": "7396cf6a7fd2993bc6a6ccef84d0d36f03475d48b127479b965e099f8e26dce4",
+    "parts/engine.js": "ffe65dd404411464ebae910533911845650792d9798ff35a343da3c1d700b9d2"
+   },
+   "mutation": "parts/engine.js: 17-mutation value set against lastResortConnect and its five extracted sections (warm-up fires every call; frame second axis from the wrong record; frame match window 2->1; reciprocal lookup wrong direction; frame returned from one direction alone; ends window 11->21; near-chain window 11->5; candidate cap 13->4; candidate floor 0.3->6; fragment clip+bridge radius 15->4; band touch threshold SURF_HALF->1.0; candidate order reversed; prepend/append swapped; proper-cross clearance 0.35->3; centreline veto arm 6->60; centreline reach 13->0; rounds disabled)",
+   "red": "proof-1302 exit 1 under each of the 17 mutations on the unmodified tree, on the split tree and on the final bytes, each failing its named check (run-mutations-unmod.py and run-mutations.py: 17/17 BITE)",
+   "green": "proof-1302 on the final split tree: 9 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-proof1302-r5",
+   "check": "tests/proof/proof-1302.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1302.mjs": "7396cf6a7fd2993bc6a6ccef84d0d36f03475d48b127479b965e099f8e26dce4",
+    "parts/engine.js": "fee6f8364011b07406f100166f8bc316014bb9e225eab1f4d961e4de774e92d1"
+   },
+   "mutation": "parts/engine.js: 17-mutation value set against lastResortConnect and its five extracted sections (warm-up fires every call; frame second axis from the wrong record; frame match window 2->1; reciprocal lookup wrong direction; frame returned from one direction alone; ends window 11->21; near-chain window 11->5; candidate cap 13->4; candidate floor 0.3->6; fragment clip+bridge radius 15->4; band touch threshold SURF_HALF->1.0; candidate order reversed; prepend/append swapped; proper-cross clearance 0.35->3; centreline veto arm 6->60; centreline reach 13->0; rounds disabled)",
+   "red": "proof-1302 exit 1 under each of the 17 mutations on the unmodified tree, on the split tree and on the final bytes, each failing its named check (run-mutations-unmod.py and run-mutations.py: 17/17 BITE)",
+   "green": "proof-1302 on the final split tree: 9 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-proof1302-r6",
+   "check": "tests/proof/proof-1302.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1302.mjs": "7396cf6a7fd2993bc6a6ccef84d0d36f03475d48b127479b965e099f8e26dce4",
+    "parts/engine.js": "2e6286f69a39aa4a5a21d3d30203c26f1382e2357d006c6029e444c0000f8226"
+   },
+   "mutation": "parts/engine.js: 17-mutation value set against lastResortConnect and its five extracted sections (warm-up fires every call; frame second axis from the wrong record; frame match window 2->1; reciprocal lookup wrong direction; frame returned from one direction alone; ends window 11->21; near-chain window 11->5; candidate cap 13->4; candidate floor 0.3->6; fragment clip+bridge radius 15->4; band touch threshold SURF_HALF->1.0; candidate order reversed; prepend/append swapped; proper-cross clearance 0.35->3; centreline veto arm 6->60; centreline reach 13->0; rounds disabled)",
+   "red": "proof-1302 exit 1 under each of the 17 mutations on the unmodified tree, on the split tree and on the final bytes, each failing its named check (run-mutations-unmod.py and run-mutations.py: 17/17 BITE)",
+   "green": "proof-1302 on the final split tree: 9 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r4-lastresort"
+  },
+  {
+   "id": "s2-lastresort-proof1302-r7",
+   "check": "tests/proof/proof-1302.mjs",
+   "kind": "mutation",
+   "files": {
+    "tests/proof/proof-1302.mjs": "7396cf6a7fd2993bc6a6ccef84d0d36f03475d48b127479b965e099f8e26dce4",
+    "parts/engine.js": "fabfd153cad550e607fac4e11d6facc4ebbf029a55cb4c50ef770fc1373e9eb1"
+   },
+   "mutation": "parts/engine.js: 17-mutation value set against lastResortConnect and its five extracted sections (warm-up fires every call; frame second axis from the wrong record; frame match window 2->1; reciprocal lookup wrong direction; frame returned from one direction alone; ends window 11->21; near-chain window 11->5; candidate cap 13->4; candidate floor 0.3->6; fragment clip+bridge radius 15->4; band touch threshold SURF_HALF->1.0; candidate order reversed; prepend/append swapped; proper-cross clearance 0.35->3; centreline veto arm 6->60; centreline reach 13->0; rounds disabled)",
+   "red": "proof-1302 exit 1 under each of the 17 mutations on the unmodified tree, on the split tree and on the final bytes, each failing its named check (run-mutations-unmod.py and run-mutations.py: 17/17 BITE)",
+   "green": "proof-1302 on the final split tree: 9 passed, 0 failed (exit 0)",
+   "issued": "2026-11-27 s2r4-lastresort"
   }
  ]
 }

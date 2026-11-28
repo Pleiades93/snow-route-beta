@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "223b68c9954159fc925740df9ee1018524ab9dd61acd807bedf040f3fc4426db",
+  "canonical_registry_sha256": "aaa2f823aecdf8b2d89144420f3618b43c8f1891a98a0dde7cfa8f28b52cef7d",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1678,
-   "included": 1648,
+   "canonical": 1685,
+   "included": 1655,
    "excluded_total": 30,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -14685,6 +14685,69 @@
    "fix_id": "s2-addgpslayers",
    "id": "s2-addgpslayers-proof-extracts-sections",
    "pattern": "'ensureGpsBeamImage', 'addGpsUnderlayLayers', 'createGpsPuckLayer', 'addGpsLayers'",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "S2 ROUND 4 (2026-11-27): lastResortConnect's junction frame is its own function - junctionPairFrame builds the pair frame from the two junction records. If this fails, the section was inlined or renamed - restore the seam; proof-1302 extracts it by this signature.",
+   "fix_id": "s2-lastresort",
+   "id": "s2-lastresort-frame-section",
+   "pattern": "function junctionPairFrame(V, A, B) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "S2 ROUND 4 (2026-11-27): the proper-crossing test is its own function - properCross carries the 0.35 clearance both veto passes rely on. If this fails, the section was inlined or renamed - restore the seam; proof-1302 extracts it by this signature.",
+   "fix_id": "s2-lastresort",
+   "id": "s2-lastresort-cross-section",
+   "pattern": "function properCross(a, b, c, d) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "S2 ROUND 4 (2026-11-27): the local fragment analysis is its own function - buildLocalFragmentComponents clips, bridges and components the fragments around a junction, caching per junction in the host-owned fragCache. If this fails, the section was inlined or renamed - restore the seam; proof-1302 extracts it by this signature.",
+   "fix_id": "s2-lastresort",
+   "id": "s2-lastresort-fragments-section",
+   "pattern": "function buildLocalFragmentComponents(edges, bands, V, fragCache) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "S2 ROUND 4 (2026-11-27): the candidate search is its own function - findLocalRepairCandidates projects partner endpoints and orders them by distance. If this fails, the section was inlined or renamed - restore the seam; proof-1302 extracts it by this signature.",
+   "fix_id": "s2-lastresort",
+   "id": "s2-lastresort-candidates-section",
+   "pattern": "function findLocalRepairCandidates(list, partners, E) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "S2 ROUND 4 (2026-11-27): the repair vetoes are their own function - allowsJunctionRepair carries the centreline and green-paint crossing veto passes. If this fails, the section was inlined or renamed - restore the seam; proof-1302 extracts it by this signature.",
+   "fix_id": "s2-lastresort",
+   "id": "s2-lastresort-veto-section",
+   "pattern": "function allowsJunctionRepair(seg, cand, endCi, V, edges) {",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "parts/engine.js",
+   "fix": "S2 ROUND 4 (2026-11-27): the host lastResortConnect keeps the veto gate ahead of the single accepted in-place extension. If this fails, the acceptance seat moved - restore it; proof-1302's landing and veto checks judge the result.",
+   "fix_id": "s2-lastresort",
+   "id": "s2-lastresort-host-acceptance-seat",
+   "pattern": "if (!allowsJunctionRepair(seg, cand, E.ci, V, edges)) continue;",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-27",
+   "file": "tests/proof/proof-1302.mjs",
+   "fix": "S2 ROUND 4 (2026-11-27): proof-1302 is lastResortConnect's characterization contract - it extracts the host plus all five sections and pins landings, windows, quadrants and vetoes. If this fails, the proof no longer extracts the split shape - update the extraction list with the sections, never weaken the claims.",
+   "fix_id": "s2-lastresort",
+   "id": "s2-lastresort-proof-extracts-sections",
+   "pattern": "'buildLocalFragmentComponents', 'findLocalRepairCandidates', 'allowsJunctionRepair', 'lastResortConnect'",
    "type": "grep_present"
   }
  ]

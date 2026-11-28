@@ -74,6 +74,14 @@ GPS layers install exactly as before - same layers,
 order and paint, pinned by proof-1301. No surface,
 element or snow status changed. Map reviewed; no
 update needed beyond this note.
+S2 ROUND 4 (2026-11-27): lastResortConnect in engine.js
+is split into its five sections (junction pair frame,
+proper crossing, local fragment components, repair
+candidates, junction repair vetoes) as sibling functions
+in the same part. The junction repairs land exactly as
+before - same landings, order and vetoes, pinned by
+proof-1302. No surface, element or snow status changed.
+Map reviewed; no update needed beyond this note.
 
 ## The snow rule (one rule, app-wide)
 
