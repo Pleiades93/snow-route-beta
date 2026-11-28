@@ -34,7 +34,10 @@ the class was that it ONLY happened there.
 Usage:
   python3 scripts/check-receipts.py verify <root>
       Print each receipt's state (CURRENT / STALE / BROKEN /
-      INVALID) against a tree. Exit 1 on a malformed receipts file,
+      INVALID) against a tree, over the active ledger and its
+      archive (tests/archive/, where stale and broken receipts
+      move - scripts/archive-ledgers.py). Exit 1 on a malformed
+      receipts file,
       a receipt naming a file that does not exist, or a receipt
       whose evidence fields are incomplete: a receipt counts toward
       coverage only when it is well-formed AND every pinned file
@@ -68,6 +71,7 @@ import sys
 from pathlib import Path
 
 RECEIPTS_REL = "tests/mutation-receipts.json"
+ARCHIVE_REL = "tests/archive/mutation-receipts.json"
 
 # Files whose verdicts decide pass/fail for the gate: proofs, browser
 # drives, the runner's own selftests, the service-worker suite, and
@@ -125,21 +129,47 @@ def sha256_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def load_receipts(root):
+def load_receipts(root, rel=RECEIPTS_REL):
     """Returns (receipts, error). A missing receipts file is an empty
     set, not an error - the gate then simply finds nothing covered.
     A malformed one is an error: a gate that cannot read its own
-    records refuses rather than waves through."""
-    f = Path(root) / RECEIPTS_REL
+    records refuses rather than waves through. rel selects the
+    ledger: the active one by default, ARCHIVE_REL for the archive."""
+    f = Path(root) / rel
     if not f.is_file():
         return [], None
     try:
         data = json.loads(f.read_text())
     except (OSError, ValueError) as e:
-        return None, f"{RECEIPTS_REL} is unreadable: {e}"
+        return None, f"{rel} is unreadable: {e}"
     if not isinstance(data, dict) or not isinstance(data.get("receipts"), list):
-        return None, f"{RECEIPTS_REL} does not carry a receipts list"
+        return None, f"{rel} does not carry a receipts list"
     return data["receipts"], None
+
+
+def load_receipts_history(root):
+    """(receipts, error): active receipts then archived ones - the
+    history readers' view (verify, issue). Coverage never reads
+    this; it judges the active ledger only."""
+    active, err = load_receipts(root)
+    if err:
+        return None, err
+    arch, err = load_receipts(root, ARCHIVE_REL)
+    if err:
+        return None, err
+    return active + arch, None
+
+
+def reactivated(root):
+    """Archived receipts this tree makes CURRENT again (a revert or
+    re-pin can resurrect a stale receipt's pins). The classifier is
+    receipt_state itself, called on every archived record."""
+    arch, err = load_receipts(root, ARCHIVE_REL)
+    if err:
+        return None, err
+    found = [r.get("id", "?") for r in arch
+             if isinstance(r, dict) and receipt_state(root, r) == "CURRENT"]
+    return found, None
 
 
 def _is_sha256(value):
@@ -253,6 +283,15 @@ def uncovered(root, triggers):
     receipts, err = load_receipts(root)
     if err:
         return None, err
+    back, err = reactivated(root)
+    if err:
+        return None, err
+    if back:
+        return None, ("archived receipt(s) are CURRENT on this tree but sit in "
+                      + ARCHIVE_REL + ": " + ", ".join(back)
+                      + " - restore them before gating (python3 "
+                      "scripts/archive-ledgers.py restore . --id "
+                      + " --id ".join(back) + ")")
     covered = set()
     for r in receipts:
         if receipt_state(root, r) == "CURRENT":
@@ -285,7 +324,7 @@ def gate(root, changed):
 
 
 def cmd_verify(root):
-    receipts, err = load_receipts(root)
+    receipts, err = load_receipts_history(root)
     if err:
         print("RECEIPTS ERROR: " + err)
         return 1
@@ -332,7 +371,11 @@ def cmd_issue(root, args):
         except ValueError as e:
             print(f"ISSUE REFUSED: existing {RECEIPTS_REL} is malformed: {e}")
             return 1
-    if any(r.get("id") == args.id for r in data["receipts"]):
+    arch, err = load_receipts(root, ARCHIVE_REL)
+    if err:
+        print("ISSUE REFUSED: " + err)
+        return 1
+    if any(r.get("id") == args.id for r in data["receipts"] + arch):
         print(f"ISSUE REFUSED: receipt id '{args.id}' already exists - "
               "receipts are append-only history; a re-observation gets a new id")
         return 1
