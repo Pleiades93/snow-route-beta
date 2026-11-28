@@ -3,9 +3,8 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import http from 'node:http';
-import net from 'node:net';
 import os from 'node:os';
+import { ensureProxyBridge } from '../tests/browser/proxy-bridge.mjs';
 import path from 'node:path';
 
 const LIVE_URL = 'https://pleiades93.github.io/snow-route-beta/';
@@ -71,49 +70,17 @@ for (;;) {
 }
 
 // ---------- transport ----------
-function startRelay() {
-  // The egress proxy TLS-intercepts with a CA Chromium
-  // cannot read, so integrity anchors on served bytes.
-  const raw = process.env.HTTPS_PROXY || process.env.https_proxy;
-  if (!raw) return null;
-  const proxy = new URL(raw);
-  if (!proxy.username) return { direct: proxy.protocol + '//' + proxy.host };
-  const auth = 'Basic ' + Buffer.from(decodeURIComponent(proxy.username) + ':' + decodeURIComponent(proxy.password)).toString('base64');
-  const server = http.createServer();
-  server.on('connect', (req, client, head) => {
-    const up = net.connect(Number(proxy.port), proxy.hostname, () => {
-      up.write(`CONNECT ${req.url} HTTP/1.1\r\nHost: ${req.url}\r\nProxy-Authorization: ${auth}\r\n\r\n`);
-    });
-    // The session credential stays in memory only: it is
-    // never logged, printed or written to a file.
-    let buf = Buffer.alloc(0);
-    const onData = d => {
-      buf = Buffer.concat([buf, d]);
-      const i = buf.indexOf('\r\n\r\n');
-      if (i < 0) return;
-      up.removeListener('data', onData);
-      if (!/ 200/.test(buf.slice(0, buf.indexOf('\r\n')).toString())) { client.end('HTTP/1.1 502 Bad Gateway\r\n\r\n'); up.destroy(); return; }
-      client.write('HTTP/1.1 200 Connection Established\r\n\r\n');
-      const rest = buf.slice(i + 4);
-      if (rest.length) client.write(rest);
-      if (head && head.length) up.write(head);
-      up.pipe(client); client.pipe(up);
-    };
-    up.on('data', onData);
-    up.on('error', () => client.destroy());
-    client.on('error', () => up.destroy());
-  });
-  return new Promise(res => server.listen(0, '127.0.0.1', () => res({ server, direct: 'http://127.0.0.1:' + server.address().port })));
-}
-
+// The browser rides the drives' own proxy bridge: it
+// cannot authenticate to this VM's egress proxy itself.
 const CHROME = process.env.CHROME_BIN || (fs.existsSync('/opt/meta-chromium/chrome') ? '/opt/meta-chromium/chrome' : 'google-chrome');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-let relay = null, proc = null, ws = null, profile = null;
+let bridge = null, proc = null, ws = null, profile = null;
 const consoleLog = [];
 async function launch(proxyArg) {
   profile = fs.mkdtempSync(path.join(os.tmpdir(), 'live-walk-'));
   const flags = ['--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars', '--remote-debugging-port=0', '--user-data-dir=' + profile, '--window-size=420,900'];
   if (proxyArg) flags.push('--ignore-certificate-errors', '--proxy-server=' + proxyArg);
+  else flags.push('--no-proxy-server');
   flags.push('about:blank');
   let lastErr = null;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -157,7 +124,6 @@ async function launch(proxyArg) {
 function cleanup() {
   try { proc && proc.kill('SIGKILL'); } catch {}
   try { ws && ws.close(); } catch {}
-  try { relay && relay.server && relay.server.close(); } catch {}
   try { profile && fs.rmSync(profile, { recursive: true, force: true }); } catch {}
 }
 
@@ -221,8 +187,8 @@ const watchdog = setTimeout(async () => {
   process.exit(1);
 }, 180000);
 try {
-  relay = await startRelay();
-  walkRig = await launch(relay && relay.direct);
+  bridge = await ensureProxyBridge();
+  walkRig = await launch(bridge && 'http://127.0.0.1:' + bridge.port);
   step = 'navigate';
   await walkRig.send('Page.navigate', { url: walkUrl }, walkRig.S);
   surface = 'splash'; step = 'splash renders';

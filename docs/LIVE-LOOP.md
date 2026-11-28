@@ -120,12 +120,14 @@ round's RECORD.md and carries `report.md` plus
 This machine's only network egress is a proxy that
 intercepts TLS with its own certificate authority -
 the one curl, Node and git are configured to trust and
-Chromium cannot read. The walk therefore starts a
-loopback relay that adds the proxy's authorization
-(read from the process environment at run time, kept in
-memory only) and tells Chromium to ignore certificate
-errors on that path. The walk's integrity anchor is not
-the certificate: it is the sha256 of the served bytes,
+Chromium cannot read. The walk therefore launches
+Chromium through the test battery's own proxy bridge
+(`tests/browser/proxy-bridge.mjs`, shared with the
+drives): the bridge adds the proxy's authorization -
+read from the process environment at run time, kept in
+memory only - and Chromium ignores certificate errors
+on that path. The walk's integrity anchor is not the
+certificate: it is the sha256 of the served bytes,
 matched before the browser navigates, and the rendered
 label, matched after. On a machine with direct egress
-no relay starts and no certificate is ignored.
+no bridge is used and no certificate is ignored.
