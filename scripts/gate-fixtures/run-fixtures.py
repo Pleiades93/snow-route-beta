@@ -2013,6 +2013,78 @@ with tempfile.TemporaryDirectory() as td:
 
 with tempfile.TemporaryDirectory() as td:
     t = Path(td)
+    tree = archive_tree(t / "one-ledger")
+    w(tree / "tests" / "sibling-census.json",
+      json.dumps({"about": "", "rounds": [
+          {"id": "only-exempt", "kind": "machinery-exempt",
+           "reason": "fixture exemption", "issued": "gate-fixtures"}]},
+          indent=1) + "\n")
+    solo = {"id": "solo-stale", "check": "tests/browser/drive9001.mjs",
+            "kind": "mutation", "mutation": "m", "red": "r",
+            "green": "g", "issued": "gate-fixtures",
+            "files": {"tests/browser/drive9001.mjs": "0" * 64}}
+    w(tree / "tests" / "mutation-receipts.json",
+      json.dumps({"about": "", "receipts": [solo]}, indent=1) + "\n")
+    rc, _ = cli("archive-ledgers.py", "apply", tree)
+    check("archive: an apply that moves only one ledger creates only "
+          "that ledger's archive",
+          0 if rc == 0 and (tree / "tests" / "archive"
+                            / "mutation-receipts.json").is_file()
+          and not (tree / "tests" / "archive"
+                   / "sibling-census.json").exists() else 1, 0)
+    rc, _ = cli("archive-ledgers.py", "restore", tree,
+                "--id", "solo-stale")
+    check("archive: restore works when the unrelated archive is absent",
+          rc, 0)
+    rc, out = cli("archive-ledgers.py", "restore", tree,
+                  "--id", "only-exempt")
+    check("archive: restoring an id from the absent archive refuses "
+          "as unknown, not as missing",
+          0 if rc == 1 and "no archived record with id" in out else 1, 0)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
+    tree = archive_tree(t / "race")
+    w(tree / "tests" / "sibling-census.json",
+      json.dumps({"about": "", "rounds": []}, indent=1) + "\n")
+    solo = {"id": "race-stale", "check": "tests/browser/drive9001.mjs",
+            "kind": "mutation", "mutation": "m", "red": "r",
+            "green": "g", "issued": "gate-fixtures",
+            "files": {"tests/browser/drive9001.mjs": "0" * 64}}
+    w(tree / "tests" / "mutation-receipts.json",
+      json.dumps({"about": "", "receipts": [solo]}, indent=1) + "\n")
+    w(tree / "race_driver.py",
+      "import importlib.util, json, sys\n"
+      "from pathlib import Path\n"
+      "spec = importlib.util.spec_from_file_location('arch', sys.argv[1])\n"
+      "mod = importlib.util.module_from_spec(spec)\n"
+      "spec.loader.exec_module(mod)\n"
+      "root = Path(sys.argv[2])\n"
+      "plans = mod._plans(root)\n"
+      "f = root / 'tests' / 'mutation-receipts.json'\n"
+      "data = json.loads(f.read_text())\n"
+      "data['receipts'][0]['red'] = 'CONCURRENT EDIT'\n"
+      "f.write_text(json.dumps(data, indent=1) + '\\n')\n"
+      "try:\n"
+      "    mod._transact(root, plans, 'apply')\n"
+      "    print('NOT REFUSED')\n"
+      "except mod.Refuse as e:\n"
+      "    print('REFUSED:', e)\n"
+      "print('edit preserved:',\n"
+      "      json.loads(f.read_text())['receipts'][0]['red']\n"
+      "      == 'CONCURRENT EDIT')\n")
+    proc = subprocess.run(
+        [PY, str(tree / "race_driver.py"),
+         str(ROOT / "scripts" / "archive-ledgers.py"), str(tree)],
+        capture_output=True, text=True, timeout=120)
+    out = proc.stdout + proc.stderr
+    check("archive: a ledger changed after planning refuses the "
+          "transaction and the concurrent edit survives",
+          0 if "changed since planning" in out
+          and "edit preserved: True" in out else 1, 0)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
     tree = archive_tree(t / "invalid")
     w(tree / "tests" / "sibling-census.json",
       json.dumps({"about": "", "rounds": []}, indent=1) + "\n")
@@ -2085,6 +2157,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 202
+total = 206
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

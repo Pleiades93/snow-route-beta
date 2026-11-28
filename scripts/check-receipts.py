@@ -129,35 +129,21 @@ def sha256_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def load_receipts(root):
+def load_receipts(root, rel=RECEIPTS_REL):
     """Returns (receipts, error). A missing receipts file is an empty
     set, not an error - the gate then simply finds nothing covered.
     A malformed one is an error: a gate that cannot read its own
-    records refuses rather than waves through."""
-    f = Path(root) / RECEIPTS_REL
+    records refuses rather than waves through. rel selects the
+    ledger: the active one by default, ARCHIVE_REL for the archive."""
+    f = Path(root) / rel
     if not f.is_file():
         return [], None
     try:
         data = json.loads(f.read_text())
     except (OSError, ValueError) as e:
-        return None, f"{RECEIPTS_REL} is unreadable: {e}"
+        return None, f"{rel} is unreadable: {e}"
     if not isinstance(data, dict) or not isinstance(data.get("receipts"), list):
-        return None, f"{RECEIPTS_REL} does not carry a receipts list"
-    return data["receipts"], None
-
-
-def load_receipts_archive(root):
-    """(receipts, error) for the archive ledger - load_receipts'
-    semantics under ARCHIVE_REL: missing is empty, malformed refuses."""
-    f = Path(root) / ARCHIVE_REL
-    if not f.is_file():
-        return [], None
-    try:
-        data = json.loads(f.read_text())
-    except (OSError, ValueError) as e:
-        return None, f"{ARCHIVE_REL} is unreadable: {e}"
-    if not isinstance(data, dict) or not isinstance(data.get("receipts"), list):
-        return None, f"{ARCHIVE_REL} does not carry a receipts list"
+        return None, f"{rel} does not carry a receipts list"
     return data["receipts"], None
 
 
@@ -168,7 +154,7 @@ def load_receipts_history(root):
     active, err = load_receipts(root)
     if err:
         return None, err
-    arch, err = load_receipts_archive(root)
+    arch, err = load_receipts(root, ARCHIVE_REL)
     if err:
         return None, err
     return active + arch, None
@@ -178,7 +164,7 @@ def reactivated(root):
     """Archived receipts this tree makes CURRENT again (a revert or
     re-pin can resurrect a stale receipt's pins). The classifier is
     receipt_state itself, called on every archived record."""
-    arch, err = load_receipts_archive(root)
+    arch, err = load_receipts(root, ARCHIVE_REL)
     if err:
         return None, err
     found = [r.get("id", "?") for r in arch
@@ -385,7 +371,7 @@ def cmd_issue(root, args):
         except ValueError as e:
             print(f"ISSUE REFUSED: existing {RECEIPTS_REL} is malformed: {e}")
             return 1
-    arch, err = load_receipts_archive(root)
+    arch, err = load_receipts(root, ARCHIVE_REL)
     if err:
         print("ISSUE REFUSED: " + err)
         return 1

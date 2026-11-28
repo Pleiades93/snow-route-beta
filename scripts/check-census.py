@@ -635,34 +635,20 @@ def sha256_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def load_census(root):
+def load_census(root, rel=CENSUS_REL):
     """(data, error) - a missing file is an empty ledger; a
     malformed one is an error: a gate that cannot read its own
-    records refuses rather than waves through."""
-    f = Path(root) / CENSUS_REL
+    records refuses rather than waves through. rel selects the
+    ledger: the active one by default, ARCHIVE_REL for the archive."""
+    f = Path(root) / rel
     if not f.is_file():
         return {"about": "", "rounds": []}, None
     try:
         data = json.loads(f.read_text())
     except (OSError, ValueError) as e:
-        return None, f"{CENSUS_REL} is unreadable: {e}"
+        return None, f"{rel} is unreadable: {e}"
     if not isinstance(data, dict) or not isinstance(data.get("rounds"), list):
-        return None, f"{CENSUS_REL} does not carry a rounds list"
-    return data, None
-
-
-def load_census_archive(root):
-    """(data, error) for the archive ledger - load_census's semantics
-    under ARCHIVE_REL: missing is an empty ledger, malformed refuses."""
-    f = Path(root) / ARCHIVE_REL
-    if not f.is_file():
-        return {"about": "", "rounds": []}, None
-    try:
-        data = json.loads(f.read_text())
-    except (OSError, ValueError) as e:
-        return None, f"{ARCHIVE_REL} is unreadable: {e}"
-    if not isinstance(data, dict) or not isinstance(data.get("rounds"), list):
-        return None, f"{ARCHIVE_REL} does not carry a rounds list"
+        return None, f"{rel} does not carry a rounds list"
     return data, None
 
 
@@ -673,7 +659,7 @@ def load_census_history(root):
     data, err = load_census(root)
     if err:
         return None, err
-    arch, err = load_census_archive(root)
+    arch, err = load_census(root, ARCHIVE_REL)
     if err:
         return None, err
     return data["rounds"] + arch["rounds"], None
@@ -685,7 +671,7 @@ def reactivated(root):
     record_state itself; a pin pre-filter only skips records whose
     pins already mismatch, which record_state calls STALE/BROKEN
     before it ever derives. Exempt records are CURRENT by rule."""
-    arch, err = load_census_archive(root)
+    arch, err = load_census(root, ARCHIVE_REL)
     if err:
         return None, err
     pins = None

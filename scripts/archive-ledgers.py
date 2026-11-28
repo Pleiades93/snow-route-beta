@@ -244,7 +244,9 @@ def _read_split(root, rel, key):
     f = Path(root) / rel
     if not f.is_file():
         return None
-    return Split(f.read_text(encoding="utf-8"), key)
+    split = Split(f.read_text(encoding="utf-8"), key)
+    split.sha = _sha(f.read_bytes())
+    return split
 
 
 def _sha(data):
@@ -273,6 +275,10 @@ class LedgerPlan:
                     raise Refuse(f"record id '{rid}' appears twice across "
                                  f"{spec['active']} and {spec['archive']}")
                 seen.add(rid)
+        self.input_hashes = {
+            spec["active"]: self.active.sha,
+            spec["archive"]: self.archive.sha if self.archive else None,
+        }
         self.states = {}
         for split in (self.active, self.archive):
             if split is None:
@@ -291,8 +297,10 @@ class LedgerPlan:
             self.direction = "apply"
         else:
             if self.archive is None:
-                raise Refuse(f"{spec['archive']} is missing - nothing to restore")
-            self.movers = [rid for rid in restore_ids if rid in self.archive.ids]
+                self.movers = []
+            else:
+                self.movers = [rid for rid in restore_ids
+                               if rid in self.archive.ids]
             self.direction = "restore"
         self.staged_active = None
         self.staged_archive = None
@@ -411,6 +419,14 @@ def _transact(root, plans, op):
         if not moving:
             print("nothing to move")
             return 0
+        for plan in plans:
+            for rel, want in plan.input_hashes.items():
+                f = root / rel
+                now = _sha(f.read_bytes()) if f.is_file() else None
+                if now != want:
+                    raise Refuse(f"{rel} changed since planning - "
+                                 "refusing to publish over a moved "
+                                 "input; re-run the command")
         before_hash = {}
         for plan in plans:
             for rel in (plan.spec["active"], plan.spec["archive"]):
