@@ -2085,6 +2085,37 @@ with tempfile.TemporaryDirectory() as td:
 
 with tempfile.TemporaryDirectory() as td:
     t = Path(td)
+    tree = archive_tree(t / "crlf")
+    w(tree / "tests" / "sibling-census.json",
+      json.dumps({"about": "", "rounds": []}, indent=1) + "\n")
+    import hashlib
+    drive_sha = hashlib.sha256(
+        (tree / "tests" / "browser" / "drive9001.mjs").read_bytes()).hexdigest()
+    keep = ('{"id": "crlf-keep", "check": "tests/browser/drive9001.mjs", '
+            '"kind": "mutation", "mutation": "m", "red": "r", '
+            '"green": "g", "issued": "gate-fixtures", '
+            '"files": {"tests/browser/drive9001.mjs": "' + drive_sha + '"}}')
+    move = ('{"id": "crlf-move", "check": "tests/browser/drive9001.mjs", '
+            '"kind": "mutation", "mutation": "m", "red": "r", '
+            '"green": "g", "issued": "gate-fixtures", '
+            '"files": {"tests/browser/drive9001.mjs": "' + "0" * 64 + '"}}')
+    crlf_text = ('{\r\n "about": "",\r\n "receipts": [\r\n  ' + keep
+                 + ",\r\n  " + move + "\r\n ]\r\n}\r\n")
+    (tree / "tests" / "mutation-receipts.json").write_bytes(
+        crlf_text.encode("utf-8"))
+    rc, _ = cli("archive-ledgers.py", "apply", tree)
+    arch_path = tree / "tests" / "archive" / "mutation-receipts.json"
+    arch_bytes = arch_path.read_bytes() if arch_path.is_file() else b""
+    check("archive: a CRLF ledger's records move byte-identically "
+          "(their CRLF endings survive the move)",
+          0 if rc == 0 and move.encode("utf-8") in arch_bytes
+          and b"\r\n" in arch_bytes
+          and b"\r\n" in (tree / "tests"
+                          / "mutation-receipts.json").read_bytes()
+          else 1, 0)
+
+with tempfile.TemporaryDirectory() as td:
+    t = Path(td)
     tree = archive_tree(t / "invalid")
     w(tree / "tests" / "sibling-census.json",
       json.dumps({"about": "", "rounds": []}, indent=1) + "\n")
@@ -2116,6 +2147,27 @@ with tempfile.TemporaryDirectory() as td:
     rc, _ = cli("archive-ledgers.py", "recover", tree)
     check("archive: recover rolls a torn ledger back to its "
           "pre-transaction bytes",
+          0 if rc == 0 and (tree / "tests" / "mutation-receipts.json")
+          .read_text() == good else 1, 0)
+    w(tree / bak_rel, good)
+    w(tree / "tests" / "mutation-receipts.json", "torn mid-transaction\n")
+    w(tree / "tests" / "archive" / ".archive-journal.json",
+      json.dumps({"op": "apply",
+                  "files": {"tests/mutation-receipts.json": bak_rel}},
+                 indent=1) + "\n")
+    import os
+    w(tree / "tests" / "archive" / ".archive-lock", str(os.getpid()))
+    rc, _ = cli("archive-ledgers.py", "recover", tree)
+    check("archive: recover refuses while the lock's owner is alive "
+          "and leaves the torn bytes and journal alone",
+          0 if rc == 1 and (tree / "tests" / "mutation-receipts.json")
+          .read_text() == "torn mid-transaction\n"
+          and (tree / "tests" / "archive"
+               / ".archive-journal.json").is_file() else 1, 0)
+    w(tree / "tests" / "archive" / ".archive-lock", "99999999")
+    rc, _ = cli("archive-ledgers.py", "recover", tree)
+    check("archive: recover proceeds under a dead owner's lock and "
+          "rolls the torn ledger back",
           0 if rc == 0 and (tree / "tests" / "mutation-receipts.json")
           .read_text() == good else 1, 0)
 
@@ -2157,6 +2209,6 @@ check("examples: migratePack's self-gate text stands at callee and caller alike"
       + needle_in("parts/create-packs.js",
                   "window.__userPacksReady.then(() => { migratePack(); })"), 0)
 
-total = 206
+total = 209
 print(f"gate fixtures: {total - len(failures)} pass, {len(failures)} fail")
 sys.exit(1 if failures else 0)

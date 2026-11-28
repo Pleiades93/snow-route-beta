@@ -244,8 +244,9 @@ def _read_split(root, rel, key):
     f = Path(root) / rel
     if not f.is_file():
         return None
-    split = Split(f.read_text(encoding="utf-8"), key)
-    split.sha = _sha(f.read_bytes())
+    raw = f.read_bytes()
+    split = Split(raw.decode("utf-8"), key)
+    split.sha = _sha(raw)
     return split
 
 
@@ -452,7 +453,7 @@ def _transact(root, plans, op):
                 else:
                     journal_files[rel] = None
                 stage = src.with_name(src.name + ".s3stage")
-                stage.write_text(staged, encoding="utf-8")
+                stage.write_bytes(staged.encode("utf-8"))
                 staged_paths.append((stage, src))
         journal.write_text(json.dumps(
             {"op": op, "files": journal_files}, indent=1) + "\n",
@@ -575,29 +576,64 @@ def cmd_verify(root):
     return 0
 
 
+def _lock_owner_alive(root):
+    """The pid named in the lock file, when that process still runs;
+    None for a dead owner or an unreadable lock."""
+    try:
+        pid = int((root / LOCK_REL).read_text().strip())
+    except (OSError, ValueError):
+        return None
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return None
+    return pid
+
+
 def cmd_recover(root):
     root = Path(root)
     journal = root / JOURNAL_REL
-    if not journal.is_file():
-        if (root / LOCK_REL).is_file():
-            (root / LOCK_REL).unlink()
-            print("no unfinished transaction; cleared a stale lock")
-        else:
-            print("no unfinished archive transaction")
+    lock = root / LOCK_REL
+    if not (root / ARCHIVE_DIR_REL).is_dir():
+        print("no unfinished archive transaction")
         return 0
-    data = json.loads(journal.read_text(encoding="utf-8"))
-    files = data.get("files", {})
-    for rel, bak_rel in files.items():
-        if bak_rel is not None and not (root / bak_rel).is_file():
-            raise Refuse(f"the backup for {rel} is missing - cannot roll "
-                         "back; the journal stays for manual recovery")
-    _roll_back(root, files)
-    for rel in files:
-        print(f"restored {rel} to its pre-transaction state")
-    journal.unlink()
-    shutil.rmtree(root / BACKUP_REL, ignore_errors=True)
-    (root / LOCK_REL).unlink(missing_ok=True)
-    return 0
+    cleared = False
+    if lock.is_file():
+        alive = _lock_owner_alive(root)
+        if alive is not None:
+            raise Refuse(f"the archive lock is held by a live process "
+                         f"(pid {alive}) - recovery refused; let the "
+                         "transaction finish or fail first")
+        lock.unlink()
+        cleared = True
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        raise Refuse("the archive lock is held - another run is live")
+    os.write(fd, str(os.getpid()).encode())
+    os.close(fd)
+    try:
+        if not journal.is_file():
+            if cleared:
+                print("no unfinished transaction; cleared a stale lock")
+            else:
+                print("no unfinished archive transaction")
+            return 0
+        data = json.loads(journal.read_text(encoding="utf-8"))
+        files = data.get("files", {})
+        for rel, bak_rel in files.items():
+            if bak_rel is not None and not (root / bak_rel).is_file():
+                raise Refuse(f"the backup for {rel} is missing - cannot "
+                             "roll back; the journal stays for manual "
+                             "recovery")
+        _roll_back(root, files)
+        for rel in files:
+            print(f"restored {rel} to its pre-transaction state")
+        journal.unlink()
+        shutil.rmtree(root / BACKUP_REL, ignore_errors=True)
+        return 0
+    finally:
+        lock.unlink(missing_ok=True)
 
 
 def main():

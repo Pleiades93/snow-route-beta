@@ -1076,6 +1076,98 @@
    "red": "gate fixtures exit 1 with exactly 1 failure: 'a ledger changed after planning refuses the transaction and the concurrent edit survives' (205 pass, 1 fail)",
    "green": "full gate-fixtures suite green on the final bytes: 206 pass, 0 fail",
    "issued": "2026-11-27 s3-ledger-archive codex-fix"
+  },
+  {
+   "id": "s3-archive-census-history-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1d463412ed1d30acff960a1a9852fee8f0c6c2cf97b082c5d8857e66d7ed1ea0",
+    "scripts/check-census.py": "8e7b3058e57996be88f9286ff2d956d7598f202f2ee6526008061746366a5610"
+   },
+   "mutation": "load_census_history returned only the active rounds (the archive half of the combined history view dropped)",
+   "red": "gate fixtures exit 1 with 8 archive-section failures: 'census verify reads the archive', 'census --carry finds an archived record', 'the record issued by --carry carries the archived record's marks', 'a census id that exists only in the archive stays reserved', 'census verify refuses on an INVALID archived record', and the restore cases behind them (201 pass, 8 fail; re-observed on the Codex fix round 2 bytes)",
+   "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail (re-issue of s3-archive-census-history-r3 from Codex fix round 2)",
+   "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
+  },
+  {
+   "id": "s3-archive-receipts-history-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1d463412ed1d30acff960a1a9852fee8f0c6c2cf97b082c5d8857e66d7ed1ea0",
+    "scripts/check-receipts.py": "208dd49e59c8d99e81701905fa67ac41dab000552eb64830556891e828522d51"
+   },
+   "mutation": "load_receipts_history returned only the active receipts (the archive half of the combined history view dropped)",
+   "red": "gate fixtures exit 1 with 13 archive-section failures: 'receipts verify reads the archive', the malformed-archive refusal, the restore and apply sets, the one-ledger cases, and the CRLF move (whose transaction verify capture reads history) (196 pass, 13 fail; re-observed on the Codex fix round 2 bytes)",
+   "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail (re-issue of s3-archive-receipts-history-r3 from Codex fix round 2)",
+   "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
+  },
+  {
+   "id": "s3-archive-pr-limits-exempt-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1d463412ed1d30acff960a1a9852fee8f0c6c2cf97b082c5d8857e66d7ed1ea0",
+    "scripts/check-pr-limits.py": "7ed49057ff70f4594857fe98e5885ecc9d0ec09454651b683c512f44c69af299"
+   },
+   "mutation": "the two tests/archive/ ledger paths dropped from GENERATED_EXEMPT in check-pr-limits.py",
+   "red": "gate fixtures exit 1 with exactly 1 failure: 'a long machine-written line in an archive ledger is exempt from the line limit' (205 pass, 1 fail; observed in Codex fix round 1 - check-pr-limits.py is byte-identical since, so the observation stands for this re-issue)",
+   "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail (re-issue of s3-archive-pr-limits-exempt-r3 from Codex fix round 2)",
+   "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
+  },
+  {
+   "id": "s3-archive-reactivation-r4",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1d463412ed1d30acff960a1a9852fee8f0c6c2cf97b082c5d8857e66d7ed1ea0",
+    "scripts/check-census.py": "8e7b3058e57996be88f9286ff2d956d7598f202f2ee6526008061746366a5610",
+    "scripts/check-receipts.py": "208dd49e59c8d99e81701905fa67ac41dab000552eb64830556891e828522d51"
+   },
+   "mutation": "the reactivation scans removed from census gate() and receipts uncovered()",
+   "red": "gate fixtures exit 1 with exactly 2 failures: 'an archived census gone CURRENT again refuses the census gate and names the restore' and 'an archived receipt gone CURRENT again refuses the receipts gate and names the restore' (204 pass, 2 fail; observed in Codex fix round 1 - the gate()/uncovered() bodies are byte-identical since, so the observation stands for this re-issue)",
+   "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail (re-issue of s3-archive-reactivation-r3 from Codex fix round 2)",
+   "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
+  },
+  {
+   "id": "s3-archive-transaction-hashes-r2",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1d463412ed1d30acff960a1a9852fee8f0c6c2cf97b082c5d8857e66d7ed1ea0",
+    "scripts/archive-ledgers.py": "54e517e05ae2fe8c9bd31f2ea2bb4990ebd3b9df102d4e6552c6b7d4f121f7ce"
+   },
+   "mutation": "the plan-hash comparison in archive-ledgers.py _transact neutered (the changed-since-planning refusal disabled)",
+   "red": "gate fixtures exit 1 with exactly 1 failure: 'a ledger changed after planning refuses the transaction and the concurrent edit survives' (208 pass, 1 fail; re-observed on the Codex fix round 2 bytes)",
+   "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail (re-issue of s3-archive-transaction-hashes from Codex fix round 2)",
+   "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
+  },
+  {
+   "id": "s3-archive-crlf-bytes",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1d463412ed1d30acff960a1a9852fee8f0c6c2cf97b082c5d8857e66d7ed1ea0",
+    "scripts/archive-ledgers.py": "54e517e05ae2fe8c9bd31f2ea2bb4990ebd3b9df102d4e6552c6b7d4f121f7ce"
+   },
+   "mutation": "_read_split reverted to Path.read_text (universal-newline translation) instead of decoding the raw bytes it hashes",
+   "red": "gate fixtures exit 1 with exactly 1 failure: 'a CRLF ledger's records move byte-identically (their CRLF endings survive the move)' (208 pass, 1 fail)",
+   "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail",
+   "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
+  },
+  {
+   "id": "s3-archive-recover-liveness",
+   "check": "scripts/gate-fixtures/run-fixtures.py",
+   "kind": "mutation",
+   "files": {
+    "scripts/gate-fixtures/run-fixtures.py": "1d463412ed1d30acff960a1a9852fee8f0c6c2cf97b082c5d8857e66d7ed1ea0",
+    "scripts/archive-ledgers.py": "54e517e05ae2fe8c9bd31f2ea2bb4990ebd3b9df102d4e6552c6b7d4f121f7ce"
+   },
+   "mutation": "the recover lock-liveness check neutered (_lock_owner_alive always reports no live owner)",
+   "red": "gate fixtures exit 1 with exactly 1 failure: 'recover refuses while the lock's owner is alive and leaves the torn bytes and journal alone' (208 pass, 1 fail)",
+   "green": "full gate-fixtures suite green on the final bytes: 209 pass, 0 fail",
+   "issued": "2026-11-27 s3-ledger-archive codex-fix-2"
   }
  ]
 }
