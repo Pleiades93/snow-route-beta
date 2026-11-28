@@ -23,9 +23,14 @@ two sides.
 
 Beta 1.305 removes the gate. The picker arms on its own intro floor
 alone (2,700 ms; 1,900 ms under reduced motion), and the poll
-survives only as the forced boot-tail backstop at four seconds. A
-pick made before the boot tail has run runs the tail first, so the
-route lands whole. drive233 proves the guarantee in a world where
+survives only as the forced boot-tail backstop at four seconds. No
+pick can precede the boot tail: the tail's latest path (a 2,600 ms
+fallback armed at app5's eval, before this IIFE starts) lands
+before the 2,700 ms floor, its normal path lands near 2,300 ms,
+and under reduced motion it runs synchronously at eval - so the
+pick handler keeps its original form, with no pre-tail case to
+handle (a wrapper for one was removed in review as unreachable).
+drive233 proves the guarantee in a world where
 every request fails: the picker arms at the floor with `glOk` still
 false and no tile parsed, the list's first render carries the
 on-device route, a pick loads it with no map, and Settings paints

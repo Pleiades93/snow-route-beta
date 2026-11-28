@@ -1328,6 +1328,19 @@
    "red": "drive233 (final bytes) on base 24847292: 6 checks, exactly 1 FAIL - 'The picker arms at the intro floor, not the six-second escape'; the other five legs PASS on base (they pin survivor behaviour)",
    "green": "drive233 (final bytes) on the fixed tree: 6/6 PASS, run twice",
    "issued": "2026-11-28 gf2-snapshot-menus"
+  },
+  {
+   "id": "gf2-drive233-arm-r2",
+   "check": "tests/browser/drive233.mjs",
+   "kind": "historical",
+   "files": {
+    "tests/browser/drive233.mjs": "f56a743f09aa0b9a94b670fb1f5ffbe70b615e5147d3385cadd0fd030de3c142",
+    "parts/create-save.js": "5a40d66cfb9a6234322a6cd9595ad9bcdde70c6183c4a802f33fd0a020fdc7b5"
+   },
+   "mutation": "same break as gf2-drive233-arm (the shipped base state itself: the readiness gate arms the picker at the 6 s escape in the all-requests-failed world); re-issued because the Codex-fix edit changed parts/create-save.js bytes after the first issue",
+   "red": "drive233 (final bytes) on base 24847292: 6 checks, exactly 1 FAIL - 'The picker arms at the intro floor, not the six-second escape'",
+   "green": "drive233 (final bytes) on the fixed tree: 6/6 PASS, including on the r2 bytes after the unreachable pick wrapper was removed in review",
+   "issued": "2026-11-28 gf2-snapshot-menus"
   }
  ]
 }

@@ -6,8 +6,8 @@ Snapshot-first picker (the guarantee Andrew approved 2026-11-26: menus paint fro
 the device; display data may be optimistic, the clean record never is). The boot route picker used to
 wait for the map - style loaded plus the first basemap tile parsed - and only a six-second escape let
 it open without them, so on a slow or stalled connection the picker sat behind the splash long after
-its own intro finished. The picker now arms on the intro floor alone, and a pick made before the boot
-tail has run runs the tail first, so the route still lands whole. drive233 proves the guarantee in a
+its own intro finished. The picker now arms on the intro floor alone; the boot tail always lands
+before the floor, so a pick still lands whole. drive233 proves the guarantee in a
 world where every request fails: the picker arms at the floor, the list paints the on-device routes,
 a pick loads one, and Settings paints the saved backup age. The full survey - every menu surface's
 state, and the two named gaps in Create - lives in docs/SNAPSHOT-FIRST.md. Plus 4 maintenance PRs

@@ -99,8 +99,8 @@ until one is picked), so file:// drives call `bootThrough(ev, poll)`
 from the harness right after launch: it waits for the boot tail, clicks
 Choose a route → Route 5W, and waits until the route is loaded and the
 splash is gone. Since Beta 1.305 the picker arms at the intro floor
-without waiting for the map (docs/SNAPSHOT-FIRST.md), and a pick ahead
-of the boot tail runs the tail first, so the route still lands whole;
+without waiting for the map (docs/SNAPSHOT-FIRST.md); the boot tail
+always lands before the floor, so a pick still lands whole;
 `bootThrough` first waits for the boot to run — drives that
 reload mid-test re-load the route after the reload (drive114's reload
 helper; drive121's seeded sessions). drive145 is the menu's own drive:

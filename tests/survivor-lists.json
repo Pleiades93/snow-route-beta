@@ -2329,8 +2329,8 @@
   {
    "id": "gf2-snapshot-menus",
    "kind": "cut",
-   "surface": "the boot route picker's arming: when the splash hands over to the picker, and what a boot pick runs first",
-   "cut": "the splash IIFE's readiness gate (parts/create-save.js) was deleted: the picker arms on the intro floor alone, and __bootPickRoute is wrapped so a pick ahead of the boot tail runs it first",
+   "surface": "the boot route picker's arming: when the splash hands over to the picker",
+   "cut": "the splash IIFE's readiness gate (parts/create-save.js) was deleted: the picker arms on the intro floor alone; the poll survives only as the four-second boot-tail backstop",
    "changed": [
     "parts/create-save.js",
     "parts/whatsnew.js"
@@ -2369,7 +2369,7 @@
    ],
    "issued": "2026-11-28 gf2-snapshot-menus",
    "files": {
-    "parts/create-save.js": "f44dbe7c5339c12062a31181811f53a77f1ce56e100e05ad7f8a32e9795d646c",
+    "parts/create-save.js": "5a40d66cfb9a6234322a6cd9595ad9bcdde70c6183c4a802f33fd0a020fdc7b5",
     "parts/whatsnew.js": "df5c2ed24abd1ca84285581f61a5bdb6e2e31a0f9730eeee5a8a00afc72b745e"
    }
   }

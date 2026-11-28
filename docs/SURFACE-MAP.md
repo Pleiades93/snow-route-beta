@@ -94,8 +94,8 @@ this note.
 GF2 (Beta 1.305, 2026-11-28): the boot route picker arms
 on the splash intro floor alone - the readiness gate
 (style loaded + first tile) and its six-second escape are
-deleted (parts/create-save.js), and a pick ahead of the
-boot tail runs the tail first. The route menu's main pane
+deleted (parts/create-save.js); the boot tail always
+lands before the floor, so a pick still lands whole. The route menu's main pane
 and the Choose-a-route pane are reached sooner on a slow
 or stalled connection; no surface, element or snow status
 changed. The full snapshot-first survey is

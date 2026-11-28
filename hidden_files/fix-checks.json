@@ -4,7 +4,7 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "889f35f5f5173a3ee7f305299eea3c3d753844d4e07866a5bfa02c80faf1beef",
+  "canonical_registry_sha256": "67f76a17b752ca03dae86be286f6f962b3ec3413ec2d046cff2a8f899f802421",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
@@ -15086,11 +15086,11 @@
   {
    "added": "2026-11-28",
    "file": "parts/create-save.js",
-   "fix": "GF2 (2026-11-28): a boot pick ahead of the boot tail runs the tail first (the __bootPickRoute wrapper), so the route lands whole even with no map. If this fails, the wrapper was removed; restore it in parts/create-save.js.",
+   "fix": "GF2 (2026-11-28): the pre-tail pick wrapper was removed in PR #249 review (Codex P1, upheld on measurement: the boot tail always lands before the picker's floor, so the wrapper handled an unreachable case). If this fails, the wrapper crept back into parts/create-save.js; remove it again - the pick handler keeps its original form (docs/SNAPSHOT-FIRST.md).",
    "fix_id": "gf2-snapshot-menus",
    "id": "gf2-pick-tail-guard",
-   "pattern": "const bootPick = window.__bootPickRoute;",
-   "type": "grep_present"
+   "pattern": "bootPick(id);",
+   "type": "grep_absent"
   },
   {
    "added": "2026-11-28",
