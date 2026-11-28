@@ -108,7 +108,7 @@ async function finding(expectedValue, observed) {
   write();
 }
 const visible = id => `(() => { const e = document.getElementById(${JSON.stringify(id)}); if (!e) return false; const r = e.getBoundingClientRect(); `
-  + `return e.checkVisibility() && r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })()`;
+  + `return e.checkVisibility({ checkOpacity: true }) && r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })()`;
 let walkRig = null;
 async function checkErrors() { if (errors().length) { await finding('no uncaught page errors', errors()); throw new Error('page error'); } }
 async function snowOk(menuId) {
@@ -134,7 +134,7 @@ async function stop(name, paneId, extra) {
   await checkErrors();
   if (paneId) {
     const on = await walkRig.poll(`document.getElementById('${paneId}').classList.contains('on')`, 10000, 100);
-    const vis = on && await walkRig.ev(visible(paneId));
+    const vis = on && await walkRig.poll(visible(paneId), 10000, 100);
     if (!vis) { await finding('visible surface', { pane: paneId, on }); throw new Error('unreachable surface ' + paneId); }
   }
   if (!report.surfaces.includes(name)) report.surfaces.push(name);
