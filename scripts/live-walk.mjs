@@ -26,7 +26,7 @@ const out = path.join(path.resolve(outRoot), `${stamp.slice(0, 10)}-${expectedLa
 fs.mkdirSync(out, { recursive: true });
 const report = {
   expected: { label: expectedLabel, sha: expectedSha }, url: walkUrl,
-  observed: { sha: null, label: null, reads: [] },
+  observed: { sha: null, label: null, browserSha: null, reads: [] },
   surfaces: [], notes: [], findings: [], startedAt: stamp, finishedAt: null, ok: false
 };
 function write() {
@@ -49,9 +49,9 @@ const shaOf = text => createHash('sha256').update(text).digest('hex');
 async function readLive() {
   try {
     const res = await fetch(walkUrl, { signal: AbortSignal.timeout(20000) });
-    const body = await res.text();
-    const m = body.match(/id="ver">([^<]+)/);
-    return { sha: shaOf(body), label: m ? m[1].trim() : null };
+    const bytes = Buffer.from(await res.arrayBuffer());
+    const m = bytes.toString('utf8').match(/id="ver">([^<]+)/);
+    return { sha: shaOf(bytes), label: m ? m[1].trim() : null };
   } catch (e) { return { sha: null, label: null, error: String(e && e.message || e).slice(0, 120) }; }
 }
 const deadline = Date.now() + waitSeconds * 1000;
@@ -97,16 +97,19 @@ async function launch(proxyArg) {
   }
   if (lastErr) throw lastErr;
   let nextId = 1; const pending = new Map();
+  const doc = { requestId: null };
   ws.addEventListener('message', ev => {
     const msg = JSON.parse(ev.data);
     if (msg.id && pending.has(msg.id)) { pending.get(msg.id)(msg); pending.delete(msg.id); return; }
     if (msg.method === 'Runtime.exceptionThrown') { const d = msg.params.exceptionDetails; consoleLog.push({ type: 'EXCEPTION', text: String((d.exception && d.exception.description) || d.text).slice(0, 300) }); }
+    else if (msg.method === 'Network.responseReceived' && msg.params.type === 'Document') doc.requestId = msg.params.requestId;
   });
   const send = (method, params = {}, sessionId) => { const id = nextId++; return new Promise(res => { pending.set(id, res); ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); }); };
   const { result: { targetId } } = await send('Target.createTarget', { url: 'about:blank' });
   const S = (await send('Target.attachToTarget', { targetId, flatten: true })).result.sessionId;
   await send('Page.enable', {}, S);
   await send('Runtime.enable', {}, S);
+  await send('Network.enable', {}, S);
   await send('Emulation.setDeviceMetricsOverride', { width: 420, height: 900, deviceScaleFactor: 2, mobile: true }, S);
   const ev = async expr => {
     const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, S);
@@ -119,7 +122,7 @@ async function launch(proxyArg) {
     return false;
   };
   const shot = async name => { const r = await send('Page.captureScreenshot', { format: 'png' }, S); fs.writeFileSync(name, Buffer.from(r.result.data, 'base64')); };
-  return { send, S, ev, poll, shot };
+  return { send, S, ev, poll, shot, doc };
 }
 function cleanup() {
   try { proc && proc.kill('SIGKILL'); } catch {}
@@ -193,6 +196,20 @@ try {
   await walkRig.send('Page.navigate', { url: walkUrl }, walkRig.S);
   surface = 'splash'; step = 'splash renders';
   if (!await walkRig.poll(`!!document.getElementById('splash')`, 15000, 100)) { await finding('splash element at cold start', false); throw new Error('no splash'); }
+  // The label does not establish byte identity: the
+  // document Chromium loaded is hashed before walking.
+  surface = 'live page'; step = 'document the browser loaded';
+  let browserSha = null;
+  for (let i = 0; i < 75 && !browserSha; i++) {
+    const rid = walkRig.doc.requestId;
+    if (rid) {
+      const r = await walkRig.send('Network.getResponseBody', { requestId: rid }, walkRig.S);
+      if (r.result) browserSha = shaOf(r.result.base64Encoded ? Buffer.from(r.result.body, 'base64') : Buffer.from(r.result.body, 'utf8'));
+    }
+    if (!browserSha) await sleep(200);
+  }
+  report.observed.browserSha = browserSha;
+  if (browserSha !== expectedSha) { await finding(expectedSha, browserSha); throw new Error('browser document mismatch'); }
   await stop('splash', null);
   step = 'rendered version label';
   const rendered = await walkRig.ev(`document.getElementById('ver')?.textContent?.trim()`);

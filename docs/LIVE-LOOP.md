@@ -52,7 +52,14 @@ What the walk does, in order:
    browser profile: no cookies, storage, caches or
    service workers carried over. Nothing is signed in,
    nothing is written to the live app; the profile is
-   discarded when the walk ends.
+   discarded when the walk ends. Before anything is
+   walked, the document the browser itself loaded is
+   hashed and compared with the expected sha: the
+   fetch-side read and the browser can be served
+   different builds under the same label (maintenance
+   ships do not bump it), and a mismatch stops the
+   walk - the wrong build is never walked and reported
+   as the right one.
 3. **Walks the first-run surfaces**: the splash, then
    the route menu's main pane, the route list, the
    create doors, the bundled city list and the manual
@@ -127,7 +134,8 @@ drives): the bridge adds the proxy's authorization -
 read from the process environment at run time, kept in
 memory only - and Chromium ignores certificate errors
 on that path. The walk's integrity anchor is not the
-certificate: it is the sha256 of the served bytes,
-matched before the browser navigates, and the rendered
-label, matched after. On a machine with direct egress
-no bridge is used and no certificate is ignored.
+certificate: it is the sha256 of the served bytes -
+matched on the fetch-side read, matched again on the
+document the browser itself loads, with the rendered
+label as a third check. On a machine with direct
+egress no bridge is used and no certificate is ignored.
