@@ -4,13 +4,13 @@
  "provenance": {
   "generated_by": "scripts/sync-fix-checks.py - do not hand-edit",
   "canonical_registry": "/home/hatch/workspace/goals/snow-route-5w-tracker-rebuild/hidden_files/fix-checks.json",
-  "canonical_registry_sha256": "96041a18ed8c0dc9dca4ccc2e57c281ba26f65eeb4881d439811de5203422b28",
+  "canonical_registry_sha256": "fe4a9f9fd35c8dfd1f8d0c7916b426aada3274107ede337c7a7f837cf1331f54",
   "canonical_runner": "/home/hatch/workspace/tools/fix-checks/run_fix_checks.py",
   "canonical_runner_sha256": "69a52fd738bdbea4adf8b132f5e7980c1acfaba562d768a383a84e0732d667e2",
   "subset_rule": "v1: every target the probe names lives inside the repo tree (see sync-fix-checks.py)",
   "counts": {
-   "canonical": 1718,
-   "included": 1686,
+   "canonical": 1723,
+   "included": 1691,
    "excluded_total": 32,
    "excluded_by_reason": {
     "command references paths outside the repo tree": 9,
@@ -15027,6 +15027,51 @@
    "fix_id": "ge-fuzz",
    "id": "ge-fuzz-gap2-closed",
    "pattern": "GAP-2 (L8, create-mode clone absence) - CLOSED by",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "tests/browser/coldstart.mjs",
+   "fix": "GF1 (2026-11-28): the cold-start measurement exists and applies CDP network emulation to the boot it times. If this fails, the measurement or its throttling seat was removed or renamed; restore tests/browser/coldstart.mjs (docs/COLD-START-BASELINE.md owns the protocol).",
+   "fix_id": "gf1-cold-start",
+   "id": "gf1-coldstart-measurement",
+   "pattern": "Network.emulateNetworkConditions",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "tests/browser/coldstart.mjs",
+   "fix": "GF1 (2026-11-28): the throttled profile is pinned at the DevTools 3G preset numbers (2,000 ms latency, 50,000 B/s each way, CPU rate 4). If this fails, the profile drifted from the measured baseline; restore the slow3G values in tests/browser/coldstart.mjs or re-measure the baseline.",
+   "fix_id": "gf1-cold-start",
+   "id": "gf1-coldstart-profile",
+   "pattern": "downloadThroughput: 50000",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "tests/browser/coldstart.mjs",
+   "fix": "GF1 (2026-11-28): the picker budget ships null - no budget is enforced until Andrew accepts one from the measured baseline. If this fails, a budget was set without that acceptance, or the field was renamed; restore pickerBudgetMs = null in tests/browser/coldstart.mjs.",
+   "fix_id": "gf1-cold-start",
+   "id": "gf1-coldstart-budget-null",
+   "pattern": "const pickerBudgetMs = null",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": "docs/COLD-START-BASELINE.md",
+   "fix": "GF1 (2026-11-28): the baseline doc exists, carries the measured table and its budget line reads null. If this fails, the doc was removed or a budget was recorded without acceptance; restore docs/COLD-START-BASELINE.md.",
+   "fix_id": "gf1-cold-start",
+   "id": "gf1-coldstart-doc",
+   "pattern": "budget: null",
+   "type": "grep_present"
+  },
+  {
+   "added": "2026-11-28",
+   "file": ".github/workflows/coldstart.yml",
+   "fix": "GF1 (2026-11-28): the cold-start workflow runs on workflow_dispatch only and is not part of the merge gate. If this fails, the wiring was removed or retargeted; restore .github/workflows/coldstart.yml as dispatch-only.",
+   "fix_id": "gf1-cold-start",
+   "id": "gf1-coldstart-workflow",
+   "pattern": "workflow_dispatch",
    "type": "grep_present"
   }
  ]
