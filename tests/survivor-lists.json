@@ -2309,6 +2309,14 @@
    "changed": [],
    "files": {},
    "issued": "2026-11-28 gd-live-loop"
+  },
+  {
+   "id": "ge-fuzz",
+   "kind": "no-cut",
+   "reason": "Nothing is cut, removed or restructured: the round adds the nightly fuzzer, its doc and its dispatch workflow, plus ledger/registry records. App bytes are identical to base.",
+   "changed": [],
+   "files": {},
+   "issued": "2026-11-28 ge-fuzz"
   }
  ]
 }
