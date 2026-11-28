@@ -75,15 +75,15 @@ for (;;) {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let bridge = null, profile = null;
 async function launch(proxyArg) {
-  profile = fs.mkdtempSync(path.join(os.tmpdir(), 'live-walk-'));
-  const args = ['--disable-gpu', '--hide-scrollbars', '--user-data-dir=' + profile, '--window-size=420,900'];
-  if (proxyArg) args.push('--ignore-certificate-errors', '--proxy-server=' + proxyArg);
-  else args.push('--no-proxy-server');
   const doc = { requestId: null };
   const onEvent = msg => { if (msg.method === 'Network.responseReceived' && msg.params.type === 'Document') doc.requestId = msg.params.requestId; };
   let rig = null, lastErr = null;
   for (let attempt = 0; attempt < 3 && !rig; attempt++) {
-    try { rig = await launchCdp({ args, onEvent }); } catch (e) { lastErr = e; }
+    profile = fs.mkdtempSync(path.join(os.tmpdir(), 'live-walk-'));
+    const args = ['--disable-gpu', '--hide-scrollbars', '--user-data-dir=' + profile, '--window-size=420,900'];
+    if (proxyArg) args.push('--ignore-certificate-errors', '--proxy-server=' + proxyArg);
+    else args.push('--no-proxy-server');
+    try { rig = await launchCdp({ args, onEvent }); } catch (e) { lastErr = e; try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} profile = null; }
   }
   if (!rig) throw lastErr || new Error('chrome launch failed');
   rig.doc = doc;
@@ -184,7 +184,17 @@ try {
   }
   report.observed.browserSha = browserSha;
   if (browserSha !== expectedSha) { await finding(expectedSha, browserSha); throw new Error('browser document mismatch'); }
-  await stop('splash', null);
+  // The splash stop asserts the artwork itself: the
+  // brand layer rendered, before the menu cuts it.
+  await stop('splash', null, async () => {
+    step = 'splash content renders';
+    const expr = `(() => { const el = document.getElementById('brandLayer'); if (!el) return { missing: true }; const cs = getComputedStyle(el), r = el.getBoundingClientRect(); `
+      + `let o = 1, n = el; while (n && n.nodeType === 1) { o *= parseFloat(getComputedStyle(n).opacity); if (n === document.documentElement) break; n = n.parentElement; } `
+      + `return { vis: el.checkVisibility(), disp: cs.display, laidOut: r.width > 0 && r.height > 0, op: Math.round(o * 1000) / 1000, cut: el.classList.contains('cut') }; })()`;
+    let s = null, rendered = false;
+    for (let i = 0; i < 15 && !rendered; i++) { s = await walkRig.ev(expr); rendered = !!(s && !s.missing && s.vis === true && s.laidOut === true && s.op >= 0.99); if (!rendered) await sleep(200); }
+    if (!rendered) { await finding('splash artwork rendered', s); throw new Error('splash content not rendered'); }
+  });
   step = 'rendered version label';
   const rendered = await walkRig.ev(`document.getElementById('ver')?.textContent?.trim()`);
   if (rendered !== expectedLabel) { await finding(expectedLabel, rendered ?? null); throw new Error('rendered label mismatch'); }

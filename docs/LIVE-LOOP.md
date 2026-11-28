@@ -70,7 +70,10 @@ What the walk does, in order:
    advancing AND rendering: the canvas laid out and
    visible, the menu transparent over it. Frames
    advancing on a canvas nobody can see is not snow
-   standing.
+   standing. At the splash stop it also asserts the
+   splash artwork itself (the brand layer) rendered,
+   before the boot menu cuts it away: the splash
+   element existing is not the content visitors see.
 4. **Checks the rendered label** in the browser against
    the expected label, so a build the fetch-side wait
    accepted but the browser renders differently is

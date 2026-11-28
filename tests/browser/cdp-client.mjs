@@ -15,12 +15,15 @@ export async function launchCdp({ chrome, args = [], onEvent = null } = {}) {
   const proc = spawn(chrome || resolveChrome(), ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage', '--remote-debugging-port=0', '--no-first-run', ...args, 'about:blank'], { stdio: ['ignore', 'pipe', 'pipe'] });
   const wsUrl = await new Promise((res, rej) => {
     let buf = ''; let settled = false;
-    const to = setTimeout(() => { if (!settled) { settled = true; rej(new Error('no devtools url: ' + buf.slice(0, 300))); } }, 25000);
+    const fail = e => { try { proc.kill('SIGKILL'); } catch {} rej(e); };
+    const to = setTimeout(() => { if (!settled) { settled = true; fail(new Error('no devtools url: ' + buf.slice(0, 300))); } }, 25000);
     proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m && !settled) { settled = true; clearTimeout(to); res(m[1]); } });
-    proc.on('exit', (code, sig) => { if (!settled) { settled = true; clearTimeout(to); rej(new Error('chrome exited before devtools (code ' + code + ', signal ' + sig + ')')); } });
+    proc.on('exit', (code, sig) => { if (!settled) { settled = true; clearTimeout(to); fail(new Error('chrome exited before devtools (code ' + code + ', signal ' + sig + ')')); } });
   });
   const ws = new WebSocket(wsUrl);
-  await new Promise(r => ws.addEventListener('open', r, { once: true }));
+  try { await new Promise((r, j) => { const wto = setTimeout(() => j(new Error('ws open timeout')), 15000); ws.addEventListener('error', j, { once: true });
+    ws.addEventListener('open', () => { clearTimeout(wto); r(); }, { once: true }); }); }
+  catch (e) { try { proc.kill('SIGKILL'); } catch {} throw e; }
   let nextId = 1; const pending = new Map(); const consoleLog = [];
   ws.addEventListener('message', ev => {
     const msg = JSON.parse(ev.data);
