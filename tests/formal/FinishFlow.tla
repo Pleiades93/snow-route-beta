@@ -201,8 +201,7 @@ Next ==
 
 Spec == Init /\ [][Next]_vars
 
-\* F1 (restated, Andrew's ruling 2026-11-26): the gap advisory for
-\* a clean never shows while that clean's finish is in flight.
+\* F1: a clean's gap advisory never shows during its own finish.
 F1_NoGapDuringOwnFinish ==
     GapBannerFor # 0 =>
         ~(clean = GapBannerFor /\ phase \in {"confirming", "saving"})
